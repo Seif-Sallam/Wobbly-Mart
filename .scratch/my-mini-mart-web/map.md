@@ -31,6 +31,7 @@ A build-ready spec for a browser clone of My Mini Mart: same mechanics, own name
 - [Pick the asset packs and art direction](issues/08-art-direction-and-assets.md) — Kenney mini toy style anchors all; gaps composed from Kenney parts, then primitives; bright saturated palette, soft-shadow lighting; oversized Items; CC0/CC-BY/OFL with in-game Credits; bill-stack Money (coins only as a flip effect); Pads count down with a ghost preview; one asset table
 - [Define project practices](issues/09-project-practices.md) — sim/view/ui split with pure seeded sim; ESLint+Prettier, Vitest on sim + validator + CI bot playthrough; branch+PR, no commit prefix; full CI gate; new deps need OK; every `main` merge is a release; `?debug` panel; minimal, non-duplicated code
 - [Author the first map's price table and timings](issues/10-price-table.md) — ~30 min estimated (7/11/11 per Area); costs cut below the anchors (carrying is the bottleneck); start $50, Exit $2,100; Stocker opens Area 2; Area 3 adds 2nd Blender/Mill/Oven; Stack 16; 37 Upgrade levels; patience only at empty Shelves; estimator script as the sheet
+- [Research performance limits for a Three.js phone game](issues/15-performance-research.md) — phones <100 draw calls/<100k vertices; characters are the main cost (merge static store, blob shadows); game ~0.6–0.9 MB gzip vs Poki 5 MB; `size-limit` in CI; proposed 250 kB JS / 1.2 MB / ≤5 s on Slow 4G
 
 ## Not yet specified
 

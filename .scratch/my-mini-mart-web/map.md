@@ -35,13 +35,8 @@ A build-ready spec for a browser clone of My Mini Mart: same mechanics, own name
 ## Not yet specified
 
 - **Optional events (nice-to-have, after v1 core)** — thief chase, timed delivery orders, random spills, a Cleaner staff role.
-- **HUD & UI** — money counter, Office upgrade panel, guidance arrows, menus, settings (incl. Grab Mode, Credits screen); mobile vs desktop layout; maybe a Player character choice later.
-- **Tutorial / onboarding** — the first-minutes guided flow.
-- **Audio & "juice"** — sounds, music, feedback effects; free audio sources (CC0/CC-BY/OFL; Money, coin-flip and Pad visuals are set in [Pick the asset packs and art direction](issues/08-art-direction-and-assets.md)). Stack/transfer motion is settled in [Prototype movement, camera and carrying feel](issues/07-controls-and-camera-feel.md); the rest should match its wonky tone.
-- **Save data shape & versioning** — what's persisted, migrations when the game changes; saves are the sim state, and ids are frozen per release ([Define project practices](issues/09-project-practices.md)).
-- **Performance budget** — target devices/FPS, asset size budget, load time; adds a bundle-size CI check once set.
-- **Game name & logo** — own name and logo; palette and look are set in [Pick the asset packs and art direction](issues/08-art-direction-and-assets.md).
 - **Level editor (maybe later)** — in-game tool to place stations/Pads instead of hand-editing map data.
+- **Assembling the spec** — once the tickets close: gather every decision into the one build-ready spec (incl. the 8–10 named palette colours from [Pick the asset packs and art direction](issues/08-art-direction-and-assets.md)); likely a final ticket once its shape is clear.
 
 ## Out of scope
 

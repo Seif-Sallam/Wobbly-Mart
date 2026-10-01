@@ -31,4 +31,8 @@ Notes for the build:
 - The owner pushed sway to the slider's maximum, so allow values above 2 when tuning later.
 - Use feel constants as named config (one `feel.ts`), not magic numbers, so they stay tunable.
 - "Wonky and funny" is a tone for the whole game (art, juice, audio), not just the Stack — recorded in the map's Notes.
+- **Transfer pacing (agreed after the prototype, not yet felt):**
+  - *Drop-off speeds up* — each Item leaves faster than the last (e.g. 0.25 s × 0.85 per Item, floor ~0.06 s), a "plop… plopplopplop" crescendo. Resets each time the Player arrives at a Station.
+  - *Pick-up slows mildly* — interval scales with Stack fullness, at most 2× (0.25 s empty → 0.5 s full), like the walking slowdown. Kept mild so capacity Upgrades never feel like a penalty.
+  - Numbers are starting points; tune both curves in play.
 - Manual Grab Mode was built (hold Space/E) but not judged; it stays as decided in [Decide which mechanics the clone includes](03-core-mechanics-scope.md).

@@ -26,7 +26,7 @@ A build-ready spec for a browser clone of My Mini Mart: same mechanics, own name
 - [Choose the rendering library and toolchain](issues/04-tech-stack-choice.md) — Three.js + Vite + strict TS, npm, auto-deploy to Pages from public repo; GLB per-pack folders; nipplejs, howler, in-house tweens; Preact for panels only; no physics
 - [Define the map template for future levels](issues/06-level-template.md) — typed TS data per map + shared Catalog; grid layout; wall-less Areas; requirement-list unlocks; data-driven Upgrades; fixed Queue Spots; CI validation; stable ids
 - [Design the economy and progression of the first map](issues/05-economy-and-progression.md) — 30–40 min; 7 Products/3 Areas, all 1:1 Recipes; mostly-linear unlock order; hand-picked raw prices; Customer Cap (2+Products)×1.3/Cashier, max 15; 11 Upgrades/38 levels; Exit Pad by a car, Money per map
-- [Prototype movement, camera and carrying feel](issues/07-controls-and-camera-feel.md) — variant B "wonky and funny": eased speed and turns, soft look-ahead ortho camera (41°, 20 m), Stack in front with heavy sway, analog floating joystick, arcing 0.25 s transfers
+- [Prototype movement, camera and carrying feel](issues/07-controls-and-camera-feel.md) — variant B "wonky and funny": eased speed and turns, soft look-ahead ortho camera (41°, 20 m), Stack in front with heavy sway, analog floating joystick, arcing transfers (drop-off speeds up, pick-up slows mildly as the Stack fills)
 
 ## Not yet specified
 

@@ -9,6 +9,7 @@ A build-ready spec for a browser clone of My Mini Mart: same mechanics, own name
 ## Notes
 
 - Domain: game design + web game engineering. Personal project, shared with friends, no monetization.
+- **Minimal code:** never duplicate or add redundant code; push back when something already exists. Practices in [Define project practices](issues/09-project-practices.md).
 - Owner play-tests and decides; Claude writes all code. Owner has no JS/TS experience — explain tech choices in plain terms. Good/bad practices are defined as we go.
 - Desktop (keyboard) takes precedence; mobile (touch joystick) also supported.
 - Hosting: GitHub Pages preferred, another static host only if Pages blocks us. No backend at all.
@@ -28,6 +29,7 @@ A build-ready spec for a browser clone of My Mini Mart: same mechanics, own name
 - [Design the economy and progression of the first map](issues/05-economy-and-progression.md) — 30–40 min; 7 Products/3 Areas, all 1:1 Recipes; mostly-linear unlock order; hand-picked raw prices; Customer Cap (2+Products)×1.3/Cashier, max 15; 11 Upgrades/38 levels; Exit Pad by a car, Money per map
 - [Prototype movement, camera and carrying feel](issues/07-controls-and-camera-feel.md) — variant B "wonky and funny": eased speed and turns, soft look-ahead ortho camera (41°, 20 m), Stack in front with heavy sway, analog floating joystick, arcing transfers (drop-off speeds up, pick-up slows mildly as the Stack fills)
 - [Pick the asset packs and art direction](issues/08-art-direction-and-assets.md) — Kenney mini toy style anchors all; gaps composed from Kenney parts, then primitives; bright saturated palette, soft-shadow lighting; oversized Items; CC0/CC-BY/OFL with in-game Credits; bill-stack Money (coins only as a flip effect); Pads count down with a ghost preview; one asset table
+- [Define project practices](issues/09-project-practices.md) — sim/view/ui split with pure seeded sim; ESLint+Prettier, Vitest on sim + validator + CI bot playthrough; branch+PR, no commit prefix; full CI gate; new deps need OK; every `main` merge is a release; `?debug` panel; minimal, non-duplicated code
 
 ## Not yet specified
 
@@ -35,8 +37,8 @@ A build-ready spec for a browser clone of My Mini Mart: same mechanics, own name
 - **HUD & UI** — money counter, Office upgrade panel, guidance arrows, menus, settings (incl. Grab Mode, Credits screen); mobile vs desktop layout; maybe a Player character choice later.
 - **Tutorial / onboarding** — the first-minutes guided flow.
 - **Audio & "juice"** — sounds, music, feedback effects; free audio sources (CC0/CC-BY/OFL; Money, coin-flip and Pad visuals are set in [Pick the asset packs and art direction](issues/08-art-direction-and-assets.md)). Stack/transfer motion is settled in [Prototype movement, camera and carrying feel](issues/07-controls-and-camera-feel.md); the rest should match its wonky tone.
-- **Save data shape & versioning** — what's persisted, migrations when the game changes.
-- **Performance budget** — target devices/FPS, asset size budget, load time.
+- **Save data shape & versioning** — what's persisted, migrations when the game changes; saves are the sim state, and ids are frozen per release ([Define project practices](issues/09-project-practices.md)).
+- **Performance budget** — target devices/FPS, asset size budget, load time; adds a bundle-size CI check once set.
 - **Game name & logo** — own name and logo; palette and look are set in [Pick the asset packs and art direction](issues/08-art-direction-and-assets.md).
 - **Level editor (maybe later)** — in-game tool to place stations/Pads instead of hand-editing map data.
 

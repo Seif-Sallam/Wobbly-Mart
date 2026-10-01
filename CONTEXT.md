@@ -70,7 +70,7 @@ A sequence of **Producers** where one's output is another's input (tomato → ch
 A **Station** that displays **Items** of exactly one **Product** for **Customers** to take; has a capacity. Shelves are unlocked one after another.
 
 **Customer**:
-A visitor with a **Shopping List** who takes **Items** from **Shelves** into a cart, queues at the shortest **Register** queue, pays and leaves. Has mild patience: grows angry, then drops everything in the cart as a **Mess** and leaves without paying.
+A visitor with a **Shopping List** who takes **Items** from **Shelves** into a cart, queues at the shortest **Register** queue, pays and leaves. Has mild patience: only while waiting at an empty **Shelf** does it grow angry, then drop everything in the cart as a **Mess** and leave without paying. Never angry while in a **Register** line or on a **Waiting Spot**.
 
 **Shopping List**:
 What a **Customer** came for: up to 4 different **Products**, up to 4 units each.
@@ -80,7 +80,7 @@ The fixed amount of **Money** one **Item** of a **Product** earns at checkout. N
 _Avoid_: value, worth
 
 **Customer Cap**:
-The most **Customers** that can be in the store at once. Grows with the number of **Products** for sale and with every extra **Cashier**.
+The most **Customers** that can be in the store at once. Grows with the number of **Products** for sale and with every extra **Cashier**. New **Customers** arrive whenever the store is below it — the only lever on how many come.
 
 **Register**:
 The checkout **Station**. Checking out a **Customer** drops cash onto its **Cash Pile**.

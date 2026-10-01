@@ -15,6 +15,7 @@ A build-ready spec for a browser clone of My Mini Mart: same mechanics, own name
 - Art: free (ideally CC0) asset packs as much as possible; low-poly 3D under a fixed isometric camera ("2.5D").
 - Every session: use `/grilling` + `/domain-modeling` for grilling tickets; `/prototype` for prototype tickets; `/research` subagents for research tickets. Glossary lives in `/CONTEXT.md`.
 - Research findings live in `.scratch/my-mini-mart-web/research/`.
+- **Tone: wonky and funny.** The owner chose exaggerated, playful feel (heavy Stack sway, swinging turns, high item arcs) — apply the same spirit to art, juice and audio.
 
 ## Decisions so far
 
@@ -25,13 +26,14 @@ A build-ready spec for a browser clone of My Mini Mart: same mechanics, own name
 - [Choose the rendering library and toolchain](issues/04-tech-stack-choice.md) — Three.js + Vite + strict TS, npm, auto-deploy to Pages from public repo; GLB per-pack folders; nipplejs, howler, in-house tweens; Preact for panels only; no physics
 - [Define the map template for future levels](issues/06-level-template.md) — typed TS data per map + shared Catalog; grid layout; wall-less Areas; requirement-list unlocks; data-driven Upgrades; fixed Queue Spots; CI validation; stable ids
 - [Design the economy and progression of the first map](issues/05-economy-and-progression.md) — 30–40 min; 7 Products/3 Areas, all 1:1 Recipes; mostly-linear unlock order; hand-picked raw prices; Customer Cap (2+Products)×1.3/Cashier, max 15; 11 Upgrades/38 levels; Exit Pad by a car, Money per map
+- [Prototype movement, camera and carrying feel](issues/07-controls-and-camera-feel.md) — variant B "wonky and funny": eased speed and turns, soft look-ahead ortho camera (41°, 20 m), Stack in front with heavy sway, analog floating joystick, arcing 0.25 s transfers
 
 ## Not yet specified
 
 - **Optional events (nice-to-have, after v1 core)** — thief chase, timed delivery orders, random spills, a Cleaner staff role.
 - **HUD & UI** — money counter, Office upgrade panel, guidance arrows, menus, settings (incl. Grab Mode); mobile vs desktop layout.
 - **Tutorial / onboarding** — the first-minutes guided flow.
-- **Audio & "juice"** — sounds, music, stacking/money animations, feedback effects; free audio sources.
+- **Audio & "juice"** — sounds, music, money animations, feedback effects; free audio sources. Stack/transfer motion is settled in [Prototype movement, camera and carrying feel](issues/07-controls-and-camera-feel.md); the rest should match its wonky tone.
 - **Save data shape & versioning** — what's persisted, migrations when the game changes.
 - **Performance budget** — target devices/FPS, asset size budget, load time.
 - **Game name & visual identity** — own name, colors, logo.

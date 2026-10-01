@@ -96,7 +96,7 @@ _Avoid_: coins, cash (except in **Cash Pile**), gems, coupons
 ### Growth
 
 **Pad**:
-A floor price tag; standing on it drains **Money** into it until the thing it unlocks is bought.
+A floor price tag; standing on it drains **Money** into it until the thing it unlocks is bought. Money paid in stays if the **Player** walks off; the Pad shows the remaining amount.
 _Avoid_: price tag, buy zone
 
 **Staff**:

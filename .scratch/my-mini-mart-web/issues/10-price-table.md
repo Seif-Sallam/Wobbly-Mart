@@ -1,7 +1,8 @@
 # Author the first map's price table and timings
 
 Type: grilling
-Status: open
+Status: in-progress
+Assignee: Seif (claimed 2026-10-02)
 Blocked by: 05
 
 ## Question

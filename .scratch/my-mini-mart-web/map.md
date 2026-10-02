@@ -32,16 +32,17 @@ A build-ready spec for a browser clone of My Mini Mart: same mechanics, own name
 - [Define project practices](issues/09-project-practices.md) — sim/view/ui split with pure seeded sim; ESLint+Prettier, Vitest on sim + validator + CI bot playthrough; branch+PR, no commit prefix; full CI gate; new deps need OK; every `main` merge is a release; `?debug` panel; minimal, non-duplicated code
 - [Author the first map's price table and timings](issues/10-price-table.md) — ~30 min estimated (7/11/11 per Area); costs cut below the anchors (carrying is the bottleneck); start $50, Exit $2,100; Stocker opens Area 2; Area 3 adds 2nd Blender/Mill/Oven; Stack 16; 37 Upgrade levels; patience only at empty Shelves; estimator script as the sheet
 - [Research performance limits for a Three.js phone game](issues/15-performance-research.md) — phones <100 draw calls/<100k vertices; characters are the main cost (merge static store, blob shadows); game ~0.6–0.9 MB gzip vs Poki 5 MB; `size-limit` in CI; proposed 250 kB JS / 1.2 MB / ≤5 s on Slow 4G
+- [Lay out the first map](issues/11-first-map-layout.md) — map 1 = Corner shop: walled shop on top, farm yard behind, back door per Area, Customers on Street + shop floor only from 3 street spots, Office room, 3 Car Spots from the start; E/F/G (+ earlier A–C) saved for later maps; 11.3 m trips → 30.5 min; layout editor kept as a dev-only tool
 
 ## Not yet specified
 
-- **Optional events (nice-to-have, after v1 core)** — thief chase, timed delivery orders, random spills, a Cleaner staff role.
-- **Level editor (maybe later)** — in-game tool to place stations/Pads instead of hand-editing map data.
+- **Optional events (nice-to-have, after v1 core)** — thief chase, timed delivery orders, random spills, a Cleaner staff role. A car event now has 3 reserved Car Spots per map (usable from Area 1; several cars may be parked at once). What a car wants and pays is still open.
+- **Layout editor as a dev tool** — the prototype's editor (object list, drag/snap, grid, 3D overview) carries into the game for development builds only, never the release ([Lay out the first map](issues/11-first-map-layout.md)). Its exact shape — saving edits back into map data, how it is excluded from the release build — is still to be decided.
 - **Assembling the spec** — once the tickets close: gather every decision into the one build-ready spec (incl. the 8–10 named palette colours from [Pick the asset packs and art direction](issues/08-art-direction-and-assets.md)); likely a final ticket once its shape is clear.
 
 ## Out of scope
 
-- Content for additional maps beyond the first (the template must support them, but they are not designed here).
+- Content for additional maps beyond the first (the template must support them, but they are not designed here). Their layouts are saved (E, F, G, and earlier A–C in `layouts/`), but their Products, prices and order are not.
 - Monetization (ads, IAP), analytics.
 - Stars/ratings, prestige, premium currencies, boosts — ruled out in [Decide which mechanics the clone includes](issues/03-core-mechanics-scope.md); Completion % is the only meta measure.
 - Any backend: cloud saves, leaderboards, accounts, multiplayer.

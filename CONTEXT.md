@@ -137,8 +137,16 @@ The shared definitions every **Map** draws on: **Products** and **Producer** typ
 **Prop**:
 A non-interactive decoration on a **Map** (plant, sign, fence); may be solid, may belong to an **Area**.
 
-**Entrance** / **Exit**:
-Where **Customers** arrive on and leave a **Map**.
+**Street**:
+The pavement outside the shop's front walls. Only **Customers** walk it; they appear at several spots on it, walk in through a front door and leave the same way. The **Player** never leaves the **Areas**.
+_Avoid_: entrance, exit (as single points)
+
+**Back Door**:
+A door in the shop's back wall leading the **Player** from an **Area**'s shop part to its farm yard. **Customers** never go through it.
+
+**Car Spot**:
+A reserved bay where a car parks for the car event, with a pickup tile beside it where the **Player** hands over the order. Each **Map** has several, usable from the start.
+_Avoid_: parking, drive-through (as a noun for the spot)
 
 **Queue Spot**:
 A fixed place in a **Register**'s line where a **Customer** stands to wait for checkout; each **Register** has a limited number.

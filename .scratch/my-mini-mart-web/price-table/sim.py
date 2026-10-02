@@ -96,7 +96,7 @@ UNITS_PER_PRODUCT = 2.5  # mean of 1..4
 PLAYER_CHECKOUT_SECS = 1.5  # per Customer when the Player stands at the Register
 
 # Labour
-AVG_TRIP_METRES = 10.0  # one way, station <-> shelf
+AVG_TRIP_METRES = 11.3  # one way, station <-> shelf; measured on the Corner shop layout (map 1)
 SECS_PER_ITEM_MOVED = 0.45  # pick-up + drop-off, averaged
 CASH_OVERHEAD = 0.10  # share of Player time spent walking to Cash Piles / Pads / Office
 

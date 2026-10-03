@@ -21,7 +21,7 @@ One unit of a **Product** in the world — on a stack, a shelf, or a station.
 A kind of thing the store deals in (tomato, egg, ketchup). Raw or processed.
 
 **Grab Mode**:
-How **Items** move between the **Stack** and stations. *Auto* (default, the only mode on mobile): proximity transfers automatically. *Manual* (desktop setting): items transfer one at a time only while a key is held.
+How **Items** move between the **Stack** and stations. _Auto_ (default, the only mode on mobile): proximity transfers automatically. _Manual_ (desktop setting): items transfer one at a time only while a key is held.
 
 **Trash Bin**:
 A station where the **Player** dumps unwanted **Items** from their **Stack**; they are destroyed, no refund.

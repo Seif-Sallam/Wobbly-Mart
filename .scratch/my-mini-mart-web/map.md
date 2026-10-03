@@ -40,6 +40,7 @@ A build-ready spec for a browser clone of My Mini Mart: same mechanics, own name
 - [Define save data and versioning](issues/14-save-data.md) — every load is a fresh Opening: only Money (+ Cash Piles), purchases, partial payments, Upgrades and Stocker assignments survive; autosave ~5 s/purchase/tab-hide; versioned saves with migration chain, never wiped silently; copy/paste save code, hold-to-reset; two-tab pause; persist() after first Pad; iPhone Add-to-Home-Screen card
 - [Name the game](issues/18-game-name.md) — **Wobbly Mart** (`wobbly-mart` repo/URL, no tagline); Fredoka SVG wordmark, green "Wobbly" + orange "Mart", crate–tomato–egg stack on the M doubles as favicon/home icon; drops in, sways, big wobble on Play
 - [Define the layout editor dev tool](issues/19-layout-editor.md) — dev-only (`npm run dev`, `V`/`?edit`/`?map=`); moves anything, adds/deletes visual things only; Save writes editor-owned `maps/<id>/layout.ts` via the dev server; section of the lazy-loaded `lil-gui` `?debug` panel; CI proves it's absent from the build; live validator + trip meter, sim paused while editing
+- [Fix the named palette](issues/20-palette.md) — "Golden Storybook": 12 named colours (sky `#7ec8e3`, grass, leaf, path, dirt, road, wood, ink `#3a2416`, cream, pad `#ffe066`, money `#2f9e4f`, orange `#f26b1d`), warm sun 3.0 / hemi 0.9; Nature/Furniture recoloured by material name; one `palette.ts` feeds 3D and CSS
 
 ## Not yet specified
 

@@ -30,6 +30,7 @@ A build-ready **playtest-pass spec** (`spec.md` here, a delta on [the v1 spec](.
 - [Tune Stack capacity and wobble onset](issues/05-stack-cap-and-wobble.md) — base Stack 8, +2 per Upgrade level (to 16); bottom 2 Items rigid, top bends, firm sway, slight idle jiggle (prototype preset A).
 - [Design the Sprint](issues/06-sprint.md) — Shift / push the stick past its ring, 1.5× on top of Walk speed; above the safe count the top Item may fall as a Loose Item (0.3/s at full Stack) you walk over to take back; new "Steady hands" Upgrade raises safe 3 → 4/5/6.
 - [Decide extra Shelves vs. Shelf size](issues/07-shelves-vs-shelf-size.md) — Shelf-size Upgrade removed, every Shelf holds 10; 2 Shelves per Product, the 2nd an optional leaf Pad after that Product's 2nd Producer; Customers pick the fullest Shelf.
+- [Make Items and Producer output readable](issues/09-item-and-output-readability.md) — Items ×1.6 (Stack spacing 0.435 m); every Producer's output piled on a big dark pallet front and centre; Coop ×1.5 with 4 chicks and a closed box fence; Blender ×1.35, 1.3 m, centred on its counter.
 
 ## Not yet specified
 

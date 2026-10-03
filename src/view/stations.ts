@@ -185,7 +185,6 @@ function build(name: string, w: number, d: number, v: StationVisual): void {
       const roof = model('roof', { fit: [w * 0.75, d * 0.75] });
       roof.position.set(0, 1.3, -d * 0.1);
       const sails = model('windmill');
-      sails.rotation.y = Math.PI / 2;
       sails.position.sub(new THREE.Box3().setFromObject(sails).getCenter(new THREE.Vector3()));
       const hub = new THREE.Group();
       hub.position.set(0, 1.55, d * 0.22);

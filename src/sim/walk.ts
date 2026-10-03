@@ -94,7 +94,7 @@ export function headingFor(w: World, who: Walkers, a: { x: number; z: number }, 
 }
 
 /** Moves an agent toward its target at `speed`; returns true once arrived. */
-export function walkAgent(w: World, who: Walkers, a: Mover, target: Target, speed: number): boolean {
+export function walkAgent(w: World, who: Walkers, a: Mover, target: Target, speed: number, dt = DT): boolean {
   const to = headingFor(w, who, a, target);
   if (!to) {
     a.vx = a.vz = 0;
@@ -103,7 +103,7 @@ export function walkAgent(w: World, who: Walkers, a: Mover, target: Target, spee
   const dx = to[0] - a.x;
   const dz = to[1] - a.z;
   const d = Math.hypot(dx, dz);
-  const stepLen = Math.min(d, speed * DT);
+  const stepLen = Math.min(d, speed * dt);
   a.vx = (dx / d) * speed;
   a.vz = (dz / d) * speed;
   a.x += (dx / d) * stepLen;

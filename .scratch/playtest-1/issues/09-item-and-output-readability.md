@@ -35,7 +35,7 @@ Resolved 2026-10-03 (prototype; the owner tuned preset B and pasted the values).
 }
 ```
 
-**Items:** every Item is **×1.6** (`ITEM` 0.34 → ~0.54 m in `catalog/assets.ts`, the per-Product ratios kept). Exception: ripe tomatoes on the tomato plants keep today's size, or the beds look huge.
+**Items:** every Item is **×1.6** (`ITEM` 0.34 → ~0.54 m in `catalog/assets.ts`, the per-Product ratios kept), including the ripe tomatoes on the tomato plants. At today's bed size those look crammed, so the **tomato beds grow** instead (plants, rows and footprint) to fit ×1.6 tomatoes; the new bed size is set in [Re-lay out the Corner Shop](08-relayout-corner-shop.md).
 
 **Stack spacing:** 0.8 × Item size → `FEEL.itemSpacing` ≈ **0.435** m. This supersedes the 0.31 from [Tune Stack capacity and wobble onset](05-stack-cap-and-wobble.md) (that value was for the old Item size); the rest of the wobble preset stands. A full base Stack (8) is ~3.5 m tall, a maxed one (16) ~7 m.
 

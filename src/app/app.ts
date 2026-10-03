@@ -42,6 +42,7 @@ const HINT_DISTANCE = 2;
 const EDGE_MARGIN = 44;
 const WIPE_SECONDS = 450;
 const TITLE_PAN_SPEED = 0.12;
+const SCENERY_PEOPLE = 4;
 
 const isIos =
   /iP(hone|ad|od)/.test(navigator.userAgent) &&
@@ -119,6 +120,8 @@ export class App {
     this.game = new Game(this.stage, this.input, map, showcaseSave(map), true);
     this.game.paused = true;
     this.game.view.cameraOverride = new THREE.Vector3();
+    this.game.view.scenery(SCENERY_PEOPLE);
+    for (const st of this.game.world.stations.values()) if (st.kind === 'producer') st.plants.fill(0);
     this.game.onFrame = (events, dt) => this.onFrame(events, dt);
     this.ui.loading = 1;
     this.renderUi();
@@ -183,6 +186,7 @@ export class App {
     this.save.currentMap = map.id;
     if (!this.save.visited.includes(map.id)) this.save.visited.push(map.id);
     game.open(map, mapSave, this.save.tutorialDone);
+    game.view.scenery(0);
     game.view.cameraOverride = null;
     game.paused = false;
     game.manualGrab = !isTouch && this.settings.manualGrab;

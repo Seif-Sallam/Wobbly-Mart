@@ -1,10 +1,10 @@
 // Mirrors the sim into the scene every frame; turns sim events into motion (flying Items, springs, puffs, numbers).
 import * as THREE from 'three';
-import type { Ref, SimEvent, World } from '../sim/world';
+import type { Mover, Ref, SimEvent, World } from '../sim/world';
 import type { Box, Point } from '../sim/map';
 import { stationModel } from '../sim/map';
 import { boxCentre } from '../sim/geometry';
-import { areaOf } from '../sim/walk';
+import { areaOf, walkAgent } from '../sim/walk';
 import { cashPilePoint, padRemaining, stackCap, visiblePads } from '../sim/economy';
 import { Stage } from './stage';
 import { Level } from './level';
@@ -78,6 +78,8 @@ export class WorldView {
   private items = new Map<string, InstancedModel>();
   private plants = new Map<string, InstancedModel>();
   private batch = new StationBatch();
+  private puffTimers = new Map<string, number>();
+  private wanderers: { ch: Character; mover: Mover; target: Point }[] = [];
   private bills: InstancedModel;
   private blobs: THREE.InstancedMesh;
   private splats = new Map<number, THREE.Object3D>();
@@ -376,6 +378,13 @@ export class WorldView {
       }
       case 'padBought':
         this.syncOwned(true);
+        if (e.pad === 'exit') {
+          const van = this.level.van;
+          this.tweens.add(1.2, (k) => {
+            van.position.y = Math.abs(Math.sin(k * Math.PI * 3)) * (1 - k) * 0.6;
+            van.scale.set(1 + Math.sin(k * Math.PI * 6) * 0.04 * (1 - k), 1, 1);
+          });
+        }
         break;
       case 'produced': {
         const st = w.stations.get(e.station);
@@ -485,9 +494,18 @@ export class WorldView {
     this.drawItems(dt);
     for (const [id, v] of this.stations) {
       const st = w.stations.get(id);
-      v.animate(dt, st?.kind === 'producer' && st.work > 0);
+      const working = st?.kind === 'producer' && st.work > 0;
+      v.animate(dt, working);
       for (const m of v.mixers) m.update(dt);
+      // steam / flour puffs while a Machine works
+      if (working && st.kind === 'producer' && w.map.producers[st.type].kind === 'machine') {
+        const t = (this.puffTimers.get(id) ?? 0) + dt;
+        this.puffTimers.set(id, t % 0.7);
+        if (t >= 0.7)
+          this.juice.puff(v.root.position.clone().setY(1.3), st.type === 'mill' ? '#f4ead8' : '#ffffff', 2, 0.3);
+      }
     }
+    this.updateScenery(dt);
     this.juice.update(dt);
     const near: Point[] = [
       [w.player.x, w.player.z],
@@ -817,6 +835,31 @@ export class WorldView {
         });
     }
     this.stage.focus.copy(focus);
+  }
+
+  /** Title screen: a few scenery people stroll the shop floor (no sim, no real Customers). */
+  scenery(count: number): void {
+    for (const s of this.wanderers) this.root.remove(s.ch.root);
+    this.wanderers = [];
+    const floors = this.w.map.layout.floors;
+    for (let i = 0; i < count && floors.length; i++) {
+      const ch = new Character(CUSTOMER_MODELS[i % CUSTOMER_MODELS.length]);
+      const p = this.randomFloorPoint();
+      this.wanderers.push({ ch, mover: { x: p[0], z: p[1], vx: 0, vz: 0 }, target: this.randomFloorPoint() });
+      this.root.add(ch.root);
+    }
+  }
+
+  private randomFloorPoint(): Point {
+    const f = this.w.map.layout.floors[Math.floor(Math.random() * this.w.map.layout.floors.length)];
+    return [f[0] + 1 + Math.random() * (f[2] - 2), f[1] + 1 + Math.random() * (f[3] - 2)];
+  }
+
+  private updateScenery(dt: number): void {
+    for (const s of this.wanderers) {
+      if (walkAgent(this.w, 'shopper', s.mover, { point: s.target }, 1.6, dt)) s.target = this.randomFloorPoint();
+      s.ch.update(dt, s.mover.x, s.mover.z, s.mover.vx, s.mover.vz, false);
+    }
   }
 
   /** World-space position for a Station or Pad id (for arrows and edge markers). */

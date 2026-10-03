@@ -23,9 +23,16 @@ export class Character {
       const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.12, 12), paletteMaterial(opts.hat));
       const brim = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.03, 0.2), paletteMaterial(opts.hat));
       const h = new THREE.Box3().setFromObject(this.visual).max.y;
-      cap.position.y = h - 0.02;
-      brim.position.set(0, h - 0.07, 0.17);
+      cap.position.y = h + 0.05;
+      brim.position.set(0, h, 0.17);
       this.visual.add(cap, brim);
+      // Ride the animated head bone, or the head bobs through the cap.
+      const head = this.visual.getObjectByName('head');
+      if (head) {
+        this.visual.updateMatrixWorld(true);
+        head.attach(cap);
+        head.attach(brim);
+      }
     }
     this.mixer = new THREE.AnimationMixer(this.visual);
     for (const clip of clipsOf(name)) {

@@ -137,6 +137,9 @@ The shared definitions every **Map** draws on: **Products** and **Producer** typ
 **Prop**:
 A non-interactive decoration on a **Map** (plant, sign, fence); may be solid, may belong to an **Area**.
 
+**Party Prop**:
+A **Prop** that appears only once its **Map** reaches 100% **Completion**, and stays from then on.
+
 **Street**:
 The pavement outside the shop's front walls. Only **Customers** walk it; they appear at several spots on it, walk in through a front door and leave the same way. The **Player** never leaves the **Areas**.
 _Avoid_: entrance, exit (as single points)

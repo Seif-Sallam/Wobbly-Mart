@@ -33,6 +33,7 @@ A build-ready spec for a browser clone of My Mini Mart: same mechanics, own name
 - [Author the first map's price table and timings](issues/10-price-table.md) — ~30 min estimated (7/11/11 per Area); costs cut below the anchors (carrying is the bottleneck); start $50, Exit $2,100; Stocker opens Area 2; Area 3 adds 2nd Blender/Mill/Oven; Stack 16; 37 Upgrade levels; patience only at empty Shelves; estimator script as the sheet
 - [Research performance limits for a Three.js phone game](issues/15-performance-research.md) — phones <100 draw calls/<100k vertices; characters are the main cost (merge static store, blob shadows); game ~0.6–0.9 MB gzip vs Poki 5 MB; `size-limit` in CI; proposed 250 kB JS / 1.2 MB / ≤5 s on Slow 4G
 - [Lay out the first map](issues/11-first-map-layout.md) — map 1 = Corner shop: walled shop on top, farm yard behind, back door per Area, Customers on Street + shop floor only from 3 street spots, Office room, 3 Car Spots from the start; E/F/G (+ earlier A–C) saved for later maps; 11.3 m trips → 30.5 min; layout editor kept as a dev-only tool
+- [Design the HUD and UI](issues/12-hud-and-ui.md) — icons first, top-strip HUD (Money, Completion bar, gear), edge arrows, current-Product Customer bubbles; Office panel (instant buy, hidden locked Upgrades, Stocker assignment) as bottom sheet/side panel; title over a fully unlocked panning map with circle wipe; pause/Maps/Settings; Fredoka; Party Props at 100%
 
 ## Not yet specified
 

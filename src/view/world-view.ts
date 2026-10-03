@@ -20,20 +20,10 @@ import { icon } from './thumbs';
 import { paletteMaterial } from './materials';
 import { Tweens, ease } from '../tween';
 import { FEEL } from '../feel';
-import { PALETTE } from '../palette';
+import { PALETTE, SHADES, withAlpha } from '../palette';
 import { TUNING } from '../sim/tuning';
 
-const SPLAT: Record<string, string> = {
-  tomato: '#d63c2f',
-  egg: '#ffd54a',
-  ketchup: '#b3261e',
-  wheat: '#e8b84a',
-  milk: '#ffffff',
-  flour: '#f4ead8',
-  bread: '#c98b4a',
-};
 const CUSTOMER_MODELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((k) => `customer-${k}`);
-const CUSTOMER_TINTS = ['#ffffff', '#ffe3d6', '#e3f0ff', '#f0ffe3', '#fff4d6', '#f3e3ff'];
 const ROLE_CAP = { cashier: 'orange', stocker: 'money' } as const;
 const BILL_VALUE = 5;
 const PILE_MAX_BILLS = 24;
@@ -173,8 +163,8 @@ export class WorldView {
     c.width = c.height = 64;
     const g = c.getContext('2d') as CanvasRenderingContext2D;
     const grad = g.createRadialGradient(32, 32, 4, 32, 32, 32);
-    grad.addColorStop(0, 'rgba(58,36,22,0.45)');
-    grad.addColorStop(1, 'rgba(58,36,22,0)');
+    grad.addColorStop(0, withAlpha(PALETTE.ink, 0.45));
+    grad.addColorStop(1, withAlpha(PALETTE.ink, 0));
     g.fillStyle = grad;
     g.fillRect(0, 0, 64, 64);
     const mat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false });
@@ -391,9 +381,14 @@ export class WorldView {
         const v = this.stations.get(e.station);
         if (st?.kind !== 'producer' || !v) break;
         const kind = w.map.producers[st.type].kind;
-        if (kind === 'animal') this.juice.puff(v.root.position.clone().setY(0.6), '#ffffff', 4, 0.8);
+        if (kind === 'animal') this.juice.puff(v.root.position.clone().setY(0.6), SHADES.white, 4, 0.8);
         if (kind === 'machine')
-          this.juice.puff(v.root.position.clone().setY(1.2), st.type === 'mill' ? '#f4ead8' : '#e8e8e8', 3, 0.4);
+          this.juice.puff(
+            v.root.position.clone().setY(1.2),
+            st.type === 'mill' ? SHADES.splat.flour : SHADES.steam,
+            3,
+            0.4,
+          );
         break;
       }
       case 'paid': {
@@ -466,7 +461,10 @@ export class WorldView {
       if (i === 0) shape.moveTo(Math.cos(a) * r, Math.sin(a) * r);
       else shape.lineTo(Math.cos(a) * r, Math.sin(a) * r);
     }
-    const splat = new THREE.Mesh(new THREE.ShapeGeometry(shape), paletteMaterial(SPLAT[items[0]] ?? PALETTE.dirt));
+    const splat = new THREE.Mesh(
+      new THREE.ShapeGeometry(shape),
+      paletteMaterial(SHADES.splat[items[0]] ?? PALETTE.dirt),
+    );
     splat.rotation.x = -Math.PI / 2;
     splat.receiveShadow = true;
     g.add(splat);
@@ -502,7 +500,12 @@ export class WorldView {
         const t = (this.puffTimers.get(id) ?? 0) + dt;
         this.puffTimers.set(id, t % 0.7);
         if (t >= 0.7)
-          this.juice.puff(v.root.position.clone().setY(1.3), st.type === 'mill' ? '#f4ead8' : '#ffffff', 2, 0.3);
+          this.juice.puff(
+            v.root.position.clone().setY(1.3),
+            st.type === 'mill' ? SHADES.splat.flour : SHADES.white,
+            2,
+            0.3,
+          );
       }
     }
     this.updateScenery(dt);
@@ -556,7 +559,9 @@ export class WorldView {
       let look = this.customers.get(c.id);
       if (!look) {
         const name = CUSTOMER_MODELS[Math.floor(c.look * CUSTOMER_MODELS.length)];
-        const ch = new Character(name, { tint: CUSTOMER_TINTS[Math.floor(c.look * 97) % CUSTOMER_TINTS.length] });
+        const ch = new Character(name, {
+          tint: SHADES.customerTints[Math.floor(c.look * 97) % SHADES.customerTints.length],
+        });
         const tex = new CanvasTex(192, 128);
         const bubble = canvasSprite(tex, 0.6);
         this.root.add(ch.root, bubble);
@@ -637,7 +642,7 @@ export class WorldView {
       g.lineTo(W / 2 + 14, H - 24);
       g.fill();
       if (state === 'angry') {
-        outlinedText(g, '>:(', W / 2, H / 2 - 10, 54, '#d63c2f');
+        outlinedText(g, '>:(', W / 2, H / 2 - 10, 54, SHADES.angry);
         return;
       }
       const img = icon(this.w.map.products[entry.product]?.model ?? entry.product);
@@ -646,7 +651,7 @@ export class WorldView {
       if (waiting) {
         const k = Math.min(1, c.patience / (TUNING.patienceAngry + TUNING.patienceLeave));
         g.lineWidth = 9;
-        g.strokeStyle = k < 0.5 ? '#f5c518' : k < 0.8 ? PALETTE.orange : '#d63c2f';
+        g.strokeStyle = k < 0.5 ? SHADES.warn : k < 0.8 ? PALETTE.orange : SHADES.angry;
         g.beginPath();
         g.arc(55, 51, 42, -Math.PI / 2, -Math.PI / 2 + (1 - k) * Math.PI * 2);
         g.stroke();

@@ -4,6 +4,7 @@ import { accepts, availableCount, transferTick } from './carry';
 import { shelfCap, stockerCarry, stockerSpeed } from './economy';
 import { walkAgent, walkDistance } from './walk';
 import { DT } from './world';
+import { TUNING } from './tuning';
 
 /** Products in a Product's chain: itself plus everything upstream of it. */
 export function chainOf(w: World, product: string): Set<string> {
@@ -30,18 +31,18 @@ function shelfUrgency(w: World, st: Station): number {
   return st.items === 0 && waiting ? 0 : 1 + st.items / shelfCap(w);
 }
 
-/** Lower is more urgent. A Producer's input is as urgent as the Shelf its output feeds. */
+/** Lower is more urgent: empty Shelf with waiting Customers → lowest Shelf → empty Producer input. */
 function urgency(w: World, st: Station, product: string): number {
   if (st.kind === 'shelf') return shelfUrgency(w, st);
   if (st.kind !== 'producer') return Infinity;
+  const U = TUNING.urgency;
   const type = w.map.producers[st.type];
-  if (st.tray >= (type.trayCap ?? 0)) return 3;
+  if (st.tray >= (type.trayCap ?? 0)) return U.trayFull;
   const have = st.input[product] ?? 0;
-  const own = have === 0 ? 1.5 : 2 + have / (type.inputCap ?? 1);
-  let downstream = Infinity;
+  // a Producer whose own Shelf has Customers waiting at it empty is as urgent as that Shelf
   for (const s of w.stations.values())
-    if (s.kind === 'shelf' && s.product === type.output) downstream = Math.min(downstream, shelfUrgency(w, s));
-  return Math.min(own, downstream + 0.25 + have / (type.inputCap ?? 1));
+    if (s.kind === 'shelf' && s.product === type.output && shelfUrgency(w, s) === 0) return U.feedsUrgentShelf;
+  return have === 0 ? U.inputEmpty : U.inputPartial + have / (type.inputCap ?? 1);
 }
 
 function freeSpace(w: World, st: Station, product: string): number {
@@ -72,7 +73,8 @@ export function chooseJob(
     const product = w.map.producers[src.type].output;
     const sink = sinksFor(w, product, assignment, taken)[0];
     if (!sink) continue;
-    const score = urgency(w, sink, product) * 100 + walkDistance(w, 'walker', pos, { station: src.id });
+    const score =
+      urgency(w, sink, product) + walkDistance(w, 'walker', pos, { station: src.id }) * TUNING.urgency.distanceWeight;
     if (best && score >= best.score) continue;
     const demand = sinksFor(w, product, assignment, taken).reduce((sum, st) => sum + freeSpace(w, st, product), 0);
     best = { job: { sink: sink.id, source: src.id, product, need: Math.min(cap, demand) }, score };
@@ -94,8 +96,11 @@ function updateStocker(w: World, s: Stocker): void {
   const cap = stockerCarry(w);
   s.rethink -= DT;
   if (!s.job && s.rethink <= 0) {
-    s.job = s.stack.length ? sinkForStack(w, s.stack, s.assignment, taken) : chooseJob(w, s, s.assignment, cap, taken);
-    s.rethink = 0.5;
+    // leftovers outside a new assignment may go anywhere, so a reassigned Stocker never stays stuck holding them
+    s.job = s.stack.length
+      ? (sinkForStack(w, s.stack, s.assignment, taken) ?? sinkForStack(w, s.stack, null, taken))
+      : chooseJob(w, s, s.assignment, cap, taken);
+    s.rethink = TUNING.stockerRethink;
   }
   const job = s.job;
   if (!job) {

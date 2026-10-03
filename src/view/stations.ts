@@ -2,7 +2,9 @@
 import * as THREE from 'three';
 import type { Box, Rot } from '../sim/map';
 import { clipsOf, model, naturalSize } from './assets';
+import { footprint } from '../sim/geometry';
 import { paletteMaterial } from './materials';
+import { PALETTE, SHADES } from '../palette';
 import { dynamic, mergeStatic } from './merge';
 
 export interface StationVisual {
@@ -24,10 +26,6 @@ export interface StationVisual {
 }
 
 const ITEM_GAP = 0.36;
-
-function footprint(box: Box, rot: Rot): [number, number] {
-  return rot % 180 === 0 ? [box[2], box[3]] : [box[3], box[2]];
-}
 
 function grid(cols: number, rows: number, w: number, d: number, y: number, cx = 0, cz = 0): THREE.Vector3[] {
   const out: THREE.Vector3[] = [];
@@ -203,7 +201,11 @@ function build(name: string, w: number, d: number, v: StationVisual): void {
       const stove = model('stove', { fit: [w * 0.7, d * 0.7] });
       stove.position.z = -d * 0.12;
       v.body.add(stove);
-      const glowMat = new THREE.MeshStandardMaterial({ color: '#3a2416', emissive: '#ff7a1a', emissiveIntensity: 0 });
+      const glowMat = new THREE.MeshStandardMaterial({
+        color: PALETTE.ink,
+        emissive: SHADES.glow,
+        emissiveIntensity: 0,
+      });
       const glow = new THREE.Mesh(new THREE.BoxGeometry(w * 0.45, 0.25, 0.04), glowMat);
       glow.position.set(0, 0.35, d * 0.24);
       glow.visible = false;

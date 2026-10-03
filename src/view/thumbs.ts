@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { itemModel } from './instanced';
 import { buildStation } from './stations';
-import { LIGHT } from '../palette';
+import { LIGHT, SHADES } from '../palette';
 
 const SIZE = 128;
 const icons = new Map<string, HTMLCanvasElement>();
@@ -13,7 +13,7 @@ export function renderThumbs(items: string[], stations: string[], characters: st
   renderer.setSize(SIZE, SIZE, false);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const scene = new THREE.Scene();
-  scene.add(new THREE.HemisphereLight('#ffffff', '#b9a77f', 2.2));
+  scene.add(new THREE.HemisphereLight(SHADES.white, SHADES.thumbGround, 2.2));
   const sun = new THREE.DirectionalLight(LIGHT.sun, 2.4);
   sun.position.set(3, 5, 4);
   scene.add(sun);

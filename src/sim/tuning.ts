@@ -30,6 +30,25 @@ export const TUNING = {
   shelfSpotOffset: 0.7,
   shelfSpotGap: 0.9,
   navCell: 0.5,
+  /** Agents count as at a Station within this share of reach, at a point within this distance (m). */
+  arriveReachShare: 0.9,
+  arrivePoint: 0.05,
+  /** Distance-field seeds: reach ring padding and point radius, in grid cells. */
+  seedReachCells: 0.6,
+  seedPointCells: 0.75,
+  /** The front Customer must stand this close to Queue Spot 1 to be checked out (m). */
+  queueFrontTolerance: 0.1,
+  /** Extra reach for working the Register and for opening the Office panel (m). */
+  registerReachExtra: 0.2,
+  officeReachExtra: 0.3,
+  /** Push-out slack before a move is rejected as stuck in a wall (m). */
+  collisionSlack: 0.05,
+  /** Money one bill stands for, in Cash Pile and drain counts. */
+  billValue: 5,
+  fullStackSlowdown: 0.25,
+  /** Stocker job urgency (lower first): empty Shelf with waiting Customers 0, Shelves 1–2, then Producer inputs. */
+  urgency: { inputEmpty: 2.5, inputPartial: 3, trayFull: 4, feedsUrgentShelf: 0.5, distanceWeight: 0.01 },
+  stockerRethink: 0.5,
   exitPickRadius: 1.2,
   // base values Upgrades raise
   base: {

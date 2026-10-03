@@ -2,8 +2,15 @@ import type { Box, MapDef, Point, Rot } from './map';
 import type { Grid } from './nav';
 import type { MapSave } from './save';
 import { TUNING } from './tuning';
-import { FEEL } from '../feel';
-import { applySave, own, refreshFreeStations, applyCommands, updateTutorial, checkCompletion } from './economy';
+import {
+  applySave,
+  panDuration,
+  own,
+  refreshFreeStations,
+  applyCommands,
+  updateTutorial,
+  checkCompletion,
+} from './economy';
 import { updatePlayer } from './player';
 import { updateProducers } from './producers';
 import { updateCustomers } from './customers';
@@ -236,7 +243,7 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
   };
   for (const id of map.start.owned) own(w, id, false);
   if (save) applySave(w, save);
-  else w.pan = { area: map.start.owned[0], t: 0, duration: 2 * FEEL.panGlide + FEEL.panHold };
+  else w.pan = { area: map.start.owned[0], t: 0, duration: panDuration() };
   refreshFreeStations(w);
   w.complete = checkCompletion(w, false);
   w.events = [];

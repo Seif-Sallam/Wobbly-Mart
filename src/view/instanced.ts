@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { model } from './assets';
 import { paletteMaterial } from './materials';
+import { SHADES } from '../palette';
 
 export class InstancedModel {
   private parts: { mesh: THREE.InstancedMesh; local: THREE.Matrix4 }[] = [];
@@ -50,7 +51,7 @@ export class InstancedModel {
 export function wheatSheaf(height: number): THREE.Group {
   const g = new THREE.Group();
   const stalk = new THREE.CylinderGeometry(0.035, 0.03, height, 5);
-  const gold = paletteMaterial('#e8b84a');
+  const gold = paletteMaterial(SHADES.wheat);
   for (let i = 0; i < 7; i++) {
     const a = (i / 7) * Math.PI * 2;
     const r = i === 0 ? 0 : 0.06;
@@ -59,7 +60,7 @@ export function wheatSheaf(height: number): THREE.Group {
     m.rotation.set(Math.sin(a) * 0.12, 0, Math.cos(a) * 0.12);
     g.add(m);
   }
-  const head = new THREE.Mesh(new THREE.ConeGeometry(0.13, height * 0.35, 7), paletteMaterial('#f2cc63'));
+  const head = new THREE.Mesh(new THREE.ConeGeometry(0.13, height * 0.35, 7), paletteMaterial(SHADES.wheatHead));
   head.position.y = height * 0.92;
   head.rotation.x = Math.PI;
   const tie = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.05, 8), paletteMaterial('wood'));

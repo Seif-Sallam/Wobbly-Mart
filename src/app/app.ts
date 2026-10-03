@@ -68,6 +68,7 @@ export class App {
   private uiTimer = 0;
   private claimTab: () => void;
   private editing = false;
+  private seenPads = new Set<string>();
 
   constructor() {
     this.stage = new Stage(document.getElementById('scene') as HTMLCanvasElement, isTouch);
@@ -192,6 +193,7 @@ export class App {
     game.manualGrab = !isTouch && this.settings.manualGrab;
     this.hud.resetMoney(game.world.money);
     this.officeDismissed = this.exitDismissed = false;
+    this.seenPads.clear();
     this.hintFrom = game.world.tutorial.done ? null : [game.world.player.x, game.world.player.z];
     this.hud.showHint(this.hintFrom ? (this.input.firstKind ?? (isTouch ? 'touch' : 'keys')) : null);
     this.writeSave();
@@ -300,12 +302,12 @@ export class App {
         targets.push({ at, icon: iconOf(id) });
       }
     }
-    const affordable = visiblePads(w)
-      .filter((id) => padRemaining(w, id) <= w.money)
-      .sort((a, b) => padRemaining(w, a) - padRemaining(w, b))[0];
-    if (affordable) {
-      const at = view.anchorOf(affordable);
-      if (at) targets.push({ at, icon: iconOf(affordable) });
+    // edge arrow only for an affordable Pad the Player hasn't seen yet since it was revealed
+    for (const id of visiblePads(w)) {
+      const at = view.anchorOf(id);
+      if (!at || this.seenPads.has(id)) continue;
+      if (this.onScreen(at)) this.seenPads.add(id);
+      else if (padRemaining(w, id) <= w.money) targets.push({ at, icon: iconOf(id) });
     }
     for (const c of w.customers) {
       if (c.state !== 'shop' || !c.angry) continue;
@@ -348,6 +350,7 @@ export class App {
     const game = this.game;
     if (!game || this.lostTab || this.editing || this.ui.screen !== 'game') return;
     this.save.maps[game.world.map.id] = snapshot(game.world);
+    this.save.tutorialStep = tutorialStep(game.world);
     writeSave(this.save);
     this.claimTab();
   }

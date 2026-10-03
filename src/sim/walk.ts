@@ -64,13 +64,13 @@ export function fieldFor(w: World, who: Walkers, target: Target): Float32Array {
     const b = stationBox(w, target.station);
     f = makeField(
       g,
-      seedCells(g, (x, z) => distToBox(x, z, b) < TUNING.reach + g.cell * 0.6, boxCentre(b)),
+      seedCells(g, (x, z) => distToBox(x, z, b) < TUNING.reach + g.cell * TUNING.seedReachCells, boxCentre(b)),
     );
   } else {
     const [px, pz] = target.point;
     f = makeField(
       g,
-      seedCells(g, (x, z) => Math.hypot(x - px, z - pz) < g.cell * 0.75, target.point),
+      seedCells(g, (x, z) => Math.hypot(x - px, z - pz) < g.cell * TUNING.seedPointCells, target.point),
     );
   }
   w.nav.fields.set(key, f);
@@ -78,8 +78,9 @@ export function fieldFor(w: World, who: Walkers, target: Target): Float32Array {
 }
 
 export function arrived(w: World, a: { x: number; z: number }, target: Target): boolean {
-  if ('station' in target) return distToBox(a.x, a.z, stationBox(w, target.station)) <= TUNING.reach * 0.9;
-  return Math.hypot(a.x - target.point[0], a.z - target.point[1]) < 0.05;
+  if ('station' in target)
+    return distToBox(a.x, a.z, stationBox(w, target.station)) <= TUNING.reach * TUNING.arriveReachShare;
+  return Math.hypot(a.x - target.point[0], a.z - target.point[1]) < TUNING.arrivePoint;
 }
 
 /** Where to head next for `target`, or null when already there. */

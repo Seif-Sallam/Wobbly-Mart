@@ -1,5 +1,5 @@
 // The stack icon (crate, tomato, egg): sits on the logo's "M", and on a sky square it is the app icon.
-import { PALETTE } from '../palette';
+import { PALETTE, SHADES } from '../palette';
 
 const { ink, wood, money, cream, sky } = PALETTE;
 
@@ -11,7 +11,7 @@ export const STACK_SHAPES = `
     <path d="M24 70 H76 M24 81 H76" stroke-width="3.5" fill="none"/>
   </g>
   <g transform="rotate(10 52 46)">
-    <circle cx="52" cy="46" r="17" fill="#e5482f"/>
+    <circle cx="52" cy="46" r="17" fill="${SHADES.splat.tomato}"/>
     <path d="M44 30 q8 -6 16 0 q-8 6 -16 0z" fill="${money}" stroke-width="3.5"/>
   </g>
   <ellipse cx="46" cy="17" rx="11" ry="14" fill="${cream}" transform="rotate(-14 46 17)"/>

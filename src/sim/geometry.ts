@@ -14,6 +14,9 @@ export const boxCentre = (b: Box): Point => [b[0] + b[2] / 2, b[1] + b[3] / 2];
 export const boxesOverlap = (a: Box, b: Box): boolean =>
   a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3];
 
+/** Width along the front edge and depth, for a box turned by `rot`. */
+export const footprint = (b: Box, rot: Rot): [number, number] => (rot % 180 === 0 ? [b[2], b[3]] : [b[3], b[2]]);
+
 /** Unit vector of a rotation's front (0 = south). */
 export function frontDir(rot: Rot): Point {
   const r = (rot * Math.PI) / 180;
@@ -24,7 +27,7 @@ export function frontDir(rot: Rot): Point {
 export function frontPoint(b: Box, rot: Rot, out: number, side = 0): Point {
   const [cx, cz] = boxCentre(b);
   const [fx, fz] = frontDir(rot);
-  const half = fx ? b[2] / 2 : b[3] / 2;
+  const half = footprint(b, rot)[1] / 2;
   return [cx + fx * (half + out) - fz * side, cz + fz * (half + out) + fx * side];
 }
 

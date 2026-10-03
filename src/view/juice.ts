@@ -1,7 +1,7 @@
 // Juice: floating +$ numbers, dust/steam/feather puffs and the coin flip. Timings live in feel.ts.
 import * as THREE from 'three';
 import { CanvasTex, canvasSprite, outlinedText } from './text';
-import { PALETTE } from '../palette';
+import { PALETTE, SHADES } from '../palette';
 import { FEEL } from '../feel';
 import { ease } from '../tween';
 import { model } from './assets';
@@ -55,7 +55,9 @@ export class Juice {
   }
 
   private drawFloat(f: Float): void {
-    f.tex.draw((g, w, h) => outlinedText(g, `+$${Math.round(f.amount)}`, w / 2, h / 2, 64, PALETTE.money, '#ffffff'));
+    f.tex.draw((g, w, h) =>
+      outlinedText(g, `+$${Math.round(f.amount)}`, w / 2, h / 2, 64, PALETTE.money, SHADES.white),
+    );
   }
 
   puff(at: THREE.Vector3, color: string, count = 6, spread = 1): void {

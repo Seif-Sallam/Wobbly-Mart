@@ -2,7 +2,7 @@ import type { Point } from './map';
 import type { Customer, RegisterStation, ShelfStation, World } from './world';
 import { DT } from './world';
 import { checkoutTime, customerCap, productsForSale } from './economy';
-import { distToBox, frontPoint } from './geometry';
+import { distToBox, footprint, frontPoint } from './geometry';
 import { nextRandom, randomInt, shuffle } from './rng';
 import { walkAgent } from './walk';
 import { TUNING } from './tuning';
@@ -17,7 +17,7 @@ export const queueSpot = (reg: RegisterStation, i: number): Point =>
   frontPoint(reg.box, reg.rot, TUNING.queueFirstOffset + i * TUNING.queueGap);
 
 function shelfSpot(w: World, shelf: ShelfStation): Point {
-  const long = shelf.rot % 180 === 0 ? shelf.box[2] : shelf.box[3];
+  const [long] = footprint(shelf.box, shelf.rot);
   const n = Math.max(1, Math.floor(long / TUNING.shelfSpotGap));
   const spots = Array.from({ length: n }, (_, i) =>
     frontPoint(shelf.box, shelf.rot, TUNING.shelfSpotOffset, (i - (n - 1) / 2) * TUNING.shelfSpotGap),
@@ -144,8 +144,8 @@ function checkout(w: World, reg: RegisterStation): void {
   const front = w.customers.find((c) => c.id === reg.queue[0]);
   if (!front) return;
   const [sx, sz] = queueSpot(reg, 0);
-  if (Math.hypot(front.x - sx, front.z - sz) > 0.1) return;
-  const playerNear = distToBox(w.player.x, w.player.z, reg.box) <= TUNING.reach + 0.2;
+  if (Math.hypot(front.x - sx, front.z - sz) > TUNING.queueFrontTolerance) return;
+  const playerNear = distToBox(w.player.x, w.player.z, reg.box) <= TUNING.reach + TUNING.registerReachExtra;
   const cashier = w.cashiers.some((c) => c.register === reg.id);
   const time = Math.min(playerNear ? TUNING.playerCheckoutTime : Infinity, cashier ? checkoutTime(w) : Infinity);
   if (time === Infinity) return;

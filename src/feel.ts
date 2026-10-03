@@ -5,7 +5,6 @@ export const FEEL = {
   stopTime: 0.3,
   turnSpeed: 10,
   walkBob: 0.05,
-  fullStackSlowdown: 0.25,
   // camera
   cameraYawDeg: 45,
   cameraPitchDeg: 41,

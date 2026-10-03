@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { CanvasTex, outlinedText } from './text';
 import { formatMoney } from '../format';
 import { paletteMaterial } from './materials';
-import { PALETTE } from '../palette';
+import { PALETTE, withAlpha } from '../palette';
 import { FEEL } from '../feel';
 import { icon } from './thumbs';
 
@@ -70,7 +70,7 @@ export class PadVisual {
     this.shownFill = fill;
     this.label.draw((g, w, h) => {
       if (fill > 0) {
-        g.fillStyle = 'rgba(242, 107, 29, 0.35)';
+        g.fillStyle = withAlpha(PALETTE.orange, 0.35);
         g.beginPath();
         g.moveTo(w / 2, h / 2);
         g.arc(w / 2, h / 2, w * 0.48, -Math.PI / 2, -Math.PI / 2 + fill * Math.PI * 2);

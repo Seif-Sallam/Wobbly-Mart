@@ -66,6 +66,7 @@ export class App {
   private titleTime = 0;
   private uiTimer = 0;
   private claimTab: () => void;
+  private editing = false;
 
   constructor() {
     this.stage = new Stage(document.getElementById('scene') as HTMLCanvasElement, isTouch);
@@ -127,6 +128,18 @@ export class App {
     };
     requestAnimationFrame(loop);
     Object.assign(window, { app: this, game: this.game });
+    const params = new URLSearchParams(location.search);
+    if (params.has('debug')) void import('./debug').then((m) => this.game && m.openDebug(this.game, isTouch));
+    if (import.meta.env.DEV) {
+      const { installEditor } = await import('../editor/editor');
+      const game = this.game;
+      if (params.has('edit')) this.play();
+      setTimeout(
+        () =>
+          installEditor({ game, reopen: () => this.openMap(this.currentMap()), editing: (on) => (this.editing = on) }),
+        params.has('edit') ? WIPE_SECONDS + 50 : 0,
+      );
+    }
   }
 
   private renderThumbs(): void {
@@ -143,7 +156,8 @@ export class App {
   }
 
   private currentMap(): MapDef {
-    return mapById(this.save.currentMap) ?? MAPS[0];
+    const picked = import.meta.env.DEV ? new URLSearchParams(location.search).get('map') : null;
+    return mapById(picked ?? this.save.currentMap) ?? MAPS[0];
   }
 
   // ---------- title → game
@@ -328,7 +342,7 @@ export class App {
   private writeSave(): void {
     this.sinceSave = 0;
     const game = this.game;
-    if (!game || this.lostTab || this.ui.screen !== 'game') return;
+    if (!game || this.lostTab || this.editing || this.ui.screen !== 'game') return;
     this.save.maps[game.world.map.id] = snapshot(game.world);
     writeSave(this.save);
     this.claimTab();

@@ -73,7 +73,7 @@ export const ASSETS: Record<string, AssetDef> = {
   planks: { path: 'town/planks' },
   roof: { path: 'town/roof-high' },
   'wall-wood': { path: 'town/wall-wood' },
-  windmill: { path: 'town/windmill', height: 2.6 },
+  windmill: { path: 'town/windmill', height: 2 },
   'kitchen-blender': { path: 'furn/kitchenBlender', height: 0.8 },
   stove: { path: 'furn/kitchenStove' },
   tray: { path: 'survival/box-open', height: 0.35 },

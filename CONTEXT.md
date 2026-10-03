@@ -106,7 +106,7 @@ Hired helpers, bought on **Pads**. Two roles: **Cashier** and **Stocker**.
 **Staff** that checks out **Customers** at a **Register**. Does not collect the **Cash Pile**.
 
 **Stocker**:
-**Staff** that moves **Items** wherever they're needed — producers to shelves, to animals and machines, **Trays** to shelves. Unassigned, it takes the most urgent job; it can be assigned to a single **Product**'s chain.
+**Staff** that moves **Items** wherever they're needed. Has a role, picked in the **Office**: **Auto** takes the most urgent job of any kind; **Stock goods** only carries **Items** to **Shelves**; **Stock machines** only feeds **Animals** and **Machines**. A **Stocker** with no job in its role waits.
 
 **Area**:
 A section of the map unlocked by a **Pad**; holds the **Pads** for its own stations.

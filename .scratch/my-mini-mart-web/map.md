@@ -36,6 +36,7 @@ A build-ready spec for a browser clone of My Mini Mart: same mechanics, own name
 - [Design the HUD and UI](issues/12-hud-and-ui.md) — icons first, top-strip HUD (Money, Completion bar, gear), edge arrows, current-Product Customer bubbles; Office panel (instant buy, hidden locked Upgrades, Stocker assignment) as bottom sheet/side panel; title over a fully unlocked panning map with circle wipe; pause/Maps/Settings; Fredoka; Party Props at 100%
 - [Design the tutorial](issues/13-tutorial.md) — textless, ~1 min, 13 ordered but non-blocking steps (Register → … → first Upgrade) with a bouncing arrow; opening Pads chained by Unlock Requirements; no Customers before the first shelved Item, no patience during it; Area Pans (blocking, pulsing ghosts) on every Area buy; Map 1 only, no skip
 - [Set the performance budget](issues/16-performance-budget.md) — ~2021 mid-range Android + recent iPhones; 60 fps (30 floor); 250 kB JS / 1.2 MB / ≤5 s Slow 4G enforced by `size-limit` in CI; phones ≤100 draws/150k tris (provisional until real-device check); blob character shadows everywhere; auto pixel-ratio step-down; counts in `?debug`
+- [Define save data and versioning](issues/14-save-data.md) — every load is a fresh Opening: only Money (+ Cash Piles), purchases, partial payments, Upgrades and Stocker assignments survive; autosave ~5 s/purchase/tab-hide; versioned saves with migration chain, never wiped silently; copy/paste save code, hold-to-reset; two-tab pause; persist() after first Pad; iPhone Add-to-Home-Screen card
 
 ## Not yet specified
 

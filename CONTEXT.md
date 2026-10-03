@@ -140,6 +140,12 @@ The shared definitions every **Map** draws on: **Products** and **Producer** typ
 **Prop**:
 A non-interactive decoration on a **Map** (plant, sign, fence); may be solid, may belong to an **Area**.
 
+**Opening**:
+The state a **Map** starts in every time it is loaded: only what was bought survives (**Money**, **Pads**, **Areas**, **Staff**, **Upgrades**, **Stocker** assignments); no **Customers**, no **Items** anywhere, **Crops** start from seed. A brand-new game's Opening also plays the first **Area Pan**.
+
+**Save Code**:
+A text copy of the whole save that the **Player** can copy out and paste back in, to move between devices or keep a backup.
+
 **Party Prop**:
 A **Prop** that appears only once its **Map** reaches 100% **Completion**, and stays from then on.
 
@@ -170,6 +176,7 @@ Where a **Customer** stands when every **Register**'s **Queue Spots** are taken.
 - Each map has its own **Money**; it never carries over between maps
 - A **Pad** stays hidden until its **Unlock Requirement** is met
 - The game only progresses while the player has the game open — no offline earnings
+- Uncollected **Cash Piles** are added to **Money** when the game saves; everything else not bought is lost at the next **Opening**
 
 ## Flagged ambiguities
 

@@ -45,7 +45,8 @@ body {
   z-index: 3;
   pointer-events: none;
 }
-#ui > * {
+/* zero specificity so overlays like .wipe and .title can opt out */
+:where(#ui) > * {
   pointer-events: auto;
 }
 

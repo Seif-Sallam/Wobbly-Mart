@@ -74,7 +74,7 @@ A sequence of **Producers** where one's output is another's input (tomato → ch
 ### Selling
 
 **Shelf**:
-A **Station** that displays **Items** of exactly one **Product** for **Customers** to take; has a capacity. Shelves are unlocked one after another.
+A **Station** that displays **Items** of exactly one **Product** for **Customers** to take; holds a fixed number of **Items**. A **Product** can have more than one **Shelf**; more are unlocked as the store grows.
 
 **Customer**:
 A visitor with a **Shopping List** who takes **Items** from **Shelves** into a cart, queues at the shortest **Register** queue, pays and leaves. Has long, random patience: only while waiting at an empty **Shelf** does it grow angry, then drop everything in the cart as a **Mess** and leave without paying. Some **Customers** never give up and wait as long as it takes. Never angry while in a **Register** line or on a **Waiting Spot**.
@@ -126,7 +126,7 @@ When an **Area** is bought, the camera briefly sweeps over it, showing pulsing g
 The **Station** where **Upgrades** are bought: walking to it opens a panel.
 
 **Upgrade**:
-A purchased improvement in one of three families: **Player** (speed, stack capacity, **Steady hands** — how many **Items** are safe while sprinting), **Station** (speed, capacity, more plots/animals), **Staff** (speed, carry capacity).
+A purchased improvement in one of three families: **Player** (speed, stack capacity, **Steady hands** — how many **Items** are safe while sprinting), **Station** (speed, more plots/animals), **Staff** (speed, carry capacity).
 
 **Exit Pad**:
 A **Pad** beside a car, bought late in a map; once bought, the car travels to the next map. The player can return to any visited map at any time.

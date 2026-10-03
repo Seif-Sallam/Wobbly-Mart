@@ -23,6 +23,7 @@ A build-ready **playtest-pass spec** (`spec.md` here, a delta on [the v1 spec](.
   - #11 A wheat field yields **6** wheat per harvest (was 4).
   - #16 Ovens and Blenders move **inside the store**. Where exactly is decided in [Re-lay out the Corner Shop](issues/08-relayout-corner-shop.md).
   - #20 The Player walks through Customers and Staff. No collision with them.
+- [Find the flickering circle above the Player](issues/01-flickering-circle.md) — the Player's orange cap was fixed to the body while the animated head moved through it (Staff caps too). Fix: attach the caps to the `head` bone, sitting above the hair, and keep all caps.
 
 ## Not yet specified
 

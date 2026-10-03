@@ -27,6 +27,7 @@ A build-ready **playtest-pass spec** (`spec.md` here, a delta on [the v1 spec](.
 - [Decide Customer demand: Shopping List weights and patience](issues/02-customer-demand.md) — weighted Product count, then one weighted units roll per list (4×4 at 0.1%); patience 45–90 s + 15 s angry, 25% never give up, no marker.
 - [Measure how many Stockers the store needs](issues/03-measure-stocker-need.md) — with the new demand, near-zero angry leaves needs 7 Stockers + Player helping (8 if idle); today's 2 leave 16% angry. Stockers are the bottleneck up to 10.
 - [Decide Stocker roles and count](issues/04-stocker-roles-and-count.md) — 6 Stocker Pads spread through progression; roles Auto / Goods / Machines replace per-Product assignment; caps red / purple / blue, Cashier white; no save migration this pass (version bump drops old saves).
+- [Tune Stack capacity and wobble onset](issues/05-stack-cap-and-wobble.md) — base Stack 8, +2 per Upgrade level (to 16); bottom 2 Items rigid, top bends, firm sway, slight idle jiggle (prototype preset A).
 
 ## Not yet specified
 

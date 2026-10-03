@@ -16,10 +16,41 @@ export const PALETTE = {
 
 export type PaletteName = keyof typeof PALETTE;
 
+/** Supporting colours: splats, effects, tints. Kept here so every colour lives in one file. */
+export const SHADES = {
+  white: '#ffffff',
+  angry: '#d63c2f',
+  warn: '#f5c518',
+  glass: '#bfe6f2',
+  glow: '#ff7a1a',
+  wheat: '#e8b84a',
+  wheatHead: '#f2cc63',
+  flourBag: '#fff8ec',
+  steam: '#e8e8e8',
+  thumbGround: '#b9a77f',
+  splat: {
+    tomato: '#d63c2f',
+    egg: '#ffd54a',
+    ketchup: '#b3261e',
+    wheat: '#e8b84a',
+    milk: '#ffffff',
+    flour: '#f4ead8',
+    bread: '#c98b4a',
+  } as Record<string, string>,
+  customerTints: ['#ffffff', '#ffe3d6', '#e3f0ff', '#f0ffe3', '#fff4d6', '#f3e3ff'],
+} as const;
+
+/** `#rrggbb` + alpha → rgba() for canvas drawing. */
+export function withAlpha(hex: string, alpha: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${n >> 16}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
+
 export const DERIVED = { dirtDark: ['dirt', 0.75], woodDark: ['wood', 0.75] } as const;
 
 export const LIGHT = { sun: '#ffcf8a', sunIntensity: 3.0, hemiIntensity: 0.9, shadowRadius: 3, exposure: 1 };
 
 export function applyCssPalette(root: HTMLElement): void {
   for (const [k, v] of Object.entries(PALETTE)) root.style.setProperty(`--${k}`, v);
+  root.style.setProperty('--angry', SHADES.angry);
 }

@@ -24,6 +24,8 @@ export interface SaveFile {
   currentMap: string;
   visited: string[];
   tutorialDone: boolean;
+  /** First unfinished tutorial step (-1 when done); purchase steps re-derive from the save on load. */
+  tutorialStep: number;
   maps: Record<string, MapSave>;
 }
 
@@ -32,6 +34,7 @@ export const emptySave = (firstMap: string): SaveFile => ({
   currentMap: firstMap,
   visited: [firstMap],
   tutorialDone: false,
+  tutorialStep: 0,
   maps: {},
 });
 
@@ -71,7 +74,7 @@ export function migrate(raw: unknown): SaveFile {
   for (const [id, m] of Object.entries(s.maps)) {
     if (!Array.isArray(m.owned) || typeof m.money !== 'number') throw new Error(`Save for map ${id} is malformed`);
   }
-  return { ...s, version: SAVE_VERSION, tutorialDone: !!s.tutorialDone };
+  return { ...s, version: SAVE_VERSION, tutorialDone: !!s.tutorialDone, tutorialStep: Number(s.tutorialStep) || 0 };
 }
 
 export function encodeSaveCode(save: SaveFile): string {

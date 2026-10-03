@@ -16,8 +16,16 @@ import { headingFor, type Target } from './walk';
 import { chooseJob, sinkForStack } from './staff';
 import { accepts, availableCount } from './carry';
 import { nextRandom } from './rng';
+import { TUNING } from './tuning';
 
+// How the bot plays, not game rules.
 const ARRIVE = 0.3;
+const SLOW_DOWN_DISTANCE = 1.2;
+const MIN_PUSH = 0.25;
+const THINK_EVERY = 0.25;
+const STUCK_MOVE = 0.002;
+const STUCK_AFTER = 1.5;
+const WIGGLE_FOR = 0.4;
 
 function resolve(w: World, target: string | Point): Target {
   if (typeof target !== 'string') return { point: target };
@@ -33,7 +41,7 @@ export function moveIntent(w: World, target: string | Point): { x: number; z: nu
   if (
     'point' in t
       ? Math.hypot(p.x - t.point[0], p.z - t.point[1]) < ARRIVE
-      : distToBox(p.x, p.z, w.stations.get(t.station)?.box ?? [0, 0, 0, 0]) <= 0.5
+      : distToBox(p.x, p.z, w.stations.get(t.station)?.box ?? [0, 0, 0, 0]) <= TUNING.reach * TUNING.arriveReachShare
   )
     return null;
   const to = headingFor(w, 'walker', p, t);
@@ -42,7 +50,7 @@ export function moveIntent(w: World, target: string | Point): { x: number; z: nu
   const dz = to[1] - p.z;
   const d = Math.hypot(dx, dz);
   const end = 'point' in t ? Math.hypot(t.point[0] - p.x, t.point[1] - p.z) : d;
-  const k = Math.min(1, end / 1.2 + 0.25) / Math.max(d, 1e-6);
+  const k = Math.min(1, end / SLOW_DOWN_DISTANCE + MIN_PUSH) / Math.max(d, 1e-6);
   return { x: dx * k, z: dz * k };
 }
 
@@ -65,14 +73,14 @@ export class Bot {
     this.think -= DT;
     if (this.think <= 0 || !this.target) {
       this.target = this.decide(w);
-      this.think = 0.25;
+      this.think = THINK_EVERY;
     }
     if (!this.target) return idle;
     const p = w.player;
     // Manual Grab: only transfer at the Station it means to use, not at every one it brushes past
     const station = typeof this.target === 'string' ? w.stations.get(this.target) : undefined;
     idle.manualGrab = true;
-    idle.grab = !!station && distToBox(p.x, p.z, station.box) <= 0.6;
+    idle.grab = !!station && distToBox(p.x, p.z, station.box) <= TUNING.reach;
     if (this.wiggle > 0) {
       this.wiggle -= DT;
       return { ...idle, move: this.wiggleDir };
@@ -82,12 +90,12 @@ export class Bot {
       this.stuckFor = 0;
       return idle;
     }
-    this.stuckFor = Math.hypot(p.x - this.last[0], p.z - this.last[1]) < 0.002 ? this.stuckFor + DT : 0;
+    this.stuckFor = Math.hypot(p.x - this.last[0], p.z - this.last[1]) < STUCK_MOVE ? this.stuckFor + DT : 0;
     this.last = [p.x, p.z];
-    if (this.stuckFor > 1.5) {
+    if (this.stuckFor > STUCK_AFTER) {
       const a = nextRandom(w) * Math.PI * 2;
       this.wiggleDir = { x: Math.cos(a), z: Math.sin(a) };
-      this.wiggle = 0.4;
+      this.wiggle = WIGGLE_FOR;
       this.stuckFor = 0;
     }
     return { ...idle, move };

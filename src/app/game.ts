@@ -6,7 +6,6 @@ import type { MapSave } from '../sim/save';
 import { Stage } from '../view/stage';
 import { WorldView } from '../view/world-view';
 import { Input } from '../input/input';
-import { Bot } from '../sim/bot';
 
 const MAX_STEPS_PER_FRAME = 240;
 
@@ -17,8 +16,6 @@ export class Game {
   /** Sim speed multiplier (debug cheat). */
   speed = 1;
   manualGrab = false;
-  /** Debug: the playthrough bot drives the Player. */
-  autopilot: Bot | null = null;
   private acc = 0;
   private last = performance.now();
   private commands: Partial<Intents> = {};
@@ -60,10 +57,12 @@ export class Game {
       this.view.beforeSteps();
       let steps = 0;
       while (this.acc >= DT && steps < MAX_STEPS_PER_FRAME) {
-        const intents = this.autopilot
-          ? this.autopilot.intents(this.world)
-          : { move: this.input.move(), grab: this.input.grab, manualGrab: this.manualGrab };
-        step(this.world, { ...intents, ...this.commands });
+        step(this.world, {
+          move: this.input.move(),
+          grab: this.input.grab,
+          manualGrab: this.manualGrab,
+          ...this.commands,
+        });
         this.commands = {};
         events.push(...this.world.events);
         this.acc -= DT;

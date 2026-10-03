@@ -59,7 +59,7 @@ body {
   border: 3px solid var(--ink);
   box-shadow:
     0 4px 0 var(--ink),
-    0 8px 18px rgba(58, 36, 22, 0.25);
+    0 8px 18px color-mix(in srgb, var(--ink) 25%, transparent);
 }
 .btn {
   font:
@@ -92,7 +92,7 @@ body {
   opacity: 0.8;
 }
 .btn.danger {
-  background: #e5482f;
+  background: var(--angry);
   color: var(--cream);
 }
 .btn small {
@@ -141,7 +141,7 @@ body {
   transition: width 0.4s;
 }
 .completion.gold i {
-  background: linear-gradient(90deg, #f7c843, #ffe98a, #f7c843);
+  background: linear-gradient(90deg, var(--pad), var(--cream), var(--pad));
 }
 .completion.small {
   height: 12px;
@@ -293,7 +293,7 @@ body {
   inset: 0;
   display: grid;
   place-items: center;
-  background: rgba(58, 36, 22, 0.35);
+  background: color-mix(in srgb, var(--ink) 35%, transparent);
   padding: 16px;
 }
 .panel {
@@ -341,7 +341,7 @@ body {
   -webkit-user-select: text;
 }
 .panel .error {
-  color: #b3261e;
+  color: var(--angry);
 }
 .menu {
   display: flex;
@@ -376,7 +376,7 @@ body {
   position: absolute;
   inset: 0;
   width: 0;
-  background: rgba(58, 36, 22, 0.35);
+  background: color-mix(in srgb, var(--ink) 35%, transparent);
 }
 .hold.held i {
   width: 100%;
@@ -432,7 +432,7 @@ body {
   border: 3px solid var(--ink);
   box-shadow:
     0 -4px 0 var(--ink),
-    0 -8px 24px rgba(58, 36, 22, 0.3);
+    0 -8px 24px color-mix(in srgb, var(--ink) 30%, transparent);
   display: flex;
   flex-direction: column;
 }
@@ -478,7 +478,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #fff8e6;
+  background: color-mix(in srgb, var(--cream) 60%, white);
   border: 3px solid var(--ink);
   border-radius: 16px;
   padding: 6px 8px;

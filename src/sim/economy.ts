@@ -3,9 +3,12 @@ import type { MapDef, Point, StationDef } from './map';
 import type { Intents, Station, World } from './world';
 import { newCarrier } from './world';
 import type { MapSave } from './save';
-import { boxCentre, frontPoint } from './geometry';
+import { boxCentre, footprint, frontPoint } from './geometry';
 import { TUNING } from './tuning';
 import { FEEL } from '../feel';
+
+/** Area Pan: glide there, hold, glide back. */
+export const panDuration = (): number => 2 * FEEL.panGlide + FEEL.panHold;
 
 export function requirementMet(w: World, req: string): boolean {
   const [id, level] = req.split(':');
@@ -72,7 +75,7 @@ export function own(w: World, id: string, announce: boolean): void {
   w.events.push({ type: 'padBought', pad: id });
   if (pad?.unlocks.kind === 'area') {
     w.events.push({ type: 'areaBought', area: pad.unlocks.area });
-    w.pan = { area: pad.unlocks.area, t: 0, duration: 2 * FEEL.panGlide + FEEL.panHold };
+    w.pan = { area: pad.unlocks.area, t: 0, duration: panDuration() };
   }
   refreshFreeStations(w);
 }
@@ -179,15 +182,9 @@ export const customerCap = (w: World): number =>
   Math.floor((TUNING.capBase + productsForSale(w).length) * TUNING.capCashierFactor ** w.cashiers.length);
 
 export function cashPilePoint(w: World, register: string): Point {
-  const s = w.stations.get(register) ?? null;
-  const place = s ?? w.map.layout.places[register];
-  const long = place.rot % 180 === 0 ? place.box[2] : place.box[3];
-  return frontPoint(
-    place.box,
-    place.rot,
-    -place.box[place.rot % 180 === 0 ? 3 : 2] / 2,
-    long / 2 + TUNING.cashPileOffset,
-  );
+  const place = w.stations.get(register) ?? w.map.layout.places[register];
+  const [long, depth] = footprint(place.box, place.rot);
+  return frontPoint(place.box, place.rot, -depth / 2, long / 2 + TUNING.cashPileOffset);
 }
 
 // ---------- Completion

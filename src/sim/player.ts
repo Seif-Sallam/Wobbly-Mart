@@ -31,7 +31,7 @@ function move(w: World, intents: Intents): void {
     mz /= len;
   }
   if (w.pan) mx = mz = 0;
-  const speed = top * (1 - FEEL.fullStackSlowdown * fullness);
+  const speed = top * (1 - TUNING.fullStackSlowdown * fullness);
   const dx = mx * speed - p.vx;
   const dz = mz * speed - p.vz;
   const speeding = Math.hypot(mx * speed, mz * speed) >= Math.hypot(p.vx, p.vz);
@@ -67,7 +67,7 @@ function move(w: World, intents: Intents): void {
     p.x = o.x + (ex / dist) * min;
     p.z = o.z + (ez / dist) * min;
   }
-  if (!confined(w, p.x, p.z) || w.nav.solids.some((b) => distToBox(p.x, p.z, b) < R - 0.05)) {
+  if (!confined(w, p.x, p.z) || w.nav.solids.some((b) => distToBox(p.x, p.z, b) < R - TUNING.collisionSlack)) {
     p.x = ox;
     p.z = oz;
   }
@@ -98,7 +98,7 @@ function collectCash(w: World): void {
     if (st.kind !== 'register' || st.cash <= 0) continue;
     const [x, z] = cashPilePoint(w, st.id);
     if (Math.hypot(p.x - x, p.z - z) > TUNING.cashPileRadius) continue;
-    const bills = Math.min(FEEL.cashBillsMax, Math.ceil(st.cash / 5));
+    const bills = Math.min(FEEL.cashBillsMax, Math.ceil(st.cash / TUNING.billValue));
     const duration = FEEL.cashDrainMin + ((FEEL.cashDrainMax - FEEL.cashDrainMin) * bills) / FEEL.cashBillsMax;
     w.drains.push({ register: st.id, amount: st.cash, given: 0, t: 0, duration });
     w.events.push({ type: 'cashCollect', register: st.id, amount: st.cash, duration });
@@ -161,7 +161,7 @@ export function updatePlayer(w: World, intents: Intents): void {
   if (st && moved.picked) w.tutorial.actions.add(`pick:${st.id}`);
   if (st && moved.dropped) w.tutorial.actions.add(`drop:${st.id}`);
   const office = w.stations.get('office');
-  w.atOffice = !!office && distToBox(p.x, p.z, office.box) <= TUNING.reach + 0.3;
+  w.atOffice = !!office && distToBox(p.x, p.z, office.box) <= TUNING.reach + TUNING.officeReachExtra;
   const exit = w.stations.get('exit');
   w.atExit = !!exit && distToBox(p.x, p.z, exit.box) <= TUNING.exitPickRadius;
 }

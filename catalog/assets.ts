@@ -13,6 +13,8 @@ export interface AssetDef {
   yaw?: number;
 }
 
+import { SHADES } from '../src/palette';
+
 const ITEM = 0.34;
 
 export const ASSETS: Record<string, AssetDef> = {
@@ -34,7 +36,7 @@ export const ASSETS: Record<string, AssetDef> = {
   ketchup: { path: 'food/bottle-ketchup', height: ITEM * 1.25 },
   milk: { path: 'food/carton', height: ITEM * 1.2 },
   bread: { path: 'food/loaf', height: ITEM * 0.85 },
-  flour: { path: 'food/bag', height: ITEM * 1.2, tint: '#fff8ec' },
+  flour: { path: 'food/bag', height: ITEM * 1.2, tint: SHADES.flourBag },
   wheat: {},
   coin: { path: 'platformer/coin-gold', height: 0.35 },
 

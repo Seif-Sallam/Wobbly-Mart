@@ -1,6 +1,7 @@
 // Keyboard and touch joystick → world-space move intent. Screen-up is camera-relative.
 import nipplejs from 'nipplejs';
 import { FEEL } from '../feel';
+import { PALETTE } from '../palette';
 
 const YAW = (FEEL.cameraYawDeg * Math.PI) / 180;
 const RIGHT = { x: Math.cos(YAW), z: -Math.sin(YAW) };
@@ -31,7 +32,7 @@ export class Input {
     });
     addEventListener('keyup', (e) => this.keys.delete(e.code));
     addEventListener('blur', () => this.keys.clear());
-    const manager = nipplejs.create({ zone, mode: 'dynamic', color: '#3a2416', size: 110 });
+    const manager = nipplejs.create({ zone, mode: 'dynamic', color: PALETTE.ink, size: 110 });
     manager.on('move', (e) => {
       this.firstKind ??= 'touch';
       this.joy.active = true;

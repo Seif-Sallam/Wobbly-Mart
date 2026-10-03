@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { ASSETS, MATERIAL_PALETTE } from '../../catalog/assets';
 import { paletteMaterial } from './materials';
+import { SHADES } from '../palette';
 
 interface Loaded {
   scene: THREE.Object3D;
@@ -100,7 +101,7 @@ export function model(name: string, opts: ModelOptions = {}): THREE.Group {
   inner.scale.setScalar(s);
   inner.position.y = -src.minY * s;
   inner.rotation.y = THREE.MathUtils.degToRad(def.yaw ?? 0);
-  if (def.tint || opts.tint) tint(inner, opts.tint ?? def.tint ?? '#fff');
+  if (def.tint || opts.tint) tint(inner, opts.tint ?? def.tint ?? SHADES.white);
   group.add(inner);
   return group;
 }

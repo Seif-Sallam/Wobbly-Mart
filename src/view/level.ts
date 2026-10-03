@@ -1,10 +1,11 @@
 // The static map: ground, Street, road, shop floor, walls, doors, locked Areas, Props, Car Spots and the van.
 import * as THREE from 'three';
 import type { Box, MapLayout, Point } from '../sim/map';
-import { boxCentre, inBox } from '../sim/geometry';
+import { boxCentre, footprint, inBox } from '../sim/geometry';
 import { model } from './assets';
 import { paletteMaterial } from './materials';
 import { FEEL } from '../feel';
+import { SHADES } from '../palette';
 import { dynamic, mergeStatic } from './merge';
 
 const WALL_HEIGHT = { tall: 2.4, low: 0.6, partition: 1.2, window: 1 };
@@ -76,7 +77,7 @@ export class Level {
     }
     for (const d of Object.values(L.doors)) this.buildDoor(d.kind, d.box);
     for (const p of Object.values(L.props)) {
-      const fit: [number, number] = p.rot % 180 === 0 ? [p.box[2], p.box[3]] : [p.box[3], p.box[2]];
+      const fit = footprint(p.box, p.rot);
       const obj = model(p.model, { fit });
       const [x, z] = boxCentre(p.box);
       obj.position.set(x, 0, z);
@@ -186,7 +187,7 @@ export class Level {
     if (kind !== 'office') {
       const mat =
         kind === 'customer'
-          ? new THREE.MeshStandardMaterial({ color: '#bfe6f2', transparent: true, opacity: 0.55, roughness: 0.1 })
+          ? new THREE.MeshStandardMaterial({ color: SHADES.glass, transparent: true, opacity: 0.55, roughness: 0.1 })
           : paletteMaterial('woodDark');
       for (const side of [-1, 1]) {
         const w = len / 2;

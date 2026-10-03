@@ -1,6 +1,6 @@
 // The Wobbly Mart wordmark: chunky tilted Fredoka letters at uneven heights, the stack icon on the "M".
 import { useEffect, useRef } from 'preact/hooks';
-import { PALETTE } from '../palette';
+import { PALETTE, withAlpha } from '../palette';
 import { STACK_SHAPES } from './icon-svg';
 
 const WORD: { ch: string; color: string }[] = [
@@ -31,7 +31,7 @@ export function Logo() {
   }, []);
   return (
     <svg class="logo" viewBox="-10 -45 560 150" role="img" aria-label="Wobbly Mart">
-      <g transform="rotate(-5 270 60)" style={{ filter: 'drop-shadow(0 6px 0 rgba(58,36,22,.25))' }}>
+      <g transform="rotate(-5 270 60)" style={{ filter: `drop-shadow(0 6px 0 ${withAlpha(PALETTE.ink, 0.25)})` }}>
         <g ref={stack}>{<g dangerouslySetInnerHTML={{ __html: STACK_SHAPES }} />}</g>
         {WORD.map((l, i) => (
           <text

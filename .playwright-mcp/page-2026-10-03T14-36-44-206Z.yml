@@ -1,0 +1,11 @@
+- generic [active] [ref=e1]:
+  - generic:
+    - generic:
+      - generic: $50
+      - button "Pause" [ref=e28] [cursor=pointer]
+    - generic:
+      - generic:
+        - generic: W
+        - generic: A
+        - generic: S
+        - generic: D

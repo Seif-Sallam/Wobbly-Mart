@@ -43,6 +43,10 @@ Resolved 2026-10-03 (prototype; the owner tuned preset B and pasted the values).
 
 **Chicken Coop:** **×1.5** overall, **4 chicks** at **0.5 m**. The fence is a **closed box** on all four sides (today's fence segments are misaligned — fix by centring each segment on its side).
 
+**Coop / Cow Pen hut:** today's hut is one loose wall panel with the roof floating beside it. Build it as a proper little hut: four wood wall panels around a square, each centred on its side, with the roof fitted and centred on top. Owner approved it in the prototype.
+
+**Tomato bed:** the 4 plants sprout **in one line** inside a single **soil strip**, with a **low wooden planter wall** around the full soil length. Plants sit in the soil, not on the grass. Ripe tomatoes on the bushes are the same ×1.6 size as harvested ones. Owner approved it in the prototype.
+
 **Blender:** **×1.35** overall, the blender **1.3 m** tall, standing **on its counter**, centred on the counter top with the tomato inputs on the counter beside it. Today's blender and counter are misaligned because neither model is centred on its origin; centre both by their footprint (the Register uses the same counter and gets the same fix).
 
 **Knock-on for other tickets:**

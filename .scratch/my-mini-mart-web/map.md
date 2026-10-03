@@ -42,8 +42,6 @@ A build-ready spec for a browser clone of My Mini Mart: same mechanics, own name
 ## Not yet specified
 
 - **Optional events (nice-to-have, after v1 core)** — thief chase, timed delivery orders, random spills, a Cleaner staff role. A car event now has 3 reserved Car Spots per map (usable from Area 1; several cars may be parked at once). What a car wants and pays is still open.
-- **Layout editor as a dev tool** — the prototype's editor (object list, drag/snap, grid, 3D overview) carries into the game for development builds only, never the release ([Lay out the first map](issues/11-first-map-layout.md)). Its exact shape — saving edits back into map data, how it is excluded from the release build — is still to be decided.
-- **Assembling the spec** — once the tickets close: gather every decision into the one build-ready spec (incl. the 8–10 named palette colours from [Pick the asset packs and art direction](issues/08-art-direction-and-assets.md)); likely a final ticket once its shape is clear.
 
 ## Out of scope
 

@@ -80,7 +80,7 @@ The fixed amount of **Money** one **Item** of a **Product** earns at checkout. N
 _Avoid_: value, worth
 
 **Customer Cap**:
-The most **Customers** that can be in the store at once. Grows with the number of **Products** for sale and with every extra **Cashier**. New **Customers** arrive whenever the store is below it — the only lever on how many come.
+The most **Customers** that can be in the store at once. Grows with the number of **Products** for sale and with every extra **Cashier**. New **Customers** arrive whenever the store is below it and at least one **Item** is on a **Shelf** — the only lever on how many come.
 
 **Register**:
 The checkout **Station**. Checking out a **Customer** drops cash onto its **Cash Pile**.
@@ -111,6 +111,9 @@ Hired helpers, bought on **Pads**. Two roles: **Cashier** and **Stocker**.
 **Area**:
 A section of the map unlocked by a **Pad**; holds the **Pads** for its own stations.
 _Avoid_: zone, expansion (as a noun for the place)
+
+**Area Pan**:
+When an **Area** is bought, the camera briefly sweeps over it, showing pulsing ghosts of everything it will hold; the **Player** can't move meanwhile. Ordinary **Pads** never trigger one.
 
 **Office**:
 The **Station** where **Upgrades** are bought: walking to it opens a panel.

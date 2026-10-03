@@ -38,6 +38,7 @@ A build-ready spec for a browser clone of My Mini Mart: same mechanics, own name
 - [Pick the audio and juice](issues/17-audio-and-juice.md) — cartoony toy sounds; one bouncy music loop loaded after Play, no ambience; per-event sound table with ±10% pitch, rising-pitch plops/ticks; off-screen at 30%; on/off toggles only; Kenney + Freesound CC0 + baked jsfxr in one MP3 sprite; squash & stretch, flying bills, `+$` floating numbers, Cash Pile drains bill-by-bill with a rising number; no screen shake or vibration
 - [Set the performance budget](issues/16-performance-budget.md) — ~2021 mid-range Android + recent iPhones; 60 fps (30 floor); 250 kB JS / 1.2 MB / ≤5 s Slow 4G enforced by `size-limit` in CI; phones ≤100 draws/150k tris (provisional until real-device check); blob character shadows everywhere; auto pixel-ratio step-down; counts in `?debug`
 - [Define save data and versioning](issues/14-save-data.md) — every load is a fresh Opening: only Money (+ Cash Piles), purchases, partial payments, Upgrades and Stocker assignments survive; autosave ~5 s/purchase/tab-hide; versioned saves with migration chain, never wiped silently; copy/paste save code, hold-to-reset; two-tab pause; persist() after first Pad; iPhone Add-to-Home-Screen card
+- [Name the game](issues/18-game-name.md) — **Wobbly Mart** (`wobbly-mart` repo/URL, no tagline); Fredoka SVG wordmark, green "Wobbly" + orange "Mart", crate–tomato–egg stack on the M doubles as favicon/home icon; drops in, sways, big wobble on Play
 
 ## Not yet specified
 

@@ -35,6 +35,7 @@ A build-ready spec for a browser clone of My Mini Mart: same mechanics, own name
 - [Lay out the first map](issues/11-first-map-layout.md) — map 1 = Corner shop: walled shop on top, farm yard behind, back door per Area, Customers on Street + shop floor only from 3 street spots, Office room, 3 Car Spots from the start; E/F/G (+ earlier A–C) saved for later maps; 11.3 m trips → 30.5 min; layout editor kept as a dev-only tool
 - [Design the HUD and UI](issues/12-hud-and-ui.md) — icons first, top-strip HUD (Money, Completion bar, gear), edge arrows, current-Product Customer bubbles; Office panel (instant buy, hidden locked Upgrades, Stocker assignment) as bottom sheet/side panel; title over a fully unlocked panning map with circle wipe; pause/Maps/Settings; Fredoka; Party Props at 100%
 - [Design the tutorial](issues/13-tutorial.md) — textless, ~1 min, 13 ordered but non-blocking steps (Register → … → first Upgrade) with a bouncing arrow; opening Pads chained by Unlock Requirements; no Customers before the first shelved Item, no patience during it; Area Pans (blocking, pulsing ghosts) on every Area buy; Map 1 only, no skip
+- [Set the performance budget](issues/16-performance-budget.md) — ~2021 mid-range Android + recent iPhones; 60 fps (30 floor); 250 kB JS / 1.2 MB / ≤5 s Slow 4G enforced by `size-limit` in CI; phones ≤100 draws/150k tris (provisional until real-device check); blob character shadows everywhere; auto pixel-ratio step-down; counts in `?debug`
 
 ## Not yet specified
 

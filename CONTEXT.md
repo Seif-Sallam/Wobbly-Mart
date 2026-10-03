@@ -1,4 +1,4 @@
-# My Mini Mart (web clone)
+# Wobbly Mart (web clone of My Mini Mart)
 
 An arcade-idle store game: the player runs a small mart, producing goods, stocking shelves and checking out customers, and spends earnings to grow the store.
 

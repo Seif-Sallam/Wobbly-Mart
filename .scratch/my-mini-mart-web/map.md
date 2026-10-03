@@ -42,9 +42,11 @@ A build-ready spec for a browser clone of My Mini Mart: same mechanics, own name
 - [Define the layout editor dev tool](issues/19-layout-editor.md) — dev-only (`npm run dev`, `V`/`?edit`/`?map=`); moves anything, adds/deletes visual things only; Save writes editor-owned `maps/<id>/layout.ts` via the dev server; section of the lazy-loaded `lil-gui` `?debug` panel; CI proves it's absent from the build; live validator + trip meter, sim paused while editing
 - [Fix the named palette](issues/20-palette.md) — "Golden Storybook": 12 named colours (sky `#7ec8e3`, grass, leaf, path, dirt, road, wood, ink `#3a2416`, cream, pad `#ffe066`, money `#2f9e4f`, orange `#f26b1d`), warm sun 3.0 / hemi 0.9; Nature/Furniture recoloured by material name; one `palette.ts` feeds 3D and CSS
 
+- [Assemble the build-ready spec](issues/21-assemble-spec.md) — **[spec.md](spec.md) is the destination**; owner filled the last gaps: Pads drain in a fixed ~1.5 s, Car Spots painted but unused in v1, Exit van honks and opens the Maps picker, uniform-random Shopping Lists
+
 ## Not yet specified
 
-- **Optional events (nice-to-have, after v1 core)** — thief chase, timed delivery orders, random spills, a Cleaner staff role. A car event now has 3 reserved Car Spots per map (usable from Area 1; several cars may be parked at once). What a car wants and pays is still open.
+- **Optional events (nice-to-have, after v1 core)** — thief chase, timed delivery orders, random spills, a Cleaner staff role. A car event now has 3 reserved Car Spots per map (usable from Area 1; several cars may be parked at once). In v1 they're painted bays with no cars ([spec](spec.md) §16). What a car wants and pays is still open. This is post-v1 fog, not blocking the spec.
 
 ## Out of scope
 

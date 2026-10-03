@@ -26,14 +26,14 @@ A build-ready **playtest-pass spec** (`spec.md` here, a delta on [the v1 spec](.
 - [Find the flickering circle above the Player](issues/01-flickering-circle.md) — the Player's orange cap was fixed to the body while the animated head moved through it (Staff caps too). Fix: attach the caps to the `head` bone, sitting above the hair, and keep all caps.
 - [Decide Customer demand: Shopping List weights and patience](issues/02-customer-demand.md) — weighted Product count, then one weighted units roll per list (4×4 at 0.1%); patience 45–90 s + 15 s angry, 25% never give up, no marker.
 - [Measure how many Stockers the store needs](issues/03-measure-stocker-need.md) — with the new demand, near-zero angry leaves needs 7 Stockers + Player helping (8 if idle); today's 2 leave 16% angry. Stockers are the bottleneck up to 10.
+- [Decide Stocker roles and count](issues/04-stocker-roles-and-count.md) — 6 Stocker Pads spread through progression; roles Auto / Goods / Machines replace per-Product assignment; caps red / purple / blue, Cashier white; no save migration this pass (version bump drops old saves).
 
 ## Not yet specified
 
 - **Re-tune the economy** — after layout, yields, Shelf count, demand and staffing change, the price table and 30-minute pacing probably need re-running with the estimator. It's unclear which numbers move until those tickets close.
 - **Bot and tests vs. new rules** — the CI bot playthrough and sim tests assume the current Stack, Trash, list and patience rules. Whether they need new scenarios (Sprint drops, never-give-up Customers) depends on the final mechanics.
-- **Save migration** — if Shelf-size Upgrades go away or Stocker roles join the save, old saves need a migration step. Its shape depends on [Decide extra Shelves vs. Shelf size](issues/07-shelves-vs-shelf-size.md) and [Decide Stocker roles and count](issues/04-stocker-roles-and-count.md).
 
 ## Out of scope
 
 - Building the changes. That comes after the spec.
-- New Products, Maps or Producers beyond what the notes ask for.
+- New Products, Maps or Producers beyond what the notes ask for — including the extra Stocker levels more Products would bring.

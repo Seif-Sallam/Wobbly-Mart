@@ -5,6 +5,7 @@ import { boxCentre, inBox } from '../sim/geometry';
 import { model } from './assets';
 import { paletteMaterial } from './materials';
 import { FEEL } from '../feel';
+import { dynamic, mergeStatic } from './merge';
 
 const WALL_HEIGHT = { tall: 2.4, low: 0.6, partition: 1.2, window: 1 };
 const DOOR_HEIGHT = 2.2;
@@ -49,6 +50,7 @@ export class Level {
   constructor(
     private readonly L: MapLayout,
     private readonly areaOf: (b: Box) => string | null,
+    alwaysOwned: string[],
   ) {
     const [W, H] = L.size;
     this.group.add(slab('grass', [0, 0, W, H], 0, 0.2));
@@ -61,7 +63,7 @@ export class Level {
       for (const r of rects) {
         const dirt = slab('dirt', r, 0.006);
         (dirt.material as THREE.Material) = paletteMaterial('dirt').clone();
-        this.group.add(dirt);
+        this.group.add(dynamic(dirt));
         look.dirt.push(dirt);
       }
       look.ropes = this.buildRopes(rects);
@@ -80,6 +82,8 @@ export class Level {
       obj.position.set(x, 0, z);
       obj.rotation.y = THREE.MathUtils.degToRad(p.rot);
       if (p.party) obj.visible = false;
+      // Props of Areas that can be locked toggle; the rest merge into the static batch
+      if (p.party || (p.area && !alwaysOwned.includes(p.area))) dynamic(obj);
       this.group.add(obj);
       this.props.push({ obj, area: p.area, party: !!p.party });
       if (p.party) this.partyProps.push(obj);
@@ -87,8 +91,9 @@ export class Level {
     const van = model('van', { fit: [L.van[2], L.van[3]] });
     const [vx, vz] = boxCentre(L.van);
     van.position.set(vx, 0, vz);
-    this.group.add(van);
+    this.group.add(dynamic(van));
     this.van = van;
+    mergeStatic(this.group);
   }
 
   readonly van: THREE.Object3D;
@@ -136,8 +141,9 @@ export class Level {
 
   private floorCells: Point[] = [];
 
+  /** One merged rope group per Area. */
   private buildRopes(rects: Box[]): THREE.Object3D[] {
-    const out: THREE.Object3D[] = [];
+    const ropes = dynamic(new THREE.Group());
     const wallBoxes = Object.values(this.L.walls).map((w) => w.box);
     const nearWall = (x: number, z: number) =>
       wallBoxes.some((b) => inBox(x, z, [b[0] - 0.3, b[1] - 0.3, b[2] + 0.6, b[3] + 0.6]));
@@ -164,12 +170,13 @@ export class Level {
           const rope = model('rope', { fit: [1, 0.3] });
           rope.position.set(x, 0, z);
           if (!alongX) rope.rotation.y = Math.PI / 2;
-          this.group.add(rope);
-          out.push(rope);
+          ropes.add(rope);
         }
       }
     }
-    return out;
+    mergeStatic(ropes);
+    this.group.add(ropes);
+    return [ropes];
   }
 
   private buildDoor(kind: string, box: Box): void {
@@ -187,7 +194,7 @@ export class Level {
         const p = new THREE.Mesh(g, mat);
         p.castShadow = kind !== 'customer';
         p.userData.side = side;
-        this.group.add(p);
+        this.group.add(dynamic(p));
         door.panels.push(p);
       }
       const [cx, cz] = boxCentre(box);

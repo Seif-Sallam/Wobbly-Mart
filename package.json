@@ -1,0 +1,48 @@
+{
+  "name": "wobbly-mart",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "validate": "tsx scripts/validate-maps.ts",
+    "bot": "tsx scripts/bot-playthrough.ts",
+    "credits": "tsx scripts/credits.ts",
+    "size": "size-limit",
+    "check:dist": "tsx scripts/check-dist.ts"
+  },
+  "dependencies": {
+    "howler": "^2.2.4",
+    "lil-gui": "^0.21.0",
+    "nipplejs": "^1.0.4",
+    "preact": "^11.0.0",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
+    "@preact/preset-vite": "^2.10.6",
+    "@size-limit/file": "^14.1.0",
+    "@types/howler": "^2.2.13",
+    "@types/node": "^26.6.4",
+    "@types/three": "^0.186.0",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "size-limit": "^14.1.0",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.0",
+    "vite": "^8.3.2",
+    "vitest": "^4.1.11"
+  }
+}

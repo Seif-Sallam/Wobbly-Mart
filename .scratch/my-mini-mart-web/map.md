@@ -39,6 +39,7 @@ A build-ready spec for a browser clone of My Mini Mart: same mechanics, own name
 - [Set the performance budget](issues/16-performance-budget.md) — ~2021 mid-range Android + recent iPhones; 60 fps (30 floor); 250 kB JS / 1.2 MB / ≤5 s Slow 4G enforced by `size-limit` in CI; phones ≤100 draws/150k tris (provisional until real-device check); blob character shadows everywhere; auto pixel-ratio step-down; counts in `?debug`
 - [Define save data and versioning](issues/14-save-data.md) — every load is a fresh Opening: only Money (+ Cash Piles), purchases, partial payments, Upgrades and Stocker assignments survive; autosave ~5 s/purchase/tab-hide; versioned saves with migration chain, never wiped silently; copy/paste save code, hold-to-reset; two-tab pause; persist() after first Pad; iPhone Add-to-Home-Screen card
 - [Name the game](issues/18-game-name.md) — **Wobbly Mart** (`wobbly-mart` repo/URL, no tagline); Fredoka SVG wordmark, green "Wobbly" + orange "Mart", crate–tomato–egg stack on the M doubles as favicon/home icon; drops in, sways, big wobble on Play
+- [Define the layout editor dev tool](issues/19-layout-editor.md) — dev-only (`npm run dev`, `V`/`?edit`/`?map=`); moves anything, adds/deletes visual things only; Save writes editor-owned `maps/<id>/layout.ts` via the dev server; section of the lazy-loaded `lil-gui` `?debug` panel; CI proves it's absent from the build; live validator + trip meter, sim paused while editing
 
 ## Not yet specified
 
@@ -51,3 +52,4 @@ A build-ready spec for a browser clone of My Mini Mart: same mechanics, own name
 - Stars/ratings, prestige, premium currencies, boosts — ruled out in [Decide which mechanics the clone includes](issues/03-core-mechanics-scope.md); Completion % is the only meta measure.
 - Any backend: cloud saves, leaderboards, accounts, multiplayer.
 - Using the original game's assets, name or branding.
+- Full map authoring in the layout editor (creating stations, Pads, Upgrades, prices) — the owner wants it eventually, but one build-ready map doesn't need it; ruled out in [Define the layout editor dev tool](issues/19-layout-editor.md).

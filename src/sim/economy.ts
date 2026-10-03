@@ -1,5 +1,5 @@
 // Ownership, prices, Upgrades, Completion, the tutorial — everything about what is bought.
-import type { Point, StationDef } from './map';
+import type { MapDef, Point, StationDef } from './map';
 import type { Intents, Station, World } from './world';
 import { newCarrier } from './world';
 import type { MapSave } from './save';
@@ -192,24 +192,22 @@ export function cashPilePoint(w: World, register: string): Point {
 
 // ---------- Completion
 
-export function completionCounts(w: World): { done: number; total: number } {
+/** Bought Pads + Upgrade levels over everything purchasable (works on a save too). */
+export function completionOf(map: MapDef, owned: { has: (id: string) => boolean }, levels: Record<string, number>): number {
   let done = 0;
   let total = 0;
-  for (const id of Object.keys(w.map.pads)) {
+  for (const id of Object.keys(map.pads)) {
     total++;
-    if (w.owned.has(id)) done++;
+    if (owned.has(id)) done++;
   }
-  for (const [id, up] of Object.entries(w.map.upgrades)) {
+  for (const [id, up] of Object.entries(map.upgrades)) {
     total += up.levels.length;
-    done += w.levels[id] ?? 0;
+    done += Math.min(up.levels.length, levels[id] ?? 0);
   }
-  return { done, total };
+  return total ? done / total : 1;
 }
 
-export const completion = (w: World): number => {
-  const { done, total } = completionCounts(w);
-  return total ? done / total : 1;
-};
+export const completion = (w: World): number => completionOf(w.map, w.owned, w.levels);
 
 export function checkCompletion(w: World, announce: boolean): boolean {
   const full = completion(w) >= 1;

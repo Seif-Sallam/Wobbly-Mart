@@ -26,6 +26,13 @@ How **Items** move between the **Stack** and stations. _Auto_ (default, the only
 **Trash Bin**:
 A station where the **Player** dumps unwanted **Items** from their **Stack**; they are destroyed, no refund.
 
+**Sprint**:
+Holding run makes the **Player** move 1.5× faster. With more **Items** on the **Stack** than **Steady hands** allows, the top **Item** may fall off as a **Loose Item**.
+
+**Loose Item**:
+An **Item** that fell off the **Player**'s **Stack** while sprinting. It lies on the floor until the **Player** walks over it to take it back.
+_Avoid_: Mess (a Mess is lost; a Loose Item isn't)
+
 **Mess**:
 What an angry **Customer** leaves when dropping their cart — the goods are lost. Slows **Customers** walking through it until the **Player** walks over it to clear it.
 _Avoid_: spill, dropped items
@@ -119,7 +126,7 @@ When an **Area** is bought, the camera briefly sweeps over it, showing pulsing g
 The **Station** where **Upgrades** are bought: walking to it opens a panel.
 
 **Upgrade**:
-A purchased improvement in one of three families: **Player** (speed, stack capacity), **Station** (speed, capacity, more plots/animals), **Staff** (speed, carry capacity).
+A purchased improvement in one of three families: **Player** (speed, stack capacity, **Steady hands** — how many **Items** are safe while sprinting), **Station** (speed, capacity, more plots/animals), **Staff** (speed, carry capacity).
 
 **Exit Pad**:
 A **Pad** beside a car, bought late in a map; once bought, the car travels to the next map. The player can return to any visited map at any time.

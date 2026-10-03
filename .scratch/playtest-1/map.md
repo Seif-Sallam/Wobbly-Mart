@@ -24,6 +24,7 @@ A build-ready **playtest-pass spec** (`spec.md` here, a delta on [the v1 spec](.
   - #16 Ovens and Blenders move **inside the store**. Where exactly is decided in [Re-lay out the Corner Shop](issues/08-relayout-corner-shop.md).
   - #20 The Player walks through Customers and Staff. No collision with them.
 - [Find the flickering circle above the Player](issues/01-flickering-circle.md) — the Player's orange cap was fixed to the body while the animated head moved through it (Staff caps too). Fix: attach the caps to the `head` bone, sitting above the hair, and keep all caps.
+- [Decide Customer demand: Shopping List weights and patience](issues/02-customer-demand.md) — weighted Product count, then one weighted units roll per list (4×4 at 0.1%); patience 45–90 s + 15 s angry, 25% never give up, no marker.
 
 ## Not yet specified
 

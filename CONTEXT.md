@@ -70,10 +70,10 @@ A sequence of **Producers** where one's output is another's input (tomato → ch
 A **Station** that displays **Items** of exactly one **Product** for **Customers** to take; has a capacity. Shelves are unlocked one after another.
 
 **Customer**:
-A visitor with a **Shopping List** who takes **Items** from **Shelves** into a cart, queues at the shortest **Register** queue, pays and leaves. Has mild patience: only while waiting at an empty **Shelf** does it grow angry, then drop everything in the cart as a **Mess** and leave without paying. Never angry while in a **Register** line or on a **Waiting Spot**.
+A visitor with a **Shopping List** who takes **Items** from **Shelves** into a cart, queues at the shortest **Register** queue, pays and leaves. Has long, random patience: only while waiting at an empty **Shelf** does it grow angry, then drop everything in the cart as a **Mess** and leave without paying. Some **Customers** never give up and wait as long as it takes. Never angry while in a **Register** line or on a **Waiting Spot**.
 
 **Shopping List**:
-What a **Customer** came for: up to 4 different **Products**, up to 4 units each.
+What a **Customer** came for: 1–4 different **Products**, 1–4 units of each, the same for every **Product** on it. Longer lists usually want fewer of each; a full list of 4 × 4 is very rare.
 
 **Sale Price**:
 The fixed amount of **Money** one **Item** of a **Product** earns at checkout. Never upgradable. A processed **Product** is worth clearly more than the inputs it consumes.

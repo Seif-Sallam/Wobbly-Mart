@@ -13,6 +13,8 @@ import { Character } from './characters';
 import { PadVisual } from './pads';
 import { buildStation, ghostify, type StationVisual } from './stations';
 import { InstancedModel, billModel, itemModel } from './instanced';
+import { model } from './assets';
+import { StationBatch } from './station-batch';
 import { CanvasTex, canvasSprite, outlinedText, roundRect } from './text';
 import { icon } from './thumbs';
 import { paletteMaterial } from './materials';
@@ -74,6 +76,8 @@ export class WorldView {
   private stations = new Map<string, StationVisual>();
   private pads = new Map<string, PadVisual>();
   private items = new Map<string, InstancedModel>();
+  private plants = new Map<string, InstancedModel>();
+  private batch = new StationBatch();
   private bills: InstancedModel;
   private blobs: THREE.InstancedMesh;
   private splats = new Map<number, THREE.Object3D>();
@@ -101,14 +105,16 @@ export class WorldView {
     private readonly stage: Stage,
     private w: World,
   ) {
-    this.level = new Level(w.map.layout, (b: Box) => areaOf(w, b));
-    this.root.add(this.level.group, this.juice.group);
+    this.level = new Level(w.map.layout, (b: Box) => areaOf(this.w, b), w.map.start.owned);
+    this.root.add(this.level.group, this.juice.group, this.batch.group);
     stage.scene.add(this.root);
     for (const [id, p] of Object.entries(w.map.products)) {
       void id;
       if (!this.items.has(p.model)) this.items.set(p.model, new InstancedModel(itemModel(p.model), 500, this.root));
     }
     this.bills = new InstancedModel(billModel(), 600, this.root);
+    for (const name of ['tomato-bush', 'wheat-plant'])
+      this.plants.set(name, new InstancedModel(model(name), 64, this.root, false));
     this.blobs = this.makeBlobs();
     this.player = new Character('player', { hat: 'orange' });
     this.root.add(this.player.root);
@@ -130,6 +136,7 @@ export class WorldView {
     for (const s of this.staff.values()) this.root.remove(s.ch.root);
     for (const m of this.splats.values()) this.root.remove(m);
     this.stations.clear();
+    this.batch.clear();
     this.pads.clear();
     this.customers.clear();
     this.staff.clear();
@@ -206,11 +213,15 @@ export class WorldView {
       const v = buildStation(name, st.box, st.rot);
       this.stations.set(st.id, v);
       this.root.add(v.root);
+      this.batch.add(st.id, v.body, v.root.position);
       if (animate) {
-        v.body.scale.setScalar(0.01);
-        this.tweens.add(0.45, (k) => v.body.scale.setScalar(Math.max(0.01, k)), {
-          ease: (t) => ease.outBack(t, FEEL.springOvershoot * 1.5),
-        });
+        const id = st.id;
+        const grow = (k: number) => {
+          v.body.scale.setScalar(Math.max(0.01, k));
+          this.batch.setScale(id, Math.max(0.01, k), Math.max(0.01, k));
+        };
+        grow(0.01);
+        this.tweens.add(0.45, grow, { ease: (t) => ease.outBack(t, FEEL.springOvershoot * 1.5) });
         this.juice.puff(v.root.position.clone().setY(0.3), PALETTE.path, 10, 1.6);
       }
     }
@@ -476,13 +487,6 @@ export class WorldView {
       const st = w.stations.get(id);
       v.animate(dt, st?.kind === 'producer' && st.work > 0);
       for (const m of v.mixers) m.update(dt);
-      if (st?.kind === 'producer' && st.plants.length) {
-        const type = w.map.producers[st.type];
-        st.plants.forEach((t, i) => {
-          const pv = v.plantVisuals[i];
-          if (pv) pv.scale.setScalar(0.35 + 0.65 * (1 - Math.min(1, t / type.workTime)));
-        });
-      }
     }
     this.juice.update(dt);
     const near: Point[] = [
@@ -634,7 +638,7 @@ export class WorldView {
 
   private drawItems(dt: number): void {
     const w = this.w;
-    for (const im of this.items.values()) im.begin();
+    for (const im of [...this.items.values(), ...this.plants.values()]) im.begin();
     this.bills.begin();
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
@@ -656,10 +660,16 @@ export class WorldView {
       } else if (st.kind === 'producer') {
         const type = w.map.producers[st.type];
         if (st.plants.length) {
-          if (type.output === 'tomato')
-            st.plants.forEach((t, i) => {
-              if (t <= 0 && v.plants[i]) put('tomato', this.local(v, v.plants[i].clone().setY(0.55)), i);
-            });
+          const plants = this.plants.get(v.plantModel ?? '');
+          st.plants.forEach((t, i) => {
+            const at = v.plants[i];
+            if (!at) return;
+            const grown = 0.35 + 0.65 * (1 - Math.min(1, t / type.workTime));
+            plants?.add(
+              m.compose(this.local(v, at), q.setFromEuler(new THREE.Euler(0, i * 2.4, 0)), s.setScalar(grown)),
+            );
+            if (t <= 0 && type.output === 'tomato') put('tomato', this.local(v, at.clone().setY(0.55)), i);
+          });
         } else {
           const n = this.shown(`st:${st.id}`, st.tray);
           for (let i = 0; i < n && i < v.slots.length; i++) put(type.output, this.local(v, v.slots[i]), i * 0.7);
@@ -740,7 +750,7 @@ export class WorldView {
       if (f.key.startsWith('st:') || f.key.startsWith('input:')) this.bounce(f.key.split(':')[1]);
       return false;
     });
-    for (const im of this.items.values()) im.end();
+    for (const im of [...this.items.values(), ...this.plants.values()]) im.end();
     this.bills.end();
   }
 
@@ -750,6 +760,7 @@ export class WorldView {
     this.tweens.add(0.2, (k) => {
       const b = Math.sin(k * Math.PI) * FEEL.stationBounce;
       v.body.scale.set(1 + b * 0.5, 1 - b, 1 + b * 0.5);
+      this.batch.setScale(id, 1 + b * 0.5, 1 - b);
     });
   }
 

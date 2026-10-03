@@ -13,6 +13,15 @@ interface Loaded {
 }
 
 const loaded = new Map<string, Loaded>();
+const materials = new Map<string, THREE.Material>();
+
+/** One material per pack + material name, so static merging and the GPU share them. */
+function shared(key: string, m: THREE.Material): THREE.Material {
+  const found = materials.get(key);
+  if (found) return found;
+  materials.set(key, m);
+  return m;
+}
 
 export async function loadAssets(onProgress: (done: number, total: number) => void): Promise<void> {
   const loader = new GLTFLoader();
@@ -30,6 +39,8 @@ export async function loadAssets(onProgress: (done: number, total: number) => vo
         const src = m.material as THREE.MeshStandardMaterial;
         const token = !src.map ? MATERIAL_PALETTE[src.name] : undefined;
         if (token) m.material = paletteMaterial(token);
+        else
+          m.material = shared(`${path.split('/')[0]}|${src.name}|${src.map ? 'tex' : src.color.getHexString()}`, src);
       });
       const box = new THREE.Box3().setFromObject(gltf.scene);
       loaded.set(path, {

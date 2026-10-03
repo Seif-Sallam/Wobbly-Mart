@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import type { Box, Rot } from '../sim/map';
 import { clipsOf, model, naturalSize } from './assets';
 import { paletteMaterial } from './materials';
+import { dynamic, mergeStatic } from './merge';
 
 export interface StationVisual {
   /** At the box centre, rotated; children are in local metres with the front at +z. */
@@ -15,7 +16,8 @@ export interface StationVisual {
   inputSlots: THREE.Vector3[];
   /** Local positions of Crop plants. */
   plants: THREE.Vector3[];
-  plantVisuals: THREE.Object3D[];
+  /** Crop plants are drawn instanced by the view with this model. */
+  plantModel: string | null;
   mixers: THREE.AnimationMixer[];
   /** Per-frame motion; `working` while a Machine/Animal is busy. */
   animate: (dt: number, working: boolean) => void;
@@ -105,13 +107,7 @@ function crop(kind: 'tomato' | 'wheat', w: number, d: number, plants: number, v:
   }
   const cols = plants <= 4 ? 2 : 4;
   v.plants = grid(cols, Math.ceil(plants / cols), w * 0.55, d * 0.55, 0.12).slice(0, plants);
-  for (const p of v.plants) {
-    const plant = kind === 'tomato' ? model('tomato-bush') : model('wheat-plant');
-    plant.position.copy(p);
-    plant.rotation.y = Math.random() * Math.PI * 2;
-    v.body.add(plant);
-    v.plantVisuals.push(plant);
-  }
+  v.plantModel = kind === 'tomato' ? 'tomato-bush' : 'wheat-plant';
 }
 
 function coop(name: 'chick' | 'cow', w: number, d: number, v: StationVisual): void {
@@ -128,13 +124,13 @@ function coop(name: 'chick' | 'cow', w: number, d: number, v: StationVisual): vo
   hut.scale.setScalar(name === 'cow' ? 1 : 0.8);
   hut.position.set(-w / 2 + 0.5, 0, -d / 2 + 0.45);
   v.body.add(hut);
-  const animals = name === 'cow' ? 1 : 3;
+  const animals = name === 'cow' ? 1 : 2;
   for (let i = 0; i < animals; i++) {
     const a = model(name);
     a.position.set((i - (animals - 1) / 2) * 0.5 + 0.1, 0.04, 0.1 + (i % 2) * 0.2);
     a.rotation.y = (Math.random() - 0.5) * 1.5;
     v.body.add(a);
-    playIdle(a, name, v.mixers);
+    playIdle(dynamic(a), name, v.mixers);
   }
   const trough = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.18, 0.32), paletteMaterial('woodDark'));
   trough.position.set(w / 2 - 0.55, 0.09, -d / 2 + 0.35);
@@ -171,7 +167,7 @@ function build(name: string, w: number, d: number, v: StationVisual): void {
       const top = counter(w, d, v);
       const b = model('kitchen-blender');
       b.position.set(-w * 0.12, top, 0);
-      v.body.add(b);
+      v.body.add(dynamic(b));
       v.inputSlots = grid(3, 2, 0.4, 0.2, top, -w * 0.32, 0);
       v.slots = tray(v.body, w / 2 - 0.2, 0.1);
       let t = 0;
@@ -194,7 +190,7 @@ function build(name: string, w: number, d: number, v: StationVisual): void {
       const hub = new THREE.Group();
       hub.position.set(0, 1.55, d * 0.22);
       hub.add(sails);
-      v.body.add(hut, roof, hub);
+      v.body.add(hut, roof, dynamic(hub));
       v.inputSlots = grid(3, 2, 0.45, 0.15, 0.02, -w / 2 + 0.35, d / 2 - 0.25);
       v.slots = tray(v.body, w / 2 - 0.3, d / 2 - 0.25);
       let spin = 0;
@@ -211,7 +207,8 @@ function build(name: string, w: number, d: number, v: StationVisual): void {
       const glowMat = new THREE.MeshStandardMaterial({ color: '#3a2416', emissive: '#ff7a1a', emissiveIntensity: 0 });
       const glow = new THREE.Mesh(new THREE.BoxGeometry(w * 0.45, 0.25, 0.04), glowMat);
       glow.position.set(0, 0.35, d * 0.24);
-      v.body.add(glow);
+      glow.visible = false;
+      v.body.add(dynamic(glow));
       v.inputSlots = grid(4, 2, 0.6, 0.15, 0.02, -w / 2 + 0.45, d / 2 - 0.2);
       v.slots = tray(v.body, w / 2 - 0.3, d / 2 - 0.25);
       let t = 0;
@@ -219,6 +216,7 @@ function build(name: string, w: number, d: number, v: StationVisual): void {
         t += dt;
         const target = working ? 1.5 + Math.sin(t * 8) * 0.5 : 0;
         glowMat.emissiveIntensity += (target - glowMat.emissiveIntensity) * Math.min(1, dt * 6);
+        glow.visible = glowMat.emissiveIntensity > 0.05;
       };
       return;
     }
@@ -269,11 +267,12 @@ export function buildStation(name: string, box: Box, rot: Rot): StationVisual {
     slots: [],
     inputSlots: [],
     plants: [],
-    plantVisuals: [],
+    plantModel: null,
     mixers: [],
     animate: () => {},
   };
   build(name, w, d, v);
+  mergeStatic(v.body);
   return v;
 }
 

@@ -32,7 +32,12 @@ export async function loadAssets(onProgress: (done: number, total: number) => vo
         if (token) m.material = paletteMaterial(token);
       });
       const box = new THREE.Box3().setFromObject(gltf.scene);
-      loaded.set(path, { scene: gltf.scene, clips: gltf.animations, size: box.getSize(new THREE.Vector3()), minY: box.min.y });
+      loaded.set(path, {
+        scene: gltf.scene,
+        clips: gltf.animations,
+        size: box.getSize(new THREE.Vector3()),
+        minY: box.min.y,
+      });
       onProgress(++done, paths.length);
     }),
   );

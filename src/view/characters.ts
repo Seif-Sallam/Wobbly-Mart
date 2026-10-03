@@ -61,7 +61,9 @@ export class Character {
     this.root.rotation.y = this.facing;
     this.bob += dt * speed * 3;
     this.hop = Math.max(0, this.hop - dt * 1.5);
-    this.visual.position.y = (speed > 0.1 ? Math.abs(Math.sin(this.bob)) * FEEL.walkBob : 0) + Math.abs(Math.sin(this.hop * Math.PI * 3)) * this.hop * 0.35;
+    this.visual.position.y =
+      (speed > 0.1 ? Math.abs(Math.sin(this.bob)) * FEEL.walkBob : 0) +
+      Math.abs(Math.sin(this.hop * Math.PI * 3)) * this.hop * 0.35;
     const k = Math.min(1, dt * 10);
     const walking = speed > 0.3;
     this.weight('walk', walking ? 1 : 0, k);

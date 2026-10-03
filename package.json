@@ -30,7 +30,6 @@
     "@gltf-transform/core": "^4.5.1",
     "@gltf-transform/extensions": "^4.5.1",
     "@gltf-transform/functions": "^4.5.1",
-    "@preact/preset-vite": "^2.10.6",
     "@size-limit/file": "^14.1.0",
     "@types/howler": "^2.2.13",
     "@types/node": "^26.6.4",

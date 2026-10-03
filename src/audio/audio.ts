@@ -124,14 +124,16 @@ export class Sounds {
           break;
         case 'cashCollect': {
           const n = Math.min(12, Math.ceil(e.amount / 5));
-          for (let i = 0; i < n; i++) setTimeout(() => this.sfx('bill', { rate: 0.9 + i * 0.05, volume: 0.7 }), (i / n) * e.duration * 1000);
+          for (let i = 0; i < n; i++)
+            setTimeout(() => this.sfx('bill', { rate: 0.9 + i * 0.05, volume: 0.7 }), (i / n) * e.duration * 1000);
           break;
         }
         case 'produced': {
           const st = w.stations.get(e.station);
           if (st?.kind !== 'producer') break;
           const type = w.map.producers[st.type];
-          if (type.kind === 'animal' && Math.random() < 0.5) this.sfx(type.output === 'milk' ? 'moo' : 'cluck', { volume: at(e.station) * 0.7 });
+          if (type.kind === 'animal' && Math.random() < 0.5)
+            this.sfx(type.output === 'milk' ? 'moo' : 'cluck', { volume: at(e.station) * 0.7 });
           break;
         }
         case 'mess':
@@ -159,7 +161,8 @@ export class Sounds {
     if (!h) return;
     let volume = 0;
     for (const st of w.stations.values()) {
-      if (st.kind === 'producer' && st.work > 0 && w.map.producers[st.type].kind === 'machine') volume = Math.max(volume, at(st.id));
+      if (st.kind === 'producer' && st.work > 0 && w.map.producers[st.type].kind === 'machine')
+        volume = Math.max(volume, at(st.id));
     }
     const on = volume > 0 && this.settings.sounds && !this.paused;
     if (on && this.hum === null) {

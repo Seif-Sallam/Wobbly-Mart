@@ -93,7 +93,8 @@ export class Hud {
   /** Movement hint: keycaps on desktop, a dragging hand on touch. `null` hides it. */
   showHint(kind: 'keys' | 'touch' | null): void {
     this.hint.className = `hint ${kind ?? 'gone'}`;
-    if (kind === 'keys') this.hint.innerHTML = '<div class="keys"><kbd>W</kbd><br><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></div>';
+    if (kind === 'keys')
+      this.hint.innerHTML = '<div class="keys"><kbd>W</kbd><br><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></div>';
     if (kind === 'touch') this.hint.innerHTML = '<div class="hand">👆</div>';
   }
 

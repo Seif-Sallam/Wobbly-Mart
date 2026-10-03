@@ -35,24 +35,19 @@ enc -f lavfi -i "aevalsrc='0.3*sgn(sin(2*PI*392*t))+0.3*sgn(sin(2*PI*494*t))':d=
 enc -f lavfi -i "aevalsrc='0.25*sin(2*PI*90*t)+0.12*sin(2*PI*180*t+sin(2*PI*6*t))':d=1" -af "lowpass=600" "$TMP/hum.wav"
 
 NAMES=(pop plop tick ding boing jingle kaching bill powerup cluck moo grumble splat swish bonk click fanfare horn honk hum)
-GAP=0.15
-LIST="$TMP/list.txt"
-: > "$LIST"
-ffmpeg -v error -f lavfi -i anullsrc=r=44100:cl=mono -t $GAP -c:a pcm_s16le "$TMP/gap.wav"
-echo "{" > src/audio/sprite.json
-pos=0
-for i in "${!NAMES[@]}"; do
-  n=${NAMES[$i]}
-  d=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$TMP/$n.wav")
-  ms=$(python3 -c "print(round($d*1000))")
-  start=$(python3 -c "print(round($pos*1000))")
-  sep=$([ $i -lt $((${#NAMES[@]} - 1)) ] && echo "," || echo "")
-  echo "  \"$n\": [$start, $ms]$sep" >> src/audio/sprite.json
-  echo "file '$TMP/$n.wav'" >> "$LIST"
-  echo "file '$TMP/gap.wav'" >> "$LIST"
-  pos=$(python3 -c "print($pos + $d + $GAP)")
-done
-echo "}" >> src/audio/sprite.json
-ffmpeg -v error -y -f concat -safe 0 -i "$LIST" -ac 1 -ar 44100 -c:a libmp3lame -b:a 64k "$OUT/sfx.mp3"
+# Join raw 16-bit mono PCM with silent gaps; offsets are exact sample counts.
+python3 - "$TMP" "${NAMES[@]}" <<'PY'
+import json, subprocess, sys
+tmp, names = sys.argv[1], sys.argv[2:]
+rate, gap = 44100, b"\0\0" * int(44100 * 0.15)
+out, sprite = bytearray(), {}
+for n in names:
+    pcm = subprocess.run(["ffmpeg", "-v", "error", "-i", f"{tmp}/{n}.wav", "-f", "s16le", "-ac", "1", "-ar", str(rate), "-"], capture_output=True, check=True).stdout
+    sprite[n] = [round(len(out) / 2 / rate * 1000), round(len(pcm) / 2 / rate * 1000)]
+    out += pcm + gap
+open(f"{tmp}/all.raw", "wb").write(out)
+open("src/audio/sprite.json", "w").write(json.dumps(sprite, indent=2) + "\n")
+PY
+ffmpeg -v error -y -f s16le -ar 44100 -ac 1 -i "$TMP/all.raw" -c:a libmp3lame -b:a 64k "$OUT/sfx.mp3"
 ffmpeg -v error -y -i "$FS/bouncy.mp3" -ac 1 -ar 44100 -c:a libmp3lame -b:a 64k "$OUT/music.mp3"
 ls -la "$OUT"

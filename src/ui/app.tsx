@@ -54,7 +54,13 @@ function upgradeIcon(world: World, target: string): string {
   return world.map.producers[target]?.model ?? target;
 }
 
-function Btn(props: { class?: string; onClick: () => void; disabled?: boolean; children: preact.ComponentChildren; actions: UiActions }) {
+function Btn(props: {
+  class?: string;
+  onClick: () => void;
+  disabled?: boolean;
+  children: preact.ComponentChildren;
+  actions: UiActions;
+}) {
   return (
     <button
       class={`btn ${props.class ?? ''}`}
@@ -103,7 +109,11 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
                       {cost === null ? (
                         <span class="maxed">MAX</span>
                       ) : (
-                        <Btn class={can ? 'buy' : 'buy off'} actions={actions} onClick={() => can && actions.buyUpgrade(id)}>
+                        <Btn
+                          class={can ? 'buy' : 'buy off'}
+                          actions={actions}
+                          onClick={() => can && actions.buyUpgrade(id)}
+                        >
                           {formatMoney(cost)}
                           {!can && <small>−{formatMoney(cost - world.money)}</small>}
                         </Btn>
@@ -123,11 +133,22 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
                 <img src={actions.icon('employee')} alt="" />
                 <b>#{i + 1}</b>
                 <div class="chips">
-                  <Btn class={s.assignment === null ? 'chip on' : 'chip'} actions={actions} onClick={() => actions.assign(s.id, null)}>
+                  <Btn
+                    class={s.assignment === null ? 'chip on' : 'chip'}
+                    actions={actions}
+                    onClick={() => actions.assign(s.id, null)}
+                  >
                     Auto
                   </Btn>
-                  {[...new Set([...world.stations.values()].flatMap((st) => (st.kind === 'shelf' ? [st.product] : [])))].map((p) => (
-                    <Btn key={p} class={s.assignment === p ? 'chip on' : 'chip'} actions={actions} onClick={() => actions.assign(s.id, p)}>
+                  {[
+                    ...new Set([...world.stations.values()].flatMap((st) => (st.kind === 'shelf' ? [st.product] : []))),
+                  ].map((p) => (
+                    <Btn
+                      key={p}
+                      class={s.assignment === p ? 'chip on' : 'chip'}
+                      actions={actions}
+                      onClick={() => actions.assign(s.id, p)}
+                    >
                       <img src={actions.icon(world.map.products[p].model)} alt={p} />
                     </Btn>
                   ))}
@@ -156,7 +177,12 @@ function HoldButton({ onDone, children }: { onDone: () => void; children: preact
     clearTimeout(timer.current);
   };
   return (
-    <button class={`btn danger hold ${held ? 'held' : ''}`} onPointerDown={start} onPointerUp={stop} onPointerLeave={stop}>
+    <button
+      class={`btn danger hold ${held ? 'held' : ''}`}
+      onPointerDown={start}
+      onPointerUp={stop}
+      onPointerLeave={stop}
+    >
       <i />
       {children}
     </button>
@@ -180,7 +206,12 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
       <Toggle label="Music" on={s.settings.music} set={(v) => a.setSetting('music', v)} actions={a} />
       <Toggle label="Sounds" on={s.settings.sounds} set={(v) => a.setSetting('sounds', v)} actions={a} />
       {!s.touch && (
-        <Toggle label="Manual grab (hold Space)" on={s.settings.manualGrab} set={(v) => a.setSetting('manualGrab', v)} actions={a} />
+        <Toggle
+          label="Manual grab (hold Space)"
+          on={s.settings.manualGrab}
+          set={(v) => a.setSetting('manualGrab', v)}
+          actions={a}
+        />
       )}
       <Btn actions={a} onClick={a.fullscreen}>
         Fullscreen
@@ -221,7 +252,11 @@ function Paste({ a }: { a: UiActions }) {
   return (
     <div class="panel">
       <h2>Paste save code</h2>
-      <textarea value={code} onInput={(e) => setCode((e.target as HTMLTextAreaElement).value)} placeholder="Paste here" />
+      <textarea
+        value={code}
+        onInput={(e) => setCode((e.target as HTMLTextAreaElement).value)}
+        placeholder="Paste here"
+      />
       {error && <p class="error">{error}</p>}
       {confirm ? (
         <div class="row">

@@ -193,7 +193,11 @@ export function cashPilePoint(w: World, register: string): Point {
 // ---------- Completion
 
 /** Bought Pads + Upgrade levels over everything purchasable (works on a save too). */
-export function completionOf(map: MapDef, owned: { has: (id: string) => boolean }, levels: Record<string, number>): number {
+export function completionOf(
+  map: MapDef,
+  owned: { has: (id: string) => boolean },
+  levels: Record<string, number>,
+): number {
   let done = 0;
   let total = 0;
   for (const id of Object.keys(map.pads)) {

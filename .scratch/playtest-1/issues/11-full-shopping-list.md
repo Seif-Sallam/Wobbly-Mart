@@ -1,0 +1,13 @@
+# Show the whole Shopping List
+
+Type: prototype
+Status: open
+Blocked by: 02
+
+## Question
+
+How does a Customer's bubble show the whole Shopping List (every Product and how many are still wanted) without cluttering a busy store, and how does it react as Items go into the cart?
+
+## Context
+
+Note #25. Today the bubble shows only the current Product (HUD decision in the v1 map). List sizes come from [Decide Customer demand](02-customer-demand.md).

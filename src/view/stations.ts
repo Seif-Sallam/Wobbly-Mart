@@ -174,21 +174,25 @@ function build(name: string, w: number, d: number, v: StationVisual): void {
       v.body.add(b);
       v.inputSlots = grid(3, 2, 0.4, 0.2, top, -w * 0.32, 0);
       v.slots = tray(v.body, w / 2 - 0.2, 0.1);
+      let t = 0;
       v.animate = (dt, working) => {
-        b.rotation.z = working ? Math.sin(performance.now() / 30) * 0.08 : 0;
-        b.position.x = -w * 0.12 + (working ? Math.sin(performance.now() / 23) * 0.02 : 0);
-        void dt;
+        t += dt;
+        b.rotation.z = working ? Math.sin(t * 33) * 0.08 : 0;
+        b.position.x = -w * 0.12 + (working ? Math.sin(t * 43) * 0.02 : 0);
       };
       return;
     }
     case 'mill': {
-      const hut = model('wall-wood', { height: 1.2 });
-      const roof = model('roof', { height: 0.8 });
-      roof.position.y = 1.2;
+      const hut = new THREE.Mesh(new THREE.BoxGeometry(w * 0.6, 1.3, d * 0.6), paletteMaterial('wood'));
+      hut.position.set(0, 0.65, -d * 0.1);
+      hut.castShadow = hut.receiveShadow = true;
+      const roof = model('roof', { fit: [w * 0.75, d * 0.75] });
+      roof.position.set(0, 1.3, -d * 0.1);
       const sails = model('windmill');
+      sails.rotation.y = Math.PI / 2;
+      sails.position.sub(new THREE.Box3().setFromObject(sails).getCenter(new THREE.Vector3()));
       const hub = new THREE.Group();
-      hub.position.set(0, 1.6, 0.55);
-      sails.position.y = -1.3;
+      hub.position.set(0, 1.55, d * 0.22);
       hub.add(sails);
       v.body.add(hut, roof, hub);
       v.inputSlots = grid(3, 2, 0.45, 0.15, 0.02, -w / 2 + 0.35, d / 2 - 0.25);
@@ -204,14 +208,17 @@ function build(name: string, w: number, d: number, v: StationVisual): void {
       const stove = model('stove', { fit: [w * 0.7, d * 0.7] });
       stove.position.z = -d * 0.12;
       v.body.add(stove);
-      const glow = new THREE.PointLight('#ff8a3a', 0, 2.5);
-      glow.position.set(0, 0.5, d * 0.25);
+      const glowMat = new THREE.MeshStandardMaterial({ color: '#3a2416', emissive: '#ff7a1a', emissiveIntensity: 0 });
+      const glow = new THREE.Mesh(new THREE.BoxGeometry(w * 0.45, 0.25, 0.04), glowMat);
+      glow.position.set(0, 0.35, d * 0.24);
       v.body.add(glow);
       v.inputSlots = grid(4, 2, 0.6, 0.15, 0.02, -w / 2 + 0.45, d / 2 - 0.2);
       v.slots = tray(v.body, w / 2 - 0.3, d / 2 - 0.25);
+      let t = 0;
       v.animate = (dt, working) => {
-        glow.intensity +=
-          ((working ? 2 + Math.sin(performance.now() / 120) : 0) - glow.intensity) * Math.min(1, dt * 6);
+        t += dt;
+        const target = working ? 1.5 + Math.sin(t * 8) * 0.5 : 0;
+        glowMat.emissiveIntensity += (target - glowMat.emissiveIntensity) * Math.min(1, dt * 6);
       };
       return;
     }

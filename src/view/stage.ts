@@ -5,7 +5,6 @@ import { LIGHT } from '../palette';
 import { paletteColor } from './materials';
 
 const YAW = THREE.MathUtils.degToRad(FEEL.cameraYawDeg);
-const PITCH = THREE.MathUtils.degToRad(FEEL.cameraPitchDeg);
 const CAMERA_DISTANCE = 60;
 const SHADOW_HALF = 20;
 const PIXEL_RATIOS = [2, 1.5, 1];
@@ -29,6 +28,8 @@ export class Stage {
   private slowTime = 0;
   private fastTime = 0;
   viewSize = FEEL.viewSize;
+  /** Layout editor: look straight down with north up. */
+  topDown = false;
 
   constructor(canvas: HTMLCanvasElement, phone: boolean) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -94,7 +95,11 @@ export class Stage {
 
   render(dt: number): void {
     this.nudgeNow.lerp(this.nudge, 1 - Math.exp(-6 * dt));
-    const offset = new THREE.Vector3(Math.sin(YAW) * Math.cos(PITCH), Math.sin(PITCH), Math.cos(YAW) * Math.cos(PITCH));
+    const PITCH = THREE.MathUtils.degToRad(FEEL.cameraPitchDeg);
+    const offset = this.topDown
+      ? new THREE.Vector3(0, 1, 0)
+      : new THREE.Vector3(Math.sin(YAW) * Math.cos(PITCH), Math.sin(PITCH), Math.cos(YAW) * Math.cos(PITCH));
+    this.camera.up.set(0, this.topDown ? 0 : 1, this.topDown ? -1 : 0);
     const w = this.camera.right - this.camera.left;
     const h = this.camera.top - this.camera.bottom;
     // Shift the look-at point so the focus lands nudged on screen; screen-up on the floor is longer by 1/sin(pitch).

@@ -113,7 +113,8 @@ export class Level {
   private buildFloor(): void {
     const cells: Point[] = [];
     for (const f of this.L.floors)
-      for (let x = Math.floor(f[0]); x < f[0] + f[2]; x++) for (let z = Math.floor(f[1]); z < f[1] + f[3]; z++) cells.push([x + 0.5, z + 0.5]);
+      for (let x = Math.floor(f[0]); x < f[0] + f[2]; x++)
+        for (let z = Math.floor(f[1]); z < f[1] + f[3]; z++) cells.push([x + 0.5, z + 0.5]);
     const tile = model('market-floor', { fit: [1, 1] });
     tile.updateMatrixWorld(true);
     const m = new THREE.Matrix4();
@@ -138,7 +139,8 @@ export class Level {
   private buildRopes(rects: Box[]): THREE.Object3D[] {
     const out: THREE.Object3D[] = [];
     const wallBoxes = Object.values(this.L.walls).map((w) => w.box);
-    const nearWall = (x: number, z: number) => wallBoxes.some((b) => inBox(x, z, [b[0] - 0.3, b[1] - 0.3, b[2] + 0.6, b[3] + 0.6]));
+    const nearWall = (x: number, z: number) =>
+      wallBoxes.some((b) => inBox(x, z, [b[0] - 0.3, b[1] - 0.3, b[2] + 0.6, b[3] + 0.6]));
     const inOther = (x: number, z: number) => rects.some((r) => inBox(x, z, r, 0.01));
     for (const r of rects) {
       const edges: [number, number, number, number, boolean][] = [
@@ -154,7 +156,11 @@ export class Level {
           const [W, H] = this.L.size;
           if (nearWall(x, z) || x <= 0.1 || z <= 0.1 || x >= W - 0.1 || z >= H - 0.1) continue;
           // skip edges shared with another rect of the same Area
-          if (inOther(x + (alongX ? 0 : 0.2), z + (alongX ? 0.2 : 0)) && inOther(x - (alongX ? 0 : 0.2), z - (alongX ? 0.2 : 0))) continue;
+          if (
+            inOther(x + (alongX ? 0 : 0.2), z + (alongX ? 0.2 : 0)) &&
+            inOther(x - (alongX ? 0 : 0.2), z - (alongX ? 0.2 : 0))
+          )
+            continue;
           const rope = model('rope', { fit: [1, 0.3] });
           rope.position.set(x, 0, z);
           if (!alongX) rope.rotation.y = Math.PI / 2;

@@ -35,7 +35,14 @@ export class Tweens {
     apply: (k: number) => void,
     opts: { ease?: (t: number) => number; delay?: number; done?: () => void } = {},
   ): void {
-    this.list.push({ t: 0, duration, delay: opts.delay ?? 0, apply, ease: opts.ease ?? ease.outCubic, done: opts.done });
+    this.list.push({
+      t: 0,
+      duration,
+      delay: opts.delay ?? 0,
+      apply,
+      ease: opts.ease ?? ease.outCubic,
+      done: opts.done,
+    });
   }
 
   update(dt: number): void {

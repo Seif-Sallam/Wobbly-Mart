@@ -60,7 +60,11 @@ interface CustomerLook {
   stack: StackLook;
 }
 
-const newStack = (): StackLook => ({ lean: new THREE.Vector2(), leanVel: new THREE.Vector2(), prevVel: new THREE.Vector2() });
+const newStack = (): StackLook => ({
+  lean: new THREE.Vector2(),
+  leanVel: new THREE.Vector2(),
+  prevVel: new THREE.Vector2(),
+});
 
 export class WorldView {
   readonly level: Level;
@@ -204,7 +208,9 @@ export class WorldView {
       this.root.add(v.root);
       if (animate) {
         v.body.scale.setScalar(0.01);
-        this.tweens.add(0.45, (k) => v.body.scale.setScalar(Math.max(0.01, k)), { ease: (t) => ease.outBack(t, FEEL.springOvershoot * 1.5) });
+        this.tweens.add(0.45, (k) => v.body.scale.setScalar(Math.max(0.01, k)), {
+          ease: (t) => ease.outBack(t, FEEL.springOvershoot * 1.5),
+        });
         this.juice.puff(v.root.position.clone().setY(0.3), PALETTE.path, 10, 1.6);
       }
     }
@@ -229,7 +235,8 @@ export class WorldView {
       v.root.position.set(0, 0, 0);
       ghost = v.root;
     }
-    const iconName = name ?? (def.kind === 'cashier' || def.kind === 'stocker' ? 'employee' : def.kind === 'exit' ? 'van' : 'area');
+    const iconName =
+      name ?? (def.kind === 'cashier' || def.kind === 'stocker' ? 'employee' : def.kind === 'exit' ? 'van' : 'area');
     const [x, z] = boxCentre(place.box);
     pad = new PadVisual(x, z, iconName, ghost);
     this.pads.set(id, pad);
@@ -277,7 +284,8 @@ export class WorldView {
   private refPos(ref: Ref, product: string, index: number): THREE.Vector3 {
     const w = this.w;
     if ('agent' in ref) {
-      if (ref.agent === 'player') return this.stackSlot(w.player.x, w.player.z, this.player.facing, this.playerStack, index);
+      if (ref.agent === 'player')
+        return this.stackSlot(w.player.x, w.player.z, this.player.facing, this.playerStack, index);
       const s = w.stockers.find((o) => o.id === ref.id);
       const look = this.staff.get(ref.id);
       return s && look ? this.stackSlot(s.x, s.z, look.ch.facing, look.stack, index) : new THREE.Vector3();
@@ -291,7 +299,8 @@ export class WorldView {
     const v = this.stations.get(ref.station);
     if (!st || !v) return new THREE.Vector3();
     v.root.updateMatrixWorld();
-    if (st.kind === 'shelf') return this.local(v, v.slots[Math.min(index, v.slots.length - 1)] ?? new THREE.Vector3(0, 1, 0));
+    if (st.kind === 'shelf')
+      return this.local(v, v.slots[Math.min(index, v.slots.length - 1)] ?? new THREE.Vector3(0, 1, 0));
     if (st.kind === 'producer') {
       const type = w.map.producers[st.type];
       if (type.inputs.includes(product) && product !== type.output) {
@@ -363,7 +372,8 @@ export class WorldView {
         if (st?.kind !== 'producer' || !v) break;
         const kind = w.map.producers[st.type].kind;
         if (kind === 'animal') this.juice.puff(v.root.position.clone().setY(0.6), '#ffffff', 4, 0.8);
-        if (kind === 'machine') this.juice.puff(v.root.position.clone().setY(1.2), st.type === 'mill' ? '#f4ead8' : '#e8e8e8', 3, 0.4);
+        if (kind === 'machine')
+          this.juice.puff(v.root.position.clone().setY(1.2), st.type === 'mill' ? '#f4ead8' : '#e8e8e8', 3, 0.4);
         break;
       }
       case 'paid': {
@@ -475,7 +485,11 @@ export class WorldView {
       }
     }
     this.juice.update(dt);
-    const near: Point[] = [[w.player.x, w.player.z], ...w.customers.map((c): Point => [c.x, c.z]), ...w.stockers.map((s): Point => [s.x, s.z])];
+    const near: Point[] = [
+      [w.player.x, w.player.z],
+      ...w.customers.map((c): Point => [c.x, c.z]),
+      ...w.stockers.map((s): Point => [s.x, s.z]),
+    ];
     this.level.update(dt, near);
     this.updateMarkers();
     this.updateCamera(dt);
@@ -561,9 +575,16 @@ export class WorldView {
       look.ch.update(dt, c.x, c.z, 0, 0, false);
     }
     // blob shadows
-    const spots: Point[] = [[px, pz], ...w.customers.map((c): Point => [c.x, c.z]), ...w.stockers.map((s): Point => [s.x, s.z]), ...w.cashiers.map((c): Point => [c.x, c.z])];
+    const spots: Point[] = [
+      [px, pz],
+      ...w.customers.map((c): Point => [c.x, c.z]),
+      ...w.stockers.map((s): Point => [s.x, s.z]),
+      ...w.cashiers.map((c): Point => [c.x, c.z]),
+    ];
     const m = new THREE.Matrix4();
-    spots.slice(0, 64).forEach(([x, z], i) => this.blobs.setMatrixAt(i, m.makeScale(0.9, 1, 0.9).setPosition(x, 0.025, z)));
+    spots
+      .slice(0, 64)
+      .forEach(([x, z], i) => this.blobs.setMatrixAt(i, m.makeScale(0.9, 1, 0.9).setPosition(x, 0.025, z)));
     this.blobs.count = Math.min(64, spots.length);
     this.blobs.instanceMatrix.needsUpdate = true;
   }
@@ -661,7 +682,13 @@ export class WorldView {
         const [x, z] = cashPilePoint(w, st.id);
         for (let i = 0; i < bills; i++) {
           const col = i % 2;
-          this.bills.add(m.compose(new THREE.Vector3(x + col * 0.05, 0.03 + Math.floor(i / 2) * 0.065, z + col * 0.04), q.setFromEuler(new THREE.Euler(0, (i * 37) % 7 * 0.08, 0)), s.setScalar(1)));
+          this.bills.add(
+            m.compose(
+              new THREE.Vector3(x + col * 0.05, 0.03 + Math.floor(i / 2) * 0.065, z + col * 0.04),
+              q.setFromEuler(new THREE.Euler(0, ((i * 37) % 7) * 0.08, 0)),
+              s.setScalar(1),
+            ),
+          );
         }
       }
     }
@@ -673,14 +700,31 @@ export class WorldView {
         put(items[i], this.stackSlot(x, z, facing, look, i, scale), facing, scale, tilt);
       }
     };
-    stack(w.player.stack, 'stack:player', this.player.root.position.x, this.player.root.position.z, this.player.facing, this.playerStack);
+    stack(
+      w.player.stack,
+      'stack:player',
+      this.player.root.position.x,
+      this.player.root.position.z,
+      this.player.facing,
+      this.playerStack,
+    );
     for (const st of w.stockers) {
       const look = this.staff.get(st.id);
-      if (look) stack(st.stack, `stack:${st.id}`, look.ch.root.position.x, look.ch.root.position.z, look.ch.facing, look.stack);
+      if (look)
+        stack(st.stack, `stack:${st.id}`, look.ch.root.position.x, look.ch.root.position.z, look.ch.facing, look.stack);
     }
     for (const c of w.customers) {
       const look = this.customers.get(c.id);
-      if (look) stack(c.cart, `cart:${c.id}`, look.ch.root.position.x, look.ch.root.position.z, look.ch.facing, look.stack, CART_SCALE);
+      if (look)
+        stack(
+          c.cart,
+          `cart:${c.id}`,
+          look.ch.root.position.x,
+          look.ch.root.position.z,
+          look.ch.facing,
+          look.stack,
+          CART_SCALE,
+        );
     }
     // Flights
     this.flights = this.flights.filter((f) => {
@@ -725,7 +769,10 @@ export class WorldView {
       this.officeMark.position.set(x, 2 + Math.abs(Math.sin(this.time * 4)) * 0.3, z);
     }
     this.arrow.visible = !!this.arrowTarget;
-    if (this.arrowTarget) this.arrow.position.copy(this.arrowTarget).add(new THREE.Vector3(0, 2.2 + Math.abs(Math.sin(this.time * 4)) * 0.5, 0));
+    if (this.arrowTarget)
+      this.arrow.position
+        .copy(this.arrowTarget)
+        .add(new THREE.Vector3(0, 2.2 + Math.abs(Math.sin(this.time * 4)) * 0.5, 0));
   }
 
   private updateCamera(dt: number): void {
@@ -751,10 +798,12 @@ export class WorldView {
             ? 1
             : 1 - ease.inOutCubic((t - FEEL.panGlide - FEEL.panHold) / FEEL.panGlide);
       focus.lerp(target, k);
-      for (const g of this.ghosts) g.traverse((o) => {
-        const mesh = o as THREE.Mesh;
-        if (mesh.isMesh) (mesh.material as THREE.MeshStandardMaterial).opacity = 0.25 + Math.abs(Math.sin(t * 6)) * 0.35;
-      });
+      for (const g of this.ghosts)
+        g.traverse((o) => {
+          const mesh = o as THREE.Mesh;
+          if (mesh.isMesh)
+            (mesh.material as THREE.MeshStandardMaterial).opacity = 0.25 + Math.abs(Math.sin(t * 6)) * 0.35;
+        });
     }
     this.stage.focus.copy(focus);
   }

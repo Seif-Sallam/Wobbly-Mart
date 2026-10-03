@@ -31,7 +31,13 @@ function grid(cols: number, rows: number, w: number, d: number, y: number, cx = 
   const out: THREE.Vector3[] = [];
   for (let r = 0; r < rows; r++)
     for (let c = 0; c < cols; c++)
-      out.push(new THREE.Vector3(cx + (cols > 1 ? (c / (cols - 1) - 0.5) * w : 0), y, cz + (rows > 1 ? (r / (rows - 1) - 0.5) * d : 0)));
+      out.push(
+        new THREE.Vector3(
+          cx + (cols > 1 ? (c / (cols - 1) - 0.5) * w : 0),
+          y,
+          cz + (rows > 1 ? (r / (rows - 1) - 0.5) * d : 0),
+        ),
+      );
   return out;
 }
 
@@ -49,7 +55,9 @@ function tray(body: THREE.Group, x: number, z: number): THREE.Vector3[] {
   const t = model('tray');
   t.position.set(x, 0, z);
   body.add(t);
-  return grid(3, 2, 0.36, 0.22, 0.12, x, z).concat(grid(3, 2, 0.36, 0.22, 0.42, x, z)).slice(0, 6);
+  return grid(3, 2, 0.36, 0.22, 0.12, x, z)
+    .concat(grid(3, 2, 0.36, 0.22, 0.42, x, z))
+    .slice(0, 6);
 }
 
 function fence(body: THREE.Group, w: number, d: number): void {
@@ -202,7 +210,8 @@ function build(name: string, w: number, d: number, v: StationVisual): void {
       v.inputSlots = grid(4, 2, 0.6, 0.15, 0.02, -w / 2 + 0.45, d / 2 - 0.2);
       v.slots = tray(v.body, w / 2 - 0.3, d / 2 - 0.25);
       v.animate = (dt, working) => {
-        glow.intensity += ((working ? 2 + Math.sin(performance.now() / 120) : 0) - glow.intensity) * Math.min(1, dt * 6);
+        glow.intensity +=
+          ((working ? 2 + Math.sin(performance.now() / 120) : 0) - glow.intensity) * Math.min(1, dt * 6);
       };
       return;
     }
@@ -247,7 +256,16 @@ export function buildStation(name: string, box: Box, rot: Rot): StationVisual {
   root.rotation.y = THREE.MathUtils.degToRad(rot);
   const body = new THREE.Group();
   root.add(body);
-  const v: StationVisual = { root, body, slots: [], inputSlots: [], plants: [], plantVisuals: [], mixers: [], animate: () => {} };
+  const v: StationVisual = {
+    root,
+    body,
+    slots: [],
+    inputSlots: [],
+    plants: [],
+    plantVisuals: [],
+    mixers: [],
+    animate: () => {},
+  };
   build(name, w, d, v);
   return v;
 }

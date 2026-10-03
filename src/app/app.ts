@@ -3,7 +3,15 @@ import * as THREE from 'three';
 import type { SimEvent } from '../sim/world';
 import type { MapDef } from '../sim/map';
 import { encodeSaveCode, decodeSaveCode, snapshot, type MapSave, type SaveFile, type Settings } from '../sim/save';
-import { canBuyUpgrade, completion, completionOf, padRemaining, tutorialStep, upgradeVisible, visiblePads } from '../sim/economy';
+import {
+  canBuyUpgrade,
+  completion,
+  completionOf,
+  padRemaining,
+  tutorialStep,
+  upgradeVisible,
+  visiblePads,
+} from '../sim/economy';
 import { stationModel } from '../sim/map';
 import { boxCentre } from '../sim/geometry';
 import { MAPS, mapById } from '../../maps';
@@ -12,7 +20,18 @@ import { loadAssets } from '../view/assets';
 import { iconUrl, renderThumbs } from '../view/thumbs';
 import { Input } from '../input/input';
 import { Game } from './game';
-import { claimTab, loadSave, loadSettings, markSeen, persistStorage, seen, storageWorks, wipeSave, writeSave, writeSettings } from './storage';
+import {
+  claimTab,
+  loadSave,
+  loadSettings,
+  markSeen,
+  persistStorage,
+  seen,
+  storageWorks,
+  wipeSave,
+  writeSave,
+  writeSettings,
+} from './storage';
 import { Hud, type EdgeArrow } from '../ui/hud';
 import { renderUi, type Overlay, type UiActions, type UiState } from '../ui/app';
 import { Sounds } from '../audio/audio';
@@ -24,7 +43,9 @@ const EDGE_MARGIN = 44;
 const WIPE_SECONDS = 450;
 const TITLE_PAN_SPEED = 0.12;
 
-const isIos = /iP(hone|ad|od)/.test(navigator.userAgent) && !('standalone' in navigator && (navigator as { standalone?: boolean }).standalone);
+const isIos =
+  /iP(hone|ad|od)/.test(navigator.userAgent) &&
+  !('standalone' in navigator && (navigator as { standalone?: boolean }).standalone);
 const isTouch = matchMedia('(pointer: coarse)').matches;
 
 export class App {
@@ -60,7 +81,9 @@ export class App {
       loading: 0,
       overlay: null,
       office: false,
-      card: loaded.problem ? { message: `Your old save couldn't be read (${loaded.problem}). It was kept as a backup; starting fresh.` } : null,
+      card: loaded.problem
+        ? { message: `Your old save couldn't be read (${loaded.problem}). It was kept as a backup; starting fresh.` }
+        : null,
       storageFailed: !storageWorks(),
       wipe: false,
       touch: isTouch,
@@ -243,7 +266,9 @@ export class App {
     const targets: { at: THREE.Vector3; icon: string }[] = [];
     const iconOf = (id: string) => {
       const def = w.map.pads[id]?.unlocks;
-      const name = def ? stationModel(w.map, def) : stationModel(w.map, w.map.freeStations[id]?.unlocks ?? { kind: 'office' });
+      const name = def
+        ? stationModel(w.map, def)
+        : stationModel(w.map, w.map.freeStations[id]?.unlocks ?? { kind: 'office' });
       return iconUrl(name ?? (def?.kind === 'exit' ? 'van' : 'employee'));
     };
     const step = tutorialStep(w);
@@ -266,7 +291,10 @@ export class App {
     }
     for (const c of w.customers) {
       if (c.state !== 'shop' || !c.angry) continue;
-      targets.push({ at: new THREE.Vector3(c.x, 1, c.z), icon: iconUrl(w.map.products[c.list[c.li]?.product]?.model ?? '') });
+      targets.push({
+        at: new THREE.Vector3(c.x, 1, c.z),
+        icon: iconUrl(w.map.products[c.list[c.li]?.product]?.model ?? ''),
+      });
       break;
     }
     const upgrade = Object.keys(w.map.upgrades).some((id) => upgradeVisible(w, id) && canBuyUpgrade(w, id));
@@ -283,9 +311,13 @@ export class App {
     const cy = innerHeight / 2;
     for (const t of targets) {
       const s = this.stage.toScreen(t.at);
-      if (s.x > EDGE_MARGIN && s.y > EDGE_MARGIN && s.x < innerWidth - EDGE_MARGIN && s.y < innerHeight - EDGE_MARGIN) continue;
+      if (s.x > EDGE_MARGIN && s.y > EDGE_MARGIN && s.x < innerWidth - EDGE_MARGIN && s.y < innerHeight - EDGE_MARGIN)
+        continue;
       const angle = Math.atan2(s.y - cy, s.x - cx);
-      const k = Math.min((cx - EDGE_MARGIN) / Math.abs(Math.cos(angle) || 1e-6), (cy - EDGE_MARGIN) / Math.abs(Math.sin(angle) || 1e-6));
+      const k = Math.min(
+        (cx - EDGE_MARGIN) / Math.abs(Math.cos(angle) || 1e-6),
+        (cy - EDGE_MARGIN) / Math.abs(Math.sin(angle) || 1e-6),
+      );
       arrows.push({ x: cx + Math.cos(angle) * k, y: cy + Math.sin(angle) * k, angle, icon: t.icon });
     }
     this.hud.setArrows(arrows);
@@ -316,7 +348,10 @@ export class App {
       this.ui.maps = MAPS.map((map) => ({
         map,
         visited: this.save.visited.includes(map.id),
-        completion: map.id === this.game?.world.map.id ? completion(this.game.world) : completionOf(map, new Set(this.save.maps[map.id]?.owned ?? []), this.save.maps[map.id]?.levels ?? {}),
+        completion:
+          map.id === this.game?.world.map.id
+            ? completion(this.game.world)
+            : completionOf(map, new Set(this.save.maps[map.id]?.owned ?? []), this.save.maps[map.id]?.levels ?? {}),
       }));
     }
     if (this.game && this.ui.screen === 'game') this.game.paused = !!o || this.lostTab;
@@ -404,5 +439,11 @@ export class App {
 
 /** The title shows the map fully built. */
 function showcaseSave(map: MapDef): MapSave {
-  return { money: 0, owned: [...Object.keys(map.layout.areas), ...Object.keys(map.pads)], paid: {}, levels: {}, assignments: {} };
+  return {
+    money: 0,
+    owned: [...Object.keys(map.layout.areas), ...Object.keys(map.pads)],
+    paid: {},
+    levels: {},
+    assignments: {},
+  };
 }

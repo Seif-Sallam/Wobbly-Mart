@@ -18,7 +18,10 @@ export function Logo() {
     const tick = (now: number) => {
       const t = (now - start) / 1000;
       letters.current.forEach((el, i) => {
-        el?.setAttribute('transform', `translate(0 ${Math.sin(t * 2.2 + i * 0.9) * 3}) rotate(${Math.sin(t * 1.6 + i) * 3} ${xOf(i) + 14} 60)`);
+        el?.setAttribute(
+          'transform',
+          `translate(0 ${Math.sin(t * 2.2 + i * 0.9) * 3}) rotate(${Math.sin(t * 1.6 + i) * 3} ${xOf(i) + 14} 60)`,
+        );
       });
       stack.current?.setAttribute('transform', `translate(318 -34) scale(0.62) rotate(${Math.sin(t * 1.8) * 6} 50 92)`);
       raf = requestAnimationFrame(tick);

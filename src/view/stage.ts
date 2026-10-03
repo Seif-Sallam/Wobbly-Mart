@@ -47,7 +47,14 @@ export class Stage {
     this.sun.shadow.radius = LIGHT.shadowRadius;
     this.sun.shadow.bias = -0.0005;
     this.sun.shadow.normalBias = 0.02;
-    Object.assign(this.sun.shadow.camera, { left: -SHADOW_HALF, right: SHADOW_HALF, top: SHADOW_HALF, bottom: -SHADOW_HALF, near: 1, far: 80 });
+    Object.assign(this.sun.shadow.camera, {
+      left: -SHADOW_HALF,
+      right: SHADOW_HALF,
+      top: SHADOW_HALF,
+      bottom: -SHADOW_HALF,
+      near: 1,
+      far: 80,
+    });
     this.scene.add(hemi, this.sun, this.sun.target);
     this.resize();
     addEventListener('resize', () => this.resize());
@@ -58,7 +65,12 @@ export class Stage {
     const h = innerHeight;
     const short = Math.min(w, h);
     const half = this.viewSize / 2;
-    Object.assign(this.camera, { left: (-half * w) / short, right: (half * w) / short, top: (half * h) / short, bottom: (-half * h) / short });
+    Object.assign(this.camera, {
+      left: (-half * w) / short,
+      right: (half * w) / short,
+      top: (half * h) / short,
+      bottom: (-half * h) / short,
+    });
     this.camera.updateProjectionMatrix();
     this.renderer.setPixelRatio(PIXEL_RATIOS[this.ratioStep]);
     this.renderer.setSize(w, h, false);

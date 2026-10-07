@@ -57,16 +57,6 @@ function move(w: World, intents: Intents): void {
     p.vz = 0;
   }
   for (const b of w.nav.solids) pushOutOfBox(p, b, R);
-  const others = [...w.customers, ...w.stockers, ...w.cashiers];
-  for (const o of others) {
-    const ex = p.x - o.x;
-    const ez = p.z - o.z;
-    const dist = Math.hypot(ex, ez);
-    const min = R + TUNING.characterRadius;
-    if (dist >= min || dist < 1e-6) continue;
-    p.x = o.x + (ex / dist) * min;
-    p.z = o.z + (ez / dist) * min;
-  }
   if (!confined(w, p.x, p.z) || w.nav.solids.some((b) => distToBox(p.x, p.z, b) < R - TUNING.collisionSlack)) {
     p.x = ox;
     p.z = oz;
@@ -145,7 +135,9 @@ export function updatePlayer(w: World, intents: Intents): void {
   payPads(w);
   collectCash(w);
   clearMesses(w);
-  const st = stationAt(w, p.x, p.z, (s) => INTERACTIVE.has(s.kind));
+  const near = stationAt(w, p.x, p.z, (s) => INTERACTIVE.has(s.kind));
+  p.trashHold = near?.kind === 'trash' ? p.trashHold + DT : 0;
+  const st = near?.kind === 'trash' && p.trashHold < TUNING.trashHoldTime ? null : near;
   const allowed = !intents.manualGrab || intents.grab;
   const moved = transferTick(
     w,

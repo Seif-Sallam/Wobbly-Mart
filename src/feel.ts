@@ -4,6 +4,9 @@ export const FEEL = {
   accelTime: 0.31,
   stopTime: 0.3,
   turnSpeed: 10,
+  /** Touch: joystick force past its ring that sprints. */
+  sprintForce: 1.4,
+  sprintPuffGap: 0.12,
   walkBob: 0.05,
   // camera
   cameraYawDeg: 45,
@@ -15,9 +18,16 @@ export const FEEL = {
   itemSpacing: 0.31,
   stackForward: 0.55,
   stackBase: 0.9,
-  sway: 2,
-  swayStiffness: 51,
-  swayDamping: 20,
+  /** Bottom Items that never bend; above them each follows the lean by bendGain × (height above)^bendPower. */
+  stackRigid: 2,
+  bendPower: 1.3,
+  bendGain: 0.9,
+  sway: 2.5,
+  swayStiffness: 45,
+  swayDamping: 16,
+  leanMax: 0.8,
+  jiggle: 0.02,
+  jiggleSpeed: 3,
   flyTime: 0.3,
   flyArc: 1.5,
   // Area Pan

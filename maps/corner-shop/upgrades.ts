@@ -26,7 +26,15 @@ export const upgrades: Record<string, UpgradeDef> = {
     family: 'player',
     target: 'player',
     stat: 'stack',
-    levels: levels([35, 65, 125, 200], [20, 24, 28, 32]),
+    levels: levels([20, 40, 75, 125], [10, 12, 14, 16]),
+    requires: ['office'],
+  },
+  steady_hands: {
+    name: 'Steady hands',
+    family: 'player',
+    target: 'player',
+    stat: 'safe',
+    levels: levels([25, 45, 80], [4, 5, 6]),
     requires: ['office'],
   },
   shelf_cap: {

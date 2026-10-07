@@ -33,7 +33,7 @@ export interface Carrier {
   fullWarned: boolean;
 }
 
-export type Player = Mover & Carrier & { trashHold: number };
+export type Player = Mover & Carrier & { trashHold: number; sprinting: boolean; dropCooldown: number };
 
 export interface Job {
   sink: string;
@@ -126,6 +126,14 @@ export interface Mess {
   items: string[];
 }
 
+/** An Item dropped while sprinting: lies where it landed until the Player walks over it. */
+export interface LooseItem {
+  id: number;
+  x: number;
+  z: number;
+  product: string;
+}
+
 export interface Drain {
   register: string;
   amount: number;
@@ -134,7 +142,12 @@ export interface Drain {
   duration: number;
 }
 
-export type Ref = { agent: 'player' } | { agent: 'stocker'; id: string } | { station: string } | { customer: number };
+export type Ref =
+  | { agent: 'player' }
+  | { agent: 'stocker'; id: string }
+  | { station: string }
+  | { customer: number }
+  | { loose: number };
 
 export type SimEvent =
   | { type: 'transfer'; product: string; from: Ref; to: Ref }
@@ -160,6 +173,7 @@ export interface Intents {
   /** Manual Grab Mode: transfers only while held. */
   grab: boolean;
   manualGrab?: boolean;
+  sprint?: boolean;
   buyUpgrade?: string;
   assign?: { stocker: string; product: string | null };
 }
@@ -186,6 +200,7 @@ export interface World {
   stockers: Stocker[];
   cashiers: Cashier[];
   messes: Mess[];
+  loose: LooseItem[];
   drains: Drain[];
   events: SimEvent[];
   pan: { area: string; t: number; duration: number } | null;
@@ -219,13 +234,14 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
     owned: new Set(),
     paid: {},
     levels: {},
-    player: { x: px, z: pz, vx: 0, vz: 0, trashHold: 0, ...newCarrier() },
+    player: { x: px, z: pz, vx: 0, vz: 0, trashHold: 0, sprinting: false, dropCooldown: 0, ...newCarrier() },
     stations: new Map(),
     customers: [],
     nextId: 1,
     stockers: [],
     cashiers: [],
     messes: [],
+    loose: [],
     drains: [],
     events: [],
     pan: null,

@@ -18,6 +18,7 @@ import { MAPS, mapById } from '../../maps';
 import { Stage } from '../view/stage';
 import { loadAssets } from '../view/assets';
 import { iconUrl, renderThumbs } from '../view/thumbs';
+import { moodOf } from '../view/receipt';
 import { Input } from '../input/input';
 import { Game } from './game';
 import {
@@ -310,7 +311,7 @@ export class App {
       else if (padRemaining(w, id) <= w.money) targets.push({ at, icon: iconOf(id) });
     }
     for (const c of w.customers) {
-      if (c.state !== 'shop' || !c.angry) continue;
+      if (c.state !== 'shop' || moodOf(c) < 2) continue;
       targets.push({
         at: new THREE.Vector3(c.x, 1, c.z),
         icon: iconUrl(w.map.products[c.list[c.li]?.product]?.model ?? ''),

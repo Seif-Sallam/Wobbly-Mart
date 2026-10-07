@@ -1,0 +1,129 @@
+// The Customer's bubble: a receipt card with one line per Product, plus patience tells shared by everyone.
+import type { Customer } from '../sim/world';
+import { CanvasTex, canvasSprite, outlinedText, roundRect } from './text';
+import { icon } from './thumbs';
+import { PALETTE, SHADES } from '../palette';
+import { FEEL } from '../feel';
+
+const W = 320;
+const H = 400;
+const ROW = 76;
+/** Sprite height (m): one 128 px row of the old bubble was 0.6 m. */
+const HEIGHT = 0.6 * (H / 128);
+const MOOD_COLOUR = [PALETTE.ink, SHADES.warn, PALETTE.orange, SHADES.angry];
+const MOOD_FACE = ['', '…', '>_<', '>:('];
+
+/** 0 calm, 1 "…", 2 ">_<", 3 really angry. Never-give-up Customers top out at 2. */
+export function moodOf(c: Customer): number {
+  if (c.angry) return 3;
+  if (c.state !== 'shop' || c.patience <= 0) return 0;
+  const [first, second] = FEEL.moodTells;
+  return c.patience >= second ? 2 : c.patience >= first ? 1 : 0;
+}
+
+export class Receipt {
+  private tex = new CanvasTex(W, H);
+  readonly sprite = canvasSprite(this.tex, HEIGHT);
+  private key = '';
+  private got: number[] = [];
+  private popAt: number[] = [];
+  private time = 0;
+
+  constructor() {
+    this.sprite.center.set(0.5, 0);
+  }
+
+  dispose(): void {
+    this.tex.texture.dispose();
+  }
+
+  update(c: Customer, models: Record<string, { model: string } | undefined>, dt: number): void {
+    this.time += dt;
+    const angryLeaving = c.state === 'leave' && c.angry;
+    this.sprite.visible = c.state === 'shop' || angryLeaving;
+    c.list.forEach((e, i) => {
+      if (e.got > (this.got[i] ?? 0)) this.popAt[i] = this.time;
+      this.got[i] = e.got;
+    });
+    const popping = this.popAt.some((t) => this.time - t < FEEL.receiptPop);
+    const mood = moodOf(c);
+    const lines = c.list.map((e, i) => ({
+      model: models[e.product]?.model ?? e.product,
+      left: e.want - e.got,
+      current: c.state === 'shop' && i === c.li,
+    }));
+    const key = JSON.stringify([lines, mood, this.sprite.visible, angryLeaving]);
+    if (key === this.key && !popping) return;
+    this.key = key;
+    this.tex.draw((g) => {
+      if (!this.sprite.visible) return;
+      if (angryLeaving) {
+        card(g, W / 2 - 80, H - 124, 160, 100, SHADES.angry);
+        outlinedText(g, MOOD_FACE[3], W / 2, H - 74, 54, SHADES.angry);
+        return;
+      }
+      const h = lines.length * ROW + 24;
+      const y0 = H - 24 - h;
+      card(g, 30, y0, W - 60, h, MOOD_COLOUR[mood]);
+      lines.forEach((l, i) => {
+        const y = y0 + 12 + i * ROW + ROW / 2;
+        if (l.current && l.left > 0) {
+          g.fillStyle = PALETTE.orange;
+          g.globalAlpha = 0.22;
+          roundRect(g, 42, y - ROW / 2 + 4, W - 84, ROW - 8, 14);
+          g.fill();
+          g.globalAlpha = 1;
+        }
+        const s = this.pop(i);
+        const img = icon(l.model);
+        if (img) {
+          g.globalAlpha = l.left > 0 ? 1 : FEEL.receiptDoneAlpha;
+          g.drawImage(img, 92 - 36 * s, y - 36 * s, 72 * s, 72 * s);
+          g.globalAlpha = 1;
+        }
+        if (l.left > 0) outlinedText(g, `×${l.left}`, 196, y, 44 * s, PALETTE.cream);
+        else tick(g, 190, y, 20 * s);
+      });
+      if (mood) outlinedText(g, MOOD_FACE[mood], W - 52, y0 + 4, 40, MOOD_COLOUR[mood]);
+    });
+  }
+
+  /** ×1.35 and back after a line takes an Item. */
+  private pop(i: number): number {
+    const t = (this.time - (this.popAt[i] ?? -9)) / FEEL.receiptPop;
+    return t >= 0 && t < 1 ? 1 + Math.sin(t * Math.PI) * 0.35 : 1;
+  }
+}
+
+function card(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, edge: string): void {
+  g.fillStyle = PALETTE.cream;
+  g.strokeStyle = edge;
+  g.lineWidth = 7;
+  roundRect(g, x, y, w, h, 26);
+  g.fill();
+  g.stroke();
+  for (const [dy, op] of [
+    [-2, 'fill'],
+    [2, 'stroke'],
+  ] as const) {
+    g.beginPath();
+    g.moveTo(W / 2 - 14, y + h + dy);
+    g.lineTo(W / 2, y + h + 18);
+    g.lineTo(W / 2 + 14, y + h + dy);
+    g[op]();
+  }
+}
+
+function tick(g: CanvasRenderingContext2D, x: number, y: number, r: number): void {
+  g.fillStyle = PALETTE.money;
+  g.beginPath();
+  g.arc(x, y, r, 0, Math.PI * 2);
+  g.fill();
+  g.strokeStyle = PALETTE.cream;
+  g.lineWidth = r * 0.3;
+  g.beginPath();
+  g.moveTo(x - r * 0.45, y);
+  g.lineTo(x - r * 0.1, y + r * 0.38);
+  g.lineTo(x + r * 0.5, y - r * 0.4);
+  g.stroke();
+}

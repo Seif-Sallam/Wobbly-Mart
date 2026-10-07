@@ -35,6 +35,7 @@ A build-ready **playtest-pass spec** (`spec.md` here, a delta on [the v1 spec](.
 - [Show the whole Shopping List](issues/11-full-shopping-list.md) — a receipt card: one line per Product with ×n left, current line highlighted, ticks on finished lines, a pop per Item; the patience ring becomes shared tells at 12 s and 30 s so never-give-up Customers look like everyone else.
 - [Design the Customer's shopping cart](issues/12-customer-cart.md) — no wheeled cart: 60% of Customers carry a hand basket (2 Items inside, the rest a strongly wobbling, idly swaying tower), the rest a Stack as today; baskets tip over and spill as the Mess.
 - [Rework the wheat field, Mill and Oven models](issues/14-wheat-mill-oven-models.md) — all code-built (preset B, "a masterpiece"): fenced furrow wheat field with 6 plants, a barn mill with sails on the gable spinning the right way, a glowing iron stove, a square open-pasture Cow Pen with hay bales.
+- [Re-lay out the Corner Shop](issues/08-relayout-corner-shop.md) — bigger store (44 × 22) and map (52 × 58); one column per Product with its second Shelf behind; Ovens and Blenders indoors; Station boxes = models incl. pallets; Trash at the back; 6 banners. The layout file on `prototype/relayout` is the answer. Bot needs 122 min with placeholder costs → economy re-tune.
 
 ## Not yet specified
 

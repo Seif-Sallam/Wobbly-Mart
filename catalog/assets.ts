@@ -42,12 +42,14 @@ export const ASSETS: Record<string, AssetDef> = {
   wheat: {},
   coin: { path: 'platformer/coin-gold', height: 0.35 },
 
-  // shelves
-  'display-fruit': { path: 'market/display-fruit' },
-  'shelf-boxes': { path: 'market/shelf-boxes' },
-  'shelf-bags': { path: 'market/shelf-bags' },
-  'freezers-standing': { path: 'market/freezers-standing' },
-  'display-bread': { path: 'market/display-bread' },
+  // shelves: code-built stands
+  'tomato-stand': {},
+  'egg-stand': {},
+  'ketchup-stand': {},
+  'wheat-stand': {},
+  'milk-stand': {},
+  'flour-stand': {},
+  'bread-stand': {},
 
   // Station composites and their parts
   register: {},

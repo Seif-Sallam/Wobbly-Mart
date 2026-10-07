@@ -512,7 +512,7 @@ export class WorldView {
     this.drawItems(dt);
     for (const [id, v] of this.stations) {
       const st = w.stations.get(id);
-      const working = st?.kind === 'producer' && st.work > 0;
+      const working = (st?.kind === 'producer' && st.work > 0) || (st?.kind === 'register' && st.progress > 0);
       v.animate(dt, working);
       for (const m of v.mixers) m.update(dt);
       // steam / flour puffs while a Machine works
@@ -697,6 +697,7 @@ export class WorldView {
       q.setFromEuler(new THREE.Euler(tilt?.y ?? 0, yaw, -(tilt?.x ?? 0)));
       im.add(m.compose(p, q, s.setScalar(scale)));
     };
+    const onBelt = new Set<number>();
     // Stations
     for (const st of w.stations.values()) {
       const v = this.stations.get(st.id);
@@ -704,7 +705,9 @@ export class WorldView {
       v.root.updateMatrixWorld();
       if (st.kind === 'shelf') {
         const n = this.shown(`st:${st.id}`, st.items);
-        for (let i = 0; i < n && i < v.slots.length; i++) put(st.product, this.local(v, v.slots[i]), st.rot + i);
+        const yaw = THREE.MathUtils.degToRad(st.rot);
+        const lean = new THREE.Vector2(0, v.slotTilt ?? 0);
+        for (let i = 0; i < n && i < v.slots.length; i++) put(st.product, this.local(v, v.slots[i]), yaw, 1, lean);
       } else if (st.kind === 'producer') {
         const type = w.map.producers[st.type];
         if (st.plants.length) {
@@ -731,6 +734,21 @@ export class WorldView {
           });
         }
       } else if (st.kind === 'register') {
+        const front = st.progress > 0 && v.belt ? w.customers.find((c) => c.id === st.queue[0]) : undefined;
+        if (front && v.belt) {
+          // the goods ride the belt to the till, staggered by order, then drop into the bagging tray
+          onBelt.add(front.id);
+          const [a, b, bag] = v.belt;
+          const n = Math.max(1, front.cart.length);
+          front.cart.forEach((p, i) => {
+            const t = THREE.MathUtils.clamp(st.progress * 1.6 - (i / n) * 0.6, 0, 1);
+            const at =
+              t < 1
+                ? a.clone().lerp(b, t)
+                : bag.clone().add(new THREE.Vector3((i % 3) * 0.18, Math.floor(i / 3) * 0.3, ((i % 2) - 0.5) * 0.15));
+            put(p, this.local(v, at), THREE.MathUtils.degToRad(st.rot), CART_SCALE);
+          });
+        }
         const hidden = this.pileHidden.get(st.id);
         let bills = Math.min(PILE_MAX_BILLS, Math.ceil(st.cash / BILL_VALUE));
         if (hidden) {
@@ -774,7 +792,7 @@ export class WorldView {
     }
     for (const c of w.customers) {
       const look = this.customers.get(c.id);
-      if (look)
+      if (look && !onBelt.has(c.id))
         stack(
           c.cart,
           `cart:${c.id}`,

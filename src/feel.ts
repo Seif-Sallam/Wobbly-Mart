@@ -15,7 +15,7 @@ export const FEEL = {
   followSharpness: 9,
   lookAhead: 0.44,
   // stack
-  itemSpacing: 0.31,
+  itemSpacing: 0.435,
   stackForward: 0.55,
   stackBase: 0.9,
   /** Bottom Items that never bend; above them each follows the lean by bendGain × (height above)^bendPower. */
@@ -42,5 +42,11 @@ export const FEEL = {
   cashBillsMax: 20,
   springOvershoot: 1.7,
   stationBounce: 0.12,
+  // Producers
+  millSpin: 3,
+  millIdleSpin: 0.4,
+  ovenGlow: 1.5,
+  ovenPulse: 0.5,
+  ovenGlowIdle: 0.15,
   doorOpenRadius: 2.5,
 };

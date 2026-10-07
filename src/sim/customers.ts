@@ -3,7 +3,7 @@ import type { Customer, RegisterStation, ShelfStation, World } from './world';
 import { DT } from './world';
 import { checkoutTime, customerCap, productsForSale } from './economy';
 import { distToBox, footprint, frontPoint } from './geometry';
-import { nextRandom, randomInt, shuffle } from './rng';
+import { nextRandom, shuffle, weighted } from './rng';
 import { walkAgent } from './walk';
 import { TUNING } from './tuning';
 
@@ -28,13 +28,14 @@ function shelfSpot(w: World, shelf: ShelfStation): Point {
 
 function spawn(w: World): void {
   const forSale = productsForSale(w);
-  const n = randomInt(w, 1, Math.min(TUNING.listMaxProducts, forSale.length));
+  const n = weighted(w, TUNING.listProducts.slice(0, forSale.length)) + 1;
+  const want = weighted(w, TUNING.listUnits[n - 1]) + 1;
   const list = shuffle(w, forSale)
     .slice(0, n)
     .map((product) => ({
       product,
       shelf: shelfFor(w, product)?.id ?? '',
-      want: randomInt(w, 1, TUNING.listMaxUnits),
+      want,
       got: 0,
     }));
   const spots = w.map.layout.streetSpots;
@@ -55,6 +56,10 @@ function spawn(w: World): void {
     waiting: false,
     takeTimer: 0,
     patience: 0,
+    patienceLimit:
+      nextRandom(w) < TUNING.neverGiveUp
+        ? Infinity
+        : TUNING.patienceAngry[0] + nextRandom(w) * (TUNING.patienceAngry[1] - TUNING.patienceAngry[0]),
     angry: false,
     happy: false,
     look: nextRandom(w),
@@ -101,11 +106,11 @@ function shop(w: World, c: Customer): void {
   }
   if (!w.tutorial.done) return;
   c.patience += DT;
-  if (c.patience >= TUNING.patienceAngry && !c.angry) {
+  if (c.patience >= c.patienceLimit && !c.angry) {
     c.angry = true;
     w.events.push({ type: 'angry', customer: c.id });
   }
-  if (c.patience < TUNING.patienceAngry + TUNING.patienceLeave) return;
+  if (c.patience < c.patienceLimit + TUNING.patienceLeave) return;
   if (c.cart.length) {
     const id = w.nextId++;
     w.messes.push({ id, x: c.x, z: c.z, items: c.cart });

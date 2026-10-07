@@ -52,7 +52,7 @@ export const PRODUCERS = {
     inputs: [],
     output: 'wheat',
     workTime: 7,
-    plants: 4,
+    plants: 6,
   },
   cow_pen: {
     kind: 'animal',

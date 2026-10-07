@@ -15,7 +15,9 @@ export interface AssetDef {
 
 import { SHADES } from '../src/palette';
 
-const ITEM = 0.34;
+/** Base Item height (m); per-Product ratios below. */
+export const ITEM_SIZE = 0.544;
+const ITEM = ITEM_SIZE;
 
 export const ASSETS: Record<string, AssetDef> = {
   // characters
@@ -65,7 +67,6 @@ export const ASSETS: Record<string, AssetDef> = {
   blender: {},
   mill: {},
   oven: {},
-  'crops-row': { path: 'nature/crops_dirtRow' },
   'wheat-plant': { path: 'nature/crops_wheatStageB', height: 0.9 },
   'wheat-sprout': { path: 'nature/crops_wheatStageA', height: 0.5 },
   'tomato-bush': { path: 'nature/plant_bush', height: 0.55 },
@@ -75,10 +76,7 @@ export const ASSETS: Record<string, AssetDef> = {
   planks: { path: 'town/planks' },
   roof: { path: 'town/roof-high' },
   'wall-wood': { path: 'town/wall-wood' },
-  windmill: { path: 'town/windmill', height: 2 },
   'kitchen-blender': { path: 'furn/kitchenBlender', height: 0.8 },
-  stove: { path: 'furn/kitchenStove' },
-  tray: { path: 'survival/box-open', height: 0.35 },
   rope: { path: 'market/fence' },
   'market-floor': { path: 'market/floor' },
   'market-wall': { path: 'market/wall' },

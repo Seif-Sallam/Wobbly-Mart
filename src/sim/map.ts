@@ -69,7 +69,7 @@ export interface FreeStationDef {
 }
 
 export type UpgradeFamily = 'player' | 'station' | 'staff';
-export type UpgradeStat = 'speed' | 'stack' | 'capacity' | 'checkoutTime' | 'carry' | 'workTime';
+export type UpgradeStat = 'speed' | 'stack' | 'capacity' | 'checkoutTime' | 'carry' | 'workTime' | 'safe';
 
 export interface UpgradeDef {
   name: string;

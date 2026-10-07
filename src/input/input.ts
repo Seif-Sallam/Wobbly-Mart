@@ -11,7 +11,7 @@ export type InputKind = 'keys' | 'touch';
 
 export class Input {
   private keys = new Set<string>();
-  private joy = { x: 0, y: 0, active: false };
+  private joy = { x: 0, y: 0, active: false, force: 0 };
   /** First input used — picks the movement hint. */
   firstKind: InputKind | null = null;
   onEscape: () => void = () => {};
@@ -37,12 +37,13 @@ export class Input {
       this.firstKind ??= 'touch';
       this.joy.active = true;
       // half push = half speed
+      this.joy.force = e.data.force;
       const k = Math.min(1, e.data.force);
       this.joy.x = e.data.vector.x * k;
       this.joy.y = e.data.vector.y * k;
     });
     manager.on('end', () => {
-      this.joy = { x: 0, y: 0, active: false };
+      this.joy = { x: 0, y: 0, active: false, force: 0 };
     });
   }
 
@@ -64,6 +65,10 @@ export class Input {
       sy = this.joy.y;
     }
     return { x: RIGHT.x * sx + UP.x * sy, z: RIGHT.z * sx + UP.z * sy };
+  }
+
+  get sprint(): boolean {
+    return this.has('ShiftLeft', 'ShiftRight') || (this.joy.active && this.joy.force > FEEL.sprintForce);
   }
 
   get grab(): boolean {

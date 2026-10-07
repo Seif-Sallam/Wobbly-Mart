@@ -16,7 +16,8 @@ import { InstancedModel, billModel, itemModel } from './instanced';
 import { model } from './assets';
 import { StationBatch } from './station-batch';
 import { CanvasTex, canvasSprite, outlinedText, roundRect } from './text';
-import { icon } from './thumbs';
+import { Receipt } from './receipt';
+import { basketLean, basketPose, basketSlot, hasBasket } from './basket';
 import { paletteMaterial } from './materials';
 import { Tweens, ease } from '../tween';
 import { FEEL } from '../feel';
@@ -24,12 +25,12 @@ import { PALETTE, SHADES, withAlpha } from '../palette';
 import { TUNING } from '../sim/tuning';
 
 const CUSTOMER_MODELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((k) => `customer-${k}`);
-const ROLE_CAP = { cashier: 'orange', stocker: 'money' } as const;
 const BILL_VALUE = 5;
 const PILE_MAX_BILLS = 24;
 const CART_SCALE = 0.7;
 const LOOSE_Y = 0.15;
 const RIPE_TOMATO_Y = 0.42;
+const RECEIPT_Y = 1.75;
 const LOOSE_TILT = new THREE.Vector2(1.2, 0);
 
 interface Flight {
@@ -49,9 +50,7 @@ interface StackLook {
 
 interface CustomerLook {
   ch: Character;
-  bubble: THREE.Sprite;
-  tex: CanvasTex;
-  drawn: string;
+  receipt: Receipt;
   stack: StackLook;
 }
 
@@ -74,6 +73,9 @@ export class WorldView {
   private puffTimers = new Map<string, number>();
   private wanderers: { ch: Character; mover: Mover; target: Point }[] = [];
   private bills: InstancedModel;
+  private baskets: InstancedModel;
+  /** Customers whose basket tipped over in a Mess. */
+  private spilled = new Set<number>();
   private blobs: THREE.InstancedMesh;
   private splats = new Map<number, THREE.Object3D>();
   private player: Character;
@@ -109,6 +111,7 @@ export class WorldView {
       if (!this.items.has(p.model)) this.items.set(p.model, new InstancedModel(itemModel(p.model), 500, this.root));
     }
     this.bills = new InstancedModel(billModel(), 600, this.root);
+    this.baskets = new InstancedModel(model('shopping-basket', { height: FEEL.basketHeight }), 40, this.root);
     for (const name of ['tomato-bush', 'wheat-plant'])
       this.plants.set(name, new InstancedModel(model(name), 64, this.root, false));
     this.blobs = this.makeBlobs();
@@ -128,7 +131,10 @@ export class WorldView {
     this.w = w;
     for (const v of this.stations.values()) this.root.remove(v.root);
     for (const p of this.pads.values()) this.root.remove(p.group);
-    for (const c of this.customers.values()) this.root.remove(c.ch.root, c.bubble);
+    for (const c of this.customers.values()) {
+      this.root.remove(c.ch.root, c.receipt.sprite);
+      c.receipt.dispose();
+    }
     for (const s of this.staff.values()) this.root.remove(s.ch.root);
     for (const m of this.splats.values()) this.root.remove(m);
     this.stations.clear();
@@ -137,6 +143,7 @@ export class WorldView {
     this.customers.clear();
     this.staff.clear();
     this.splats.clear();
+    this.spilled.clear();
     this.flights = [];
     this.pending.clear();
     this.ownedKey = '';
@@ -309,6 +316,8 @@ export class WorldView {
     if ('customer' in ref) {
       const c = w.customers.find((o) => o.id === ref.customer);
       const look = this.customers.get(ref.customer);
+      if (c && look && hasBasket(c.id))
+        return basketSlot(c.x, c.z, look.ch.facing, index, basketLean(c.id, look.stack.lean));
       return c && look ? this.stackSlot(c.x, c.z, look.ch.facing, look.stack, index, CART_SCALE) : new THREE.Vector3();
     }
     if ('loose' in ref) {
@@ -451,7 +460,9 @@ export class WorldView {
       case 'mess': {
         const m = w.messes.find((o) => o.id === e.mess);
         if (m) this.addSplat(m.id, m.x, m.z, m.items);
-        this.customers.get(e.customer)?.ch.emote('no');
+        const look = this.customers.get(e.customer);
+        look?.ch.emote('no');
+        if (look && hasBasket(e.customer)) this.tipBasket(e.customer, look.ch);
         break;
       }
       case 'messCleared': {
@@ -467,6 +478,26 @@ export class WorldView {
         this.syncOwned(true);
         break;
     }
+  }
+
+  /** The basket tips over where the Mess spilled, lies there a moment, then fades. */
+  private tipBasket(id: number, ch: Character): void {
+    this.spilled.add(id);
+    const b = model('shopping-basket', { height: FEEL.basketHeight });
+    const p = basketPose(ch.root.position.x, ch.root.position.z, ch.facing);
+    b.position.set(p.x, 0.15, p.z);
+    b.rotation.set(Math.PI / 2, ch.facing, 0);
+    ghostify(b, 1);
+    this.root.add(b);
+    const fade = (k: number) =>
+      b.traverse((o) => {
+        const mat = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
+        if (mat) mat.opacity = 1 - k;
+      });
+    this.tweens.add(FEEL.basketFade, fade, {
+      delay: FEEL.basketFade,
+      done: () => this.root.remove(b),
+    });
   }
 
   private pileHidden = new Map<string, { total: number; t: number; duration: number }>();
@@ -587,31 +618,32 @@ export class WorldView {
         const ch = new Character(name, {
           tint: SHADES.customerTints[Math.floor(c.look * 97) % SHADES.customerTints.length],
         });
-        const tex = new CanvasTex(192, 128);
-        const bubble = canvasSprite(tex, 0.6);
-        this.root.add(ch.root, bubble);
-        look = { ch, bubble, tex, drawn: '', stack: newStack() };
+        const receipt = new Receipt();
+        this.root.add(ch.root, receipt.sprite);
+        look = { ch, receipt, stack: newStack() };
         this.customers.set(c.id, look);
       }
       const [x, z] = this.lerp(`c${c.id}`, c.x, c.z, alpha);
       look.ch.update(dt, x, z, c.vx, c.vz, c.cart.length > 0);
       this.updateStack(look.stack, c.vx, c.vz, dt);
-      look.bubble.position.set(x, 2.05, z);
-      this.drawBubble(look, c);
+      look.receipt.sprite.position.set(x, RECEIPT_Y, z);
+      look.receipt.update(c, w.map.products, dt);
     }
     for (const [id, look] of this.customers) {
       if (alive.has(id)) continue;
-      this.root.remove(look.ch.root, look.bubble);
-      look.tex.texture.dispose();
+      this.root.remove(look.ch.root, look.receipt.sprite);
+      look.receipt.dispose();
       this.customers.delete(id);
+      this.spilled.delete(id);
     }
     for (const s of w.stockers) {
       let look = this.staff.get(s.id);
       if (!look) {
-        look = { ch: new Character('employee', { hat: ROLE_CAP.stocker }), stack: newStack() };
+        look = { ch: new Character('employee', { hat: SHADES.roleCaps[s.role] }), stack: newStack() };
         this.staff.set(s.id, look);
         this.root.add(look.ch.root);
       }
+      look.ch.setHat(SHADES.roleCaps[s.role]);
       const [x, z] = this.lerp(s.id, s.x, s.z, alpha);
       look.ch.update(dt, x, z, s.vx, s.vz, s.stack.length > 0);
       this.updateStack(look.stack, s.vx, s.vz, dt);
@@ -619,7 +651,7 @@ export class WorldView {
     for (const c of w.cashiers) {
       let look = this.staff.get(c.id);
       if (!look) {
-        look = { ch: new Character('employee', { hat: ROLE_CAP.cashier }), stack: newStack() };
+        look = { ch: new Character('employee', { hat: SHADES.white }), stack: newStack() };
         look.ch.facing = Math.PI;
         this.staff.set(c.id, look);
         this.root.add(look.ch.root);
@@ -639,49 +671,6 @@ export class WorldView {
       .forEach(([x, z], i) => this.blobs.setMatrixAt(i, m.makeScale(0.9, 1, 0.9).setPosition(x, 0.025, z)));
     this.blobs.count = Math.min(64, spots.length);
     this.blobs.instanceMatrix.needsUpdate = true;
-  }
-
-  private drawBubble(look: CustomerLook, c: World['customers'][number]): void {
-    const entry = c.list[c.li];
-    const waiting = c.state === 'shop' && c.patience > 0;
-    const state =
-      c.state === 'shop' && entry
-        ? `${entry.product}:${entry.want - entry.got}:${waiting ? Math.round(c.patience * 4) : -1}`
-        : c.state === 'leave' && c.angry
-          ? 'angry'
-          : '';
-    look.bubble.visible = state !== '';
-    if (state === look.drawn) return;
-    look.drawn = state;
-    look.tex.draw((g, W, H) => {
-      if (!state) return;
-      g.fillStyle = PALETTE.cream;
-      g.strokeStyle = PALETTE.ink;
-      g.lineWidth = 7;
-      roundRect(g, 8, 8, W - 16, H - 30, 30);
-      g.fill();
-      g.stroke();
-      g.beginPath();
-      g.moveTo(W / 2 - 14, H - 24);
-      g.lineTo(W / 2, H - 6);
-      g.lineTo(W / 2 + 14, H - 24);
-      g.fill();
-      if (state === 'angry') {
-        outlinedText(g, '>:(', W / 2, H / 2 - 10, 54, SHADES.angry);
-        return;
-      }
-      const img = icon(this.w.map.products[entry.product]?.model ?? entry.product);
-      if (img) g.drawImage(img, 18, 14, 74, 74);
-      outlinedText(g, `${entry.want - entry.got}`, 132, H / 2 - 10, 56, PALETTE.cream);
-      if (waiting) {
-        const k = Math.min(1, c.patience / (c.patienceLimit + TUNING.patienceLeave));
-        g.lineWidth = 9;
-        g.strokeStyle = k < 0.5 ? SHADES.warn : k < 0.8 ? PALETTE.orange : SHADES.angry;
-        g.beginPath();
-        g.arc(55, 51, 42, -Math.PI / 2, -Math.PI / 2 + (1 - k) * Math.PI * 2);
-        g.stroke();
-      }
-    });
   }
 
   private drawItems(dt: number): void {
@@ -790,9 +779,31 @@ export class WorldView {
       if (look)
         stack(st.stack, `stack:${st.id}`, look.ch.root.position.x, look.ch.root.position.z, look.ch.facing, look.stack);
     }
+    this.baskets.begin();
     for (const c of w.customers) {
       const look = this.customers.get(c.id);
-      if (look && !onBelt.has(c.id))
+      if (!look || !hasBasket(c.id)) continue;
+      const { x, z } = look.ch.root.position;
+      if (!this.spilled.has(c.id))
+        this.baskets.add(
+          m.compose(
+            basketPose(x, z, look.ch.facing),
+            q.setFromEuler(new THREE.Euler(0, look.ch.facing, 0)),
+            s.setScalar(1),
+          ),
+        );
+      if (onBelt.has(c.id)) continue;
+      const lean = basketLean(c.id, look.stack.lean);
+      const n = this.shown(`cart:${c.id}`, c.cart.length);
+      for (let i = 0; i < n; i++) {
+        const tilt = lean.clone().multiplyScalar(Math.min(i, FEEL.basketTiltItems) * 0.08);
+        put(c.cart[i], basketSlot(x, z, look.ch.facing, i, lean), look.ch.facing, FEEL.basketItemScale, tilt);
+      }
+    }
+    this.baskets.end();
+    for (const c of w.customers) {
+      const look = this.customers.get(c.id);
+      if (look && !onBelt.has(c.id) && !hasBasket(c.id))
         stack(
           c.cart,
           `cart:${c.id}`,

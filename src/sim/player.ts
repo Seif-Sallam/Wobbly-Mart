@@ -1,10 +1,11 @@
 import type { Intents, Station, World } from './world';
 import { DT } from './world';
-import { cashPilePoint, own, padRemaining, playerSpeed, stackCap, visiblePads } from './economy';
+import { cashPilePoint, own, padRemaining, playerSpeed, safeCount, stackCap, visiblePads } from './economy';
 import { transferTick } from './carry';
 import { boxCentre, distToBox, pushOutOfBox } from './geometry';
 import { inOwnedAreas } from './walk';
 import { TUNING } from './tuning';
+import { nextRandom } from './rng';
 import { FEEL } from '../feel';
 
 const R = TUNING.playerRadius;
@@ -21,7 +22,8 @@ function confined(w: World, x: number, z: number): boolean {
 
 function move(w: World, intents: Intents): void {
   const p = w.player;
-  const top = playerSpeed(w);
+  p.sprinting = !!intents.sprint && Math.hypot(intents.move.x, intents.move.z) > 0 && !w.pan;
+  const top = playerSpeed(w) * (p.sprinting ? TUNING.sprint.speed : 1);
   const fullness = p.stack.length / stackCap(w);
   let mx = intents.move.x;
   let mz = intents.move.z;
@@ -61,6 +63,39 @@ function move(w: World, intents: Intents): void {
     p.x = ox;
     p.z = oz;
   }
+}
+
+function sprintDrops(w: World): void {
+  const p = w.player;
+  const S = TUNING.sprint;
+  p.dropCooldown = Math.max(0, p.dropCooldown - DT);
+  const safe = safeCount(w);
+  const n = p.stack.length;
+  if (!p.sprinting || n <= safe || p.dropCooldown > 0) return;
+  const k = (n - safe) / Math.max(1, stackCap(w) - safe);
+  if (nextRandom(w) >= S.maxRate * k ** S.curve * DT) return;
+  const v = Math.hypot(p.vx, p.vz) || 1;
+  const side = (nextRandom(w) - 0.5) * S.dropSide;
+  const item = {
+    id: w.nextId++,
+    x: p.x - (p.vx / v) * S.dropBehind - (p.vz / v) * side,
+    z: p.z - (p.vz / v) * S.dropBehind + (p.vx / v) * side,
+    product: p.stack[n - 1],
+  };
+  w.events.push({ type: 'transfer', product: item.product, from: { agent: 'player' }, to: { loose: item.id } });
+  p.stack.pop();
+  w.loose.push(item);
+  p.dropCooldown = S.cooldown;
+}
+
+function takeLoose(w: World): void {
+  const p = w.player;
+  w.loose = w.loose.filter((it) => {
+    if (p.stack.length >= stackCap(w) || Math.hypot(p.x - it.x, p.z - it.z) > TUNING.looseTakeRadius) return true;
+    p.stack.push(it.product);
+    w.events.push({ type: 'transfer', product: it.product, from: { loose: it.id }, to: { agent: 'player' } });
+    return false;
+  });
 }
 
 function payPads(w: World): void {
@@ -132,6 +167,8 @@ export function stationAt(w: World, x: number, z: number, test: (st: Station) =>
 export function updatePlayer(w: World, intents: Intents): void {
   const p = w.player;
   move(w, intents);
+  sprintDrops(w);
+  takeLoose(w);
   payPads(w);
   collectCash(w);
   clearMesses(w);

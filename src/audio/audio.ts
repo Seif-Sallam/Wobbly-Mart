@@ -96,7 +96,7 @@ export class Sounds {
             if (this.sinceDrop > CRESCENDO_RESET) this.dropStreak = 0;
             this.sinceDrop = 0;
             this.sfx('plop', { rate: Math.min(2, 1 + this.dropStreak++ * 0.06) });
-          }
+          } else if ('loose' in e.to) this.sfx('bonk', { rate: 1.4 });
           break;
         case 'trashed':
           this.sfx('plop', { rate: 0.7 });

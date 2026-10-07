@@ -1,6 +1,7 @@
 // Draws many copies of a (multi-mesh) model with one InstancedMesh per sub-mesh: Items and Money bills.
 import * as THREE from 'three';
 import { model } from './assets';
+import { ITEM_SIZE } from '../../catalog/assets';
 import { paletteMaterial } from './materials';
 import { SHADES } from '../palette';
 
@@ -80,5 +81,5 @@ export function billModel(): THREE.Group {
 
 /** The model an Item of this product is drawn with. */
 export function itemModel(name: string): THREE.Group {
-  return name === 'wheat' ? wheatSheaf(0.42) : model(name);
+  return name === 'wheat' ? wheatSheaf(ITEM_SIZE * 1.24) : model(name);
 }

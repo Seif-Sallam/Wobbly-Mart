@@ -28,6 +28,8 @@ const ROLE_CAP = { cashier: 'orange', stocker: 'money' } as const;
 const BILL_VALUE = 5;
 const PILE_MAX_BILLS = 24;
 const CART_SCALE = 0.7;
+const LOOSE_Y = 0.15;
+const LOOSE_TILT = new THREE.Vector2(1.2, 0);
 
 interface Flight {
   product: string;
@@ -75,6 +77,7 @@ export class WorldView {
   private splats = new Map<number, THREE.Object3D>();
   private player: Character;
   private playerStack = newStack();
+  private sprintPuff = 0;
   private customers = new Map<number, CustomerLook>();
   private staff = new Map<string, { ch: Character; stack: StackLook }>();
   private flights: Flight[] = [];
@@ -272,11 +275,20 @@ export class WorldView {
 
   private stackSlot(x: number, z: number, facing: number, look: StackLook, i: number, scale = 1): THREE.Vector3 {
     const h = FEEL.stackBase * scale + i * FEEL.itemSpacing * scale;
-    const bend = (i * FEEL.itemSpacing * scale) ** 1.4 * 0.5;
+    const above = Math.max(0, i - FEEL.stackRigid) * FEEL.itemSpacing * scale;
+    const bend = above ** FEEL.bendPower * FEEL.bendGain;
+    const t = performance.now() / 1000;
+    const jiggle = FEEL.jiggle * above;
     return new THREE.Vector3(
-      x + Math.sin(facing) * FEEL.stackForward * scale + look.lean.x * bend,
+      x +
+        Math.sin(facing) * FEEL.stackForward * scale +
+        look.lean.x * bend +
+        Math.sin(t * FEEL.jiggleSpeed + i * 0.35) * jiggle,
       h,
-      z + Math.cos(facing) * FEEL.stackForward * scale + look.lean.y * bend,
+      z +
+        Math.cos(facing) * FEEL.stackForward * scale +
+        look.lean.y * bend +
+        Math.cos(t * FEEL.jiggleSpeed * 0.8 + i * 0.3) * jiggle,
     );
   }
 
@@ -297,6 +309,10 @@ export class WorldView {
       const c = w.customers.find((o) => o.id === ref.customer);
       const look = this.customers.get(ref.customer);
       return c && look ? this.stackSlot(c.x, c.z, look.ch.facing, look.stack, index, CART_SCALE) : new THREE.Vector3();
+    }
+    if ('loose' in ref) {
+      const it = w.loose.find((o) => o.id === ref.loose) ?? w.player;
+      return new THREE.Vector3(it.x, LOOSE_Y, it.z);
     }
     const st = w.stations.get(ref.station);
     const v = this.stations.get(ref.station);
@@ -323,6 +339,7 @@ export class WorldView {
   private containerKey(ref: Ref, product: string): string {
     if ('agent' in ref) return ref.agent === 'player' ? 'stack:player' : `stack:${ref.id}`;
     if ('customer' in ref) return `cart:${ref.customer}`;
+    if ('loose' in ref) return `loose:${ref.loose}`;
     const st = this.w.stations.get(ref.station);
     if (st?.kind === 'producer' && w_isInput(this.w, st.type, product)) return `input:${ref.station}:${product}`;
     return `st:${ref.station}`;
@@ -335,6 +352,7 @@ export class WorldView {
       return w.stockers.find((s) => s.id === ref.id)?.stack.length ?? 0;
     }
     if ('customer' in ref) return w.customers.find((c) => c.id === ref.customer)?.cart.length ?? 0;
+    if ('loose' in ref) return w.loose.some((o) => o.id === ref.loose) ? 1 : 0;
     const st = w.stations.get(ref.station);
     if (st?.kind === 'shelf') return st.items;
     if (st?.kind === 'producer') return w_isInput(w, st.type, product) ? (st.input[product] ?? 0) : st.tray;
@@ -351,6 +369,7 @@ export class WorldView {
     const w = this.w;
     switch (e.type) {
       case 'transfer': {
+        if ('loose' in e.to) this.player.emote('no');
         const fromCount = this.count(e.from, e.product);
         const from = this.refPos(e.from, e.product, fromCount);
         const key = this.containerKey(e.to, e.product);
@@ -544,7 +563,7 @@ export class WorldView {
     look.leanVel.x += (-FEEL.swayStiffness * look.lean.x - FEEL.swayDamping * look.leanVel.x - acc.x * FEEL.sway) * dt;
     look.leanVel.y += (-FEEL.swayStiffness * look.lean.y - FEEL.swayDamping * look.leanVel.y - acc.y * FEEL.sway) * dt;
     look.lean.addScaledVector(look.leanVel, dt);
-    look.lean.clampLength(0, 0.8);
+    look.lean.clampLength(0, FEEL.leanMax);
   }
 
   private syncCharacters(dt: number, alpha: number): void {
@@ -552,6 +571,11 @@ export class WorldView {
     const [px, pz] = this.lerp('player', w.player.x, w.player.z, alpha);
     this.player.update(dt, px, pz, w.player.vx, w.player.vz, w.player.stack.length > 0);
     this.updateStack(this.playerStack, w.player.vx, w.player.vz, dt);
+    this.sprintPuff -= dt;
+    if (w.player.sprinting && this.sprintPuff <= 0) {
+      this.sprintPuff = FEEL.sprintPuffGap;
+      this.juice.puff(new THREE.Vector3(px, 0.1, pz), PALETTE.cream, 2, 0.5);
+    }
 
     const alive = new Set<number>();
     for (const c of w.customers) {
@@ -759,6 +783,9 @@ export class WorldView {
           CART_SCALE,
         );
     }
+    for (const it of w.loose)
+      if (this.shown(`loose:${it.id}`, 1))
+        put(it.product, new THREE.Vector3(it.x, LOOSE_Y, it.z), it.id, 1, LOOSE_TILT);
     // Flights
     this.flights = this.flights.filter((f) => {
       f.t = Math.min(1, f.t + dt / FEEL.flyTime);

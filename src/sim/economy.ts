@@ -126,6 +126,7 @@ export function upgradeValue(w: World, target: string, stat: string, base: numbe
 export const workMultiplier = (w: World, type: string): number => upgradeValue(w, type, 'workTime', 1);
 export const shelfCap = (w: World): number => upgradeValue(w, 'shelf', 'capacity', TUNING.base.shelfCap);
 export const stackCap = (w: World): number => upgradeValue(w, 'player', 'stack', TUNING.base.stack);
+export const safeCount = (w: World): number => upgradeValue(w, 'player', 'safe', TUNING.base.safe);
 export const playerSpeed = (w: World): number => upgradeValue(w, 'player', 'speed', TUNING.base.playerSpeed);
 export const checkoutTime = (w: World): number => upgradeValue(w, 'cashier', 'checkoutTime', TUNING.base.checkoutTime);
 export const stockerSpeed = (w: World): number => upgradeValue(w, 'stocker', 'speed', TUNING.base.stockerSpeed);

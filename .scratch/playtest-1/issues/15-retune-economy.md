@@ -20,7 +20,7 @@ Proposed 2026-10-07 (AFK run; **awaiting the owner's pacing confirmation**). Ful
 
 **Pacing:** estimator **29.8 min** to 100% with good play: Area 1 **7.0**, Area 2 **10.6**, Area 3 **12.2** (v1: 7.4 / 11.6 / 11.5 = 30.5). 79 purchases (v1: 68): 42 Pads, 37 Upgrade levels.
 
-**What the estimator now models:** weighted Shopping Lists (~3.4–5.2 Items per Customer by Products for sale), Stack 8 +2 per level, Sprint ×1.5 (walk loaded or sprint with drops, whichever is faster; empty legs always sprint), 6 Stockers, wheat yield 6, a second bed/field doubling plants, 7 second Shelves as cost-only leaves, and the re-layout's trip length: **16.3 m** one way (v1 layout 11.8 m, measured the same way). Not modelled: patience and never-give-up Customers, Stocker roles (all Auto), Shelf capacity.
+**What the estimator now models:** weighted Shopping Lists (3.3 Items per Customer with 1 Product for sale, rising to 5.2 with 4 or more), Stack 8 +2 per level, Sprint ×1.5 (walk loaded or sprint with drops, whichever is faster; empty legs always sprint), 6 Stockers, wheat yield 6, a second bed/field doubling plants, 7 second Shelves as cost-only leaves, and the re-layout's trip length: **16.3 m** one way (v1 layout 11.8 m, measured the same way). Not modelled: patience and never-give-up Customers, Stocker roles (all Auto), Shelf capacity.
 
 **How:** the new rules alone put the estimator at 35.6 min, and Area 1 at 11 min: a Stack of 8 over 38% longer trips halves the Player's carrying. Prices are rebalanced per Area instead of touching the decided rules: Area cost scale **0.28 / 0.33 / 0.75** (v1 0.45 / 0.40 / 0.70). Area 1 gets cheaper, Area 3 a little dearer because 6 Stockers lift its income.
 

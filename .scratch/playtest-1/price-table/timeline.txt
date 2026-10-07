@@ -1,0 +1,82 @@
+  0:00  register               $   10  → $    0/min  {}
+  0:00  tomato_shelf           $   15  → $    0/min  {}
+  0:00  tomato_bed             $   25  → $   89/min  {'for_sale': 1, 'cap': 3, 'customers': 9.0, 'labour_bound': False}
+  0:07  egg_shelf              $   10  → $   89/min  {'for_sale': 1, 'cap': 3, 'customers': 9.0, 'labour_bound': False}
+  0:17  chicken_coop           $   15  → $   94/min  {'for_sale': 2, 'cap': 4, 'customers': 11.6, 'labour_bound': True}
+  0:30  office                 $   20  → $   94/min  {'for_sale': 2, 'cap': 4, 'customers': 11.6, 'labour_bound': True}
+  0:40  player_speed L1        $   15  → $   99/min  {'for_sale': 2, 'cap': 4, 'customers': 11.6, 'labour_bound': True}
+  0:49  speed_chicken_coop L1  $   15  → $   98/min  {'for_sale': 2, 'cap': 4, 'customers': 11.6, 'labour_bound': True}
+  0:58  speed_tomato_bed L1    $   15  → $   98/min  {'for_sale': 2, 'cap': 4, 'customers': 11.6, 'labour_bound': True}
+  1:10  stack_cap L1           $   20  → $  110/min  {'for_sale': 2, 'cap': 4, 'customers': 11.6, 'labour_bound': True}
+  1:24  ketchup_shelf          $   25  → $  110/min  {'for_sale': 2, 'cap': 4, 'customers': 11.6, 'labour_bound': True}
+  1:37  blender                $   25  → $  101/min  {'for_sale': 3, 'cap': 5, 'customers': 14.3, 'labour_bound': True}
+  1:49  speed_blender L1       $   20  → $  102/min  {'for_sale': 3, 'cap': 5, 'customers': 14.3, 'labour_bound': True}
+  2:01  tomato_plots           $   20  → $  103/min  {'for_sale': 3, 'cap': 5, 'customers': 14.3, 'labour_bound': True}
+  2:13  tomato_shelf_2         $   20  → $  103/min  {'for_sale': 3, 'cap': 5, 'customers': 14.3, 'labour_bound': True}
+  2:27  cashier_1              $   25  → $  171/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  2:36  chicken_2              $   25  → $  169/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  2:45  egg_shelf_2            $   25  → $  169/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  2:54  speed_tomato_bed L2    $   25  → $  169/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  3:03  steady_hands L1        $   25  → $  169/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  3:13  player_speed L2        $   30  → $  175/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  3:24  speed_chicken_coop L2  $   30  → $  175/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  3:36  speed_blender L2       $   35  → $  176/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  3:49  cashier_speed L1       $   40  → $  176/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  4:03  stack_cap L2           $   40  → $  191/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  4:17  speed_tomato_bed L3    $   45  → $  191/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  4:31  steady_hands L2        $   45  → $  191/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  4:49  player_speed L3        $   55  → $  197/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  5:11  cashier_speed L2       $   75  → $  197/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  5:34  stack_cap L3           $   75  → $  210/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  5:57  steady_hands L3        $   80  → $  210/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  6:26  player_speed L4        $  100  → $  215/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  7:01  area_2                 $  125  → $  215/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  7:36  cashier_speed L3       $  125  → $  215/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  8:10  stack_cap L4           $  125  → $  225/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  8:57  stocker_1              $  175  → $  318/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  9:07  wheat_shelf            $   50  → $  318/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  9:19  stocker_carry L1       $   65  → $  339/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  9:30  stocker_speed L1       $   65  → $  349/min  {'for_sale': 3, 'cap': 6, 'customers': 17.2, 'labour_bound': True}
+  9:42  wheat_field            $   65  → $  374/min  {'for_sale': 4, 'cap': 7, 'customers': 19.9, 'labour_bound': True}
+  9:50  speed_wheat_field L1   $   50  → $  374/min  {'for_sale': 4, 'cap': 7, 'customers': 19.9, 'labour_bound': True}
+ 10:03  milk_fridge            $   80  → $  374/min  {'for_sale': 4, 'cap': 7, 'customers': 19.9, 'labour_bound': True}
+ 10:17  speed_wheat_field L2   $   90  → $  374/min  {'for_sale': 4, 'cap': 7, 'customers': 19.9, 'labour_bound': True}
+ 10:33  cow_pen                $  100  → $  382/min  {'for_sale': 5, 'cap': 9, 'customers': 25.6, 'labour_bound': True}
+ 10:42  speed_cow_pen L1       $   60  → $  384/min  {'for_sale': 5, 'cap': 9, 'customers': 25.6, 'labour_bound': True}
+ 10:58  flour_shelf            $  100  → $  384/min  {'for_sale': 5, 'cap': 9, 'customers': 25.6, 'labour_bound': True}
+ 11:14  speed_cow_pen L2       $  100  → $  386/min  {'for_sale': 5, 'cap': 9, 'customers': 25.6, 'labour_bound': True}
+ 11:33  mill                   $  125  → $  402/min  {'for_sale': 6, 'cap': 10, 'customers': 28.4, 'labour_bound': True}
+ 11:43  speed_mill L1          $   65  → $  405/min  {'for_sale': 6, 'cap': 10, 'customers': 28.4, 'labour_bound': True}
+ 12:01  stocker_carry L2       $  125  → $  428/min  {'for_sale': 6, 'cap': 10, 'customers': 28.4, 'labour_bound': True}
+ 12:19  stocker_speed L2       $  125  → $  439/min  {'for_sale': 6, 'cap': 10, 'customers': 28.4, 'labour_bound': True}
+ 12:36  wheat_plots            $  125  → $  439/min  {'for_sale': 6, 'cap': 10, 'customers': 28.4, 'labour_bound': True}
+ 12:53  wheat_shelf_2          $  125  → $  439/min  {'for_sale': 6, 'cap': 10, 'customers': 28.4, 'labour_bound': True}
+ 13:14  cow_2                  $  150  → $  440/min  {'for_sale': 6, 'cap': 10, 'customers': 28.4, 'labour_bound': True}
+ 13:34  milk_fridge_2          $  150  → $  440/min  {'for_sale': 6, 'cap': 10, 'customers': 28.4, 'labour_bound': True}
+ 13:55  speed_wheat_field L3   $  150  → $  440/min  {'for_sale': 6, 'cap': 10, 'customers': 28.4, 'labour_bound': True}
+ 14:18  stocker_3              $  175  → $  618/min  {'for_sale': 6, 'cap': 10, 'customers': 28.4, 'labour_bound': True}
+ 14:38  stocker_4              $  200  → $  765/min  {'for_sale': 6, 'cap': 10, 'customers': 28.4, 'labour_bound': False}
+ 14:56  stocker_carry L3       $  225  → $  765/min  {'for_sale': 6, 'cap': 10, 'customers': 28.4, 'labour_bound': False}
+ 15:13  stocker_speed L3       $  225  → $  765/min  {'for_sale': 6, 'cap': 10, 'customers': 28.4, 'labour_bound': False}
+ 15:43  stocker_carry L4       $  375  → $  765/min  {'for_sale': 6, 'cap': 10, 'customers': 28.4, 'labour_bound': False}
+ 16:12  stocker_speed L4       $  375  → $  765/min  {'for_sale': 6, 'cap': 10, 'customers': 28.4, 'labour_bound': False}
+ 17:38  area_3                 $ 1100  → $  765/min  {'for_sale': 6, 'cap': 10, 'customers': 28.4, 'labour_bound': False}
+ 18:14  bread_shelf            $  450  → $  765/min  {'for_sale': 6, 'cap': 10, 'customers': 28.4, 'labour_bound': False}
+ 19:06  oven                   $  675  → $  850/min  {'for_sale': 7, 'cap': 11, 'customers': 31.3, 'labour_bound': False}
+ 19:22  speed_oven L1          $  225  → $  880/min  {'for_sale': 7, 'cap': 11, 'customers': 31.3, 'labour_bound': False}
+ 19:50  speed_oven L2          $  400  → $  918/min  {'for_sale': 7, 'cap': 11, 'customers': 31.3, 'labour_bound': False}
+ 20:24  blender_2              $  525  → $  918/min  {'for_sale': 7, 'cap': 11, 'customers': 31.3, 'labour_bound': False}
+ 20:58  ketchup_shelf_2        $  525  → $  918/min  {'for_sale': 7, 'cap': 11, 'customers': 31.3, 'labour_bound': False}
+ 21:38  register_2             $  600  → $  918/min  {'for_sale': 7, 'cap': 11, 'customers': 31.3, 'labour_bound': False}
+ 22:27  cashier_2              $  750  → $  985/min  {'for_sale': 7, 'cap': 15, 'customers': 40.0, 'labour_bound': True}
+ 23:12  mill_2                 $  750  → $ 1006/min  {'for_sale': 7, 'cap': 15, 'customers': 40.0, 'labour_bound': True}
+ 23:57  flour_shelf_2          $  750  → $ 1006/min  {'for_sale': 7, 'cap': 15, 'customers': 40.0, 'labour_bound': True}
+ 24:51  stocker_2              $  900  → $ 1230/min  {'for_sale': 7, 'cap': 15, 'customers': 40.0, 'labour_bound': False}
+ 25:35  stocker_5              $  900  → $ 1230/min  {'for_sale': 7, 'cap': 15, 'customers': 40.0, 'labour_bound': False}
+ 26:28  oven_2                 $ 1100  → $ 1337/min  {'for_sale': 7, 'cap': 15, 'customers': 40.0, 'labour_bound': False}
+ 27:18  bread_shelf_2          $ 1100  → $ 1337/min  {'for_sale': 7, 'cap': 15, 'customers': 40.0, 'labour_bound': False}
+ 28:07  stocker_6              $ 1100  → $ 1337/min  {'for_sale': 7, 'cap': 15, 'customers': 40.0, 'labour_bound': False}
+ 29:48  exit                   $ 2250  → $ 1337/min  {'for_sale': 7, 'cap': 15, 'customers': 40.0, 'labour_bound': False}
+
+100% Completion after 29.8 min (79/79 purchases)
+Total spend: Pads $15480, Upgrades $3755, levels 37

@@ -18,7 +18,7 @@ Which model does each Product's Shelf use, so that every Shelf looks different a
 
 ## Answer
 
-Resolved 2026-10-07 (prototype; the owner picked preset **C** for every Shelf, then asked for a big checkout with a belt instead of C's small Register stand: "I love it"). Prototype: branch `prototype/shelf-models` (`src/app/shelves-prototype.ts`, `src/view/proto-shelves.ts`, `?shelves=C` on a dev build; `?shelves=gallery` shows every Kenney candidate).
+Resolved 2026-10-07 (prototype; the owner picked preset **C** for every Shelf, then asked for a big checkout with a belt instead of C's small Register stand: "I fucking love it"). Prototype: branch `prototype/shelf-models` (`src/app/shelves-prototype.ts`, `src/view/proto-shelves.ts`, `?shelves=C` on a dev build; `?shelves=gallery` shows every Kenney candidate).
 
 ```json
 {
@@ -46,7 +46,7 @@ Resolved 2026-10-07 (prototype; the owner picked preset **C** for every Shelf, t
 
 **Items sit on real surfaces:** each Shelf has 10 slots, found where a downward ray hits an upward face with room for the Item above it, filled lowest step first, front row first, left to right. Items face the front (no random yaw). Only tomato, bread and flour may heap a second layer; upright Items never stack. Build can bake these slots per stand instead of raycasting at load.
 
-**Register → big checkout counter (note #17 reversed: the owner now wants it big), built in code:**
+**Register → big checkout counter (note #17 reversed: the owner now wants it big), built in code.** Owner on seeing it: **"I fucking love it."** Carry this quote into the playtest-pass spec.
 
 - Counter **2.6 × 1 m** (was a 2 × 1 m box), 0.9 m tall, dark wood with a light-wood top.
 - **Conveyor belt** on the Customer side: dark belt along 58% of the length from the end opposite the till, end rollers, a cream side rail and cream stripes that move at **0.6 m/s** only while a checkout is in progress.

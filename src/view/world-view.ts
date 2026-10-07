@@ -649,7 +649,7 @@ export class WorldView {
       if (img) g.drawImage(img, 18, 14, 74, 74);
       outlinedText(g, `${entry.want - entry.got}`, 132, H / 2 - 10, 56, PALETTE.cream);
       if (waiting) {
-        const k = Math.min(1, c.patience / (TUNING.patienceAngry + TUNING.patienceLeave));
+        const k = Math.min(1, c.patience / (c.patienceLimit + TUNING.patienceLeave));
         g.lineWidth = 9;
         g.strokeStyle = k < 0.5 ? SHADES.warn : k < 0.8 ? PALETTE.orange : SHADES.angry;
         g.beginPath();

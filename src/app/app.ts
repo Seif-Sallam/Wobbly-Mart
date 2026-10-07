@@ -398,7 +398,7 @@ export class App {
       this.renderUi();
     },
     buyUpgrade: (id) => this.game?.buyUpgrade(id),
-    assign: (stocker, product) => this.game?.assign(stocker, product),
+    assign: (stocker, role) => this.game?.assign(stocker, role),
     setSetting: (key, value) => {
       this.settings = { ...this.settings, [key]: value };
       this.ui.settings = this.settings;
@@ -465,6 +465,6 @@ function showcaseSave(map: MapDef): MapSave {
     owned: [...Object.keys(map.layout.areas), ...Object.keys(map.pads)],
     paid: {},
     levels: {},
-    assignments: {},
+    roles: {},
   };
 }

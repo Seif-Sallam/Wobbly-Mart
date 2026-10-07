@@ -69,12 +69,12 @@ export interface FreeStationDef {
 }
 
 export type UpgradeFamily = 'player' | 'station' | 'staff';
-export type UpgradeStat = 'speed' | 'stack' | 'capacity' | 'checkoutTime' | 'carry' | 'workTime' | 'safe';
+export type UpgradeStat = 'speed' | 'stack' | 'checkoutTime' | 'carry' | 'workTime' | 'safe';
 
 export interface UpgradeDef {
   name: string;
   family: UpgradeFamily;
-  /** 'player' | 'shelf' | 'cashier' | 'stocker' | a Producer type id. */
+  /** 'player' | 'cashier' | 'stocker' | a Producer type id. */
   target: string;
   stat: UpgradeStat;
   levels: { cost: number; value: number }[];

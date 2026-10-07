@@ -5,7 +5,7 @@ import GUI, { type Controller } from 'lil-gui';
 import type { Box, MapDef, MapLayout, Point, Rot } from '../sim/map';
 import type { MapSave } from '../sim/save';
 import type { Game } from '../app/game';
-import { validateMap } from '../sim/validate';
+import { validateMap, type ReleasedIds } from '../sim/validate';
 import { boxCentre, distToBox } from '../sim/geometry';
 import { fieldFor } from '../sim/walk';
 import { cellCentre } from '../sim/nav';
@@ -220,7 +220,7 @@ function builtSave(map: MapDef): MapSave {
     owned: [...Object.keys(map.layout.areas), ...Object.keys(map.pads)],
     paid: {},
     levels: {},
-    assignments: {},
+    roles: {},
   };
 }
 
@@ -471,7 +471,7 @@ class Editor {
     clearTimeout(this.rebuildTimer);
     this.rebuildTimer = window.setTimeout(() => {
       const map = this.map();
-      const found = validateMap(map, ASSETS, (RELEASED as Record<string, string[]>)[map.id] ?? []);
+      const found = validateMap(map, ASSETS, (RELEASED as Record<string, ReleasedIds>)[map.id]);
       this.problems = found.map((p) => `${p.id}: ${p.message}`);
       this.problemIds = new Set(found.map((p) => p.id));
       this.status.problems = found.length ? `${found.length} — see console` : 'none';

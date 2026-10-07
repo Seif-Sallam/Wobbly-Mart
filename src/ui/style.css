@@ -536,8 +536,16 @@ body {
   height: 26px;
 }
 .chip.on {
-  background: var(--orange);
   color: var(--cream);
+}
+.chip.role-auto {
+  background: var(--role-auto);
+}
+.chip.role-goods {
+  background: var(--role-goods);
+}
+.chip.role-machines {
+  background: var(--role-machines);
 }
 
 /* ---------- title */

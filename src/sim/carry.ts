@@ -1,11 +1,11 @@
 // Item transfers between a Carrier's Stack and Stations, with the pick-up / drop-off pacing.
 import type { Carrier, ProducerStation, Ref, Station, World } from './world';
 import { DT } from './world';
-import { shelfCap, workMultiplier } from './economy';
+import { workMultiplier } from './economy';
 import { TUNING } from './tuning';
 
 export function accepts(w: World, st: Station, product: string): boolean {
-  if (st.kind === 'shelf') return st.product === product && st.items < shelfCap(w);
+  if (st.kind === 'shelf') return st.product === product && st.items < TUNING.shelfCap;
   if (st.kind === 'trash') return true;
   if (st.kind !== 'producer') return false;
   const type = w.map.producers[st.type];

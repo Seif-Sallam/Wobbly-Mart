@@ -31,6 +31,7 @@ A build-ready **playtest-pass spec** (`spec.md` here, a delta on [the v1 spec](.
 - [Design the Sprint](issues/06-sprint.md) — Shift / push the stick past its ring, 1.5× on top of Walk speed; above the safe count the top Item may fall as a Loose Item (0.3/s at full Stack) you walk over to take back; new "Steady hands" Upgrade raises safe 3 → 4/5/6.
 - [Decide extra Shelves vs. Shelf size](issues/07-shelves-vs-shelf-size.md) — Shelf-size Upgrade removed, every Shelf holds 10; 2 Shelves per Product, the 2nd an optional leaf Pad after that Product's 2nd Producer; Customers pick the fullest Shelf.
 - [Make Items and Producer output readable](issues/09-item-and-output-readability.md) — Items ×1.6 (Stack spacing 0.435 m); every Producer's output piled on a big dark pallet front and centre; Coop ×1.5 with 4 chicks and a closed box fence; Blender ×1.35, 1.3 m, centred on its counter.
+- [Pick Shelf and Register models](issues/10-shelf-and-register-models.md) — every Shelf a bespoke code-built stand (slanted tomato bin, egg counter, step risers, open milk cooler, wheat baskets, bread table) with Items on real surfaces; the Register becomes a big 2.6 m checkout with a moving belt the goods ride to a bagging tray.
 
 ## Not yet specified
 

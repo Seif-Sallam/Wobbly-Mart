@@ -24,7 +24,7 @@ A kind of thing the store deals in (tomato, egg, ketchup). Raw or processed.
 How **Items** move between the **Stack** and stations. _Auto_ (default, the only mode on mobile): proximity transfers automatically. _Manual_ (desktop setting): items transfer one at a time only while a key is held.
 
 **Trash Bin**:
-A station where the **Player** dumps unwanted **Items** from their **Stack**; they are destroyed, no refund.
+A station where the **Player** dumps unwanted **Items** from their **Stack** by standing on it for 1.5 s; they are destroyed, no refund. Walking past never trashes anything.
 
 **Sprint**:
 Holding run makes the **Player** move 1.5× faster. With more **Items** on the **Stack** than **Steady hands** allows, the top **Item** may fall off as a **Loose Item**.
@@ -77,7 +77,7 @@ A sequence of **Producers** where one's output is another's input (tomato → ch
 A **Station** that displays **Items** of exactly one **Product** for **Customers** to take; holds a fixed number of **Items**. A **Product** can have more than one **Shelf**; more are unlocked as the store grows.
 
 **Customer**:
-A visitor with a **Shopping List** who takes **Items** from **Shelves** into a cart, queues at the shortest **Register** queue, pays and leaves. Has long, random patience: only while waiting at an empty **Shelf** does it grow angry, then drop everything in the cart as a **Mess** and leave without paying. Some **Customers** never give up and wait as long as it takes. Never angry while in a **Register** line or on a **Waiting Spot**.
+A visitor with a **Shopping List** who takes **Items** from **Shelves** into a cart (a hand basket, or stacked on their hands), queues at the shortest **Register** queue, pays and leaves. Has long, random patience: only while waiting at an empty **Shelf** does it grow angry, then drop everything in the cart as a **Mess** and leave without paying. Some **Customers** never give up and wait as long as it takes. Never angry while in a **Register** line or on a **Waiting Spot**.
 
 **Shopping List**:
 What a **Customer** came for: 1–4 different **Products**, 1–4 units of each, the same for every **Product** on it. Longer lists usually want fewer of each; a full list of 4 × 4 is very rare.

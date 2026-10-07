@@ -48,6 +48,21 @@ export const FEEL = {
   ovenGlow: 1.5,
   ovenPulse: 0.5,
   ovenGlowIdle: 0.15,
+  // Customer receipt card: patience tells at these seconds waiting, Item pop, finished-line fade
+  moodTells: [12, 30] as const,
+  receiptPop: 0.35,
+  receiptDoneAlpha: 0.35,
+  // Customer hand baskets: who carries one, size, Items inside, tower spacing, wobble and idle sway
+  basketChance: 0.6,
+  basketHeight: 0.4,
+  basketItemScale: 0.6,
+  basketInside: 2,
+  basketTowerGap: 0.6,
+  basketLean: 2.2,
+  basketSway: 0.55,
+  basketSwaySpeed: 2.2,
+  basketTiltItems: 6,
+  basketFade: 1.5,
   // checkout
   beltSpeed: 0.6,
   laneLightIdle: 0.4,

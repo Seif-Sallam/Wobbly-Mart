@@ -29,6 +29,7 @@ const BILL_VALUE = 5;
 const PILE_MAX_BILLS = 24;
 const CART_SCALE = 0.7;
 const LOOSE_Y = 0.15;
+const RIPE_TOMATO_Y = 0.42;
 const LOOSE_TILT = new THREE.Vector2(1.2, 0);
 
 interface Flight {
@@ -715,7 +716,8 @@ export class WorldView {
             plants?.add(
               m.compose(this.local(v, at), q.setFromEuler(new THREE.Euler(0, i * 2.4, 0)), s.setScalar(grown)),
             );
-            if (t <= 0 && type.output === 'tomato') put('tomato', this.local(v, at.clone().setY(0.55)), i);
+            if (t <= 0 && type.output === 'tomato')
+              put('tomato', this.local(v, at.clone().setY(at.y + RIPE_TOMATO_Y)), i);
           });
         } else {
           const n = this.shown(`st:${st.id}`, st.tray);

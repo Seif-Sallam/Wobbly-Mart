@@ -13,6 +13,12 @@ function inRole(st: Station, role: StockerRole): boolean {
   return true;
 }
 
+/** Whether a Station ever takes this product, full or not. */
+function takes(w: World, st: Station, product: string): boolean {
+  if (st.kind === 'shelf') return st.product === product;
+  return st.kind === 'producer' && w.map.producers[st.type].inputs.includes(product);
+}
+
 function shelfUrgency(w: World, st: Station): number {
   if (st.kind !== 'shelf') return Infinity;
   const waiting = w.customers.some((c) => c.state === 'shop' && c.list[c.li]?.shelf === st.id);
@@ -84,9 +90,12 @@ function updateStocker(w: World, s: Stocker): void {
   const cap = stockerCarry(w);
   s.rethink -= DT;
   if (!s.job && s.rethink <= 0) {
-    // leftovers outside a new role may go anywhere, so a Stocker whose role changed never stays stuck holding them
+    // leftovers nothing in the role could ever take (after a role change) may go anywhere, or it stays stuck
+    const stranded = s.stack.filter(
+      (p) => ![...w.stations.values()].some((st) => inRole(st, s.role) && takes(w, st, p)),
+    );
     s.job = s.stack.length
-      ? (sinkForStack(w, s.stack, s.role, taken) ?? sinkForStack(w, s.stack, 'auto', taken))
+      ? (sinkForStack(w, s.stack, s.role, taken) ?? sinkForStack(w, stranded, 'auto', taken))
       : chooseJob(w, s, s.role, cap, taken);
     s.rethink = TUNING.stockerRethink;
   }

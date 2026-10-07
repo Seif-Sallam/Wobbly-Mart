@@ -10,8 +10,23 @@ import { TUNING } from './tuning';
 const registers = (w: World): RegisterStation[] =>
   [...w.stations.values()].filter((s): s is RegisterStation => s.kind === 'register');
 
-const shelfFor = (w: World, product: string): ShelfStation | undefined =>
-  [...w.stations.values()].find((s): s is ShelfStation => s.kind === 'shelf' && s.product === product);
+/** The Product's Shelf with the most Items, ties to the nearer. */
+function shelfFor(w: World, at: { x: number; z: number }, product: string): ShelfStation | undefined {
+  const dist = (s: ShelfStation) => distToBox(at.x, at.z, s.box);
+  return [...w.stations.values()]
+    .filter((s): s is ShelfStation => s.kind === 'shelf' && s.product === product)
+    .reduce<ShelfStation | undefined>(
+      (best, s) => (!best || s.items > best.items || (s.items === best.items && dist(s) < dist(best)) ? s : best),
+      undefined,
+    );
+}
+
+function headFor(w: World, c: Customer): void {
+  const entry = c.list[c.li];
+  const shelf = shelfFor(w, c, entry.product);
+  entry.shelf = shelf?.id ?? '';
+  if (shelf) c.spot = shelfSpot(w, shelf);
+}
 
 export const queueSpot = (reg: RegisterStation, i: number): Point =>
   frontPoint(reg.box, reg.rot, TUNING.queueFirstOffset + i * TUNING.queueGap);
@@ -34,7 +49,7 @@ function spawn(w: World): void {
     .slice(0, n)
     .map((product) => ({
       product,
-      shelf: shelfFor(w, product)?.id ?? '',
+      shelf: '',
       want,
       got: 0,
     }));
@@ -64,8 +79,7 @@ function spawn(w: World): void {
     happy: false,
     look: nextRandom(w),
   };
-  const shelf = w.stations.get(list[0].shelf);
-  if (shelf?.kind === 'shelf') c.spot = shelfSpot(w, shelf);
+  headFor(w, c);
   w.customers.push(c);
 }
 
@@ -81,6 +95,12 @@ function leave(c: Customer): void {
 
 function shop(w: World, c: Customer): void {
   const entry = c.list[c.li];
+  const current = w.stations.get(entry.shelf);
+  // at an empty Shelf, walk over once the Product's other Shelf gets Items
+  if (current?.kind === 'shelf' && current.items === 0 && shelfFor(w, c, entry.product) !== current) {
+    headFor(w, c);
+    c.takeTimer = 0;
+  }
   const shelf = w.stations.get(entry.shelf);
   if (shelf?.kind !== 'shelf') return leave(c);
   if (!walkAgent(w, 'shopper', c, { point: c.spot }, speedOf(w, c))) return;
@@ -100,8 +120,7 @@ function shop(w: World, c: Customer): void {
       c.state = 'queue';
       return;
     }
-    const next = w.stations.get(c.list[c.li].shelf);
-    if (next?.kind === 'shelf') c.spot = shelfSpot(w, next);
+    headFor(w, c);
     return;
   }
   if (!w.tutorial.done) return;

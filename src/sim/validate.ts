@@ -9,7 +9,7 @@ export interface Problem {
   message: string;
 }
 
-const FIXED_TARGETS = new Set(['player', 'shelf', 'cashier', 'stocker']);
+const FIXED_TARGETS = new Set(['player', 'cashier', 'stocker']);
 
 /** Ids that, once released, must never disappear from a map. */
 export function releasableIds(map: MapDef): string[] {
@@ -24,7 +24,17 @@ export function releasableIds(map: MapDef): string[] {
 
 const solidStation = (def: StationDef): boolean => !['cashier', 'stocker', 'area'].includes(def.kind);
 
-export function validateMap(map: MapDef, assets: Record<string, unknown>, released: string[] = []): Problem[] {
+/** Per map in `maps/released-ids.json`: ids shipped in a release, and ids retired for good. */
+export interface ReleasedIds {
+  released: string[];
+  retired: string[];
+}
+
+export function validateMap(
+  map: MapDef,
+  assets: Record<string, unknown>,
+  history: ReleasedIds = { released: [], retired: [] },
+): Problem[] {
   const out: Problem[] = [];
   const L = map.layout;
   const areas = new Set(Object.keys(L.areas));
@@ -138,10 +148,12 @@ export function validateMap(map: MapDef, assets: Record<string, unknown>, releas
     }
   }
 
-  // released ids never disappear
+  // released ids never disappear unless retired, and retired ids never come back
   const now = new Set(releasableIds(map));
-  for (const id of released)
-    if (!now.has(id)) out.push({ id, message: 'was released and must not be removed or renamed' });
+  const retired = new Set(history.retired);
+  for (const id of history.released)
+    if (!now.has(id) && !retired.has(id)) out.push({ id, message: 'was released and must not be removed or renamed' });
+  for (const id of retired) if (now.has(id)) out.push({ id, message: 'was retired and must never come back' });
 
   // models
   const models = new Set<string>(Object.values(L.props).map((p) => p.model));

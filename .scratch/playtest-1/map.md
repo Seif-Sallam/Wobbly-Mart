@@ -39,8 +39,7 @@ A build-ready **playtest-pass spec** (`spec.md` here, a delta on [the v1 spec](.
 
 ## Not yet specified
 
-- **Re-tune the economy** — after layout, yields, Shelf count, demand and staffing change, the price table and 30-minute pacing probably need re-running with the estimator. It's unclear which numbers move until those tickets close.
-- **Bot and tests vs. new rules** — the CI bot playthrough and sim tests assume the current Stack, Trash, list and patience rules. Whether they need new scenarios (Sprint drops and Loose Items, never-give-up Customers) depends on the final mechanics.
+<!-- nothing left: the last fog graduated into Re-tune the economy and Update the bot and tests for the new rules -->
 
 ## Out of scope
 

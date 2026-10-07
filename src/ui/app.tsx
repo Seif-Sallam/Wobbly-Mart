@@ -50,7 +50,6 @@ const ROLE_NAME: Record<StockerRole, string> = { auto: 'Auto', goods: 'Goods', m
 
 function upgradeIcon(world: World, target: string): string {
   if (target === 'player') return 'player';
-  if (target === 'shelf') return 'display-fruit';
   if (target === 'cashier' || target === 'stocker') return 'employee';
   return world.map.producers[target]?.model ?? target;
 }

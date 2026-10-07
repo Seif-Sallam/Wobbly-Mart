@@ -48,5 +48,9 @@ export const FEEL = {
   ovenGlow: 1.5,
   ovenPulse: 0.5,
   ovenGlowIdle: 0.15,
+  // checkout
+  beltSpeed: 0.6,
+  laneLightIdle: 0.4,
+  laneLightScan: 1.6,
   doorOpenRadius: 2.5,
 };

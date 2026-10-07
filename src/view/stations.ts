@@ -9,6 +9,12 @@ import { footprint } from '../sim/geometry';
 import { paletteMaterial } from './materials';
 import { PALETTE, SHADES } from '../palette';
 import { dynamic, mergeStatic } from './merge';
+import { cyl, grid, slab } from './shapes';
+import { buildCheckout, buildStand } from './stands';
+import type { ProductId } from '../../catalog/products';
+
+/** Shelf stands are named `<product>-stand` in the asset table. */
+const STAND = '-stand';
 
 export interface StationVisual {
   /** At the box centre, rotated; children are in local metres with the front at +z. */
@@ -17,6 +23,10 @@ export interface StationVisual {
   body: THREE.Group;
   /** Local positions for displayed Items (Shelf stock or Tray). */
   slots: THREE.Vector3[];
+  /** Shelf Items lean forward by this much (rad), on slanted bins. */
+  slotTilt?: number;
+  /** Checkout belt start, till end and bagging tray, local. */
+  belt?: [THREE.Vector3, THREE.Vector3, THREE.Vector3];
   /** Local positions for Recipe inputs waiting to be used. */
   inputSlots: THREE.Vector3[];
   /** Local positions of Crop plants. */
@@ -28,23 +38,8 @@ export interface StationVisual {
   animate: (dt: number, working: boolean) => void;
 }
 
-const ITEM_GAP = 0.36;
 /** Output pallet: strip depth in the box, board size and height, Item gap (m). */
 const OUTPUT = { strip: 1.1, pallet: [1.46, 0.99], palletHeight: 0.1, gap: 0.42 } as const;
-
-export function grid(cols: number, rows: number, w: number, d: number, y: number, cx = 0, cz = 0): THREE.Vector3[] {
-  const out: THREE.Vector3[] = [];
-  for (let r = 0; r < rows; r++)
-    for (let c = 0; c < cols; c++)
-      out.push(
-        new THREE.Vector3(
-          cx + (cols > 1 ? (c / (cols - 1) - 0.5) * w : 0),
-          y,
-          cz + (rows > 1 ? (r / (rows - 1) - 0.5) * d : 0),
-        ),
-      );
-  return out;
-}
 
 function playIdle(obj: THREE.Object3D, name: string, mixers: THREE.AnimationMixer[], clip = 'idle'): void {
   const c = clipsOf(name).find((a) => a.name === clip);
@@ -54,23 +49,6 @@ function playIdle(obj: THREE.Object3D, name: string, mixers: THREE.AnimationMixe
   action.time = Math.random() * c.duration;
   action.play();
   mixers.push(mixer);
-}
-
-/** A palette-coloured box standing on `y` at (x, z). */
-export function slab(parent: THREE.Object3D, w: number, h: number, d: number, colour: string, x = 0, y = 0, z = 0) {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), paletteMaterial(colour));
-  m.position.set(x, y + h / 2, z);
-  m.castShadow = m.receiveShadow = true;
-  parent.add(m);
-  return m;
-}
-
-export function cyl(parent: THREE.Object3D, r: number, h: number, colour: string, x = 0, y = 0, z = 0, rBottom = r) {
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, rBottom, h, 12), paletteMaterial(colour));
-  m.position.set(x, y + h / 2, z);
-  m.castShadow = m.receiveShadow = true;
-  parent.add(m);
-  return m;
 }
 
 /** Shifts a model so its footprint is centred on its own origin. */
@@ -264,20 +242,6 @@ function oven(w: number, d: number, v: StationVisual): void {
   };
 }
 
-function shelf(name: string, w: number, d: number, v: StationVisual): void {
-  const m = model(name, { fit: [w, d] });
-  v.body.add(m);
-  const h = new THREE.Box3().setFromObject(m).max.y;
-  const cols = Math.max(1, Math.floor((w - 0.2) / ITEM_GAP));
-  if (h < 1.3) {
-    v.slots = [...grid(cols, 2, w - 0.5, d * 0.4, h + 0.02), ...grid(cols, 2, w - 0.5, d * 0.4, h + 0.34)];
-  } else {
-    const fz = d / 2 - 0.2;
-    v.slots = [0.22, 0.5, 0.78].flatMap((f) => grid(cols, 1, w - 0.5, 0, h * f, 0, fz));
-    v.slots.push(...grid(cols, 1, w - 0.5, 0, h + 0.02, 0, 0));
-  }
-}
-
 /** Blender standing on its counter, centred on the top, tomato inputs beside it. */
 function blender(w: number, d: number, v: StationVisual): void {
   const top = counter(w, d, v);
@@ -302,13 +266,8 @@ function counter(w: number, d: number, v: StationVisual): number {
 }
 
 function build(name: string, w: number, d: number, v: StationVisual): void {
+  if (name.endsWith(STAND)) return buildStand(name.slice(0, -STAND.length) as ProductId, w, d, v);
   switch (name) {
-    case 'display-fruit':
-    case 'shelf-boxes':
-    case 'shelf-bags':
-    case 'freezers-standing':
-    case 'display-bread':
-      return shelf(name, w, d, v);
     case 'tomato-bed':
       return tomatoBed(w, d, PRODUCERS.tomato_bed.plants, v);
     case 'wheat-field':
@@ -323,14 +282,8 @@ function build(name: string, w: number, d: number, v: StationVisual): void {
       return mill(w, d, v);
     case 'oven':
       return oven(w, d, v);
-    case 'register': {
-      const top = counter(w, d, v);
-      const till = model('cash-register');
-      till.position.set(-w * 0.12, top, 0);
-      till.rotation.y = Math.PI;
-      v.body.add(till);
-      return;
-    }
+    case 'register':
+      return buildCheckout(w, d, v);
     case 'office': {
       const desk = model('desk', { fit: [w, d] });
       const top = new THREE.Box3().setFromObject(desk).max.y;

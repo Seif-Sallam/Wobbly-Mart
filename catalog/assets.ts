@@ -55,6 +55,7 @@ export const ASSETS: Record<string, AssetDef> = {
   register: {},
   'kitchen-bar': { path: 'furn/kitchenBar' },
   'cash-register': { path: 'market/cash-register', height: 0.45 },
+  'shopping-basket': { path: 'market/shopping-basket' },
   office: {},
   desk: { path: 'furn/desk' },
   'chair-desk': { path: 'furn/chairDesk', height: 0.9 },

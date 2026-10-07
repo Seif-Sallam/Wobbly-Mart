@@ -14,6 +14,15 @@ export class Character {
   private actions = new Map<Clip, THREE.AnimationAction>();
   private bob = 0;
   private hop = 0;
+  private cap: THREE.Mesh[] = [];
+
+  hatColour: string;
+
+  setHat(colour: string): void {
+    if (colour === this.hatColour) return;
+    this.hatColour = colour;
+    for (const m of this.cap) m.material = paletteMaterial(colour);
+  }
 
   constructor(name: string, opts: { tint?: string; hat?: string } = {}) {
     this.visual = model(name, { tint: opts.tint });
@@ -26,6 +35,7 @@ export class Character {
       cap.position.y = h + 0.05;
       brim.position.set(0, h, 0.17);
       this.visual.add(cap, brim);
+      this.cap = [cap, brim];
       // Ride the animated head bone, or the head bobs through the cap.
       const head = this.visual.getObjectByName('head');
       if (head) {
@@ -35,6 +45,7 @@ export class Character {
       }
     }
     this.mixer = new THREE.AnimationMixer(this.visual);
+    this.hatColour = opts.hat ?? '';
     for (const clip of clipsOf(name)) {
       if (['idle', 'walk', 'holding-both', 'emote-yes', 'emote-no'].includes(clip.name)) {
         const a = this.mixer.clipAction(clip);

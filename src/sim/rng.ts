@@ -18,3 +18,10 @@ export function shuffle<T>(state: { rng: number }, list: T[]): T[] {
   }
   return out;
 }
+
+/** Index picked with chance proportional to its weight. */
+export function weighted(state: { rng: number }, weights: readonly number[]): number {
+  let r = nextRandom(state) * weights.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < weights.length; i++) if ((r -= weights[i]) < 0) return i;
+  return weights.length - 1;
+}

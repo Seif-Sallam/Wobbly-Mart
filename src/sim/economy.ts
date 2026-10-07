@@ -1,7 +1,7 @@
 // Ownership, prices, Upgrades, Completion, the tutorial — everything about what is bought.
 import type { MapDef, Point, StationDef } from './map';
 import type { Intents, Station, World } from './world';
-import { newCarrier } from './world';
+import { newCarrier, STOCKER_ROLES } from './world';
 import type { MapSave } from './save';
 import { boxCentre, footprint, frontPoint } from './geometry';
 import { TUNING } from './tuning';
@@ -53,7 +53,7 @@ function createStation(w: World, id: string, def: StationDef): void {
     }
     case 'stocker': {
       const [x, z] = boxCentre(place.box);
-      w.stockers.push({ id, x, z, vx: 0, vz: 0, ...newCarrier(), assignment: null, job: null, rethink: 0 });
+      w.stockers.push({ id, x, z, vx: 0, vz: 0, ...newCarrier(), role: 'auto', job: null, rethink: 0 });
       break;
     }
     case 'area':
@@ -107,8 +107,8 @@ export function applySave(w: World, save: MapSave): void {
     if (up) w.levels[id] = Math.max(0, Math.min(up.levels.length, Math.floor(level)));
   }
   for (const s of w.stockers) {
-    const a = save.assignments?.[s.id];
-    s.assignment = a && a in w.map.products ? a : null;
+    const role = save.roles?.[s.id];
+    if (role && STOCKER_ROLES.includes(role)) s.role = role;
   }
 }
 
@@ -124,7 +124,6 @@ export function upgradeValue(w: World, target: string, stat: string, base: numbe
 }
 
 export const workMultiplier = (w: World, type: string): number => upgradeValue(w, type, 'workTime', 1);
-export const shelfCap = (w: World): number => upgradeValue(w, 'shelf', 'capacity', TUNING.base.shelfCap);
 export const stackCap = (w: World): number => upgradeValue(w, 'player', 'stack', TUNING.base.stack);
 export const safeCount = (w: World): number => upgradeValue(w, 'player', 'safe', TUNING.base.safe);
 export const playerSpeed = (w: World): number => upgradeValue(w, 'player', 'speed', TUNING.base.playerSpeed);
@@ -161,7 +160,7 @@ export function applyCommands(w: World, intents: Intents): void {
   if (intents.assign) {
     const s = w.stockers.find((x) => x.id === intents.assign?.stocker);
     if (s) {
-      s.assignment = intents.assign.product;
+      s.role = intents.assign.role;
       s.job = null;
     }
   }

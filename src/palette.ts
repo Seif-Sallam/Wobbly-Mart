@@ -37,6 +37,8 @@ export const SHADES = {
     flour: '#f4ead8',
     bread: '#c98b4a',
   } as Record<string, string>,
+  /** Stocker caps by role; the Office role chips match. */
+  roleCaps: { auto: '#e0453a', goods: '#8e5cc4', machines: '#3f7fd6' },
   customerTints: ['#ffffff', '#ffe3d6', '#e3f0ff', '#f0ffe3', '#fff4d6', '#f3e3ff'],
 } as const;
 
@@ -53,4 +55,5 @@ export const LIGHT = { sun: '#ffcf8a', sunIntensity: 3.0, hemiIntensity: 0.9, sh
 export function applyCssPalette(root: HTMLElement): void {
   for (const [k, v] of Object.entries(PALETTE)) root.style.setProperty(`--${k}`, v);
   root.style.setProperty('--angry', SHADES.angry);
+  for (const [k, v] of Object.entries(SHADES.roleCaps)) root.style.setProperty(`--role-${k}`, v);
 }

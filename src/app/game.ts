@@ -1,5 +1,5 @@
 // The running game: fixed-timestep sim, the 3D view, input and the bits of glue between them.
-import type { Intents, SimEvent, World } from '../sim/world';
+import type { Intents, SimEvent, StockerRole, World } from '../sim/world';
 import { createWorld, DT, step } from '../sim/world';
 import type { MapDef } from '../sim/map';
 import type { MapSave } from '../sim/save';
@@ -43,8 +43,8 @@ export class Game {
     this.commands.buyUpgrade = id;
   }
 
-  assign(stocker: string, product: string | null): void {
-    this.commands.assign = { stocker, product };
+  assign(stocker: string, role: StockerRole): void {
+    this.commands.assign = { stocker, role };
   }
 
   frame(now: number): void {

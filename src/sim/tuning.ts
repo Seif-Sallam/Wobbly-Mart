@@ -38,6 +38,7 @@ export const TUNING = {
   queueFirstOffset: 0.6,
   shelfSpotOffset: 0.7,
   shelfSpotGap: 0.9,
+  shelfCap: 10,
   navCell: 0.5,
   /** Agents count as at a Station within this share of reach, at a point within this distance (m). */
   arriveReachShare: 0.9,
@@ -67,7 +68,6 @@ export const TUNING = {
     playerSpeed: 5.5,
     stack: 8,
     safe: 3,
-    shelfCap: 8,
     checkoutTime: 2,
     stockerSpeed: 4,
     stockerCarry: 6,

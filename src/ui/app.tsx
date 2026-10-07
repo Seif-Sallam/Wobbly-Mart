@@ -1,7 +1,7 @@
 // Preact panels: title, Office, pause, Maps, Settings and the one-off cards.
 import { render } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import type { World } from '../sim/world';
+import { STOCKER_ROLES, type StockerRole, type World } from '../sim/world';
 import type { MapDef } from '../sim/map';
 import type { Settings } from '../sim/save';
 import { canBuyUpgrade, nextLevelCost, upgradeVisible } from '../sim/economy';
@@ -32,7 +32,7 @@ export interface UiActions {
   open: (o: Overlay) => void;
   closeOffice: () => void;
   buyUpgrade: (id: string) => void;
-  assign: (stocker: string, product: string | null) => void;
+  assign: (stocker: string, role: StockerRole) => void;
   setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
   fullscreen: () => void;
   copySave: () => Promise<boolean>;
@@ -46,6 +46,7 @@ export interface UiActions {
 
 const FAMILY_ORDER = ['player', 'station', 'staff'] as const;
 const FAMILY_NAME = { player: 'Player', station: 'Station', staff: 'Staff' };
+const ROLE_NAME: Record<StockerRole, string> = { auto: 'Auto', goods: 'Goods', machines: 'Machines' };
 
 function upgradeIcon(world: World, target: string): string {
   if (target === 'player') return 'player';
@@ -133,23 +134,14 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
                 <img src={actions.icon('employee')} alt="" />
                 <b>#{i + 1}</b>
                 <div class="chips">
-                  <Btn
-                    class={s.assignment === null ? 'chip on' : 'chip'}
-                    actions={actions}
-                    onClick={() => actions.assign(s.id, null)}
-                  >
-                    Auto
-                  </Btn>
-                  {[
-                    ...new Set([...world.stations.values()].flatMap((st) => (st.kind === 'shelf' ? [st.product] : []))),
-                  ].map((p) => (
+                  {STOCKER_ROLES.map((role) => (
                     <Btn
-                      key={p}
-                      class={s.assignment === p ? 'chip on' : 'chip'}
+                      key={role}
+                      class={s.role === role ? `chip on role-${role}` : 'chip'}
                       actions={actions}
-                      onClick={() => actions.assign(s.id, p)}
+                      onClick={() => actions.assign(s.id, role)}
                     >
-                      <img src={actions.icon(world.map.products[p].model)} alt={p} />
+                      {ROLE_NAME[role]}
                     </Btn>
                   ))}
                 </div>

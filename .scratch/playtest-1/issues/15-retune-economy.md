@@ -1,7 +1,8 @@
 # Re-tune the economy
 
 Type: task
-Status: open
+Status: resolved
+Assignee: Claude (AFK), confirmed by Seif 2026-10-07
 Blocked by: 02, 04, 05, 06, 07, 08, 09
 
 ## Question
@@ -16,7 +17,7 @@ With every playtest decision in place, what are the new Pad costs, Upgrade costs
 
 ## Answer
 
-Proposed 2026-10-07 (AFK run; **awaiting the owner's pacing confirmation**). Full table: [price-table/price-table.md](../price-table/price-table.md), timeline: [price-table/timeline.txt](../price-table/timeline.txt), estimator: [price-table/sim.py](../price-table/sim.py) (a copy of the v1 one). Research branch `research/economy` (on `prototype/relayout` plus the demand rules) holds the same prices in `maps/corner-shop/unlocks.ts` / `upgrades.ts` and a trip-meter script (`scripts/measure-trips.ts`).
+Resolved 2026-10-07 (AFK run; the owner confirmed the ~30 min pacing, split 7 / 11 / 12). Full table: [price-table/price-table.md](../price-table/price-table.md), timeline: [price-table/timeline.txt](../price-table/timeline.txt), estimator: [price-table/sim.py](../price-table/sim.py) (a copy of the v1 one). Research branch `research/economy` (on `prototype/relayout` plus the demand rules) holds the same prices in `maps/corner-shop/unlocks.ts` / `upgrades.ts` and a trip-meter script (`scripts/measure-trips.ts`).
 
 **Pacing:** estimator **29.8 min** to 100% with good play: Area 1 **7.0**, Area 2 **10.6**, Area 3 **12.2** (v1: 7.4 / 11.6 / 11.5 = 30.5). 79 purchases (v1: 68): 42 Pads, 37 Upgrade levels.
 

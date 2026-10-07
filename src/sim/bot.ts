@@ -154,7 +154,7 @@ export class Bot {
     if (job && (!sink || (!accepts(w, sink, job.product) && count(job.product) > 0))) job = null;
     if (job && !job.source && count(job.product) === 0) job = null;
     if (!job) {
-      job = sinkForStack(w, p.stack, null, taken) ?? chooseJob(w, p, null, stackCap(w) - p.stack.length, taken);
+      job = sinkForStack(w, p.stack, 'auto', taken) ?? chooseJob(w, p, 'auto', stackCap(w) - p.stack.length, taken);
       if (job?.source) job.need += count(job.product);
     }
     this.job = job;

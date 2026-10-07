@@ -42,9 +42,12 @@ export interface Job {
   need: number;
 }
 
+export type StockerRole = 'auto' | 'goods' | 'machines';
+export const STOCKER_ROLES: StockerRole[] = ['auto', 'goods', 'machines'];
+
 export interface Stocker extends Mover, Carrier {
   id: string;
-  assignment: string | null;
+  role: StockerRole;
   job: Job | null;
   rethink: number;
 }
@@ -175,7 +178,7 @@ export interface Intents {
   manualGrab?: boolean;
   sprint?: boolean;
   buyUpgrade?: string;
-  assign?: { stocker: string; product: string | null };
+  assign?: { stocker: string; role: StockerRole };
 }
 
 export interface Nav {

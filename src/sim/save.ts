@@ -1,12 +1,12 @@
 // What survives an Opening, and the versioned save file around it. Pure data — storage lives in src/app.
-import type { World } from './world';
+import type { StockerRole, World } from './world';
 
 export interface MapSave {
   money: number;
   owned: string[];
   paid: Record<string, number>;
   levels: Record<string, number>;
-  assignments: Record<string, string | null>;
+  roles: Record<string, StockerRole>;
 }
 
 export interface Settings {
@@ -17,7 +17,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = { music: true, sounds: true, manualGrab: false };
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export interface SaveFile {
   version: number;
@@ -48,12 +48,15 @@ export function snapshot(w: World): MapSave {
     owned: [...w.owned],
     paid: { ...w.paid },
     levels: { ...w.levels },
-    assignments: Object.fromEntries(w.stockers.map((s) => [s.id, s.assignment])),
+    roles: Object.fromEntries(w.stockers.map((s) => [s.id, s.role])),
   };
 }
 
 /** One step per version bump: MIGRATIONS[n] turns a version-n save into version n+1. */
-const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> = {};
+const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> = {
+  // playtest pass 1: only the owner had a save, so it starts fresh instead of migrating
+  1: (old) => ({ ...emptySave(String(old.currentMap)) }),
+};
 
 /** Brings any older save up to date; throws with a clear message when it can't. */
 export function migrate(raw: unknown): SaveFile {

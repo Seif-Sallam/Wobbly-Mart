@@ -2,14 +2,24 @@ import { expect, test } from 'vitest';
 import { cornerShop } from '../../maps/corner-shop';
 import { ASSETS } from '../../catalog/assets';
 import type { MapDef } from './map';
-import { releasableIds, validateMap } from './validate';
+import { releasableIds, validateMap, type ReleasedIds } from './validate';
+import RELEASED from '../../maps/released-ids.json';
 
 const clone = (): MapDef => structuredClone(cornerShop);
-const messages = (m: MapDef, released: string[] = []) =>
-  validateMap(m, ASSETS, released).map((p) => `${p.id}: ${p.message}`);
+const messages = (m: MapDef, released: string[] = [], retired: string[] = []) =>
+  validateMap(m, ASSETS, { released, retired } satisfies ReleasedIds).map((p) => `${p.id}: ${p.message}`);
 
 test('Map 1 is valid, and the validator catches every kind of broken map', () => {
   expect(messages(cornerShop, releasableIds(cornerShop))).toEqual([]);
+
+  // a retired id may be missing, but may never come back
+  const { released, retired } = RELEASED['corner-shop'];
+  expect(retired).toContain('shelf_cap');
+  expect(messages(cornerShop, released, retired)).toEqual([]);
+  expect(messages(cornerShop, released)).toContain('shelf_cap: was released and must not be removed or renamed');
+  const revived = clone();
+  revived.upgrades.shelf_cap = { ...revived.upgrades.stack_cap, name: 'Shelf size' };
+  expect(messages(revived, released, retired)).toContain('shelf_cap: was retired and must never come back');
 
   const dangling = clone();
   dangling.pads.egg_shelf.requires = ['tomato_bedd'];
@@ -37,8 +47,8 @@ test('Map 1 is valid, and the validator catches every kind of broken map', () =>
   );
 
   const crowded = clone();
-  crowded.layout.places.egg_shelf.box = [6.5, 7.5, 3, 1];
-  crowded.layout.places.ketchup_shelf.box = [14.5, 15, 3, 1];
+  crowded.layout.places.egg_shelf.box = [6.25, 7.5, 3, 1];
+  crowded.layout.places.ketchup_shelf.box = [13, 19, 3, 1];
   expect(messages(crowded)).toContain('tomato_shelf: overlaps Station egg_shelf');
   expect(messages(crowded).some((m) => m.startsWith('register: Queue Spot') && m.endsWith('ketchup_shelf'))).toBe(true);
 

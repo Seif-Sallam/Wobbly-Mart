@@ -32,6 +32,7 @@ A build-ready **playtest-pass spec** (`spec.md` here, a delta on [the v1 spec](.
 - [Decide extra Shelves vs. Shelf size](issues/07-shelves-vs-shelf-size.md) — Shelf-size Upgrade removed, every Shelf holds 10; 2 Shelves per Product, the 2nd an optional leaf Pad after that Product's 2nd Producer; Customers pick the fullest Shelf.
 - [Make Items and Producer output readable](issues/09-item-and-output-readability.md) — Items ×1.6 (Stack spacing 0.435 m); every Producer's output piled on a big dark pallet front and centre; Coop ×1.5 with 4 chicks and a closed box fence; Blender ×1.35, 1.3 m, centred on its counter.
 - [Pick Shelf and Register models](issues/10-shelf-and-register-models.md) — every Shelf a bespoke code-built stand (slanted tomato bin, egg counter, step risers, open milk cooler, wheat baskets, bread table) with Items on real surfaces; the Register becomes a big 2.6 m checkout with a moving belt the goods ride to a bagging tray.
+- [Show the whole Shopping List](issues/11-full-shopping-list.md) — a receipt card: one line per Product with ×n left, current line highlighted, ticks on finished lines, a pop per Item; the patience ring becomes shared tells at 12 s and 30 s so never-give-up Customers look like everyone else.
 
 ## Not yet specified
 

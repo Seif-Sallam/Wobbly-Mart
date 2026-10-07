@@ -37,6 +37,7 @@ A build-ready **playtest-pass spec** (`spec.md` here, a delta on [the v1 spec](.
 - [Rework the wheat field, Mill and Oven models](issues/14-wheat-mill-oven-models.md) — all code-built (preset B, "a masterpiece"): fenced furrow wheat field with 6 plants, a barn mill with sails on the gable spinning the right way, a glowing iron stove, a square open-pasture Cow Pen with hay bales.
 - [Re-lay out the Corner Shop](issues/08-relayout-corner-shop.md) — bigger store (44 × 22) and map (52 × 58); one column per Product with its second Shelf behind; Ovens and Blenders indoors; Station boxes = models incl. pallets; Trash at the back; 6 banners. The layout file on `prototype/relayout` is the answer. Bot needs 122 min with placeholder costs → economy re-tune.
 - [Re-tune the economy](issues/15-retune-economy.md) — estimator 29.8 min (7.0 / 10.6 / 12.2) on 16.3 m trips; Area price scales 0.28 / 0.33 / 0.75; full table in `price-table/`. The bot (182 min on v1, 88 now) is a reachability gate, not a pacing gauge. Retiring `shelf_cap` needs a retired-ids rule.
+- [Update the bot and tests for the new rules](issues/16-bot-and-tests.md) — the bot walks, keeps Stockers on Auto and only prints its time; the opening test is updated and one new late-game flowing test covers two Shelves, never-give-up and angry Customers, basket Mess and the 1.5 s Trash hold, Sprint drops and Loose Items, and Stocker roles; the validator test covers retired ids.
 
 ## Not yet specified
 

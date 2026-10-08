@@ -33,10 +33,11 @@ export const pads: Record<string, PadDef> = {
   oven: { cost: 675, requires: ['bread_shelf'], unlocks: producer('oven') },
   register_2: { cost: 600, requires: ['oven'], unlocks: { kind: 'register', queueLength: 6 } },
   cashier_2: { cost: 750, requires: ['register_2'], unlocks: { kind: 'cashier', register: 'register_2' } },
-  stocker_2: { cost: 900, requires: ['oven'], unlocks: { kind: 'stocker' } },
+  stocker_2: { cost: 900, requires: ['mill_2'], unlocks: { kind: 'stocker' } },
   blender_2: { cost: 525, requires: ['oven'], unlocks: producer('blender') },
   mill_2: { cost: 750, requires: ['oven'], unlocks: producer('mill') },
-  oven_2: { cost: 1100, requires: ['mill_2', 'blender_2'], unlocks: producer('oven') },
+  chicken_3: { cost: 750, requires: ['oven'], unlocks: producer('chicken_coop') },
+  oven_2: { cost: 1100, requires: ['mill_2', 'chicken_3'], unlocks: producer('oven') },
   exit: { cost: 2250, requires: ['oven_2'], unlocks: { kind: 'exit' } },
   // second Shelves (optional leaves) and Stockers 3–6
   tomato_shelf_2: { cost: 20, requires: ['tomato_plots'], unlocks: shelf('tomato') },
@@ -48,12 +49,14 @@ export const pads: Record<string, PadDef> = {
   bread_shelf_2: { cost: 1100, requires: ['oven_2'], unlocks: shelf('bread') },
   stocker_3: { cost: 175, requires: ['wheat_field'], unlocks: { kind: 'stocker' } },
   stocker_4: { cost: 200, requires: ['cow_pen'], unlocks: { kind: 'stocker' } },
-  stocker_5: { cost: 900, requires: ['area_3'], unlocks: { kind: 'stocker' } },
+  stocker_5: { cost: 900, requires: ['oven'], unlocks: { kind: 'stocker' } },
   stocker_6: { cost: 1100, requires: ['oven_2'], unlocks: { kind: 'stocker' } },
 };
 
 export const freeStations: Record<string, FreeStationDef> = {
-  trash: { requires: ['area_2'], unlocks: { kind: 'trash' } },
+  trash: { requires: [], unlocks: { kind: 'trash' } },
+  trash_2: { requires: ['area_2'], unlocks: { kind: 'trash' } },
+  trash_3: { requires: ['area_3'], unlocks: { kind: 'trash' } },
 };
 
 export const start = { owned: ['area_1'], money: 50 };

@@ -1,7 +1,7 @@
 // Map validator: runs in CI and live in the layout editor. Returns problems; an empty list means the map is valid.
 import type { Box, MapDef, StationDef } from './map';
 import { stationModel } from './map';
-import { boxesOverlap, frontPoint } from './geometry';
+import { boxGap, boxesOverlap, frontPoint } from './geometry';
 import { TUNING } from './tuning';
 
 export interface Problem {
@@ -132,6 +132,21 @@ export function validateMap(
     for (const [sid, box] of solids)
       if (boxesOverlap(L.places[a].box, box)) out.push({ id: a, message: `overlaps ${sid}` });
   }
+
+  // clearance: every Station/Pad footprint pair, except a Register and its own Cashier spot
+  const footprints = Object.keys(stations).filter((id) => L.places[id]);
+  const ownCashier = (a: string, b: string) => {
+    const d = stations[a];
+    return d.kind === 'cashier' && d.register === b;
+  };
+  for (let i = 0; i < footprints.length; i++)
+    for (let j = i + 1; j < footprints.length; j++) {
+      const [a, b] = [footprints[i], footprints[j]];
+      if (ownCashier(a, b) || ownCashier(b, a)) continue;
+      const gap = boxGap(L.places[a].box, L.places[b].box);
+      if (gap < TUNING.clearance - 1e-6)
+        out.push({ id: a, message: `only ${gap.toFixed(2)} m from ${b} (needs ${TUNING.clearance} m)` });
+    }
 
   // queues
   const r = TUNING.characterRadius;

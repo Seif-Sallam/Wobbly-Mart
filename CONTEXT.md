@@ -30,14 +30,17 @@ A station where the **Player** dumps unwanted **Items** from their **Stack** by 
 Tapping or clicking the floor, a **Pad** or a **Station** sends the **Player** walking there on their own; at a **Station** they stop within reach so proximity does the action, and at a **Register** they go behind it. A double tap sprints. Any joystick or key input cancels it.
 
 **Sprint**:
-Holding run makes the **Player** move 1.5× faster. With more **Items** on the **Stack** than **Steady hands** allows, the top **Item** may fall off as a **Loose Item**.
+Holding run makes the **Player** move 1.5× faster. A tipping **Stack** sheds its top **Item** much more often while sprinting.
+
+**Tipping**:
+With more **Items** than **Steady hands** allows, a **Stack** may shed its top **Item**: likelier the taller it is, most while sprinting, a little while walking, and more on sharp turns and sudden stops. The **Item** lands as a **Loose Item** or, depending on its **Product**, breaks into a **Mess**.
 
 **Loose Item**:
-An **Item** that fell off the **Player**'s **Stack** while sprinting. It lies on the floor until the **Player** walks over it to take it back.
+An **Item** that fell off the **Player**'s **Stack** without breaking. It lies on the floor until the **Player** walks over it to take it back.
 _Avoid_: Mess (a Mess is lost; a Loose Item isn't)
 
 **Mess**:
-What an angry **Customer** leaves when dropping their cart, or a tipped basket — the goods are lost. Slows everyone walking through it and makes **Customers** in it lose patience faster, until someone cleans it with a **Mop**.
+What an angry **Customer** leaves when dropping their cart, a tipped basket, or an **Item** that broke falling off a **Stack** — the goods are lost. Slows everyone walking through it and makes **Customers** in it lose patience faster, until someone cleans it with a **Mop**.
 _Avoid_: spill, dropped items
 
 ### Production

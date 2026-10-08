@@ -7,7 +7,7 @@ An arcade-idle store game: the player runs a small mart, producing goods, stocki
 ### Core loop
 
 **Player**:
-The single character the human controls. Interacts with everything by proximity only — walking near a thing is the action.
+The single character the human controls. Interacts with everything by proximity only — walking near a thing is the action. Moves by joystick, keys, or a **Tap Walk**.
 _Avoid_: hero, avatar
 
 **Stack**:
@@ -25,6 +25,9 @@ How **Items** move between the **Stack** and stations. _Auto_ (default, the only
 
 **Trash Bin**:
 A station where the **Player** dumps unwanted **Items** from their **Stack** by standing on it for 1.5 s; they are destroyed, no refund. Walking past never trashes anything.
+
+**Tap Walk**:
+Tapping or clicking the floor, a **Pad** or a **Station** sends the **Player** walking there on their own; at a **Station** they stop within reach so proximity does the action, and at a **Register** they go behind it. A double tap sprints. Any joystick or key input cancels it.
 
 **Sprint**:
 Holding run makes the **Player** move 1.5× faster. With more **Items** on the **Stack** than **Steady hands** allows, the top **Item** may fall off as a **Loose Item**.

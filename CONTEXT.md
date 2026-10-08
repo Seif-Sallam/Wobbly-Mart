@@ -24,7 +24,7 @@ A kind of thing the store deals in (tomato, egg, ketchup). Raw or processed.
 How **Items** move between the **Stack** and stations. _Auto_ (default, the only mode on mobile): proximity transfers automatically. _Manual_ (desktop setting): items transfer one at a time only while a key is held.
 
 **Trash Bin**:
-A station where the **Player** dumps unwanted **Items** from their **Stack** by standing on it for 1.5 s; they are destroyed, no refund. Walking past never trashes anything. Each **Area** has one, by its **Back Door**; bins never move. **Stockers** use one only as a last resort.
+A station where the **Player** dumps unwanted **Items** from their **Stack** by standing on it for 1.5 s; they are destroyed, no refund. Walking past never trashes anything. Each **Area** has one, against a wall the camera can see (never the south wall); bins never move. **Stockers** use one only as a last resort.
 
 **Tap Walk**:
 Tapping or clicking the floor, a **Pad** or a **Station** sends the **Player** walking there on their own; at a **Station** they stop within reach so proximity does the action, and at a **Register** they go behind it. A double tap sprints. Any joystick or key input cancels it.
@@ -49,7 +49,7 @@ _Avoid_: spill, dropped items
 What cleans a **Mess**: taken from the **Mop Stand** with an empty **Stack**, and while held no **Items** can be picked up. Returned at the stand.
 
 **Mop Stand**:
-The **Station** that holds the store's **Mops**.
+The **Station** in the **Office** room that holds the store's **Mops**.
 
 **Station**:
 Any fixed thing in the store the **Player** interacts with by proximity (producer, **Shelf**, **Register**, **Trash Bin**).

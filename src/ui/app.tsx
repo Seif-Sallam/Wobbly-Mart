@@ -84,6 +84,20 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
         ✕
       </button>
       <div class="office-scroll">
+        {(window as unknown as { protoEditLayout?: { open: () => void } }).protoEditLayout && (
+          <section>
+            <h3>Layout</h3>
+            <button
+              class="btn"
+              onClick={() => {
+                actions.closeOffice();
+                (window as unknown as { protoEditLayout: { open: () => void } }).protoEditLayout.open();
+              }}
+            >
+              ✎ Edit Layout
+            </button>
+          </section>
+        )}
         {FAMILY_ORDER.map((family) => {
           const list = ups.filter(([, u]) => u.family === family);
           if (!list.length) return null;

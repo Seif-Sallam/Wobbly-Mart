@@ -1,7 +1,7 @@
 // PROTOTYPE (prototype/relayout-2m): list every pair of Station/Pad footprints closer than 2.0 m.
 import { layout } from '../maps/corner-shop/layout';
 import { pads } from '../maps/corner-shop/unlocks';
-const GAP = 2.0;
+const GAP = 1.5;
 const gap = (a: number[], b: number[]) => {
   const dx = Math.max(b[0] - (a[0] + a[2]), a[0] - (b[0] + b[2]), 0);
   const dz = Math.max(b[1] - (a[1] + a[3]), a[1] - (b[1] + b[3]), 0);

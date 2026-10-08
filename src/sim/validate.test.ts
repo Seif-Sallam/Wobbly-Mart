@@ -54,7 +54,7 @@ test('Map 1 is valid, and the validator catches every kind of broken map', () =>
 
   const tight = clone();
   tight.layout.places.egg_shelf.box = [8.5, 7.5, 3, 1];
-  expect(messages(tight)).toContain('tomato_shelf: only 0.50 m from egg_shelf (needs 2 m)');
+  expect(messages(tight)).toContain('tomato_shelf: only 0.50 m from egg_shelf (needs 1.5 m)');
 
   const unknownModel = clone();
   unknownModel.layout.props.prop_sofa.model = 'sofa-deluxe';

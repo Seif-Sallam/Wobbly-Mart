@@ -37,10 +37,16 @@ An **Item** that fell off the **Player**'s **Stack** while sprinting. It lies on
 _Avoid_: Mess (a Mess is lost; a Loose Item isn't)
 
 **Mess**:
-What an angry **Customer** leaves when dropping their cart — the goods are lost. Slows **Customers** walking through it until the **Player** walks over it to clear it.
+What an angry **Customer** leaves when dropping their cart, or a tipped basket — the goods are lost. Slows everyone walking through it and makes **Customers** in it lose patience faster, until someone cleans it with a **Mop**.
 _Avoid_: spill, dropped items
 
 ### Production
+
+**Mop**:
+What cleans a **Mess**: taken from the **Mop Stand** with an empty **Stack**, and while held no **Items** can be picked up. Returned at the stand.
+
+**Mop Stand**:
+The **Station** that holds the store's **Mops**.
 
 **Station**:
 Any fixed thing in the store the **Player** interacts with by proximity (producer, **Shelf**, **Register**, **Trash Bin**).
@@ -116,7 +122,7 @@ Hired helpers, bought on **Pads**. Two roles: **Cashier** and **Stocker**.
 **Staff** that checks out **Customers** at a **Register**. Does not collect the **Cash Pile**.
 
 **Stocker**:
-**Staff** that moves **Items** wherever they're needed. Has a role, picked in the **Office**: **Auto** takes the most urgent job of any kind; **Stock goods** only carries **Items** to **Shelves**; **Stock machines** only feeds **Animals** and **Machines**. A **Stocker** with no job in its role waits.
+**Staff** that moves **Items** wherever they're needed. Has a role, picked in the **Office**: **Auto** takes the most urgent job of any kind; **Stock goods** only carries **Items** to **Shelves**; **Stock machines** only feeds **Animals** and **Machines**; **Clean** only mops **Messes**. A **Stocker** with no job in its role waits.
 
 **Area**:
 A section of the map unlocked by a **Pad**; holds the **Pads** for its own stations.

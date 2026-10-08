@@ -34,8 +34,8 @@ export const TUNING = {
   patienceAngry: [45, 90] as const,
   patienceLeave: 15,
   neverGiveUp: 0.25,
-  /** Least clear distance between any two Station or Pad footprints (m): one person walks between without working either. */
-  clearance: 2,
+  /** Least clear distance between any two Station or Pad footprints (m): standing halfway between is out of reach of both (0.75 m > 0.6 m reach). */
+  clearance: 1.5,
   queueGap: 0.8,
   queueFirstOffset: 0.6,
   shelfSpotOffset: 0.7,

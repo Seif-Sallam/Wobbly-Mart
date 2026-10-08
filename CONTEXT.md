@@ -128,11 +128,17 @@ The **Station** where **Upgrades** are bought: walking to it opens a panel.
 **Upgrade**:
 A purchased improvement in one of three families: **Player** (speed, stack capacity, **Steady hands** — how many **Items** are safe while sprinting), **Station** (speed, more plots/animals), **Staff** (speed, carry capacity).
 
+**Edit Layout**:
+A paused mode opened from the **Office** where the **Player** rearranges bought **Stations** (not **Pads** or the **Office**) on a grid, each staying in the shop or the farm yard of any bought **Area**. Pressing Done pays for the **Moves** made. There is no going back to the original layout.
+
+**Move**:
+One **Station** left somewhere other than where it started an **Edit Layout** session (a new spot or rotation), paid for on Done. Each bought **Area** adds 3 Moves to the **Map**'s pool; each Move costs more than the last.
+
 **Exit Pad**:
 A **Pad** beside a car, bought late in a map; once bought, the car travels to the next map. The player can return to any visited map at any time.
 
 **Completion**:
-A map's progress as a percentage of everything purchasable — every **Pad** and every **Upgrade** level, equally weighted. 100% means everything is unlocked. The only meta-progression measure.
+A map's progress as a percentage of everything purchasable — every **Pad** and every **Upgrade** level, equally weighted (**Moves** don't count). 100% means everything is unlocked. The only meta-progression measure.
 _Avoid_: stars, rating, prestige
 
 ### Maps

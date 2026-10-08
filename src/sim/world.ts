@@ -33,7 +33,7 @@ export interface Carrier {
   fullWarned: boolean;
 }
 
-export type Player = Mover & Carrier & { trashHold: number; sprinting: boolean; dropCooldown: number };
+export type Player = Mover & Carrier & { trashHold: number; sprinting: boolean; dropCooldown: number; jolt?: number };
 
 export interface Job {
   sink: string;

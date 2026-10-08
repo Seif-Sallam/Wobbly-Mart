@@ -134,6 +134,7 @@ export class App {
     requestAnimationFrame(loop);
     Object.assign(window, { app: this, game: this.game });
     const params = new URLSearchParams(location.search);
+    if (params.has('tip')) void import('./tip-prototype').then((m) => this.game && m.openTipPrototype(this.game));
     if (params.has('debug')) void import('./debug').then((m) => this.game && m.openDebug(this.game, isTouch));
     if (import.meta.env.DEV) {
       const { installEditor } = await import('../editor/editor');

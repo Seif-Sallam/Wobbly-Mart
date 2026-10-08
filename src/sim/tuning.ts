@@ -58,6 +58,12 @@ export const TUNING = {
   fullStackSlowdown: 0.25,
   /** Sprint: drops/s = maxRate × ((Stack − safe) / (cap − safe))^curve, at most one per cooldown s. */
   sprint: { speed: 1.5, maxRate: 0.3, curve: 1.2, cooldown: 1, dropBehind: 1.3, dropSide: 0.8 },
+  /** PROTOTYPE (prototype/stack-tipping): tipping by height, walking, jolts; per-Product chance to break into a Mess. */
+  tip: {
+    walkShare: 0,
+    joltBoost: 0,
+    breakChance: {} as Record<string, number>,
+  },
   looseTakeRadius: 0.8,
   /** Stocker job urgency (lower first): empty Shelf with waiting Customers 0, Shelves 1–2, then Producer inputs. */
   urgency: { inputEmpty: 2.5, inputPartial: 3, trayFull: 4, feedsUrgentShelf: 0.5, distanceWeight: 0.01 },

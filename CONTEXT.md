@@ -150,6 +150,20 @@ A **Pad** beside a car, bought late in a map; once bought, the car travels to th
 A map's progress as a percentage of everything purchasable — every **Pad** and every **Upgrade** level, equally weighted (**Moves** don't count). 100% means everything is unlocked. The only meta-progression measure.
 _Avoid_: stars, rating, prestige
 
+### Events
+
+**Event**:
+A timed happening on a **Map** that asks the **Player** to act: a warning, a running phase, then a reward if handled or a cost if not. Paid in **Money** and **Items** only. **Deliveries** run alongside anything; the **Player**-bound ones (**Robbery**, **Health Inspector**) come one at a time.
+
+**Delivery**:
+An **Event** where a car parks at a **Car Spot** with an order; bring the **Items** to its pickup tile before it leaves to earn more than their **Sale Price**. Ignoring one only misses the reward.
+
+**Robbery**:
+An **Event** where a **Thief**, looking like a **Customer**, takes goods or cash and runs for the door. Only the **Player** can stop them.
+
+**Health Inspector**:
+An **Event** visitor who walks a fresh route through the shop and must be escorted by the **Player**; the store's dirt (**Messes**, **Loose Items**) decides a bonus or a fine, and leaving them alone too long earns a bad review.
+
 ### Maps
 
 **Map**:
@@ -179,7 +193,7 @@ _Avoid_: entrance, exit (as single points)
 A door in the shop's back wall leading the **Player** from an **Area**'s shop part to its farm yard. **Customers** never go through it.
 
 **Car Spot**:
-A reserved bay where a car parks for the car event, with a pickup tile beside it where the **Player** hands over the order. Each **Map** has several, usable from the start.
+A reserved bay where a car parks for a **Delivery**, with a pickup tile beside it where the **Player** hands over the order. Each **Map** has several, usable from the start.
 _Avoid_: parking, drive-through (as a noun for the spot)
 
 **Queue Spot**:

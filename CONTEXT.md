@@ -46,7 +46,7 @@ _Avoid_: spill, dropped items
 ### Production
 
 **Mop**:
-What cleans a **Mess**: taken from the **Mop Stand** with an empty **Stack**, and while held no **Items** can be picked up. Returned at the stand.
+What cleans a **Mess**: taken from the **Mop Stand** with an empty **Stack**, and while held no **Items** can be picked up. It goes back only when carried back to the stand.
 
 **Mop Stand**:
 The **Station** in the **Office** room that holds the store's **Mops**.

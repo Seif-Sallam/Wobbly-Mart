@@ -18,7 +18,7 @@ const BREAK: Record<string, number> = {
   ketchup: 0.25,
   wheat: 0.05,
   milk: 0.3,
-  flour: 0.15,
+  flour: 0.5,
   bread: 0.05,
 };
 const BASE: Params = {

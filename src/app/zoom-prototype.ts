@@ -1,4 +1,4 @@
-// PROTOTYPE (throwaway, branch prototype/camera-zoom): `?zoom=A|B|C` — camera zoom presets, a Settings-style slider,
+// PROTOTYPE (throwaway, branch prototype/camera-zoom): `?zoom=A|B|C` — camera zoom presets, a Zoom slider in Settings,
 // optional pinch / wheel shortcuts, live panel, value dump.
 import type { Game } from './game';
 import type { Input } from '../input/input';
@@ -51,7 +51,7 @@ export async function openZoomPrototype(game: Game, input: Input, phone: boolean
   let want = phone ? P.phoneDefault : P.desktopDefault;
   const clamp = (v: number) => Math.min(P.farthest, Math.max(P.closest, v));
 
-  // ---------- the Settings-style slider (closest on the left)
+  // ---------- prototype chrome; the zoom slider itself is the first row in Settings
   const style = document.createElement('style');
   style.textContent = `
     #proto-bar{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:20;display:flex;gap:6px;
@@ -62,9 +62,7 @@ export async function openZoomPrototype(game: Game, input: Input, phone: boolean
       border-radius:8px;font:600 12px system-ui;white-space:pre;pointer-events:none}
     #proto-dump{position:fixed;inset:10% 20%;z-index:30;background:#fff1d0;color:#3a2416;padding:16px;border-radius:12px;
       font:12px ui-monospace,monospace;white-space:pre;overflow:auto;display:none}
-    #proto-zoom{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:10px;
-      background:#fff1d0;color:#3a2416;padding:10px 14px;border-radius:14px;font:700 14px system-ui;box-shadow:0 3px 0 #3a2416}
-    #proto-zoom input{width:min(220px,50vw);accent-color:#f26b1d}`;
+`;
   document.head.append(style);
   const bar = document.createElement('div');
   bar.id = 'proto-bar';
@@ -73,19 +71,17 @@ export async function openZoomPrototype(game: Game, input: Input, phone: boolean
   const dump = document.createElement('div');
   dump.id = 'proto-dump';
   dump.onclick = () => (dump.style.display = 'none');
-  const zoomBox = document.createElement('div');
-  zoomBox.id = 'proto-zoom';
-  zoomBox.innerHTML = `<span>🔍 Zoom</span><span>+</span><input type="range" step="0.5"><span>−</span>`;
-  const slider = zoomBox.querySelector('input') as HTMLInputElement;
-  document.body.append(bar, label, dump, zoomBox);
-  for (const el of [bar, dump, zoomBox]) el.addEventListener('pointerdown', (e) => e.stopPropagation());
-  // the slider reads closest → farthest left to right, so dragging right zooms out
-  const syncSlider = () => {
-    slider.min = String(P.closest);
-    slider.max = String(P.farthest);
-    slider.value = String(want);
-  };
-  slider.oninput = () => (want = clamp(Number(slider.value)));
+  document.body.append(bar, label, dump);
+  for (const el of [bar, dump]) el.addEventListener('pointerdown', (e) => e.stopPropagation());
+  Object.assign(window, {
+    protoZoom: {
+      get: () => want,
+      set: (v: number) => (want = clamp(v)),
+      range: () => [P.closest, P.farthest],
+    },
+  });
+  // The Settings row (src/ui/app.tsx) reads `want` when it opens; nothing else to sync.
+  const syncSlider = () => (want = clamp(want));
 
   // ---------- shortcuts: wheel and + / − on desktop, two-finger pinch on touch
   addEventListener(

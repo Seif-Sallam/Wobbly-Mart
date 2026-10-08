@@ -189,11 +189,44 @@ function Toggle(props: { label: string; on: boolean; set: (v: boolean) => void; 
   );
 }
 
+// PROTOTYPE (prototype/camera-zoom): the zoom-prototype publishes this hook; the row only shows with `?zoom`.
+interface ProtoZoom {
+  get: () => number;
+  set: (v: number) => void;
+  range: () => [number, number];
+}
+function ZoomRow() {
+  const z = (window as unknown as { protoZoom?: ProtoZoom }).protoZoom;
+  const [v, setV] = useState(z?.get() ?? 0);
+  if (!z) return null;
+  const [lo, hi] = z.range();
+  return (
+    <label class="zoom-row">
+      <span>Zoom</span>
+      <b>+</b>
+      <input
+        type="range"
+        min={lo}
+        max={hi}
+        step={0.5}
+        value={v}
+        onInput={(e) => {
+          const n = Number((e.target as HTMLInputElement).value);
+          z.set(n);
+          setV(n);
+        }}
+      />
+      <b>−</b>
+    </label>
+  );
+}
+
 function Settings({ s, a }: { s: UiState; a: UiActions }) {
   const [copied, setCopied] = useState('');
   return (
     <div class="panel">
       <h2>Settings</h2>
+      <ZoomRow />
       <Toggle label="Music" on={s.settings.music} set={(v) => a.setSetting('music', v)} actions={a} />
       <Toggle label="Sounds" on={s.settings.sounds} set={(v) => a.setSetting('sounds', v)} actions={a} />
       {!s.touch && (

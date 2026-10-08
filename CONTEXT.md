@@ -24,7 +24,7 @@ A kind of thing the store deals in (tomato, egg, ketchup). Raw or processed.
 How **Items** move between the **Stack** and stations. _Auto_ (default, the only mode on mobile): proximity transfers automatically. _Manual_ (desktop setting): items transfer one at a time only while a key is held.
 
 **Trash Bin**:
-A station where the **Player** dumps unwanted **Items** from their **Stack** by standing on it for 1.5 s; they are destroyed, no refund. Walking past never trashes anything.
+A station where the **Player** dumps unwanted **Items** from their **Stack** by standing on it for 1.5 s; they are destroyed, no refund. Walking past never trashes anything. Each **Area** has one, by its **Back Door**; bins never move. **Stockers** use one only as a last resort.
 
 **Tap Walk**:
 Tapping or clicking the floor, a **Pad** or a **Station** sends the **Player** walking there on their own; at a **Station** they stop within reach so proximity does the action, and at a **Register** they go behind it. A double tap sprints. Any joystick or key input cancels it.
@@ -141,7 +141,7 @@ The **Station** where **Upgrades** are bought: walking to it opens a panel.
 A purchased improvement in one of three families: **Player** (speed, stack capacity, **Steady hands** — how many **Items** are safe while sprinting), **Station** (speed, more plots/animals), **Staff** (speed, carry capacity).
 
 **Edit Layout**:
-A paused mode opened from the **Office** where the **Player** rearranges bought **Stations** (not **Pads** or the **Office**) on a grid, each staying in the shop or the farm yard of any bought **Area**. Pressing Done pays for the **Moves** made. There is no going back to the original layout.
+A paused mode opened from the **Office** where the **Player** rearranges bought **Stations** (not **Pads**, the **Office** or **Trash Bins**) on a grid, each staying in the shop or the farm yard of any bought **Area**. Pressing Done pays for the **Moves** made. There is no going back to the original layout.
 
 **Move**:
 One **Station** left somewhere other than where it started an **Edit Layout** session (a new spot or rotation), paid for on Done. Each bought **Area** adds 3 Moves to the **Map**'s pool; each Move costs more than the last.

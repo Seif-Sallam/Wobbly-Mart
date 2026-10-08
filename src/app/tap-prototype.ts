@@ -4,7 +4,8 @@ import * as THREE from 'three';
 import type { Game } from './game';
 import type { Input } from '../input/input';
 import type { Point } from '../sim/map';
-import { boxCentre, inBox } from '../sim/geometry';
+import { boxCentre, distToBox, inBox } from '../sim/geometry';
+import { TUNING } from '../sim/tuning';
 import { headingFor, type Target } from '../sim/walk';
 import { visiblePads } from '../sim/economy';
 
@@ -24,6 +25,10 @@ interface Params {
   doubleTapMs: number;
   /** Joystick push (0–1) that cancels a tap walk. */
   cancelForce: number;
+  /** Ease off inside this distance of the end (m), never below minPush; stop inside arriveStop (m). */
+  arriveSlow: number;
+  minPush: number;
+  arriveStop: number;
 }
 
 const BASE: Params = {
@@ -38,6 +43,9 @@ const BASE: Params = {
   doubleTapSprint: false,
   doubleTapMs: 300,
   cancelForce: 0.15,
+  arriveSlow: 1.2,
+  minPush: 0.2,
+  arriveStop: 0.12,
 };
 const PRESETS: Record<string, { name: string; params: Params }> = {
   A: {
@@ -144,12 +152,19 @@ export async function openTapPrototype(game: Game, input: Input): Promise<void> 
     const m = realMove();
     return Math.hypot(m.x, m.z) > P.cancelForce || guts.keys.size > 0 ? m : null;
   };
-  const toward = (to: Point) => {
+  const toward = (to: Point, push = 1) => {
     const pl = game.world.player;
     const dx = to[0] - pl.x;
     const dz = to[1] - pl.z;
     const d = Math.hypot(dx, dz) || 1;
-    return { x: dx / d, z: dz / d };
+    return { x: (dx / d) * push, z: (dz / d) * push };
+  };
+  // Distance left to the end of the walk: the tapped point, or the edge of a Station's reach.
+  const left = (t: Target) => {
+    const pl = game.world.player;
+    if ('point' in t) return Math.hypot(t.point[0] - pl.x, t.point[1] - pl.z);
+    const b = game.world.stations.get(t.station)!.box;
+    return Math.max(0, distToBox(pl.x, pl.z, b) - TUNING.reach * TUNING.arriveReachShare);
   };
   input.move = () => {
     const m = manual();
@@ -168,12 +183,15 @@ export async function openTapPrototype(game: Game, input: Input): Promise<void> 
       return { x: 0, z: 0 };
     }
     if (!target) return realMove();
-    const h = headingFor(game.world, 'walker', game.world.player, target);
+    const d = left(target);
+    const h = d < P.arriveStop ? null : headingFor(game.world, 'walker', game.world.player, target);
     if (!h) {
       target = null;
       return { x: 0, z: 0 };
     }
-    return toward(h);
+    const push = Math.min(1, Math.max(P.minPush, d / P.arriveSlow));
+    // Last stretch: head for the exact tapped point, not the grid cell centre.
+    return toward('point' in target && d < P.arriveSlow ? target.point : h, push);
   };
   Object.defineProperty(input, 'sprint', { get: () => realSprint() || (!!target && sprinting) });
 
@@ -181,13 +199,15 @@ export async function openTapPrototype(game: Game, input: Input): Promise<void> 
   const ink = new THREE.MeshBasicMaterial({ color: '#f26b1d', transparent: true, opacity: 0.85, depthWrite: false });
   const ring = new THREE.Mesh(new THREE.RingGeometry(0.75, 1, 40), ink);
   ring.rotation.x = -Math.PI / 2;
-  ring.position.y = 0.03;
+  ring.position.y = 0.08;
+  ring.renderOrder = 2;
   const glow = new THREE.Mesh(
     new THREE.PlaneGeometry(1, 1),
     new THREE.MeshBasicMaterial({ color: '#ffd23f', transparent: true, opacity: 0.35, depthWrite: false }),
   );
   glow.rotation.x = -Math.PI / 2;
-  glow.position.y = 0.02;
+  glow.position.y = 0.07;
+  glow.renderOrder = 1;
   const dots = new THREE.InstancedMesh(new THREE.CircleGeometry(0.09, 12), ink, 200);
   dots.frustumCulled = false;
   scene.add(ring, glow, dots);
@@ -206,7 +226,7 @@ export async function openTapPrototype(game: Game, input: Input): Promise<void> 
         const len = Math.hypot(next[0] - at[0], next[1] - at[1]);
         for (let s = 0.5; s < len && n < 200; s += 0.5) {
           m4.compose(
-            new THREE.Vector3(at[0] + ((next[0] - at[0]) * s) / len, 0.04, at[1] + ((next[1] - at[1]) * s) / len),
+            new THREE.Vector3(at[0] + ((next[0] - at[0]) * s) / len, 0.09, at[1] + ((next[1] - at[1]) * s) / len),
             flat,
             new THREE.Vector3(1, 1, 1),
           );
@@ -227,11 +247,11 @@ export async function openTapPrototype(game: Game, input: Input): Promise<void> 
       const w = game.world;
       const c: Point = 'point' in target ? target.point : boxCentre(w.stations.get(target.station)!.box);
       const pulse = 1 + 0.12 * Math.sin(t * 8);
-      ring.position.set(c[0], 0.03, c[1]);
+      ring.position.set(c[0], 0.08, c[1]);
       ring.scale.setScalar(P.markerSize * pulse);
       if ('station' in target) {
         const b = w.stations.get(target.station)!.box;
-        glow.position.set(b[0] + b[2] / 2, 0.02, b[1] + b[3] / 2);
+        glow.position.set(b[0] + b[2] / 2, 0.07, b[1] + b[3] / 2);
         glow.scale.set(b[2] + 0.6, b[3] + 0.6, 1);
         (glow.material as THREE.MeshBasicMaterial).opacity = 0.25 + 0.15 * Math.sin(t * 6);
       }
@@ -300,6 +320,10 @@ export async function openTapPrototype(game: Game, input: Input): Promise<void> 
   fTap.add(P, 'pickSlop', 0, 2, 0.1).name('fixture pick slop (m)');
   fTap.add(P, 'holdFollow').name('hold to follow');
   fTap.add(P, 'cancelForce', 0, 1, 0.05).name('joystick cancel push');
+  const fArrive = gui.addFolder('Arrive');
+  fArrive.add(P, 'arriveSlow', 0, 3, 0.1).name('ease-off distance (m)');
+  fArrive.add(P, 'minPush', 0.05, 1, 0.05).name('min push');
+  fArrive.add(P, 'arriveStop', 0.02, 0.6, 0.02).name('stop within (m)');
   const fShow = gui.addFolder('Show');
   fShow.add(P, 'showMarker').name('destination ring');
   fShow.add(P, 'markerSize', 0.2, 2, 0.05).name('ring size');

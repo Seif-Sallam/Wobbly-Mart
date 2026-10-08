@@ -53,7 +53,6 @@ const PRESETS: Record<string, { name: string; params: Params }> = {
 };
 const VARIANTS = Object.keys(PRESETS);
 const CAP_CHOICES = { yellow: '#f2c230', teal: '#2bb3a3', lime: '#8bc34a', pink: '#e86aa6' };
-const AUTO_RETURN = 5;
 
 type Look = { ch: Character };
 type ViewGuts = {
@@ -421,7 +420,6 @@ export async function openCleaningPrototype(game: Game): Promise<void> {
   handMop.position.set(0.35, 0, 0.25);
   let holding = false;
   let nearStandBefore = false;
-  let idle = 0;
   let swish = 0;
   const progress = new Map<number, number>();
   const suds: { m: THREE.Mesh; v: THREE.Vector3; life: number }[] = [];
@@ -604,7 +602,6 @@ export async function openCleaningPrototype(game: Game): Promise<void> {
     const mess = holding ? W.messes.find((m) => Math.hypot(m.x - p.x, m.z - p.z) < 0.75) : undefined;
     cleanRing.visible = !!mess;
     if (mess) {
-      idle = 0;
       const k = Math.min(1, (progress.get(mess.id) ?? 0) + dt / P.cleanTime);
       progress.set(mess.id, k);
       swish += dt * 14;
@@ -638,11 +635,6 @@ export async function openCleaningPrototype(game: Game): Promise<void> {
     } else if (holding) {
       handMop.rotation.set(0.25, 0, -0.15);
       handMop.position.set(0.35, 0, 0.25);
-      idle += dt;
-      if (idle > AUTO_RETURN) {
-        idle = 0;
-        setHolding(false);
-      }
     }
     for (const s of [...suds]) {
       s.life -= dt;
@@ -742,7 +734,7 @@ export async function openCleaningPrototype(game: Game): Promise<void> {
 
     label.textContent =
       `PROTOTYPE · clean=${variant}\n${PRESETS[variant].name}\n` +
-      `${holding ? 'holding the mop' : p.stack.length ? 'Stack not empty: no mop' : 'walk to the Mop Stand (Office) to take a mop'} · mops free ${freeMops}/${P.mops} · Messes ${W.messes.length}`;
+      `${holding ? 'holding the mop: put it back at the Mop Stand' : p.stack.length ? 'Stack not empty: no mop' : 'walk to the Mop Stand (Office) to take a mop'} · mops free ${freeMops}/${P.mops} · Messes ${W.messes.length}`;
     requestAnimationFrame(tick);
   };
   Object.assign(window, { protoClean: { bubbles, stinks, bins } });

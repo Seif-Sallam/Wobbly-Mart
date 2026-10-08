@@ -390,7 +390,7 @@ export class WorldView {
       }
       case 'trashed': {
         const from = this.refPos(e.from, e.product, this.count(e.from, e.product));
-        const trash = w.stations.get('trash');
+        const trash = w.stations.get(e.station);
         const [x, z] = trash ? boxCentre(trash.box) : [from.x, from.z];
         this.flights.push({ product: e.product, from, to: () => new THREE.Vector3(x, 0.7, z), t: 0, key: '' });
         break;

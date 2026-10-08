@@ -19,7 +19,7 @@ for (const p of st) {
   const out = w.map.producers[p.type].output;
   // from just outside this Producer to the nearest sink of its output: Shelves and Producers taking it
   const from = edge(p.box);
-  const near = (t: typeof p) => walkDistance(w, 'walker', from, { station: t.id });
+  const near = (t: { id: string }) => walkDistance(w, 'walker', from, { station: t.id });
   const shelves = st.filter((s) => s.kind === 'shelf' && s.product === out);
   const feeds = st.filter((s) => s.kind === 'producer' && w.map.producers[s.type].inputs.includes(out));
   if (shelves.length) trips[`${p.id} → ${out} Shelf`] = Math.min(...shelves.map(near));

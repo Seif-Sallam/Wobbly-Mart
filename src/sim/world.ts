@@ -154,7 +154,7 @@ export type Ref =
 
 export type SimEvent =
   | { type: 'transfer'; product: string; from: Ref; to: Ref }
-  | { type: 'trashed'; product: string; from: Ref }
+  | { type: 'trashed'; product: string; from: Ref; station: string }
   | { type: 'stackFull' }
   | { type: 'padPaying'; pad: string }
   | { type: 'padBought'; pad: string }

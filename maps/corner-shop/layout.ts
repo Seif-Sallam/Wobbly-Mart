@@ -30,7 +30,7 @@ export const layout: MapLayout = {
     cashier_1: { box: [12.8, 24.2, 1, 1], rot: 180 },
     office: { box: [6.5, 21.5, 1.5, 1], rot: 180 },
     blender: { box: [17.5, 18.5, 2, 2.5], rot: 0 },
-    trash: { box: [19, 24.6, 1, 1], rot: 0 },
+    trash: { box: [18.75, 4.5, 1, 1], rot: 0 },
     area_2: { box: [18.75, 15.5, 1, 1], rot: 0 },
     // Area 1 — farm
     tomato_bed: { box: [4.5, 28.5, 4, 2.4], rot: 180 },
@@ -69,9 +69,9 @@ export const layout: MapLayout = {
     mill_2: { box: [35.3, 28.5, 2.4, 3.5], rot: 180 },
     chicken_3: { box: [40, 28.5, 3, 4.1], rot: 180 },
     // PROTOTYPE spots for Stations the sim doesn't have yet
-    trash_2: { box: [28.5, 24.6, 1, 1], rot: 0 },
-    trash_3: { box: [39, 24.6, 1, 1], rot: 0 },
-    mop_stand: { box: [14.5, 17, 1, 1], rot: 0 },
+    trash_2: { box: [32.9, 4.5, 1, 1], rot: 0 },
+    trash_3: { box: [46.5, 4.5, 1, 1], rot: 0 },
+    mop_stand: { box: [9.5, 18.5, 1, 1], rot: 0 },
     exit: { box: [44.5, 49.5, 1, 1], rot: 0 },
   },
   walls: {

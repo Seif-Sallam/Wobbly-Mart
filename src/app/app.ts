@@ -125,6 +125,7 @@ export class App {
     this.game.view.scenery(SCENERY_PEOPLE);
     for (const st of this.game.world.stations.values()) if (st.kind === 'producer') st.plants.fill(0);
     this.game.onFrame = (events, dt) => this.onFrame(events, dt);
+    void import('./mop-placeholder-prototype').then((m) => this.game && m.addMopPlaceholder(this.game));
     this.ui.loading = 1;
     this.renderUi();
     const loop = (now: number) => {

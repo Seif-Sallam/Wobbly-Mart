@@ -71,7 +71,7 @@ export function transferTick(
     c.stack.splice(i, 1);
     c.timer = 0;
     c.dropInterval = Math.max(TUNING.dropIntervalMin, c.dropInterval * TUNING.dropSpeedup);
-    if (st.kind === 'trash') w.events.push({ type: 'trashed', product, from: who });
+    if (st.kind === 'trash') w.events.push({ type: 'trashed', product, from: who, station: st.id });
     else {
       put(st, product);
       w.events.push({ type: 'transfer', product, from: who, to: { station: st.id } });

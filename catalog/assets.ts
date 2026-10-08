@@ -60,7 +60,7 @@ export const ASSETS: Record<string, AssetDef> = {
   desk: { path: 'furn/desk' },
   'chair-desk': { path: 'furn/chairDesk', height: 0.9 },
   'computer-screen': { path: 'furn/computerScreen', height: 0.45 },
-  trash: { path: 'furn/trashcan', height: 0.95 },
+  trash: { path: 'furn/trashcan', height: 1.3 }, // PROTOTYPE: bigger until the bespoke bin
   exit: {},
   van: { path: 'car/delivery', yaw: 90 },
   'tomato-bed': {},

@@ -162,7 +162,7 @@ _Avoid_: stars, rating, prestige
 A timed happening on a **Map** that asks the **Player** to act: a warning, a running phase, then a reward if handled or a cost if not. Paid in **Money** and **Items** only. **Deliveries** run alongside anything; the **Player**-bound ones (**Robbery**, **Health Inspector**) come one at a time.
 
 **Delivery**:
-An **Event** where a car parks at a **Car Spot** with an order; bring the **Items** to its pickup tile before it leaves to earn more than their **Sale Price**. Ignoring one only misses the reward.
+An **Event** where a car parks at a **Car Spot** with an order; bring the **Items** to its pickup tile before it leaves to earn more than their **Sale Price**. Partial orders are paid at plain price; ignoring one only misses the reward. **Stockers** can fill them too.
 
 **Robbery**:
 An **Event** where a **Thief**, looking like a **Customer** without a **Shopping List**, takes **Items** from a **Shelf** or cash from a **Cash Pile** and runs for the door, faster than the **Player** walks. Only the **Player** can stop them, by catching them before they're out.

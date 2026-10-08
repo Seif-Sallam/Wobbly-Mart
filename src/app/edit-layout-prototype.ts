@@ -321,6 +321,8 @@ export async function openEditLayoutPrototype(game: Game, input: Input): Promise
   const resetView = () => {
     rebuildNav(w());
     view.reset(w());
+    // the batch keeps per-slot scales across a reset: un-hide every slot
+    for (const id of w().stations.keys()) view.batch.setScale(id, 1, 1);
     drawFootprints();
   };
   const cancel = () => {

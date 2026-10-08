@@ -19,7 +19,7 @@ const ctx = await chromium.launchPersistentContext(dir, {
   deviceScaleFactor: phone ? 3 : 2,
   hasTouch: phone,
   isMobile: phone,
-  args: ['--disable-background-timer-throttling'],
+  args: ['--disable-background-timer-throttling', '--mute-audio'],
 });
 const page = ctx.pages()[0] ?? (await ctx.newPage());
 if (phone) {

@@ -72,6 +72,7 @@ export const layout: MapLayout = {
     trash_2: { box: [32.9, 4.5, 1, 1], rot: 0 },
     trash_3: { box: [46.5, 4.5, 1, 1], rot: 0 },
     mop_stand: { box: [9.5, 18.5, 1, 1], rot: 0 },
+    cleaner: { box: [45.5, 16, 1, 1], rot: 0 },
     exit: { box: [44.5, 49.5, 1, 1], rot: 0 },
   },
   walls: {

@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import type { Game } from './game';
 import type { Input } from '../input/input';
 import type { Point } from '../sim/map';
-import { boxCentre, distToBox, inBox } from '../sim/geometry';
+import { boxCentre, distToBox, footprint, frontPoint, inBox } from '../sim/geometry';
 import { TUNING } from '../sim/tuning';
 import { headingFor, type Target } from '../sim/walk';
 import { visiblePads } from '../sim/economy';
@@ -29,6 +29,10 @@ interface Params {
   arriveSlow: number;
   minPush: number;
   arriveStop: number;
+  /** Where a Station walk ends, as a share of reach from its edge (0 = touching, 1 = edge of reach). */
+  stationDepth: number;
+  /** How far behind the Register's back edge a Register tap ends (m). */
+  behindRegister: number;
 }
 
 const BASE: Params = {
@@ -46,11 +50,13 @@ const BASE: Params = {
   arriveSlow: 1.2,
   minPush: 0.2,
   arriveStop: 0.12,
+  stationDepth: 0.5,
+  behindRegister: 0.5,
 };
 const PRESETS: Record<string, { name: string; params: Params }> = {
   A: {
-    name: 'Tap alongside: tap floor or a fixture to walk there; joystick/keys cancel',
-    params: { ...BASE },
+    name: 'Tap alongside: tap floor or a fixture to walk there, double-tap = Sprint; joystick/keys cancel',
+    params: { ...BASE, doubleTapSprint: true },
   },
   B: {
     name: 'Tap + path: dotted path, target glows, double-tap = Sprint',
@@ -102,8 +108,16 @@ export async function openTapPrototype(game: Game, input: Input): Promise<void> 
       const b = w.map.layout.places[id].box;
       if (inBox(p[0], p[1], grow(b, P.pickSlop))) return { target: { point: boxCentre(b) }, label: `Pad ${id}` };
     }
-    for (const [id, s] of w.stations)
-      if (inBox(p[0], p[1], grow(s.box, P.pickSlop))) return { target: { station: id }, label: `${s.kind} ${id}` };
+    for (const [id, s] of w.stations) {
+      if (!inBox(p[0], p[1], grow(s.box, P.pickSlop))) continue;
+      // The Register is worked from behind, where the Cashier stands.
+      if (s.kind === 'register')
+        return {
+          target: { point: frontPoint(s.box, s.rot, -(footprint(s.box, s.rot)[1] + P.behindRegister)) },
+          label: `register ${id} (behind)`,
+        };
+      return { target: { station: id }, label: `${s.kind} ${id}` };
+    }
     return { target: { point: p }, label: `floor ${p[0].toFixed(1)}, ${p[1].toFixed(1)}` };
   };
 
@@ -164,7 +178,13 @@ export async function openTapPrototype(game: Game, input: Input): Promise<void> 
     const pl = game.world.player;
     if ('point' in t) return Math.hypot(t.point[0] - pl.x, t.point[1] - pl.z);
     const b = game.world.stations.get(t.station)!.box;
-    return Math.max(0, distToBox(pl.x, pl.z, b) - TUNING.reach * TUNING.arriveReachShare);
+    return Math.max(0, distToBox(pl.x, pl.z, b) - Math.max(TUNING.reach * P.stationDepth, TUNING.playerRadius + 0.05));
+  };
+  // Nearest point on a Station's footprint: the final approach once inside the walk field's arrival ring.
+  const edge = (id: string): Point => {
+    const pl = game.world.player;
+    const b = game.world.stations.get(id)!.box;
+    return [Math.min(Math.max(pl.x, b[0]), b[0] + b[2]), Math.min(Math.max(pl.z, b[1]), b[1] + b[3])];
   };
   input.move = () => {
     const m = manual();
@@ -184,7 +204,11 @@ export async function openTapPrototype(game: Game, input: Input): Promise<void> 
     }
     if (!target) return realMove();
     const d = left(target);
-    const h = d < P.arriveStop ? null : headingFor(game.world, 'walker', game.world.player, target);
+    const h =
+      d < ('point' in target ? P.arriveStop : 0.02)
+        ? null
+        : (headingFor(game.world, 'walker', game.world.player, target) ??
+          ('station' in target ? edge(target.station) : null));
     if (!h) {
       target = null;
       return { x: 0, z: 0 };
@@ -324,6 +348,8 @@ export async function openTapPrototype(game: Game, input: Input): Promise<void> 
   fArrive.add(P, 'arriveSlow', 0, 3, 0.1).name('ease-off distance (m)');
   fArrive.add(P, 'minPush', 0.05, 1, 0.05).name('min push');
   fArrive.add(P, 'arriveStop', 0.02, 0.6, 0.02).name('stop within (m)');
+  fArrive.add(P, 'stationDepth', 0, 0.9, 0.05).name('Station stop (share of reach)');
+  fArrive.add(P, 'behindRegister', 0.1, 1.5, 0.05).name('behind Register (m)');
   const fShow = gui.addFolder('Show');
   fShow.add(P, 'showMarker').name('destination ring');
   fShow.add(P, 'markerSize', 0.2, 2, 0.05).name('ring size');

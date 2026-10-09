@@ -11,6 +11,7 @@ import { Level } from './level';
 import { Juice } from './juice';
 import { Character } from './characters';
 import { CleaningLook, HeldMop } from './cleaning';
+import { LayoutGhost } from './layout-ghost';
 import { PadVisual } from './pads';
 import { ANIMAL_MODELS, buildStation, ghostify, type StationVisual } from './stations';
 import { InstancedModel, LiveInstances, billModel, itemModel, modelDrawer, type ModelDrawer } from './instanced';
@@ -93,6 +94,7 @@ export class WorldView {
   private staff = new Map<string, { ch: Character; stack: StackLook }>();
   private cleaners = new Map<string, { ch: Character; mop: HeldMop }>();
   private cleaning = new CleaningLook();
+  readonly layoutGhost = new LayoutGhost();
   private playerMop: HeldMop;
   private flights: Flight[] = [];
   private pending = new Map<string, number>();
@@ -119,7 +121,7 @@ export class WorldView {
     private w: World,
   ) {
     this.level = new Level(w.map.layout, (b: Box) => areaOf(this.w, b), w.map.start.owned);
-    this.root.add(this.level.group, this.juice.group, this.batch.group, this.cleaning.group);
+    this.root.add(this.level.group, this.juice.group, this.batch.group, this.cleaning.group, this.layoutGhost.group);
     stage.scene.add(this.root);
     const models = new Map<string, THREE.Object3D>([
       [BILL, billModel()],
@@ -187,6 +189,7 @@ export class WorldView {
     this.ownedKey = '';
     this.player.facing = Math.PI;
     this.camFocus.set(w.player.x, 0, w.player.z);
+    for (const m of w.messes) this.addSplat(m.id, m.x, m.z, m.items);
     this.syncOwned(false);
   }
 
@@ -613,6 +616,7 @@ export class WorldView {
       bounce: (id) => this.bounce(id),
       puff: (at, color, count, spread) => this.juice.puff(at, color, count, spread),
     });
+    this.layoutGhost.update(dt);
     this.animals.update();
     this.updateScenery(dt);
     this.juice.update(dt);
@@ -903,6 +907,13 @@ export class WorldView {
     });
     this.items.end();
     for (const im of this.plants.values()) im.end();
+  }
+
+  /** Edit Layout hides the picked fixture while its ghost is carried. */
+  hideStation(id: string, hidden: boolean): void {
+    const v = this.stations.get(id);
+    if (v) v.root.visible = !hidden;
+    this.batch.setScale(id, hidden ? 0.001 : 1, hidden ? 0.001 : 1);
   }
 
   private bounce(id: string): void {

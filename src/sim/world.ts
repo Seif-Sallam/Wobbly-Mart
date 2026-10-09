@@ -33,7 +33,7 @@ export interface Carrier {
   fullWarned: boolean;
 }
 
-export type Player = Mover & Carrier & { trashHold: number; sprinting: boolean; dropCooldown: number };
+export type Player = Mover & Carrier & { trashHold: number; sprinting: boolean; dropCooldown: number; jolt: number };
 
 export interface Job {
   sink: string;
@@ -237,7 +237,7 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
     owned: new Set(),
     paid: {},
     levels: {},
-    player: { x: px, z: pz, vx: 0, vz: 0, trashHold: 0, sprinting: false, dropCooldown: 0, ...newCarrier() },
+    player: { x: px, z: pz, vx: 0, vz: 0, trashHold: 0, sprinting: false, dropCooldown: 0, jolt: 0, ...newCarrier() },
     stations: new Map(),
     customers: [],
     nextId: 1,

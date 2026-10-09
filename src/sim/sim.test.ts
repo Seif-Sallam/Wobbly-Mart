@@ -164,7 +164,7 @@ function nextCustomer(w: World): Customer {
 }
 
 describe('Map 1 fully built', () => {
-  test('two Shelves, patience, Messes, the Trash hold, Sprint drops and Stocker roles', () => {
+  test('two Shelves, patience, Messes, the Trash hold, Stack tipping and Stocker roles', () => {
     const w = createWorld(cornerShop, null, 5, true);
     for (const id of Object.keys(cornerShop.pads)) own(w, id, false);
     refreshFreeStations(w);
@@ -245,22 +245,38 @@ describe('Map 1 fully built', () => {
     w.customers = [];
     w.arrivalTimer = Infinity;
 
-    // 4. Sprinting above the safe count drops the top Item as a Loose Item behind the Player
-    const sprint = (seconds: number, until = () => false) => {
-      for (let i = 0; i < seconds * 60 && !until(); i++)
-        step(w, { move: { x: Math.floor(i / 60) % 2 ? 1 : -1, z: 0 }, grab: false, sprint: true });
+    // 4. Above the safe count the top Item tips off behind the Player: an egg breaks into a 1-Item Mess …
+    const shuttle = (seconds: number, sprint: boolean, until = () => false) => {
+      let i = 0;
+      for (; i < seconds * 60 && !until(); i++)
+        step(w, { move: { x: Math.floor(i / 60) % 2 ? 1 : -1, z: 0 }, grab: false, sprint });
+      return i / 60;
+    };
+    const { egg, wheat } = cornerShop.products;
+    w.map = {
+      ...w.map,
+      products: { ...w.map.products, egg: { ...egg, breakChance: 1 }, wheat: { ...wheat, breakChance: 0 } },
     };
     walk(w, [26, 16], 40);
-    w.player.stack = Array(8).fill('tomato');
-    w.player.stack[7] = 'egg';
+    w.player.stack = [...Array(7).fill('tomato'), 'egg'];
+    const nextId = w.nextId;
+    shuttle(60, true, () => w.player.stack.length < 8);
+    expect(w.player.stack.length).toBe(7);
+    expect(w.loose.length).toBe(0);
+    const broken = w.messes.find((m) => m.id >= nextId);
+    expect(broken?.items).toEqual(['egg']);
+    expect(Math.hypot((broken?.x ?? 0) - w.player.x, (broken?.z ?? 0) - w.player.z)).toBeGreaterThan(1);
+
+    // … while unbreakable wheat lands as a Loose Item, not a Mess: nobody is slowed by it
+    w.player.stack = [...Array(7).fill('tomato'), 'wheat'];
     const messes = w.messes.length;
-    sprint(60, () => w.loose.length > 0);
+    shuttle(60, true, () => w.player.stack.length < 8);
     expect(w.loose.length).toBe(1);
     const [loose] = w.loose;
-    expect(loose.product).toBe('egg');
+    expect(loose.product).toBe('wheat');
     expect(w.player.stack.length).toBe(7);
     expect(Math.hypot(loose.x - w.player.x, loose.z - w.player.z)).toBeGreaterThan(1);
-    expect(w.messes.length).toBe(messes); // not a Mess: nobody is slowed by it
+    expect(w.messes.length).toBe(messes);
 
     // with a full Stack the Player walks over it; with room, takes it back
     w.player.stack.push('tomato');
@@ -269,14 +285,23 @@ describe('Map 1 fully built', () => {
     w.player.stack.pop();
     run(w, 0.1);
     expect(w.loose.length).toBe(0);
-    expect(w.player.stack.at(-1)).toBe('egg');
+    expect(w.player.stack.at(-1)).toBe('wheat');
+
+    // walking tips too, only less often; standing still never does
+    w.player.stack = Array(8).fill('wheat');
+    run(w, 30);
+    expect(w.player.stack.length).toBe(8);
+    const walked = shuttle(600, false, () => w.player.stack.length < 8);
+    expect(w.player.stack.length).toBe(7);
+    expect(walked).toBeGreaterThan(5);
 
     // at or below the safe count nothing drops, and Steady hands raises the safe count
+    w.loose = [];
     w.player.stack = Array(3).fill('tomato');
-    sprint(30);
+    shuttle(30, true);
     w.levels.steady_hands = 3;
     w.player.stack = Array(6).fill('tomato');
-    sprint(30);
+    shuttle(30, true);
     expect(w.loose.length).toBe(0);
     expect(w.player.stack.length).toBe(6);
 

@@ -67,7 +67,7 @@ export const layout: MapLayout = {
     // Area 3 — farm
     mill_2: { box: [35.3, 28.5, 2.4, 3.5], rot: 180 },
     chicken_3: { box: [40, 28.5, 3, 4.1], rot: 180 },
-    // Trash Bins; mop_stand and cleaner are reserved spots (no Station yet)
+    // Trash Bins, the Mop Stand and the Cleaner's Pad
     trash_2: { box: [32.9, 4.5, 1, 1], rot: 0 },
     trash_3: { box: [46.5, 4.5, 1, 1], rot: 0 },
     mop_stand: { box: [9.5, 18.5, 1, 1], rot: 0 },

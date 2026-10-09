@@ -49,6 +49,8 @@ export type StationDef =
   | { kind: 'register'; queueLength: number; cashPileFlipped?: boolean }
   | { kind: 'office' }
   | { kind: 'trash' }
+  | { kind: 'mopStand' }
+  | { kind: 'cleaner' }
   | { kind: 'cashier'; register: string }
   | { kind: 'stocker' }
   | { kind: 'area'; area: string }
@@ -63,14 +65,14 @@ export interface PadDef {
   unlocks: StationDef;
 }
 
-/** A Station that appears for free once its requirements are met (Trash Bin). */
+/** A Station that appears for free once its requirements are met (Trash Bin, Mop Stand). */
 export interface FreeStationDef {
   requires: string[];
   unlocks: StationDef;
 }
 
 export type UpgradeFamily = 'player' | 'station' | 'staff';
-export type UpgradeStat = 'speed' | 'stack' | 'checkoutTime' | 'carry' | 'workTime' | 'safe';
+export type UpgradeStat = 'speed' | 'stack' | 'checkoutTime' | 'carry' | 'workTime' | 'safe' | 'cleanTime';
 
 export interface UpgradeDef {
   name: string;
@@ -115,6 +117,8 @@ export function stationModel(map: MapDef, def: StationDef): string | null {
     case 'trash':
     case 'exit':
       return def.kind;
+    case 'mopStand':
+      return 'mop-stand';
     default:
       return null;
   }

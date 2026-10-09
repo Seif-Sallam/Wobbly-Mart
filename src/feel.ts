@@ -111,4 +111,16 @@ export const FEEL = {
   layoutBob: 5.5,
   layoutGhostOpacity: 0.85,
   layoutReasonTime: 2.2,
+  // Delivery cars: drive in / off (s), parking bounce height (m), squash per Item, wonk (cabin tilt, rad; body height ±share)
+  carDriveIn: 1.6,
+  carDriveOff: 1.4,
+  carBounce: 0.25,
+  carSquash: 0.12,
+  carWonk: 0.12,
+  carHeightWonk: 0.15,
+  /** Order card height over the car (m) and its size × a Customer's receipt. */
+  carCardY: 2.1,
+  carCardScale: 1.5,
+  /** Event banner on screen (ms). */
+  bannerMs: 3200,
 };

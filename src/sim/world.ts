@@ -16,6 +16,7 @@ import { updateProducers } from './producers';
 import { updateCustomers } from './customers';
 import { updateStaff } from './staff';
 import { updateCleaners } from './cleaning';
+import { addPickups, updateEvents } from './events';
 import { rebuildNav } from './walk';
 
 export interface Mover {
@@ -144,7 +145,31 @@ export interface SimpleStation extends StationBase {
   kind: 'office' | 'trash' | 'exit' | 'mopStand';
 }
 
-export type Station = ShelfStation | ProducerStation | RegisterStation | SimpleStation;
+export interface OrderLine {
+  product: string;
+  want: number;
+  got: number;
+}
+
+/** A car parked at a Car Spot with its order; `t` counts up to `time`. */
+export interface Delivery {
+  order: OrderLine[];
+  t: number;
+  time: number;
+  /** 0–1: the car's colour and wonk. */
+  look: number;
+  honked: boolean;
+}
+
+/** A Car Spot's pickup tile: walkable, takes the waiting car's wanted Items like a Shelf. */
+export interface PickupStation extends StationBase {
+  kind: 'pickup';
+  /** The Car Spot's bay, where the car parks. */
+  car: Box;
+  delivery: Delivery | null;
+}
+
+export type Station = ShelfStation | ProducerStation | RegisterStation | SimpleStation | PickupStation;
 
 export interface Mess {
   id: number;
@@ -194,6 +219,9 @@ export type SimEvent =
   | { type: 'messCleared'; mess: number }
   | { type: 'mop'; taken: boolean }
   | { type: 'customerLeft'; customer: number }
+  | { type: 'deliveryArrived'; station: string }
+  | { type: 'deliveryHonk'; station: string }
+  | { type: 'deliveryDone'; station: string; amount: number; tip: number; complete: boolean }
   | { type: 'tutorialDone' }
   | { type: 'complete' };
 
@@ -219,6 +247,8 @@ export interface World {
   map: MapDef;
   t: number;
   rng: number;
+  /** Events roll on their own stream, so they never shift Customers, tipping or Staff. */
+  eventRng: { rng: number };
   money: number;
   owned: Set<string>;
   paid: Record<string, number>;
@@ -239,6 +269,8 @@ export interface World {
   events: SimEvent[];
   pan: { area: string; t: number; duration: number } | null;
   arrivalTimer: number;
+  /** Seconds until the next Delivery car; null until Deliveries unlock (rolled then). */
+  carWait: number | null;
   tutorial: { done: boolean; actions: Set<string> };
   complete: boolean;
   atOffice: boolean;
@@ -248,6 +280,7 @@ export interface World {
 }
 
 export const DT = 1 / TUNING.tickRate;
+const EVENT_SEED = 0x5eed;
 
 export const newCarrier = (): Carrier => ({
   stack: [],
@@ -265,6 +298,7 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
     map: { ...map, layout: { ...map.layout, places: { ...map.layout.places } } },
     t: 0,
     rng: seed,
+    eventRng: { rng: seed ^ EVENT_SEED },
     money: map.start.money,
     owned: new Set(),
     paid: {},
@@ -296,6 +330,7 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
     events: [],
     pan: null,
     arrivalTimer: 0,
+    carWait: null,
     tutorial: { done: tutorialDone || map.tutorial.length === 0, actions: new Set() },
     complete: false,
     atOffice: false,
@@ -309,6 +344,7 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
     navDirty: true,
   };
   for (const id of map.start.owned) own(w, id, false);
+  addPickups(w);
   if (save) applySave(w, save);
   else w.pan = { area: map.start.owned[0], t: 0, duration: panDuration() };
   refreshFreeStations(w);
@@ -332,6 +368,7 @@ export function step(w: World, intents: Intents): void {
   updateCustomers(w);
   updateStaff(w);
   updateCleaners(w);
+  updateEvents(w);
   updateTutorial(w);
   w.complete = checkCompletion(w, true);
   if (w.navDirty) rebuildNav(w);

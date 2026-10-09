@@ -4,7 +4,7 @@ import { createWorld, DT, step, type Intents } from './world';
 import { completion, customerCap, own, padVisible, refreshFreeStations } from './economy';
 import { moveIntent } from './bot';
 import { snapshot } from './save';
-import type { Customer, ProducerStation, ShelfStation, World } from './world';
+import type { Customer, PickupStation, ProducerStation, ShelfStation, SimEvent, World } from './world';
 import { distToBox } from './geometry';
 import { TUNING } from './tuning';
 import { addMess } from './cleaning';
@@ -177,6 +177,7 @@ function nextCustomer(w: World): Customer {
 describe('Map 1 fully built', () => {
   test('two Shelves, patience, Messes, the Trash hold, Stack tipping, Stocker roles and priorities', () => {
     const w = createWorld(cornerShop, null, 5, true);
+    w.map.events = {}; // Deliveries have their own test
     for (const id of Object.keys(cornerShop.pads)) own(w, id, false);
     refreshFreeStations(w);
     const staff = w.stockers;
@@ -362,7 +363,7 @@ describe('Map 1 fully built', () => {
     expect(w.loose.length).toBe(0);
     expect(w.player.stack.length).toBe(6);
 
-    // 5. A Goods Stocker only fills Shelves, a Machines Stocker only Animal and Machine inputs; neither covers the other
+    // 5. A Goods Stocker only fills Shelves (and car orders), a Machines Stocker only Animal and Machine inputs
     w.player.stack = [];
     w.stockers = staff.slice(0, 2);
     const [goods, machines] = w.stockers;
@@ -388,7 +389,8 @@ describe('Map 1 fully built', () => {
       }
     };
     watch(20, fillInputs);
-    expect([...sinks.goods]).toEqual(['shelf']);
+    expect(sinks.goods.has('shelf')).toBe(true);
+    expect([...sinks.goods].every((k) => k === 'shelf' || k === 'pickup')).toBe(true);
     expect(sinks.machines.size).toBe(0);
     expect(shelvesOf(w, 'tomato').some((s) => s.items > 0)).toBe(true);
 
@@ -471,6 +473,109 @@ describe('Map 1 fully built', () => {
     expect(w.messes.length).toBe(0);
     expect(took).toBeGreaterThan(3);
     expect(took).toBeLessThan(5);
+  });
+});
+
+describe('Deliveries', () => {
+  test('cars come after the quiet start, take only wanted Items, pay 1.5× plus a tip or plain price on timeout; Stockers fill them', () => {
+    const w = createWorld(cornerShop, null, 7, true);
+    for (const id of ['register', 'tomato_shelf', 'tomato_bed', 'egg_shelf', 'chicken_coop']) own(w, id, false);
+    refreshFreeStations(w);
+    const cars = () => [...w.stations.values()].filter((s): s is PickupStation => s.kind === 'pickup');
+    expect(cars().length).toBe(3);
+    let maxParked = 0;
+    const tick = () => {
+      step(w, idle());
+      maxParked = Math.max(maxParked, cars().filter((s) => s.delivery).length);
+    };
+    const until = (seconds: number, done: (e: SimEvent) => boolean): SimEvent | undefined => {
+      for (let i = 0; i < seconds * 60; i++) {
+        tick();
+        const e = w.events.find(done);
+        if (e) return e;
+      }
+    };
+    const standAt = (st: PickupStation) => {
+      const [x, , bw] = st.box;
+      Object.assign(w.player, { x: x + bw / 2, z: 51.5, vx: 0, vz: 0 });
+    };
+
+    // nothing parks in the first 3 min; then a car every 3–4 min
+    expect(until(300, (e) => e.type === 'deliveryArrived')).toBeDefined();
+    expect(w.t).toBeGreaterThanOrEqual(180);
+    expect(w.t).toBeLessThanOrEqual(241);
+
+    // the order: 1–3 Products on sale, the same count each, 3–6 Items with one Area; 90 s + 10 s per Item
+    const car = cars().find((s) => s.delivery) as PickupStation;
+    const order = car.delivery?.order ?? [];
+    const items = order.reduce((n, l) => n + l.want, 0);
+    expect(items).toBeGreaterThanOrEqual(3);
+    expect(items).toBeLessThanOrEqual(6);
+    expect(order.every((l) => ['tomato', 'egg'].includes(l.product) && l.want === order[0].want)).toBe(true);
+    expect(car.delivery?.time).toBe(90 + 10 * items);
+
+    // standing on the pickup tile drains only the wanted Items; a fast full order pays 1.5× and a tip
+    w.player.stack = ['wheat', ...order.flatMap((l) => Array<string>(l.want).fill(l.product))];
+    standAt(car);
+    const money = w.money;
+    const done = until(10, (e) => e.type === 'deliveryDone');
+    expect(w.player.stack).toEqual(['wheat']);
+    const value = order.reduce((n, l) => n + l.want * w.map.products[l.product].price, 0);
+    expect(done?.type === 'deliveryDone' && done.complete).toBe(true);
+    const paid = done?.type === 'deliveryDone' ? done : { amount: 0, tip: 0 };
+    expect(paid.amount).toBe(Math.round(value * 1.5));
+    expect(paid.tip).toBeGreaterThan(0);
+    expect(paid.tip).toBeLessThanOrEqual(Math.round(paid.amount * 0.25));
+    expect(w.money).toBe(money + paid.amount + paid.tip);
+    expect(car.delivery).toBeNull();
+
+    // a partial order waits, honks at 15 s left, then pays plain Sale Price for what it got
+    for (let i = 0; i < 60 * 300 && !cars().some((s) => s.delivery); i++) tick();
+    const late = cars().find((s) => s.delivery) as PickupStation;
+    const line = late.delivery?.order[0] ?? { product: '', want: 0 };
+    w.player.stack = [line.product];
+    standAt(late);
+    expect(until(200, (e) => e.type === 'deliveryHonk' && e.station === late.id)).toBeDefined();
+    const left = until(20, (e) => e.type === 'deliveryDone' && e.station === late.id);
+    expect(left?.type === 'deliveryDone' && left.amount).toBe(w.map.products[line.product].price);
+    expect(left?.type === 'deliveryDone' && !left.complete && left.tip === 0).toBe(true);
+    expect(maxParked).toBe(1); // no Stockers: one car at a time
+
+    // a Goods Stocker fills an order by itself while the Shelves stay full
+    w.player.stack = [];
+    Object.assign(w.player, { x: 8, z: 16 });
+    own(w, 'area_2', false);
+    own(w, 'stocker_1', false);
+    const [stocker] = w.stockers;
+    stocker.role = 'goods';
+    const coop = producerAt(w, 'chicken_coop');
+    const bed = producerAt(w, 'tomato_bed');
+    let filled: SimEvent | undefined;
+    for (let i = 0; i < 60 * 600 && !filled; i++) {
+      stock(w, 'tomato', 10);
+      stock(w, 'egg', 10);
+      coop.tray = 4;
+      bed.plants.fill(0);
+      tick();
+      filled = w.events.find((e) => e.type === 'deliveryDone' && e.complete);
+    }
+    expect(filled).toBeDefined();
+    expect(maxParked).toBeLessThanOrEqual(2); // one Stocker: a second car may come
+
+    // three Stockers: now and then a car follows soon after the last (before the usual 3 min), never every time
+    own(w, 'stocker_3', false);
+    own(w, 'stocker_4', false);
+    maxParked = 0;
+    const arrivals: number[] = [];
+    for (let i = 0; i < 60 * 3600; i++) {
+      tick();
+      if (w.events.some((e) => e.type === 'deliveryArrived')) arrivals.push(w.t);
+    }
+    const soon = arrivals.filter((t, i) => i > 0 && t - arrivals[i - 1] < 180).length;
+    expect(arrivals.length).toBeGreaterThan(10);
+    expect(soon).toBeGreaterThan(0);
+    expect(soon).toBeLessThan(arrivals.length / 2);
+    expect(maxParked).toBeLessThanOrEqual(3);
   });
 });
 

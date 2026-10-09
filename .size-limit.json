@@ -1,5 +1,5 @@
 [
-  { "name": "initial JS", "path": "dist/assets/index-*.js", "gzip": true, "limit": "250 kB" },
+  { "name": "initial JS", "path": "dist/assets/index-*.js", "gzip": true, "limit": "260 kB" },
   {
     "name": "first load (JS, CSS, models, font, sounds — music loads after Play)",
     "path": [

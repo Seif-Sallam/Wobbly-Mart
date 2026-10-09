@@ -41,7 +41,7 @@ function solids(w: World): Box[] {
   const L = w.map.layout;
   const out: Box[] = Object.values(L.walls).map((wall) => wall.box);
   for (const door of Object.values(L.doors)) if (!areaOwned(w, door.box)) out.push(door.box);
-  for (const s of w.stations.values()) out.push(s.box);
+  for (const s of w.stations.values()) if (s.kind !== 'pickup') out.push(s.box);
   for (const p of Object.values(L.props)) if (p.solid && !p.party && (!p.area || w.owned.has(p.area))) out.push(p.box);
   return out;
 }
@@ -104,11 +104,16 @@ export function arrived(w: World, a: { x: number; z: number }, target: Target): 
 export function headingFor(w: World, who: Walkers, a: { x: number; z: number }, target: Target): Point | null {
   if (arrived(w, a, target)) return null;
   const g: Grid = w.nav[who];
+  const b = 'station' in target ? stationBox(w, target.station) : null;
+  const edge = (box: Box): Point => [
+    Math.min(Math.max(a.x, box[0]), box[0] + box[2]),
+    Math.min(Math.max(a.z, box[1]), box[1] + box[3]),
+  ];
+  // inside the reach ring the last step is straight in: the grid would pull back out of a cell too near the Station
+  if (b && distToBox(a.x, a.z, b) < TUNING.reach + g.cell * TUNING.seedReachCells) return edge(b);
   const wp = waypoint(g, fieldFor(w, who, target), a.x, a.z);
   if (wp) return wp;
-  if ('point' in target) return target.point;
-  const b = stationBox(w, target.station);
-  return [Math.min(Math.max(a.x, b[0]), b[0] + b[2]), Math.min(Math.max(a.z, b[1]), b[1] + b[3])];
+  return b ? edge(b) : (target as { point: Point }).point;
 }
 
 /** Moves an agent toward its target at `speed`; returns true once arrived. */

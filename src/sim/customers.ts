@@ -29,6 +29,11 @@ function headFor(w: World, c: Customer): void {
   if (shelf) c.spot = shelfSpot(w, shelf);
 }
 
+/** Shopping Customers pick their Shelf spot again (after Edit Layout). */
+export function rehomeCustomers(w: World): void {
+  for (const c of w.customers) if (c.state === 'shop') headFor(w, c);
+}
+
 export const queueSpot = (reg: RegisterStation, i: number): Point =>
   frontPoint(reg.box, reg.rot, TUNING.queueFirstOffset + i * TUNING.queueGap);
 

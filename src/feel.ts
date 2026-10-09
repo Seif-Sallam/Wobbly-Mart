@@ -11,7 +11,7 @@ export const FEEL = {
   // camera
   cameraYawDeg: 45,
   cameraPitchDeg: 41,
-  /** Zoom: metres across the screen's short side; defaults per device, slider range, wheel / + − step, ease (1/s). */
+  /** Zoom: metres across the screen's short side; defaults per device, slider range, + − key step, ease (1/s). */
   zoomPhone: 14,
   zoomDesktop: 18,
   zoomMin: 10,

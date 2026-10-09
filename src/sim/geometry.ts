@@ -14,6 +14,10 @@ export const boxCentre = (b: Box): Point => [b[0] + b[2] / 2, b[1] + b[3] / 2];
 export const boxesOverlap = (a: Box, b: Box): boolean =>
   a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3];
 
+/** Clear distance between two boxes along the axis where they are farthest apart (0 if they touch or overlap). */
+export const boxGap = (a: Box, b: Box): number =>
+  Math.max(0, b[0] - (a[0] + a[2]), a[0] - (b[0] + b[2]), b[1] - (a[1] + a[3]), a[1] - (b[1] + b[3]));
+
 /** Width along the front edge and depth, for a box turned by `rot`. */
 export const footprint = (b: Box, rot: Rot): [number, number] => (rot % 180 === 0 ? [b[2], b[3]] : [b[3], b[2]]);
 

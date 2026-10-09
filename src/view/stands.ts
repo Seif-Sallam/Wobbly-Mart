@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import type { ProductId } from '../../catalog/products';
 import { ITEM_SIZE } from '../../catalog/assets';
-import { model } from './assets';
+import { centred, model } from './assets';
 import { paletteMaterial } from './materials';
 import { PALETTE, SHADES } from '../palette';
 import { FEEL } from '../feel';
@@ -83,7 +83,7 @@ function stand(product: ProductId, w: number, d: number, v: StationVisual): Tier
     }
     case 'bread': {
       // furniture table with a raised bread board
-      const table = model('table', { fit: [w, d] });
+      const table = centred(model('table', { fit: [w, d] }));
       const top = new THREE.Box3().setFromObject(table).max.y;
       b.add(table);
       slab(b, w * 0.8, 0.08, d * 0.75, 'wood', 0, top);

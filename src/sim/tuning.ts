@@ -58,8 +58,21 @@ export const TUNING = {
   /** Money one bill stands for, in Cash Pile and drain counts. */
   billValue: 5,
   fullStackSlowdown: 0.25,
-  /** Sprint: drops/s = maxRate × ((Stack − safe) / (cap − safe))^curve, at most one per cooldown s. */
-  sprint: { speed: 1.5, maxRate: 0.3, curve: 1.2, cooldown: 1, dropBehind: 1.3, dropSide: 0.8 },
+  sprint: { speed: 1.5 },
+  /**
+   * Tipping above the safe count: drops/s = maxRate × share × (1 + joltBoost × min(1, jolt)) × k^curve,
+   * k = (Stack − safe) / (cap − safe); share 1 sprinting, walkShare above walkSpeed m/s, else 0.
+   */
+  tip: {
+    maxRate: 0.3,
+    curve: 1.2,
+    walkShare: 0.15,
+    walkSpeed: 0.5,
+    joltBoost: 2,
+    cooldown: 1,
+    dropBehind: 1.3,
+    dropSide: 0.8,
+  },
   looseTakeRadius: 0.8,
   /** Stocker job urgency (lower first): empty Shelf with waiting Customers 0, Shelves 1–2, then Producer inputs. */
   urgency: { inputEmpty: 2.5, inputPartial: 3, trayFull: 4, feedsUrgentShelf: 0.5, distanceWeight: 0.01 },

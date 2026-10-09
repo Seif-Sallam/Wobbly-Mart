@@ -92,6 +92,13 @@ export interface TutorialStep {
   station?: string;
 }
 
+export type EventKind = 'delivery';
+
+/** An Event the Map has: rolled once every id in `requires` is owned. */
+export interface EventDef {
+  requires: string[];
+}
+
 export interface MapDef {
   id: string;
   name: string;
@@ -105,6 +112,7 @@ export interface MapDef {
   tutorial: TutorialStep[];
   /** Edit Layout: the price of each Move in order (3 per Area). */
   movePrices: number[];
+  events: Partial<Record<EventKind, EventDef>>;
 }
 
 /** Model name a Station is drawn with (asset table key). Staff, Area Pads draw no Station. */

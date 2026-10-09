@@ -1,5 +1,5 @@
 // Stockers (and the bot) pick carrying jobs by tier; demand runs from the Shelves back down the Producer chain.
-import type { Job, ProducerStation, ShelfStation, Station, Stocker, StockerRole, World } from './world';
+import type { Job, PickupStation, ProducerStation, ShelfStation, Station, Stocker, StockerRole, World } from './world';
 import { accepts, availableCount, transferTick, trayRoom } from './carry';
 import { stockerCarry, stockerSpeed } from './economy';
 import { walkAgent, walkDistance } from './walk';
@@ -7,9 +7,9 @@ import { messSlowdown } from './cleaning';
 import { DT } from './world';
 import { TUNING } from './tuning';
 
-/** Which sinks a role fills: Goods only Shelves, Machines only Animal and Machine inputs, Auto both. */
+/** Which sinks a role fills: Goods Shelves and car orders, Machines Animal and Machine inputs, Auto all. */
 function inRole(st: Station, role: StockerRole): boolean {
-  if (role === 'goods') return st.kind === 'shelf';
+  if (role === 'goods') return st.kind === 'shelf' || st.kind === 'pickup';
   if (role === 'machines') return st.kind === 'producer';
   return true;
 }
@@ -23,6 +23,18 @@ function shelfDemand(w: World, st: ShelfStation): number {
   const heading = w.customers.some((c) => c.state === 'shop' && c.list[c.li]?.shelf === st.id);
   if (heading) return st.items === 0 ? 0 : 1;
   return 2 + st.items / TUNING.shelfCap;
+}
+
+/** A car order's share still missing, 0–1: ranks with low Shelves by fill. */
+function orderGap(st: PickupStation): number {
+  const order = st.delivery?.order ?? [];
+  return (
+    order.reduce((sum, l) => sum + l.want - l.got, 0) /
+    Math.max(
+      1,
+      order.reduce((sum, l) => sum + l.want, 0),
+    )
+  );
 }
 
 /** A Producer wants this input now: room on its Tray and in that input, and it is the bottleneck (fewest held). */
@@ -39,6 +51,7 @@ function demand(w: World, product: string, seen: string[] = []): number {
   let best = Infinity;
   for (const st of w.stations.values()) {
     if (st.kind === 'shelf' && st.product === product) best = Math.min(best, shelfDemand(w, st));
+    if (st.kind === 'pickup' && accepts(w, st, product)) best = Math.min(best, 3 - orderGap(st));
     if (st.kind === 'producer' && wantsInput(w, st, product))
       best = Math.min(best, demand(w, w.map.producers[st.type].output, [...seen, product]));
   }
@@ -51,6 +64,7 @@ function urgency(w: World, st: Station, product: string): number {
   if (st.kind === 'shelf') {
     return shelfDemand(w, st) === 0 ? TIER.urgentShelf * gap : TIER.lowShelf * gap + st.items / TUNING.shelfCap;
   }
+  if (st.kind === 'pickup') return TIER.lowShelf * gap + 1 - orderGap(st);
   if (st.kind !== 'producer' || !wantsInput(w, st, product)) return Infinity;
   const type = w.map.producers[st.type];
   const d = demand(w, type.output);
@@ -61,6 +75,8 @@ function urgency(w: World, st: Station, product: string): number {
 function freeSpace(w: World, st: Station, product: string): number {
   if (st.kind === 'shelf') return TUNING.shelfCap - st.items;
   if (st.kind === 'producer') return (w.map.producers[st.type].inputCap ?? 0) - (st.input[product] ?? 0);
+  if (st.kind === 'pickup')
+    return (st.delivery?.order ?? []).reduce((n, l) => n + (l.product === product ? l.want - l.got : 0), 0);
   return 0;
 }
 

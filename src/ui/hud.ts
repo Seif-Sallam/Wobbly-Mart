@@ -1,11 +1,20 @@
-// Per-frame HUD in plain DOM: Money, Completion bar, gear, edge arrows, movement hint, 100% banner.
+// Per-frame HUD in plain DOM: Money, Completion bar, gear, edge arrows, Event banner and cards, movement hint, 100% banner.
 import { formatMoney } from '../format';
+import { FEEL } from '../feel';
 
 export interface EdgeArrow {
   x: number;
   y: number;
   angle: number;
   icon: string;
+}
+
+/** A running Event's HUD card: icon, progress text, timer bar (share left). */
+export interface EventCard {
+  icon: string;
+  text: string;
+  left: number;
+  red: boolean;
 }
 
 const BILL = `<svg viewBox="0 0 40 26" class="bill"><rect x="2" y="2" width="36" height="22" rx="4" fill="var(--money)" stroke="var(--ink)" stroke-width="3"/><rect x="16" y="2" width="8" height="22" fill="var(--cream)" stroke="var(--ink)" stroke-width="2"/></svg>`;
@@ -16,11 +25,13 @@ export class Hud {
   private bar: HTMLElement;
   private barFill: HTMLElement;
   private arrows: HTMLElement[] = [];
+  private cardBox: HTMLElement;
+  private cards: HTMLElement[] = [];
   private hint: HTMLElement;
   private shown = 0;
   private target = 0;
   /** Last values written to the DOM: only changes are written. */
-  private drawn = { money: '', width: '', gold: false, arrows: [] as string[] };
+  private drawn = { money: '', width: '', gold: false, arrows: [] as string[], cards: [] as string[] };
   onGear: () => void = () => {};
 
   constructor(private readonly root: HTMLElement) {
@@ -30,7 +41,9 @@ export class Hud {
         <div class="money pill">${BILL}<span>$0</span></div>
         <button class="gear round" aria-label="Pause">${GEAR}</button>
       </div>
+      <div class="event-cards"></div>
       <div class="hint"></div>`;
+    this.cardBox = root.querySelector('.event-cards') as HTMLElement;
     this.money = root.querySelector('.money') as HTMLElement;
     this.bar = root.querySelector('.completion') as HTMLElement;
     this.barFill = root.querySelector('.completion i') as HTMLElement;
@@ -95,6 +108,43 @@ export class Hud {
         img.dataset.src = a.icon;
         img.src = a.icon;
       }
+    });
+  }
+
+  /** Slides in from the top with an Event's icon, name and what to do, then slides away; a new one replaces it. */
+  banner(icon: string, name: string, line: string): void {
+    this.root.querySelector('.event-banner')?.remove();
+    const el = document.createElement('div');
+    el.className = 'event-banner pill';
+    el.innerHTML = '<img alt=""><div><b></b><span></span></div>';
+    (el.querySelector('img') as HTMLImageElement).src = icon;
+    (el.querySelector('b') as HTMLElement).textContent = name;
+    (el.querySelector('span') as HTMLElement).textContent = line;
+    el.style.animationDuration = `${FEEL.bannerMs}ms`;
+    this.root.appendChild(el);
+    setTimeout(() => el.remove(), FEEL.bannerMs);
+  }
+
+  setCards(list: EventCard[]): void {
+    while (this.cards.length < list.length) {
+      const el = document.createElement('div');
+      el.className = 'event-card pill';
+      el.innerHTML = '<img alt=""><span></span><i><b></b></i>';
+      this.cardBox.appendChild(el);
+      this.cards.push(el);
+    }
+    this.cards.forEach((el, i) => {
+      const c = list[i];
+      const key = c ? `${c.icon}|${c.text}|${Math.round(c.left * 100)}|${c.red}` : '';
+      if (key === this.drawn.cards[i]) return;
+      this.drawn.cards[i] = key;
+      el.style.display = c ? '' : 'none';
+      if (!c) return;
+      const img = el.querySelector('img') as HTMLImageElement;
+      if (img.dataset.src !== c.icon) img.src = img.dataset.src = c.icon;
+      (el.querySelector('span') as HTMLElement).textContent = c.text;
+      (el.querySelector('b') as HTMLElement).style.width = `${Math.round(c.left * 100)}%`;
+      el.classList.toggle('red', c.red);
     });
   }
 

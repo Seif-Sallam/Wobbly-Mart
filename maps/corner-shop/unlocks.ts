@@ -1,4 +1,4 @@
-import type { FreeStationDef, PadDef } from '../../src/sim/map';
+import type { EventDef, EventKind, FreeStationDef, PadDef } from '../../src/sim/map';
 import type { ProductId } from '../../catalog/products';
 import type { ProducerTypeId } from '../../catalog/producers';
 
@@ -64,3 +64,7 @@ export const freeStations: Record<string, FreeStationDef> = {
 export const start = { owned: ['area_1'], money: 50 };
 
 export const movePrices = [40, 60, 90, 150, 200, 275, 400, 525, 650];
+
+export const events: Partial<Record<EventKind, EventDef>> = {
+  delivery: { requires: ['tomato_shelf'] },
+};

@@ -1,13 +1,13 @@
 import { describe, expect, test } from 'vitest';
 import { cornerShop } from '../../maps/corner-shop';
 import { createWorld, DT, step, type Intents } from './world';
-import { completion, customerCap, own, padVisible, refreshFreeStations } from './economy';
+import { completion, customerCap, own, padVisible, refreshFreeStations, visiblePads } from './economy';
 import { moveIntent } from './bot';
 import { snapshot } from './save';
 import type { Customer, PickupStation, ProducerStation, ShelfStation, SimEvent, World } from './world';
 import { distToBox } from './geometry';
 import { TUNING } from './tuning';
-import { addMess } from './cleaning';
+import { addMess, messSlowdown } from './cleaning';
 import { canPayMoves, cutOff, moveBill, movesLeft, nextRot, payMoves, place, spotProblem, turned } from './layout';
 import { rebuildNav } from './walk';
 import { boxCentre, frontDir } from './geometry';
@@ -122,6 +122,14 @@ describe('Map 1 opening loop', () => {
 
     // The tutorial follows along without blocking anything
     expect(w.tutorial.done).toBe(false);
+
+    // Buying the Blender while standing right of its Pad's centre, by the locked Area's edge, doesn't trap the Player
+    while (!padVisible(w, 'blender')) own(w, visiblePads(w)[0], false);
+    w.money = 100;
+    Object.assign(w.player, { x: 18.7, z: 19.8, vx: 0, vz: 0, stack: [] });
+    run(w, 3);
+    expect(w.owned.has('blender')).toBe(true);
+    walk(w, 'tomato_shelf');
   });
 
   test('a save keeps purchases and money, and a reload is a fresh Opening', () => {
@@ -175,7 +183,7 @@ function nextCustomer(w: World): Customer {
 }
 
 describe('Map 1 fully built', () => {
-  test('two Shelves, patience, Messes, the Trash hold, Stack tipping, Stocker roles and priorities', () => {
+  test('two Shelves, patience, Messes and the Mop, the Trash hold, Stack tipping, Stocker roles and priorities, everything at once', () => {
     const w = createWorld(cornerShop, null, 5, true);
     w.map.events = {}; // Deliveries have their own test
     for (const id of Object.keys(cornerShop.pads)) own(w, id, false);
@@ -239,6 +247,17 @@ describe('Map 1 fully built', () => {
     }
     expect(angry.angry).toBe(true);
     expect(angry.state).toBe('shop');
+
+    // a waiting Mess underfoot drains patience 1.5× faster
+    let before = angry.patience;
+    step(w, idle());
+    const calm = angry.patience - before;
+    const underfoot = w.nextId++;
+    addMess(w, underfoot, angry.x, angry.z, [], -1);
+    before = angry.patience;
+    step(w, idle());
+    expect(angry.patience - before).toBeCloseTo(calm * TUNING.messPatience);
+    w.messes = w.messes.filter((m) => m.id !== underfoot);
     for (let i = 0; i < 60 * (TUNING.patienceLeave + 1) && angry.state === 'shop'; i++) {
       stock(w, wanted, 0);
       step(w, idle());
@@ -257,6 +276,7 @@ describe('Map 1 fully built', () => {
     walk(w, spill, 40);
     run(w, 3);
     expect(w.messes).toContain(mess);
+    expect(messSlowdown(w, w.player)).toBe(TUNING.messSlowdownStaff); // and it slows whoever walks through
     w.player.stack = ['wheat'];
     toMop();
     expect(w.player.mop).toBe(false);
@@ -281,6 +301,16 @@ describe('Map 1 fully built', () => {
     walk(w, spill, 40);
     run(w, 2 * (1 - kept));
     expect(w.messes).not.toContain(mess);
+
+    // the Mop speed Upgrade's top level halves it to 1 s
+    w.levels.mop_speed = 2;
+    const quick = w.nextId++;
+    addMess(w, quick, w.player.x, w.player.z, ['milk'], -1);
+    run(w, 0.8);
+    expect(w.messes.some((m) => m.id === quick)).toBe(true);
+    run(w, 0.3);
+    expect(w.messes.some((m) => m.id === quick)).toBe(false);
+    w.levels.mop_speed = 0;
 
     // with the Mop in hand nothing is picked up, not even a Loose Item underfoot
     const dropped = { id: w.nextId++, x: w.player.x, z: w.player.z, product: 'egg' };
@@ -495,6 +525,27 @@ describe('Map 1 fully built', () => {
     expect(w.messes.length).toBe(0);
     expect(took).toBeGreaterThan(3);
     expect(took).toBeLessThan(5);
+
+    // 8. Everything at once for 20 min, the Player idle: Staff fill car orders, every Event plays out, the Cleaner keeps up
+    w.map.events = cornerShop.events;
+    w.stockers = staff;
+    for (const s of staff) Object.assign(s, { role: 'auto', job: null, stack: [], leftover: null });
+    w.arrivalTimer = 0;
+    const seen: Record<string, number> = {};
+    let maxMesses = 0;
+    for (let i = 0; i < 60 * 60 * 20; i++) {
+      step(w, idle());
+      for (const e of w.events) {
+        const done = e.type === 'deliveryDone' && e.complete ? 'deliveryFilled' : e.type;
+        seen[done] = (seen[done] ?? 0) + 1;
+      }
+      maxMesses = Math.max(maxMesses, w.messes.length);
+    }
+    expect(seen.deliveryFilled).toBeGreaterThan(0);
+    expect(seen.robberyDone).toBeGreaterThan(0);
+    expect(seen.inspection).toBeGreaterThan(0);
+    expect(seen.paid).toBeGreaterThan(50);
+    expect(maxMesses).toBeLessThan(5);
   });
 });
 

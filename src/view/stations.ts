@@ -11,6 +11,7 @@ import { PALETTE, SHADES } from '../palette';
 import { dynamic, mergeStatic } from './merge';
 import { cyl, grid, slab } from './shapes';
 import { buildCheckout, buildStand } from './stands';
+import { buildMopStand, buildPedalBin } from './cleaning';
 import type { ProductId } from '../../catalog/products';
 
 /** Shelf stands are named `<product>-stand` in the asset table. */
@@ -34,6 +35,8 @@ export interface StationVisual {
   /** Crop plants are drawn instanced by the view with this model. */
   plantModel: string | null;
   mixers: THREE.AnimationMixer[];
+  /** Trash Bin lid, hinged at the back (animated by the cleaning look). */
+  lid?: THREE.Object3D;
   /** Per-frame motion; `working` while a Machine/Animal is busy. */
   animate: (dt: number, working: boolean) => void;
 }
@@ -290,8 +293,9 @@ function build(name: string, w: number, d: number, v: StationVisual): void {
       return;
     }
     case 'trash':
-      v.body.add(model('trash'));
-      return;
+      return buildPedalBin(v);
+    case 'mop-cart':
+      return buildMopStand(v);
     case 'exit': {
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.6, 8), paletteMaterial('wood'));
       pole.position.y = 0.8;

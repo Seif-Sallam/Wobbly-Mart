@@ -43,14 +43,6 @@ export class Input {
     });
     addEventListener('keyup', (e) => this.keys.delete(e.code));
     addEventListener('blur', () => this.keys.clear());
-    addEventListener(
-      'wheel',
-      (e) => {
-        if ((e.target as HTMLElement).closest?.('.panel, .lil-gui') || !e.deltaY) return;
-        this.onZoom(1 + Math.sign(e.deltaY) * FEEL.zoomStep);
-      },
-      { passive: true },
-    );
     this.pinchZoom();
     this.taps(zone);
     const manager = nipplejs.create({ zone, mode: 'dynamic', color: PALETTE.ink, size: 110 });

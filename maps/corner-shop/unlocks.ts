@@ -39,7 +39,7 @@ export const pads: Record<string, PadDef> = {
   chicken_3: { cost: 750, requires: ['oven'], unlocks: producer('chicken_coop') },
   oven_2: { cost: 1100, requires: ['mill_2', 'chicken_3'], unlocks: producer('oven') },
   exit: { cost: 2250, requires: ['oven_2'], unlocks: { kind: 'exit' } },
-  // second Shelves (optional leaves) and Stockers 3–6
+  // second Shelves (optional leaves), Stockers 3–6 and the Cleaner
   tomato_shelf_2: { cost: 20, requires: ['tomato_plots'], unlocks: shelf('tomato') },
   egg_shelf_2: { cost: 25, requires: ['chicken_2'], unlocks: shelf('egg') },
   ketchup_shelf_2: { cost: 525, requires: ['blender_2'], unlocks: shelf('ketchup') },
@@ -51,12 +51,14 @@ export const pads: Record<string, PadDef> = {
   stocker_4: { cost: 200, requires: ['cow_pen'], unlocks: { kind: 'stocker' } },
   stocker_5: { cost: 900, requires: ['oven'], unlocks: { kind: 'stocker' } },
   stocker_6: { cost: 1100, requires: ['oven_2'], unlocks: { kind: 'stocker' } },
+  cleaner: { cost: 900, requires: ['oven'], unlocks: { kind: 'cleaner' } },
 };
 
 export const freeStations: Record<string, FreeStationDef> = {
   trash: { requires: [], unlocks: { kind: 'trash' } },
   trash_2: { requires: ['area_2'], unlocks: { kind: 'trash' } },
   trash_3: { requires: ['area_3'], unlocks: { kind: 'trash' } },
+  mop_stand: { requires: [], unlocks: { kind: 'mopStand' } },
 };
 
 export const start = { owned: ['area_1'], money: 50 };

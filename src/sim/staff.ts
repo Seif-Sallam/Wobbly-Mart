@@ -3,6 +3,7 @@ import type { Job, ProducerStation, ShelfStation, Station, Stocker, StockerRole,
 import { accepts, availableCount, transferTick, trayRoom } from './carry';
 import { stockerCarry, stockerSpeed } from './economy';
 import { walkAgent, walkDistance } from './walk';
+import { messSlowdown } from './cleaning';
 import { DT } from './world';
 import { TUNING } from './tuning';
 
@@ -167,7 +168,7 @@ function updateStocker(w: World, s: Stocker): void {
     s.job = null;
     return;
   }
-  if (!walkAgent(w, 'walker', s, { station: target }, stockerSpeed(w))) {
+  if (!walkAgent(w, 'walker', s, { station: target }, stockerSpeed(w) * messSlowdown(w, s))) {
     transferTick(w, s, null, who, { drop: () => false, pick: () => false, cap });
     return;
   }

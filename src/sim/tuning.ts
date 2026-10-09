@@ -12,11 +12,18 @@ export const TUNING = {
   padHalfSize: 0.8,
   cashPileOffset: 0.7,
   cashPileRadius: 0.8,
+  /** Mopping reaches a Mess this far away (m). */
   messClearRadius: 0.8,
   /** Seconds the Player stands on the Trash Bin before it takes Items. */
   trashHoldTime: 1.5,
+  /** Within messRadius of a waiting Mess: Customers walk at messSlowdown, the Player and Staff at messSlowdownStaff, and
+   * Customers lose patience messPatience × faster. */
   messSlowdown: 0.5,
+  messSlowdownStaff: 0.7,
+  messPatience: 1.5,
   messRadius: 0.9,
+  /** Cleaner: flat walk speeds (m/s), clean time × the Player's, wander spots snapped to this grid (m), show mopping (s). */
+  cleaner: { wanderSpeed: 2, rushSpeed: 4, cleanFactor: 1.5, wanderGrid: 4, showMop: [2, 4] as const },
   playerCheckoutTime: 1.5,
   customerSpeed: 2.6,
   customerTakeTime: 0.6,
@@ -88,5 +95,6 @@ export const TUNING = {
     checkoutTime: 2,
     stockerSpeed: 4,
     stockerCarry: 6,
+    cleanTime: 2,
   },
 };

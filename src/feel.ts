@@ -11,7 +11,7 @@ export const FEEL = {
   // camera
   cameraYawDeg: 45,
   cameraPitchDeg: 41,
-  /** Zoom: metres across the screen's short side; defaults per device, slider range, wheel / + − step, ease (1/s). */
+  /** Zoom: metres across the screen's short side; defaults per device, slider range, + − key step, ease (1/s). */
   zoomPhone: 14,
   zoomDesktop: 18,
   zoomMin: 10,
@@ -96,4 +96,14 @@ export const FEEL = {
   laneLightIdle: 0.4,
   laneLightScan: 1.6,
   doorOpenRadius: 2.5,
+  // cleaning: mop swish (rad/s), suds per second, a mopped Mess shrinks to messShrinkTo; the grumpy bubble's size (m),
+  // seconds to full anger and fade-out; the Trash Bin lid opens binLidOpen rad; flies circle at flyRadius (m)
+  mopSwish: 14,
+  mopSuds: 10,
+  messShrinkTo: 0.25,
+  bubbleSize: 0.75,
+  bubbleAnger: 4,
+  bubbleFade: 0.6,
+  binLidOpen: 1.1,
+  flyRadius: 0.35,
 };

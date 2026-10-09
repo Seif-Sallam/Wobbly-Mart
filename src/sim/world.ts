@@ -15,6 +15,7 @@ import { updatePlayer } from './player';
 import { updateProducers } from './producers';
 import { updateCustomers } from './customers';
 import { updateStaff } from './staff';
+import { updateCleaners } from './cleaning';
 import { rebuildNav } from './walk';
 
 export interface Mover {
@@ -33,7 +34,16 @@ export interface Carrier {
   fullWarned: boolean;
 }
 
-export type Player = Mover & Carrier & { trashHold: number; sprinting: boolean; dropCooldown: number; jolt: number };
+export type Player = Mover &
+  Carrier & {
+    trashHold: number;
+    sprinting: boolean;
+    dropCooldown: number;
+    jolt: number;
+    /** Holding the Mop: nothing transfers until it is walked back to the Mop Stand. */
+    mop: boolean;
+    atMopStand: boolean;
+  };
 
 export interface Job {
   sink: string;
@@ -54,6 +64,16 @@ export interface Stocker extends Mover, Carrier {
   rethink: number;
   /** Seconds the whole Stack has been leftovers nothing needs, or null. */
   leftover: number | null;
+}
+
+/** Staff with its own mop: wanders the shop floors, rushes to Messes. */
+export interface Cleaner extends Mover {
+  id: string;
+  /** A wander spot, while no Mess waits. */
+  spot: Point | null;
+  /** Seconds left mopping a spot for show. */
+  show: number;
+  mopping: boolean;
 }
 
 export interface Cashier {
@@ -121,7 +141,7 @@ export interface RegisterStation extends StationBase {
 }
 
 export interface SimpleStation extends StationBase {
-  kind: 'office' | 'trash' | 'exit';
+  kind: 'office' | 'trash' | 'exit' | 'mopStand';
 }
 
 export type Station = ShelfStation | ProducerStation | RegisterStation | SimpleStation;
@@ -131,6 +151,8 @@ export interface Mess {
   x: number;
   z: number;
   items: string[];
+  /** Mopped so far, 0–1; walking off keeps it. */
+  progress: number;
 }
 
 /** An Item dropped while sprinting: lies where it landed until the Player walks over it. */
@@ -170,6 +192,7 @@ export type SimEvent =
   | { type: 'angry'; customer: number }
   | { type: 'mess'; mess: number; customer: number }
   | { type: 'messCleared'; mess: number }
+  | { type: 'mop'; taken: boolean }
   | { type: 'customerLeft'; customer: number }
   | { type: 'tutorialDone' }
   | { type: 'complete' };
@@ -206,6 +229,7 @@ export interface World {
   nextId: number;
   stockers: Stocker[];
   cashiers: Cashier[];
+  cleaners: Cleaner[];
   messes: Mess[];
   loose: LooseItem[];
   drains: Drain[];
@@ -241,12 +265,25 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
     owned: new Set(),
     paid: {},
     levels: {},
-    player: { x: px, z: pz, vx: 0, vz: 0, trashHold: 0, sprinting: false, dropCooldown: 0, jolt: 0, ...newCarrier() },
+    player: {
+      x: px,
+      z: pz,
+      vx: 0,
+      vz: 0,
+      trashHold: 0,
+      sprinting: false,
+      dropCooldown: 0,
+      jolt: 0,
+      mop: false,
+      atMopStand: false,
+      ...newCarrier(),
+    },
     stations: new Map(),
     customers: [],
     nextId: 1,
     stockers: [],
     cashiers: [],
+    cleaners: [],
     messes: [],
     loose: [],
     drains: [],
@@ -288,6 +325,7 @@ export function step(w: World, intents: Intents): void {
   updateProducers(w);
   updateCustomers(w);
   updateStaff(w);
+  updateCleaners(w);
   updateTutorial(w);
   w.complete = checkCompletion(w, true);
   if (w.navDirty) rebuildNav(w);

@@ -10,6 +10,7 @@ import { Stage } from './stage';
 import { Level } from './level';
 import { Juice } from './juice';
 import { Character } from './characters';
+import { CleaningLook, HeldMop } from './cleaning';
 import { PadVisual } from './pads';
 import { ANIMAL_MODELS, buildStation, ghostify, type StationVisual } from './stations';
 import { InstancedModel, LiveInstances, billModel, itemModel, modelDrawer, type ModelDrawer } from './instanced';
@@ -90,6 +91,9 @@ export class WorldView {
   private sprintPuff = 0;
   private customers = new Map<number, CustomerLook>();
   private staff = new Map<string, { ch: Character; stack: StackLook }>();
+  private cleaners = new Map<string, { ch: Character; mop: HeldMop }>();
+  private cleaning = new CleaningLook();
+  private playerMop: HeldMop;
   private flights: Flight[] = [];
   private pending = new Map<string, number>();
   private ownedKey = '';
@@ -115,7 +119,7 @@ export class WorldView {
     private w: World,
   ) {
     this.level = new Level(w.map.layout, (b: Box) => areaOf(this.w, b), w.map.start.owned);
-    this.root.add(this.level.group, this.juice.group, this.batch.group);
+    this.root.add(this.level.group, this.juice.group, this.batch.group, this.cleaning.group);
     stage.scene.add(this.root);
     const models = new Map<string, THREE.Object3D>([
       [BILL, billModel()],
@@ -135,6 +139,7 @@ export class WorldView {
     this.blobs = this.makeBlobs();
     this.player = new Character('player', { hat: 'orange' });
     this.root.add(this.player.root);
+    this.playerMop = new HeldMop(this.player);
     this.maxTag = this.tag('MAX', PALETTE.orange);
     this.officeMark = this.tag('!', PALETTE.orange);
     this.arrow = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.7, 16), paletteMaterial('orange'));
@@ -165,7 +170,7 @@ export class WorldView {
       this.root.remove(c.ch.root, c.receipt.sprite);
       c.receipt.dispose();
     }
-    for (const s of this.staff.values()) this.root.remove(s.ch.root);
+    for (const s of [...this.staff.values(), ...this.cleaners.values()]) this.root.remove(s.ch.root);
     for (const m of this.splats.values()) this.root.remove(m);
     this.stations.clear();
     this.batch.clear();
@@ -173,6 +178,8 @@ export class WorldView {
     this.pads.clear();
     this.customers.clear();
     this.staff.clear();
+    this.cleaners.clear();
+    this.cleaning.reset();
     this.splats.clear();
     this.spilled.clear();
     this.flights = [];
@@ -222,7 +229,7 @@ export class WorldView {
     const w = this.w;
     this.prev.set('player', [w.player.x, w.player.z]);
     for (const c of w.customers) this.prev.set(`c${c.id}`, [c.x, c.z]);
-    for (const s of w.stockers) this.prev.set(s.id, [s.x, s.z]);
+    for (const s of [...w.stockers, ...w.cleaners]) this.prev.set(s.id, [s.x, s.z]);
   }
 
   private lerp(key: string, x: number, z: number, alpha: number): Point {
@@ -282,7 +289,8 @@ export class WorldView {
       ghost = v.root;
     }
     const iconName =
-      name ?? (def.kind === 'cashier' || def.kind === 'stocker' ? 'employee' : def.kind === 'exit' ? 'van' : 'area');
+      name ??
+      (['cashier', 'stocker', 'cleaner'].includes(def.kind) ? 'employee' : def.kind === 'exit' ? 'van' : 'area');
     const [x, z] = boxCentre(place.box);
     pad = new PadVisual(x, z, iconName, ghost);
     this.pads.set(id, pad);
@@ -425,8 +433,12 @@ export class WorldView {
         const trash = w.stations.get(e.station);
         const [x, z] = trash ? boxCentre(trash.box) : [from.x, from.z];
         this.flights.push({ product: e.product, from, to: () => new THREE.Vector3(x, 0.7, z), t: 0, key: '' });
+        this.cleaning.trashed(e.station);
         break;
       }
+      case 'mop':
+        this.juice.puff(this.player.root.position.clone().setY(0.9), PALETTE.cream, 6, 0.8);
+        break;
       case 'padBought':
         this.syncOwned(true);
         if (e.pad === 'exit') {
@@ -500,7 +512,9 @@ export class WorldView {
       case 'messCleared': {
         const s = this.splats.get(e.mess);
         if (s) {
-          this.juice.puff(s.position.clone().setY(0.2), PALETTE.cream, 6, 1);
+          // sparkle pop
+          this.juice.puff(s.position.clone().setY(0.3), SHADES.white, 14, 1.4);
+          this.juice.puff(s.position.clone().setY(0.6), PALETTE.pad, 8, 1.8);
           this.root.remove(s);
           this.splats.delete(e.mess);
         }
@@ -591,13 +605,21 @@ export class WorldView {
           );
       }
     }
+    this.cleaning.update(dt, {
+      w,
+      splats: this.splats,
+      stations: this.stations,
+      customerAt: (id) => this.customers.get(id)?.ch.root.position,
+      bounce: (id) => this.bounce(id),
+      puff: (at, color, count, spread) => this.juice.puff(at, color, count, spread),
+    });
     this.animals.update();
     this.updateScenery(dt);
     this.juice.update(dt);
     const near: Point[] = [
       [w.player.x, w.player.z],
       ...w.customers.map((c): Point => [c.x, c.z]),
-      ...w.stockers.map((s): Point => [s.x, s.z]),
+      ...[...w.stockers, ...w.cleaners].map((s): Point => [s.x, s.z]),
     ];
     this.level.update(dt, near);
     this.updateMarkers();
@@ -636,6 +658,9 @@ export class WorldView {
     const [px, pz] = this.lerp('player', w.player.x, w.player.z, alpha);
     this.player.update(dt, px, pz, w.player.vx, w.player.vz, w.player.stack.length > 0);
     this.updateStack(this.playerStack, w.player.vx, w.player.vz, dt);
+    const mopping =
+      w.player.mop && w.messes.some((m) => Math.hypot(m.x - w.player.x, m.z - w.player.z) <= TUNING.messClearRadius);
+    this.playerMop.update(dt, w.player.mop, mopping);
     this.sprintPuff -= dt;
     if (w.player.sprinting && this.sprintPuff <= 0) {
       this.sprintPuff = FEEL.sprintPuffGap;
@@ -681,6 +706,18 @@ export class WorldView {
       look.ch.update(dt, x, z, s.vx, s.vz, s.stack.length > 0);
       this.updateStack(look.stack, s.vx, s.vz, dt);
     }
+    for (const c of w.cleaners) {
+      let look = this.cleaners.get(c.id);
+      if (!look) {
+        const ch = new Character('employee', { hat: SHADES.cleanerCap });
+        look = { ch, mop: new HeldMop(ch) };
+        this.cleaners.set(c.id, look);
+        this.root.add(ch.root);
+      }
+      const [x, z] = this.lerp(c.id, c.x, c.z, alpha);
+      look.ch.update(dt, x, z, c.vx, c.vz, false);
+      look.mop.update(dt, true, c.mopping);
+    }
     for (const c of w.cashiers) {
       let look = this.staff.get(c.id);
       if (!look) {
@@ -697,6 +734,7 @@ export class WorldView {
       ...w.customers.map((c): Point => [c.x, c.z]),
       ...w.stockers.map((s): Point => [s.x, s.z]),
       ...w.cashiers.map((c): Point => [c.x, c.z]),
+      ...w.cleaners.map((c): Point => [c.x, c.z]),
     ];
     const m = new THREE.Matrix4();
     spots

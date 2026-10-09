@@ -44,6 +44,7 @@ function createStation(w: World, id: string, def: StationDef): void {
     case 'office':
     case 'trash':
     case 'exit':
+    case 'mopStand':
       st = { ...base, kind: def.kind };
       break;
     case 'cashier': {
@@ -54,6 +55,11 @@ function createStation(w: World, id: string, def: StationDef): void {
     case 'stocker': {
       const [x, z] = boxCentre(place.box);
       w.stockers.push({ id, x, z, vx: 0, vz: 0, ...newCarrier(), role: 'auto', job: null, rethink: 0, leftover: null });
+      break;
+    }
+    case 'cleaner': {
+      const [x, z] = boxCentre(place.box);
+      w.cleaners.push({ id, x, z, vx: 0, vz: 0, spot: null, show: 0, mopping: false });
       break;
     }
     case 'area':
@@ -130,6 +136,7 @@ export const playerSpeed = (w: World): number => upgradeValue(w, 'player', 'spee
 export const checkoutTime = (w: World): number => upgradeValue(w, 'cashier', 'checkoutTime', TUNING.base.checkoutTime);
 export const stockerSpeed = (w: World): number => upgradeValue(w, 'stocker', 'speed', TUNING.base.stockerSpeed);
 export const stockerCarry = (w: World): number => upgradeValue(w, 'stocker', 'carry', TUNING.base.stockerCarry);
+export const cleanTime = (w: World): number => upgradeValue(w, 'player', 'cleanTime', TUNING.base.cleanTime);
 
 export const upgradeVisible = (w: World, id: string): boolean => {
   const up = w.map.upgrades[id];

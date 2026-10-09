@@ -11,8 +11,8 @@ import { Level } from './level';
 import { Juice } from './juice';
 import { Character } from './characters';
 import { PadVisual } from './pads';
-import { buildStation, ghostify, type StationVisual } from './stations';
-import { InstancedModel, LiveInstances, billModel, itemModel } from './instanced';
+import { ANIMAL_MODELS, buildStation, ghostify, type StationVisual } from './stations';
+import { InstancedModel, LiveInstances, billModel, itemModel, modelDrawer, type ModelDrawer } from './instanced';
 import { model } from './assets';
 import { StationBatch } from './station-batch';
 import { CanvasTex, canvasSprite, outlinedText, roundRect } from './text';
@@ -32,6 +32,10 @@ const LOOSE_Y = 0.15;
 const RIPE_TOMATO_Y = 0.42;
 const RECEIPT_Y = 1.75;
 const MAX_ANIMALS = 32;
+/** Copies of each Item model, bill or basket drawn at once. */
+const MAX_COPIES = 600;
+const BILL = 'bill';
+const BASKET = 'basket';
 const LOOSE_TILT = new THREE.Vector2(1.2, 0);
 
 interface Flight {
@@ -68,14 +72,13 @@ export class WorldView {
   readonly root = new THREE.Group();
   private stations = new Map<string, StationVisual>();
   private pads = new Map<string, PadVisual>();
-  private items = new Map<string, InstancedModel>();
+  /** Items, Money bills and Customers' baskets. */
+  private items: ModelDrawer;
   private plants = new Map<string, InstancedModel>();
   private batch = new StationBatch();
   private animals: LiveInstances;
   private puffTimers = new Map<string, number>();
   private wanderers: { ch: Character; mover: Mover; target: Point }[] = [];
-  private bills: InstancedModel;
-  private baskets: InstancedModel;
   /** Customers whose basket tipped over in a Mess. */
   private spilled = new Set<number>();
   private blobs: THREE.InstancedMesh;
@@ -108,15 +111,21 @@ export class WorldView {
     this.level = new Level(w.map.layout, (b: Box) => areaOf(this.w, b), w.map.start.owned);
     this.root.add(this.level.group, this.juice.group, this.batch.group);
     stage.scene.add(this.root);
-    for (const [id, p] of Object.entries(w.map.products)) {
-      void id;
-      if (!this.items.has(p.model)) this.items.set(p.model, new InstancedModel(itemModel(p.model), 500, this.root));
-    }
-    this.bills = new InstancedModel(billModel(), 600, this.root);
-    this.baskets = new InstancedModel(model('shopping-basket', { height: FEEL.basketHeight }), 40, this.root);
+    const models = new Map<string, THREE.Object3D>([
+      [BILL, billModel()],
+      [BASKET, model('shopping-basket', { height: FEEL.basketHeight })],
+    ]);
+    for (const p of Object.values(w.map.products)) if (!models.has(p.model)) models.set(p.model, itemModel(p.model));
+    const multiDraw = stage.renderer.extensions.has('WEBGL_multi_draw');
+    this.items = modelDrawer(models, MAX_COPIES, this.root, multiDraw);
     for (const name of ['tomato-bush', 'wheat-plant'])
       this.plants.set(name, new InstancedModel(model(name), 64, this.root, false));
-    this.animals = new LiveInstances(this.root, MAX_ANIMALS);
+    this.animals = new LiveInstances(
+      ANIMAL_MODELS.map((name) => model(name)),
+      MAX_ANIMALS,
+      this.root,
+      multiDraw,
+    );
     this.blobs = this.makeBlobs();
     this.player = new Character('player', { hat: 'orange' });
     this.root.add(this.player.root);
@@ -681,16 +690,14 @@ export class WorldView {
 
   private drawItems(dt: number): void {
     const w = this.w;
-    for (const im of [...this.items.values(), ...this.plants.values()]) im.begin();
-    this.bills.begin();
+    this.items.begin();
+    for (const im of this.plants.values()) im.begin();
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
     const s = new THREE.Vector3();
     const put = (product: string, p: THREE.Vector3, yaw = 0, scale = 1, tilt?: THREE.Vector2) => {
-      const im = this.items.get(w.map.products[product]?.model ?? product);
-      if (!im) return;
       q.setFromEuler(new THREE.Euler(tilt?.y ?? 0, yaw, -(tilt?.x ?? 0)));
-      im.add(m.compose(p, q, s.setScalar(scale)));
+      this.items.add(w.map.products[product]?.model ?? product, m.compose(p, q, s.setScalar(scale)));
     };
     const onBelt = new Set<number>();
     // Stations
@@ -754,7 +761,8 @@ export class WorldView {
         const [x, z] = cashPilePoint(w, st.id);
         for (let i = 0; i < bills; i++) {
           const col = i % 2;
-          this.bills.add(
+          this.items.add(
+            BILL,
             m.compose(
               new THREE.Vector3(x + col * 0.05, 0.03 + Math.floor(i / 2) * 0.065, z + col * 0.04),
               q.setFromEuler(new THREE.Euler(0, ((i * 37) % 7) * 0.08, 0)),
@@ -785,13 +793,13 @@ export class WorldView {
       if (look)
         stack(st.stack, `stack:${st.id}`, look.ch.root.position.x, look.ch.root.position.z, look.ch.facing, look.stack);
     }
-    this.baskets.begin();
     for (const c of w.customers) {
       const look = this.customers.get(c.id);
       if (!look || !hasBasket(c.id)) continue;
       const { x, z } = look.ch.root.position;
       if (!this.spilled.has(c.id))
-        this.baskets.add(
+        this.items.add(
+          BASKET,
           m.compose(
             basketPose(x, z, look.ch.facing),
             q.setFromEuler(new THREE.Euler(0, look.ch.facing, 0)),
@@ -806,7 +814,6 @@ export class WorldView {
         put(c.cart[i], basketSlot(x, z, look.ch.facing, i, lean), look.ch.facing, FEEL.basketItemScale, tilt);
       }
     }
-    this.baskets.end();
     for (const c of w.customers) {
       const look = this.customers.get(c.id);
       if (look && !onBelt.has(c.id) && !hasBasket(c.id))
@@ -830,15 +837,16 @@ export class WorldView {
       const e = f.t * f.t * (3 - 2 * f.t);
       const p = f.from.clone().lerp(to, e);
       p.y += FEEL.flyArc * 4 * f.t * (1 - f.t);
-      if (f.bill) this.bills.add(m.compose(p, q.setFromEuler(new THREE.Euler(f.t * 6, f.t * 9, 0)), s.setScalar(1)));
+      if (f.bill)
+        this.items.add(BILL, m.compose(p, q.setFromEuler(new THREE.Euler(f.t * 6, f.t * 9, 0)), s.setScalar(1)));
       else if (f.product) put(f.product, p, f.t * 8, f.t > 0.85 ? 1 + (1 - f.t) * 2 : 1);
       if (f.t < 1) return true;
       if (f.key) this.pending.set(f.key, Math.max(0, (this.pending.get(f.key) ?? 1) - 1));
       if (f.key.startsWith('st:') || f.key.startsWith('input:')) this.bounce(f.key.split(':')[1]);
       return false;
     });
-    for (const im of [...this.items.values(), ...this.plants.values()]) im.end();
-    this.bills.end();
+    this.items.end();
+    for (const im of this.plants.values()) im.end();
   }
 
   private bounce(id: string): void {

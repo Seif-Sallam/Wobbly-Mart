@@ -1,10 +1,10 @@
-// Draws many copies of a (multi-mesh) model with one InstancedMesh per material: Items, Money bills, plants. Animals
-// keep their own animation but are drawn the same way (LiveInstances).
+// Draws many copies of models: all Items, bills and baskets in one BatchedMesh per material (ModelBatch), or one
+// InstancedMesh per model and material where the browser can't multi-draw. Animals keep their own animation (LiveInstances).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { model } from './assets';
 import { ITEM_SIZE } from '../../catalog/assets';
-import { paletteMaterial } from './materials';
+import { bakePalette, paletteMaterial } from './materials';
 import { SHADES } from '../palette';
 
 export class InstancedModel {
@@ -47,6 +47,112 @@ export class InstancedModel {
   }
 }
 
+/** Draws copies of several models by name, each frame between begin() and end(). */
+export interface ModelDrawer {
+  begin(): void;
+  add(name: string, matrix: THREE.Matrix4): void;
+  end(): void;
+}
+
+/** One draw call per material for every copy of every model (needs WEBGL_multi_draw; without it each copy is a draw). */
+class ModelBatch implements ModelDrawer {
+  private batches: { mesh: THREE.BatchedMesh; ids: number[]; used: number; shown: number }[] = [];
+  private parts = new Map<string, { batch: number; geometry: number; local: THREE.Matrix4 }[]>();
+  private readonly tmp = new THREE.Matrix4();
+
+  constructor(
+    models: Map<string, THREE.Object3D>,
+    private readonly max: number,
+    parent: THREE.Object3D,
+  ) {
+    const buckets = new Map<
+      string,
+      { material: THREE.Material; list: { name: string; geometry: THREE.BufferGeometry; local: THREE.Matrix4 }[] }
+    >();
+    for (const [name, source] of models)
+      for (const m of byMaterial(source)) {
+        const { geometry, material } = bakePalette(m.geometry.clone(), m.material as THREE.Material);
+        const key = `${material.uuid}|${Object.keys(geometry.attributes).sort().join()}|${geometry.index ? 'i' : 'n'}`;
+        if (!buckets.has(key)) buckets.set(key, { material, list: [] });
+        buckets.get(key)?.list.push({ name, geometry, local: m.matrixWorld.clone() });
+      }
+    for (const { material, list } of buckets.values()) {
+      const verts = list.reduce((n, p) => n + p.geometry.attributes.position.count, 0);
+      const indices = list.reduce((n, p) => n + (p.geometry.index?.count ?? 0), 0);
+      const mesh = new THREE.BatchedMesh(max, verts, Math.max(1, indices), material);
+      mesh.perObjectFrustumCulled = false;
+      mesh.sortObjects = false;
+      mesh.frustumCulled = false;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      parent.add(mesh);
+      const batch = this.batches.push({ mesh, ids: [], used: 0, shown: 0 }) - 1;
+      for (const p of list)
+        this.parts.set(p.name, [
+          ...(this.parts.get(p.name) ?? []),
+          { batch, geometry: mesh.addGeometry(p.geometry), local: p.local },
+        ]);
+    }
+  }
+
+  begin(): void {
+    for (const b of this.batches) b.used = 0;
+  }
+
+  add(name: string, matrix: THREE.Matrix4): void {
+    for (const p of this.parts.get(name) ?? []) {
+      const b = this.batches[p.batch];
+      let id = b.ids[b.used];
+      if (id === undefined) {
+        if (b.ids.length >= this.max) continue;
+        id = b.mesh.addInstance(p.geometry);
+        b.ids.push(id);
+      } else b.mesh.setGeometryIdAt(id, p.geometry);
+      b.used++;
+      b.mesh.setMatrixAt(id, this.tmp.multiplyMatrices(matrix, p.local));
+      b.mesh.setVisibleAt(id, true);
+    }
+  }
+
+  end(): void {
+    for (const b of this.batches) {
+      for (let i = b.used; i < b.shown; i++) b.mesh.setVisibleAt(b.ids[i], false);
+      b.shown = b.used;
+    }
+  }
+}
+
+/** Fallback: one InstancedModel per model. */
+class PerModel implements ModelDrawer {
+  private models = new Map<string, InstancedModel>();
+
+  constructor(models: Map<string, THREE.Object3D>, max: number, parent: THREE.Object3D) {
+    for (const [name, source] of models) this.models.set(name, new InstancedModel(source, max, parent));
+  }
+
+  begin(): void {
+    for (const m of this.models.values()) m.begin();
+  }
+
+  add(name: string, matrix: THREE.Matrix4): void {
+    this.models.get(name)?.add(matrix);
+  }
+
+  end(): void {
+    for (const m of this.models.values()) m.end();
+  }
+}
+
+/** Up to `max` copies of each model: batched when the browser can multi-draw, else instanced per model. */
+export function modelDrawer(
+  models: Map<string, THREE.Object3D>,
+  max: number,
+  parent: THREE.Object3D,
+  multiDraw: boolean,
+): ModelDrawer {
+  return multiDraw ? new ModelBatch(models, max * models.size, parent) : new PerModel(models, max, parent);
+}
+
 /** A model's sub-meshes with the same material merged into one (fewer draw calls per copy). */
 function byMaterial(source: THREE.Object3D): THREE.Mesh[] {
   source.updateMatrixWorld(true);
@@ -65,52 +171,48 @@ function byMaterial(source: THREE.Object3D): THREE.Mesh[] {
   });
 }
 
-/** Animated copies (each moved by its own mixer) drawn as one InstancedMesh per part, from the parts' live matrices. */
+/** Animated copies (each moved by its own mixer, hidden) drawn from their parts' live matrices: one entry per part. */
 export class LiveInstances {
-  private parts = new Map<string, { mesh: THREE.InstancedMesh; sources: THREE.Mesh[] }>();
+  private drawer: ModelDrawer;
+  private sources: { key: string; mesh: THREE.Mesh }[] = [];
 
-  constructor(
-    private readonly parent: THREE.Object3D,
-    private readonly max: number,
-  ) {}
+  /** `templates`: one copy of each model that may be adopted, so its parts are known up front. */
+  constructor(templates: THREE.Object3D[], max: number, parent: THREE.Object3D, multiDraw: boolean) {
+    const parts = new Map<string, THREE.Object3D>();
+    for (const t of templates)
+      t.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (m.isMesh && !Array.isArray(m.material)) parts.set(partKey(m), new THREE.Mesh(m.geometry, m.material));
+      });
+    this.drawer = modelDrawer(parts, max, parent, multiDraw);
+  }
 
   /** Takes over drawing every mesh under `obj`; it keeps animating, hidden. */
   adopt(obj: THREE.Object3D): void {
     obj.traverse((o) => {
       const m = o as THREE.Mesh;
       if (!m.isMesh || Array.isArray(m.material)) return;
-      const key = `${m.geometry.uuid}|${m.material.uuid}`;
-      let part = this.parts.get(key);
-      if (!part) {
-        const mesh = new THREE.InstancedMesh(m.geometry, m.material, this.max);
-        mesh.castShadow = m.castShadow;
-        mesh.receiveShadow = true;
-        mesh.frustumCulled = false;
-        mesh.count = 0;
-        this.parent.add(mesh);
-        this.parts.set(key, (part = { mesh, sources: [] }));
-      }
-      if (part.sources.length < this.max) part.sources.push(m);
+      this.sources.push({ key: partKey(m), mesh: m });
       m.visible = false;
     });
   }
 
   clear(): void {
-    for (const p of this.parts.values()) p.sources = [];
+    this.sources = [];
     this.update();
   }
 
   update(): void {
-    for (const { mesh, sources } of this.parts.values()) {
-      sources.forEach((m, i) => {
-        m.updateWorldMatrix(true, false);
-        mesh.setMatrixAt(i, m.matrixWorld);
-      });
-      mesh.count = sources.length;
-      mesh.instanceMatrix.needsUpdate = true;
+    this.drawer.begin();
+    for (const { key, mesh } of this.sources) {
+      mesh.updateWorldMatrix(true, false);
+      this.drawer.add(key, mesh.matrixWorld);
     }
+    this.drawer.end();
   }
 }
+
+const partKey = (m: THREE.Mesh): string => `${m.geometry.uuid}|${(m.material as THREE.Material).uuid}`;
 
 /** Procedural Wheat: a gold bundle of stalks with a tie. */
 export function wheatSheaf(height: number): THREE.Group {

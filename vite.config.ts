@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig, type Plugin } from 'vite';
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -34,4 +35,6 @@ export default defineConfig({
   base: './',
   plugins: [layoutEditorSave()],
   build: { target: 'es2022', chunkSizeWarningLimit: 800 },
+  // flowing tests simulate an hour or more of play; CI runners are ~2× slower than a laptop
+  test: { testTimeout: 30_000 },
 });

@@ -156,6 +156,24 @@ export class Sounds {
           if (e.amount) this.sfx('kaching', { volume: at(e.station) });
           if (e.tip) setTimeout(() => this.sfx('ding'), 250);
           break;
+        case 'thiefGrab':
+          this.sfx('boing', { rate: 0.7 });
+          this.sfx('grumble', { rate: 1.3 });
+          break;
+        case 'robberyDone':
+          this.sfx(e.caught ? 'bonk' : 'grumble');
+          if (e.caught) setTimeout(() => this.sfx('kaching'), 300);
+          break;
+        case 'inspectorWarning':
+          this.sfx('ding', { rate: 0.8 });
+          break;
+        case 'inspectorMark':
+          this.sfx(e.clean ? 'tick' : 'bonk', { rate: e.clean ? 1.4 : 1.2, volume: 0.6 });
+          break;
+        case 'inspection':
+          if (e.amount > 0) this.sfx('powerup');
+          else this.sfx(e.review ? 'bonk' : 'grumble', { rate: e.review ? 0.6 : 1 });
+          break;
         case 'complete':
           this.jingle('fanfare');
           setTimeout(() => this.sfx('horn'), 700);

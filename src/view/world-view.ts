@@ -20,6 +20,7 @@ import { StationBatch } from './station-batch';
 import { CanvasTex, canvasSprite, outlinedText, roundRect } from './text';
 import { Receipt } from './receipt';
 import { Car } from './cars';
+import { InspectorLook, ThiefLook } from './visitors';
 import { basketLean, basketPose, basketSlot, hasBasket } from './basket';
 import { paletteMaterial } from './materials';
 import { Tweens, ease } from '../tween';
@@ -28,6 +29,7 @@ import { PALETTE, SHADES, withAlpha } from '../palette';
 import { TUNING } from '../sim/tuning';
 
 const CUSTOMER_MODELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((k) => `customer-${k}`);
+const INSPECTOR_MODEL = 'customer-g';
 const BILL_VALUE = 5;
 const PILE_MAX_BILLS = 24;
 const CART_SCALE = 0.7;
@@ -101,6 +103,8 @@ export class WorldView {
   private staff = new Map<string, { ch: Character; stack: StackLook }>();
   private cleaners = new Map<string, { ch: Character; mop: HeldMop }>();
   private cleaning = new CleaningLook();
+  private thief: { look: ThiefLook; stack: StackLook } | null = null;
+  private inspector: InspectorLook | null = null;
   /** Delivery cars by pickup tile id; a leaving one drives off before it goes. */
   private cars = new Map<string, CarLook>();
   readonly layoutGhost = new LayoutGhost();
@@ -184,6 +188,10 @@ export class WorldView {
     for (const s of [...this.staff.values(), ...this.cleaners.values()]) this.root.remove(s.ch.root);
     for (const m of this.splats.values()) this.root.remove(m);
     for (const id of [...this.cars.keys()]) this.removeCar(id);
+    this.thief?.look.dispose();
+    this.inspector?.dispose();
+    this.thief = null;
+    this.inspector = null;
     this.stations.clear();
     this.batch.clear();
     this.animals.clear();
@@ -243,6 +251,11 @@ export class WorldView {
     this.prev.set('player', [w.player.x, w.player.z]);
     for (const c of w.customers) this.prev.set(`c${c.id}`, [c.x, c.z]);
     for (const s of [...w.stockers, ...w.cleaners]) this.prev.set(s.id, [s.x, s.z]);
+    for (const [key, v] of [
+      ['thief', w.thief],
+      ['inspector', w.inspector],
+    ] as const)
+      if (v) this.prev.set(key, [v.x, v.z]);
   }
 
   private lerp(key: string, x: number, z: number, alpha: number): Point {
@@ -362,6 +375,11 @@ export class WorldView {
     if ('agent' in ref) {
       if (ref.agent === 'player')
         return this.stackSlot(w.player.x, w.player.z, this.player.facing, this.playerStack, index);
+      if (ref.agent === 'thief') {
+        const th = w.thief;
+        const look = this.thief;
+        return th && look ? this.stackSlot(th.x, th.z, look.look.ch.facing, look.stack, index) : new THREE.Vector3();
+      }
       const s = w.stockers.find((o) => o.id === ref.id);
       const look = this.staff.get(ref.id);
       return s && look ? this.stackSlot(s.x, s.z, look.ch.facing, look.stack, index) : new THREE.Vector3();
@@ -402,7 +420,7 @@ export class WorldView {
   }
 
   private containerKey(ref: Ref, product: string): string {
-    if ('agent' in ref) return ref.agent === 'player' ? 'stack:player' : `stack:${ref.id}`;
+    if ('agent' in ref) return ref.agent === 'stocker' ? `stack:${ref.id}` : `stack:${ref.agent}`;
     if ('customer' in ref) return `cart:${ref.customer}`;
     if ('loose' in ref) return `loose:${ref.loose}`;
     const st = this.w.stations.get(ref.station);
@@ -414,6 +432,7 @@ export class WorldView {
     const w = this.w;
     if ('agent' in ref) {
       if (ref.agent === 'player') return w.player.stack.length;
+      if (ref.agent === 'thief') return w.thief?.carry.length ?? 0;
       return w.stockers.find((s) => s.id === ref.id)?.stack.length ?? 0;
     }
     if ('customer' in ref) return w.customers.find((c) => c.id === ref.customer)?.cart.length ?? 0;
@@ -492,26 +511,20 @@ export class WorldView {
       case 'cashCollect': {
         const [x, z] = cashPilePoint(w, e.register);
         const bills = Math.min(PILE_MAX_BILLS, Math.ceil(e.amount / BILL_VALUE));
-        const each = e.amount / bills;
-        for (let i = 0; i < bills; i++) {
-          const delay = (i / bills) * e.duration;
-          this.tweens.add(0.001, () => {}, {
-            delay,
-            done: () => {
-              this.flights.push({
-                product: '',
-                bill: true,
-                from: new THREE.Vector3(x, 0.1 + (bills - i) * 0.07, z),
-                to: () => new THREE.Vector3(w.player.x, 1.2, w.player.z),
-                t: 0,
-                key: '',
-              });
-              this.juice.money('player', each, new THREE.Vector3(w.player.x, 2.2, w.player.z));
-            },
-          });
-        }
+        this.flyBills(
+          bills,
+          e.duration,
+          (i) => new THREE.Vector3(x, 0.1 + (bills - i) * 0.07, z),
+          () => new THREE.Vector3(w.player.x, 1.2, w.player.z),
+          () => this.juice.money('player', e.amount / bills, new THREE.Vector3(w.player.x, 2.2, w.player.z)),
+        );
         this.juice.coin(new THREE.Vector3(x, 0.5, z));
         this.pileHidden.set(e.register, { total: bills, t: 0, duration: e.duration });
+        break;
+      }
+      case 'thiefGrab': {
+        const th = w.thief;
+        if (th?.cash) this.thiefCash(th.target, th.cash, true);
         break;
       }
       case 'angry':
@@ -547,9 +560,86 @@ export class WorldView {
         if (e.tip) this.juice.money(`${e.station}:tip`, e.tip, at.clone().setY(3), ' tip');
         break;
       }
+      case 'robberyDone': {
+        const look = this.thief?.look;
+        if (!look) break;
+        if (e.caught && e.cash && w.thief) this.thiefCash(w.thief.target, e.cash, false);
+        const at = look.ch.root.position.clone().setY(2.3);
+        this.juice.money('thief', e.caught ? e.amount : -e.amount, at);
+        if (e.caught) look.tumble();
+        else this.juice.puff(at.setY(0.4), PALETTE.cream, 8, 1);
+        break;
+      }
+      case 'inspection': {
+        if (!this.inspector) break;
+        if (e.review) {
+          this.inspector.badReview();
+          this.inspector.ch.emote('no');
+        }
+        if (e.amount) this.juice.money('inspector', e.amount, this.inspector.ch.root.position.clone().setY(2.6));
+        break;
+      }
       case 'complete':
         this.syncOwned(true);
         break;
+    }
+  }
+
+  /** `count` bills flying one after another over `duration` s; `each` runs as each one leaves. */
+  private flyBills(
+    count: number,
+    duration: number,
+    from: (i: number) => THREE.Vector3,
+    to: () => THREE.Vector3,
+    each = () => {},
+  ): void {
+    for (let i = 0; i < count; i++)
+      this.tweens.add(0.001, () => {}, {
+        delay: (i / count) * duration,
+        done: () => {
+          this.flights.push({ product: '', bill: true, from: from(i), to, t: 0, key: '' });
+          each();
+        },
+      });
+  }
+
+  /** Stolen cash flies from the Cash Pile into the Thief's arms, or back onto the Pile when caught. */
+  private thiefCash(register: string, cash: number, stolen: boolean): void {
+    const [x, z] = cashPilePoint(this.w, register);
+    const pile = () => new THREE.Vector3(x, 0.3, z);
+    const thief = () => this.thief?.look.ch.root.position.clone().setY(FEEL.stackBase) ?? pile();
+    const bills = Math.min(PILE_MAX_BILLS, Math.ceil(cash / BILL_VALUE));
+    this.flyBills(bills, FEEL.cashDrainMin, stolen ? pile : thief, stolen ? thief : pile);
+  }
+
+  // ---------- Event visitors
+
+  private syncVisitors(dt: number, alpha: number): void {
+    const w = this.w;
+    const th = w.thief;
+    if (th && !this.thief) {
+      const model = CUSTOMER_MODELS[Math.floor(th.look * CUSTOMER_MODELS.length)];
+      this.thief = { look: new ThiefLook(model, this.root, this.tweens), stack: newStack() };
+    }
+    if (!th && this.thief) {
+      this.thief.look.dispose();
+      this.thief = null;
+    }
+    if (th && this.thief) {
+      const [x, z] = this.lerp('thief', th.x, th.z, alpha);
+      this.thief.look.update(dt, th, x, z);
+      this.updateStack(this.thief.stack, th.vx, th.vz, dt);
+    }
+    const ins = w.inspector;
+    if (ins && !this.inspector) this.inspector = new InspectorLook(INSPECTOR_MODEL, this.root, this.tweens);
+    if (!ins && this.inspector) {
+      this.inspector.dispose();
+      this.inspector = null;
+    }
+    if (ins && this.inspector) {
+      const [x, z] = this.lerp('inspector', ins.x, ins.z, alpha);
+      const far = Math.hypot(w.player.x - ins.x, w.player.z - ins.z) > TUNING.events.inspector.escort;
+      this.inspector.update(dt, ins, x, z, far);
     }
   }
 
@@ -687,6 +777,7 @@ export class WorldView {
     this.syncPads(dt);
     this.syncCharacters(dt, alpha);
     this.syncCars(dt);
+    this.syncVisitors(dt, alpha);
     this.drawItems(dt);
     for (const [id, v] of this.stations) {
       const st = w.stations.get(id);
@@ -837,6 +928,8 @@ export class WorldView {
       ...w.stockers.map((s): Point => [s.x, s.z]),
       ...w.cashiers.map((c): Point => [c.x, c.z]),
       ...w.cleaners.map((c): Point => [c.x, c.z]),
+      ...(w.thief ? [[w.thief.x, w.thief.z] as Point] : []),
+      ...(w.inspector && w.inspector.state !== 'warn' ? [[w.inspector.x, w.inspector.z] as Point] : []),
     ];
     const m = new THREE.Matrix4();
     spots
@@ -950,6 +1043,20 @@ export class WorldView {
       const look = this.staff.get(st.id);
       if (look)
         stack(st.stack, `stack:${st.id}`, look.ch.root.position.x, look.ch.root.position.z, look.ch.facing, look.stack);
+    }
+    const th = w.thief;
+    const thief = this.thief;
+    if (th && thief) {
+      const { x, z } = thief.look.ch.root.position;
+      stack(th.carry, 'stack:thief', x, z, thief.look.ch.facing, thief.stack);
+      const bills = Math.min(PILE_MAX_BILLS, Math.ceil(th.cash / BILL_VALUE));
+      for (let i = 0; i < bills; i++) {
+        const at = this.stackSlot(x, z, thief.look.ch.facing, thief.stack, 0).setY(FEEL.stackBase + i * 0.065);
+        this.items.add(
+          BILL,
+          m.compose(at, q.setFromEuler(new THREE.Euler(0, thief.look.ch.facing, 0)), s.setScalar(1)),
+        );
+      }
     }
     for (const c of w.customers) {
       const look = this.customers.get(c.id);
@@ -1096,6 +1203,13 @@ export class WorldView {
           if (mesh.isMesh)
             (mesh.material as THREE.MeshStandardMaterial).opacity = 0.25 + Math.abs(Math.sin(t * 6)) * 0.35;
         });
+    }
+    const tp = w.thiefPan;
+    if (tp && w.thief) {
+      const g = FEEL.thiefPanGlide;
+      const back = tp.duration - g;
+      const k = tp.t < g ? ease.inOutCubic(tp.t / g) : tp.t < back ? 1 : 1 - ease.inOutCubic((tp.t - back) / g);
+      focus.lerp(new THREE.Vector3(w.thief.x, 0, w.thief.z), k);
     }
     this.stage.focus.copy(focus);
   }

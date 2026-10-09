@@ -16,7 +16,7 @@ import { updateProducers } from './producers';
 import { updateCustomers } from './customers';
 import { updateStaff } from './staff';
 import { updateCleaners } from './cleaning';
-import { addPickups, updateEvents } from './events';
+import { addPickups, thiefFreeze, updateEvents } from './events';
 import { rebuildNav } from './walk';
 
 export interface Mover {
@@ -188,6 +188,39 @@ export interface LooseItem {
   product: string;
 }
 
+export type ThiefState = 'enter' | 'grab' | 'run' | 'leave';
+
+/** A Robbery's Thief: walks in like a Customer, grabs from `target`, runs for `door`. */
+export interface Thief extends Mover {
+  state: ThiefState;
+  /** A Shelf, or a Register whose Cash Pile they rob. */
+  target: string;
+  carry: string[];
+  cash: number;
+  t: number;
+  door: Point;
+  home: Point;
+  look: number;
+  caught: boolean;
+}
+
+export type InspectorState = 'warn' | 'enter' | 'visit' | 'leave';
+
+/** The Health Inspector: a warning, then 4–6 stops; `alone` counts up while the Player is too far. */
+export interface Inspector extends Mover {
+  state: InspectorState;
+  /** Seconds left: of the warning, or at the current stop. */
+  t: number;
+  door: Point;
+  home: Point;
+  stops: string[];
+  stop: number;
+  /** At a stop: whether it looked clean, null while walking. */
+  clean: boolean | null;
+  alone: number;
+  review: boolean;
+}
+
 export interface Drain {
   register: string;
   amount: number;
@@ -198,6 +231,7 @@ export interface Drain {
 
 export type Ref =
   | { agent: 'player' }
+  | { agent: 'thief' }
   | { agent: 'stocker'; id: string }
   | { station: string }
   | { customer: number }
@@ -222,6 +256,12 @@ export type SimEvent =
   | { type: 'deliveryArrived'; station: string }
   | { type: 'deliveryHonk'; station: string }
   | { type: 'deliveryDone'; station: string; amount: number; tip: number; complete: boolean }
+  | { type: 'thiefGrab' }
+  /** `amount`: the bounty, or what got away; `cash`: Cash Pile money returned or lost. */
+  | { type: 'robberyDone'; caught: boolean; amount: number; cash: number }
+  | { type: 'inspectorWarning' }
+  | { type: 'inspectorMark'; clean: boolean }
+  | { type: 'inspection'; review: boolean; messes: number; loose: number; amount: number }
   | { type: 'tutorialDone' }
   | { type: 'complete' };
 
@@ -271,6 +311,12 @@ export interface World {
   arrivalTimer: number;
   /** Seconds until the next Delivery car; null until Deliveries unlock (rolled then). */
   carWait: number | null;
+  /** Seconds until the next Robbery or Inspector visit; null while one runs or before they unlock. */
+  visitWait: number | null;
+  thief: Thief | null;
+  inspector: Inspector | null;
+  /** Thief Pan: the game freezes while the camera glides to the Thief and holds. */
+  thiefPan: { t: number; duration: number } | null;
   tutorial: { done: boolean; actions: Set<string> };
   complete: boolean;
   atOffice: boolean;
@@ -331,6 +377,10 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
     pan: null,
     arrivalTimer: 0,
     carWait: null,
+    visitWait: null,
+    thief: null,
+    inspector: null,
+    thiefPan: null,
     tutorial: { done: tutorialDone || map.tutorial.length === 0, actions: new Set() },
     complete: false,
     atOffice: false,
@@ -357,6 +407,12 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
 /** One fixed timestep. `w.events` holds only this step's events afterwards. */
 export function step(w: World, intents: Intents): void {
   w.events = [];
+  if (w.thiefPan) {
+    w.thiefPan.t += DT;
+    const frozen = w.thiefPan.t < thiefFreeze();
+    if (w.thiefPan.t >= w.thiefPan.duration) w.thiefPan = null;
+    if (frozen) return;
+  }
   w.t += DT;
   applyCommands(w, intents);
   if (w.pan) {

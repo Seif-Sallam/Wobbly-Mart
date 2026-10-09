@@ -12,7 +12,7 @@ Arcade-idle store game, Three.js + TypeScript, static on GitHub Pages. Glossary:
 ## Conventions
 
 - `camelCase` / `PascalCase` / `UPPER_CASE`, `kebab-case.ts` files, `strict`, no `any`.
-- No magic numbers in `sim/`: they live in `catalog/`, map data or `src/sim/tuning.ts`. Feel/juice numbers live in `src/feel.ts`; the sim reads it only for the movement ramp, Area Pan and Cash Pile drain timings. Colours only in `src/palette.ts` (`PALETTE` + `SHADES`).
+- No magic numbers in `sim/`: they live in `catalog/`, map data or `src/sim/tuning.ts`. Feel/juice numbers live in `src/feel.ts`; the sim reads it only for the movement ramp, Area Pan, Thief Pan and Cash Pile drain timings. Colours only in `src/palette.ts` (`PALETTE` + `SHADES`).
 - Minimal code: reuse or extend before adding; never duplicate; light comments.
 - Runtime deps are only `three`, `preact`, `nipplejs`, `howler`, `lil-gui`. Another one needs the owner's OK in the PR.
 - Tests: Vitest on `sim/` and the validator only — broad flowing tests, no mocking our own code.

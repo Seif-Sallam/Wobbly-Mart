@@ -43,3 +43,19 @@ export function renderThumbs(items: string[], stations: string[], characters: st
 export const icon = (name: string): HTMLCanvasElement | undefined => icons.get(name);
 
 export const iconUrl = (name: string): string => icons.get(name)?.toDataURL() ?? '';
+
+/** An emoji drawn as an icon the same size as the model thumbnails (Event visitors). */
+export function emojiUrl(emoji: string): string {
+  let c = icons.get(emoji);
+  if (!c) {
+    c = document.createElement('canvas');
+    c.width = c.height = SIZE;
+    const g = c.getContext('2d') as CanvasRenderingContext2D;
+    g.font = `${SIZE * 0.78}px system-ui, sans-serif`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(emoji, SIZE / 2, SIZE * 0.56);
+    icons.set(emoji, c);
+  }
+  return c.toDataURL();
+}

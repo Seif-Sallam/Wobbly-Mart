@@ -53,7 +53,7 @@ function createStation(w: World, id: string, def: StationDef): void {
     }
     case 'stocker': {
       const [x, z] = boxCentre(place.box);
-      w.stockers.push({ id, x, z, vx: 0, vz: 0, ...newCarrier(), role: 'auto', job: null, rethink: 0 });
+      w.stockers.push({ id, x, z, vx: 0, vz: 0, ...newCarrier(), role: 'auto', job: null, rethink: 0, leftover: null });
       break;
     }
     case 'area':

@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import { cornerShop } from '../../maps/corner-shop';
-import { createWorld, step, type Intents } from './world';
+import { createWorld, DT, step, type Intents } from './world';
 import { completion, customerCap, own, padVisible, refreshFreeStations } from './economy';
 import { moveIntent } from './bot';
 import { snapshot } from './save';
-import type { Customer, ShelfStation, World } from './world';
+import type { Customer, ProducerStation, ShelfStation, World } from './world';
 import { distToBox } from './geometry';
 import { TUNING } from './tuning';
 
@@ -150,6 +150,12 @@ describe('Map 1 opening loop', () => {
 
 const shelvesOf = (w: World, product: string): ShelfStation[] =>
   [...w.stations.values()].filter((s): s is ShelfStation => s.kind === 'shelf' && s.product === product);
+const producerAt = (w: World, id: string): ProducerStation => {
+  const st = w.stations.get(id);
+  if (st?.kind !== 'producer') throw new Error(`${id} is not a bought Producer`);
+  return st;
+};
+
 const stock = (w: World, product: string, items: number) => shelvesOf(w, product).forEach((s) => (s.items = items));
 
 /** Steps until a new Customer walks in, returning it. */
@@ -164,7 +170,7 @@ function nextCustomer(w: World): Customer {
 }
 
 describe('Map 1 fully built', () => {
-  test('two Shelves, patience, Messes, the Trash hold, Stack tipping and Stocker roles', () => {
+  test('two Shelves, patience, Messes, the Trash hold, Stack tipping, Stocker roles and priorities', () => {
     const w = createWorld(cornerShop, null, 5, true);
     for (const id of Object.keys(cornerShop.pads)) own(w, id, false);
     refreshFreeStations(w);
@@ -335,14 +341,59 @@ describe('Map 1 fully built', () => {
     expect(sinks.machines.size).toBe(0);
     expect(shelvesOf(w, 'tomato').some((s) => s.items > 0)).toBe(true);
 
-    for (const p of products) stock(w, p, 10);
+    // eggs are wanted, so the Machines Stocker feeds the empty Coop; the Goods Stocker never takes a Machine job
+    const coop = producerAt(w, 'chicken_coop');
+    coop.input.tomato = coop.tray = 0;
     sinks.goods.clear();
-    const coop = w.stations.get('chicken_coop');
-    if (coop?.kind === 'producer') coop.input.tomato = 0;
     watch(20, () => {
-      for (const p of products) stock(w, p, 10);
+      for (const p of products) stock(w, p, p === 'egg' ? 3 : 10);
     });
     expect(sinks.goods.has('producer')).toBe(false); // it may finish a Shelf job, never take a Machine one
     expect([...sinks.machines]).toEqual(['producer']);
+
+    // 6. The Oven full of eggs and no flour: an Auto Stocker holding an egg fetches flour instead of freezing
+    const [auto] = w.stockers;
+    w.stockers = [auto];
+    Object.assign(auto, { role: 'auto', job: null, stack: ['egg'], leftover: null });
+    fillInputs();
+    for (const p of products) stock(w, p, p === 'bread' ? 0 : 10);
+    const oven = producerAt(w, 'oven');
+    Object.assign(oven, { input: { egg: 4, flour: 0 }, tray: 0, work: 0 });
+    producerAt(w, 'mill').tray = 4;
+    let held = 0;
+    let maxHeld = 0;
+    let flourAt = -1;
+    const follow = (seconds: number) => {
+      for (let i = 0; i < seconds * 60; i++) {
+        step(w, idle());
+        held = auto.stack.length && !auto.job ? held + DT : 0;
+        maxHeld = Math.max(maxHeld, held);
+        const flour = w.events.some((e) => e.type === 'transfer' && e.product === 'flour' && 'station' in e.to);
+        if (flour && flourAt < 0) flourAt = i / 60;
+      }
+    };
+    follow(60);
+    expect(flourAt).toBeGreaterThan(0);
+    expect(flourAt).toBeLessThan(30);
+    expect(auto.stack).not.toContain('egg');
+
+    // leftovers nothing needs go back on a Tray with room after 10 s, or in the Trash if no Tray takes them
+    fillInputs();
+    for (const p of products) stock(w, p, 10);
+    Object.assign(coop, { input: { tomato: 0 }, tray: 0, work: 0 });
+    auto.stack = ['egg', 'egg', 'tomato'];
+    auto.job = null;
+    let trashed: string[] = [];
+    for (let i = 0; i < 60 * 30 && auto.stack.length; i++) {
+      step(w, idle());
+      held = auto.stack.length && !auto.job ? held + DT : 0;
+      maxHeld = Math.max(maxHeld, held);
+      for (const e of w.events) if (e.type === 'trashed') trashed = [...trashed, e.product];
+    }
+    expect(auto.stack).toEqual([]);
+    expect(coop.tray).toBe(2);
+    expect(trashed).toEqual(['tomato']);
+    expect(w.loose.length).toBe(0);
+    expect(maxHeld).toBeLessThan(12);
   });
 });

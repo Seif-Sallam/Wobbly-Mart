@@ -1,7 +1,7 @@
 // Station visuals: one builder per model name. Each knows where its Items sit and how it moves while working.
 import * as THREE from 'three';
 import type { Box, Rot } from '../sim/map';
-import { clipsOf, model } from './assets';
+import { centred, clipsOf, model } from './assets';
 import { ITEM_SIZE } from '../../catalog/assets';
 import { PRODUCERS } from '../../catalog/producers';
 import { FEEL } from '../feel';
@@ -49,16 +49,6 @@ function playIdle(obj: THREE.Object3D, name: string, mixers: THREE.AnimationMixe
   action.time = Math.random() * c.duration;
   action.play();
   mixers.push(mixer);
-}
-
-/** Shifts a model so its footprint is centred on its own origin. */
-function centred(obj: THREE.Group): THREE.Group {
-  const c = new THREE.Box3().setFromObject(obj).getCenter(new THREE.Vector3());
-  obj.position.x -= c.x;
-  obj.position.z -= c.z;
-  const g = new THREE.Group();
-  g.add(obj);
-  return g;
 }
 
 /** Output on a dark pallet; Items piled 3 + 2 + 1. */
@@ -285,11 +275,11 @@ function build(name: string, w: number, d: number, v: StationVisual): void {
     case 'register':
       return buildCheckout(w, d, v);
     case 'office': {
-      const desk = model('desk', { fit: [w, d] });
+      const desk = centred(model('desk', { fit: [w, d] }));
       const top = new THREE.Box3().setFromObject(desk).max.y;
-      const screen = model('computer-screen');
+      const screen = centred(model('computer-screen'));
       screen.position.set(0, top, -0.15);
-      const chair = model('chair-desk');
+      const chair = centred(model('chair-desk'));
       chair.position.set(0, 0, -d / 2 - 0.35);
       v.body.add(desk, screen, chair);
       return;

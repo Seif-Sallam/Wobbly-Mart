@@ -45,7 +45,8 @@ export interface MapLayout {
 export type StationDef =
   | { kind: 'shelf'; product: string }
   | { kind: 'producer'; type: string }
-  | { kind: 'register'; queueLength: number }
+  /** `cashPileFlipped`: the Cash Pile sits at the counter's other end (when its usual end is against a wall). */
+  | { kind: 'register'; queueLength: number; cashPileFlipped?: boolean }
   | { kind: 'office' }
   | { kind: 'trash' }
   | { kind: 'cashier'; register: string }

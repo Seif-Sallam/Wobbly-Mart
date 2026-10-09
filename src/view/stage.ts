@@ -168,6 +168,14 @@ export class Stage {
     cam.updateProjectionMatrix();
   }
 
+  /** Floor point (x, z) under a screen position (CSS px). */
+  floorAt(cx: number, cy: number): [number, number] | null {
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(new THREE.Vector2((cx / innerWidth) * 2 - 1, -(cy / innerHeight) * 2 + 1), this.camera);
+    const hit = ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), new THREE.Vector3());
+    return hit ? [hit.x, hit.z] : null;
+  }
+
   /** Screen position (CSS px) of a world point. */
   toScreen(p: THREE.Vector3, out = new THREE.Vector2()): THREE.Vector2 {
     const v = p.clone().project(this.camera);

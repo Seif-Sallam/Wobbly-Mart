@@ -1,7 +1,10 @@
-// Keyboard and touch joystick → world-space move intent (screen-up is camera-relative); pinch, wheel and + − → zoom.
+// Keyboard, touch joystick and Tap Walk → world-space move intent (screen-up is camera-relative); pinch, wheel and
+// + − → zoom.
 import nipplejs from 'nipplejs';
 import { FEEL } from '../feel';
 import { PALETTE } from '../palette';
+import type { World } from '../sim/world';
+import { TapWalk } from './tap-walk';
 
 const YAW = (FEEL.cameraYawDeg * Math.PI) / 180;
 const RIGHT = { x: Math.cos(YAW), z: -Math.sin(YAW) };
@@ -17,6 +20,9 @@ export class Input {
   onEscape: () => void = () => {};
   /** Zoom shortcut: multiply the view size by this (> 1 shows more). */
   onZoom: (factor: number) => void = () => {};
+  /** A tap or click on the game (screen px); `double` = second tap in quick succession. */
+  onTap: (x: number, y: number, double: boolean) => void = () => {};
+  readonly tap = new TapWalk();
   enabled = true;
   private pinch = 0;
 
@@ -46,6 +52,7 @@ export class Input {
       { passive: true },
     );
     this.pinchZoom();
+    this.taps(zone);
     const manager = nipplejs.create({ zone, mode: 'dynamic', color: PALETTE.ink, size: 110 });
     manager.on('move', (e) => {
       this.firstKind ??= 'touch';
@@ -59,6 +66,39 @@ export class Input {
     manager.on('end', () => {
       this.joy = { x: 0, y: 0, active: false, force: 0 };
     });
+  }
+
+  /** Short, still presses on the game (not drags, not on the HUD or panels) are taps. */
+  private taps(zone: HTMLElement): void {
+    let down: { x: number; y: number; t: number; id: number } | null = null;
+    let pointers = 0;
+    let lastTap = -Infinity;
+    const onGame = (e: PointerEvent) => {
+      const el = e.target as HTMLElement;
+      return el instanceof HTMLCanvasElement || zone.contains(el);
+    };
+    addEventListener(
+      'pointerdown',
+      (e) => {
+        pointers++;
+        down =
+          pointers === 1 && onGame(e) ? { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId } : null;
+      },
+      true,
+    );
+    const up = (e: PointerEvent) => {
+      pointers = Math.max(0, pointers - 1);
+      const d = down;
+      if (!d || d.id !== e.pointerId) return;
+      down = null;
+      const now = performance.now();
+      if (now - d.t >= FEEL.tapMs || Math.hypot(e.clientX - d.x, e.clientY - d.y) >= FEEL.tapPx || this.pinch) return;
+      const double = now - lastTap < FEEL.doubleTapMs;
+      lastTap = now;
+      this.onTap(e.clientX, e.clientY, double);
+    };
+    addEventListener('pointerup', up, true);
+    addEventListener('pointercancel', up, true);
   }
 
   /** Two-finger pinch zooms; the joystick sleeps during it and a moment after. */
@@ -99,8 +139,14 @@ export class Input {
     return codes.some((c) => this.keys.has(c));
   }
 
-  /** World-space direction, length ≤ 1. */
-  move(): { x: number; z: number } {
+  /** World-space direction, length ≤ 1: the joystick or keys, else a Tap Walk (which any real push cancels). */
+  move(w: World): { x: number; z: number } {
+    const m = this.manual();
+    if (Math.hypot(m.x, m.z) > FEEL.tapCancelPush) this.tap.cancel();
+    return this.tap.target ? this.tap.move(w) : m;
+  }
+
+  private manual(): { x: number; z: number } {
     if (!this.enabled) return { x: 0, z: 0 };
     let sx = (this.has('KeyD', 'ArrowRight') ? 1 : 0) - (this.has('KeyA', 'ArrowLeft') ? 1 : 0);
     let sy = (this.has('KeyW', 'ArrowUp') ? 1 : 0) - (this.has('KeyS', 'ArrowDown') ? 1 : 0);
@@ -116,7 +162,11 @@ export class Input {
   }
 
   get sprint(): boolean {
-    return this.has('ShiftLeft', 'ShiftRight') || (this.joy.active && this.joy.force > FEEL.sprintForce);
+    return (
+      this.has('ShiftLeft', 'ShiftRight') ||
+      (this.joy.active && this.joy.force > FEEL.sprintForce) ||
+      (!!this.tap.target && this.tap.sprint)
+    );
   }
 
   get grab(): boolean {

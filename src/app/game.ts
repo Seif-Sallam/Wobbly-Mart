@@ -60,7 +60,7 @@ export class Game {
         // the view blends between the last two steps, however many run this frame
         this.view.beforeSteps();
         step(this.world, {
-          move: this.input.move(),
+          move: this.input.move(this.world),
           grab: this.input.grab,
           sprint: this.input.sprint,
           manualGrab: this.manualGrab,
@@ -73,6 +73,7 @@ export class Game {
       }
       if (steps === MAX_STEPS_PER_FRAME) this.acc = 0;
     }
+    this.view.walkTarget = this.input.tap.target;
     this.view.update(dt, this.acc / DT, events);
     this.onFrame(events, dt);
     this.stage.render(dt);

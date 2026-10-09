@@ -31,7 +31,7 @@ export const pads: Record<string, PadDef> = {
   area_3: { cost: 1100, requires: ['mill'], unlocks: { kind: 'area', area: 'area_3' } },
   bread_shelf: { cost: 450, requires: ['area_3'], unlocks: shelf('bread') },
   oven: { cost: 675, requires: ['bread_shelf'], unlocks: producer('oven') },
-  register_2: { cost: 600, requires: ['oven'], unlocks: { kind: 'register', queueLength: 6 } },
+  register_2: { cost: 600, requires: ['oven'], unlocks: { kind: 'register', queueLength: 6, cashPileFlipped: true } },
   cashier_2: { cost: 750, requires: ['register_2'], unlocks: { kind: 'cashier', register: 'register_2' } },
   stocker_2: { cost: 900, requires: ['mill_2'], unlocks: { kind: 'stocker' } },
   blender_2: { cost: 525, requires: ['oven'], unlocks: producer('blender') },

@@ -137,7 +137,7 @@ export class Sounds {
           break;
         }
         case 'mess':
-          this.sfx('grumble');
+          if (e.customer >= 0) this.sfx('grumble');
           this.sfx('splat');
           break;
         case 'messCleared':

@@ -19,6 +19,8 @@ export class Hud {
   private hint: HTMLElement;
   private shown = 0;
   private target = 0;
+  /** Last values written to the DOM: only changes are written. */
+  private drawn = { money: '', width: '', gold: false, arrows: [] as string[] };
   onGear: () => void = () => {};
 
   constructor(private readonly root: HTMLElement) {
@@ -60,12 +62,15 @@ export class Hud {
     const diff = this.target - this.shown;
     this.shown = Math.abs(diff) < 0.5 ? this.target : this.shown + diff * Math.min(1, dt * 12);
     this.drawMoney();
-    this.barFill.style.width = `${Math.round(completion * 100)}%`;
-    this.bar.classList.toggle('gold', completion >= 1);
+    const width = `${Math.round(completion * 100)}%`;
+    if (width !== this.drawn.width) this.barFill.style.width = this.drawn.width = width;
+    if (completion >= 1 !== this.drawn.gold) this.bar.classList.toggle('gold', (this.drawn.gold = completion >= 1));
   }
 
   private drawMoney(): void {
-    (this.money.querySelector('span') as HTMLElement).textContent = formatMoney(this.shown);
+    const text = formatMoney(this.shown);
+    if (text !== this.drawn.money)
+      (this.money.querySelector('span') as HTMLElement).textContent = this.drawn.money = text;
   }
 
   setArrows(list: EdgeArrow[]): void {
@@ -78,6 +83,9 @@ export class Hud {
     }
     this.arrows.forEach((el, i) => {
       const a = list[i];
+      const key = a ? `${Math.round(a.x)},${Math.round(a.y)},${a.angle.toFixed(2)},${a.icon}` : '';
+      if (key === this.drawn.arrows[i]) return;
+      this.drawn.arrows[i] = key;
       el.style.display = a ? '' : 'none';
       if (!a) return;
       el.style.transform = `translate(${a.x}px, ${a.y}px)`;

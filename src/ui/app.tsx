@@ -6,6 +6,7 @@ import type { MapDef } from '../sim/map';
 import type { Settings } from '../sim/save';
 import { canBuyUpgrade, nextLevelCost, upgradeVisible } from '../sim/economy';
 import { formatMoney } from '../format';
+import { FEEL } from '../feel';
 import { Logo } from './logo';
 import { CREDITS } from '../../catalog/credits';
 
@@ -24,6 +25,8 @@ export interface UiState {
   maps: { map: MapDef; completion: number; visited: boolean }[];
   comingSoon: number;
   settings: Settings;
+  /** Zoom in effect: the saved one or the device default (m across the short side). */
+  zoom: number;
 }
 
 export interface UiActions {
@@ -180,12 +183,45 @@ function HoldButton({ onDone, children }: { onDone: () => void; children: preact
   );
 }
 
-function Toggle(props: { label: string; on: boolean; set: (v: boolean) => void; actions: UiActions }) {
+function Toggle(props: {
+  label: string;
+  on: boolean;
+  set: (v: boolean) => void;
+  actions: UiActions;
+  /** Shown instead of On / Off. */
+  text?: string;
+  disabled?: boolean;
+}) {
   return (
-    <Btn class={`toggle ${props.on ? 'on' : ''}`} actions={props.actions} onClick={() => props.set(!props.on)}>
+    <Btn
+      class={`toggle ${props.on ? 'on' : ''}`}
+      actions={props.actions}
+      disabled={props.disabled}
+      onClick={() => props.set(!props.on)}
+    >
       <span>{props.label}</span>
-      <i>{props.on ? 'On' : 'Off'}</i>
+      <i>{props.text ?? (props.on ? 'On' : 'Off')}</i>
     </Btn>
+  );
+}
+
+/** Zoom slider: + (closer) on the left, − (farther) on the right; the view behind zooms live. */
+function ZoomRow({ s, a }: { s: UiState; a: UiActions }) {
+  return (
+    <label class="zoom-row">
+      <span>Zoom</span>
+      <b>+</b>
+      <input
+        type="range"
+        min={FEEL.zoomMin}
+        max={FEEL.zoomMax}
+        step={FEEL.zoomSlider}
+        value={s.zoom}
+        onPointerDown={(e) => e.stopPropagation()}
+        onInput={(e) => a.setSetting('zoom', Number((e.target as HTMLInputElement).value))}
+      />
+      <b>−</b>
+    </label>
   );
 }
 
@@ -194,6 +230,7 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
   return (
     <div class="panel">
       <h2>Settings</h2>
+      <ZoomRow s={s} a={a} />
       <Toggle label="Music" on={s.settings.music} set={(v) => a.setSetting('music', v)} actions={a} />
       <Toggle label="Sounds" on={s.settings.sounds} set={(v) => a.setSetting('sounds', v)} actions={a} />
       {!s.touch && (
@@ -204,6 +241,20 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
           actions={a}
         />
       )}
+      <Toggle
+        label="Frame rate"
+        on={s.settings.frameRate === 60 && !s.settings.batterySaver}
+        text={s.settings.batterySaver ? '30' : String(s.settings.frameRate)}
+        disabled={s.settings.batterySaver}
+        set={() => a.setSetting('frameRate', s.settings.frameRate === 60 ? 30 : 60)}
+        actions={a}
+      />
+      <Toggle
+        label="Battery saver"
+        on={s.settings.batterySaver}
+        set={(v) => a.setSetting('batterySaver', v)}
+        actions={a}
+      />
       <Btn actions={a} onClick={a.fullscreen}>
         Fullscreen
       </Btn>

@@ -1,9 +1,12 @@
-// Item transfers between a Carrier's Stack and Stations, with the pick-up / drop-off pacing.
-import type { Carrier, ProducerStation, Ref, Station, World } from './world';
+// Item transfers between a Carrier's Stack and Stations, with the pick-up / drop-off pacing, and Stack tipping.
+import type { Carrier, Mover, ProducerStation, Ref, Station, World } from './world';
 import { DT } from './world';
 import { workMultiplier } from './economy';
 import { TUNING } from './tuning';
 import { orderLine } from './events';
+import { addMess } from './cleaning';
+import { walkable } from './walk';
+import { nextRandom } from './rng';
 
 export function accepts(w: World, st: Station, product: string): boolean {
   if (st.kind === 'shelf') return st.product === product && st.items < TUNING.shelfCap;
@@ -109,4 +112,42 @@ export function transferTick(
   c.timer = 0;
   w.events.push({ type: 'transfer', product, from: { station: st.id }, to: who });
   return { picked: product };
+}
+
+/**
+ * Tipping (Player and Stockers): above the safe count a moving Stack now and then drops its top Item behind the
+ * carrier, as a Mess when it breaks, else a Loose Item. `share`: 1 sprinting, walkShare walking, 0 standing.
+ */
+export function tipDrops(
+  w: World,
+  c: Carrier & Mover,
+  who: Ref,
+  o: { cap: number; safe: number; share: number; jolt: number },
+): void {
+  const T = TUNING.tip;
+  c.dropCooldown = Math.max(0, c.dropCooldown - DT);
+  const n = c.stack.length;
+  if (o.share === 0 || n <= o.safe || c.dropCooldown > 0) return;
+  const k = (n - o.safe) / Math.max(1, o.cap - o.safe);
+  const jolt = 1 + T.joltBoost * Math.min(1, o.jolt);
+  if (nextRandom(w) >= T.maxRate * o.share * jolt * k ** T.curve * DT) return;
+  const dir = Math.hypot(c.vx, c.vz) || 1;
+  const side = (nextRandom(w) - 0.5) * T.dropSide;
+  // lands where someone can stand, so its Mess can be mopped
+  const [x, z] = walkable(
+    w,
+    c.x - (c.vx / dir) * T.dropBehind - (c.vz / dir) * side,
+    c.z - (c.vz / dir) * T.dropBehind + (c.vx / dir) * side,
+  );
+  const product = c.stack[n - 1];
+  c.stack.pop();
+  c.dropCooldown = T.cooldown;
+  const id = w.nextId++;
+  const breakChance = w.map.products[product]?.breakChance ?? 0;
+  if (breakChance > 0 && nextRandom(w) < breakChance) {
+    addMess(w, id, x, z, [product], -1);
+    return;
+  }
+  w.events.push({ type: 'transfer', product, from: who, to: { loose: id } });
+  w.loose.push({ id, x, z, product });
 }

@@ -1,6 +1,6 @@
 // Stockers (and the bot) pick carrying jobs by tier; demand runs from the Shelves back down the Producer chain.
 import type { Job, PickupStation, ProducerStation, ShelfStation, Station, Stocker, StockerRole, World } from './world';
-import { accepts, availableCount, transferTick, trayRoom } from './carry';
+import { accepts, availableCount, tipDrops, transferTick, trayRoom } from './carry';
 import { stockerCarry, stockerSpeed } from './economy';
 import { walkAgent, walkDistance } from './walk';
 import { messSlowdown } from './cleaning';
@@ -185,6 +185,8 @@ function updateStocker(w: World, s: Stocker): void {
     return;
   }
   if (!walkAgent(w, 'walker', s, { station: target }, stockerSpeed(w) * messSlowdown(w, s))) {
+    // walking tips a Stocker's Stack just as it does the Player's (they never sprint or jolt)
+    tipDrops(w, s, who, { cap, safe: TUNING.base.safe, share: TUNING.tip.walkShare, jolt: 0 });
     transferTick(w, s, null, who, { drop: () => false, pick: () => false, cap });
     return;
   }

@@ -33,13 +33,14 @@ export interface Carrier {
   dropInterval: number;
   at: string | null;
   fullWarned: boolean;
+  /** Seconds before the Stack may tip again. */
+  dropCooldown: number;
 }
 
 export type Player = Mover &
   Carrier & {
     trashHold: number;
     sprinting: boolean;
-    dropCooldown: number;
     jolt: number;
     /** Holding the Mop: nothing transfers until it is walked back to the Mop Stand. */
     mop: boolean;
@@ -334,6 +335,7 @@ export const newCarrier = (): Carrier => ({
   dropInterval: TUNING.dropInterval,
   at: null,
   fullWarned: false,
+  dropCooldown: 0,
 });
 
 /** An Opening: fresh from a save (or a new game when `save` is null). */
@@ -356,7 +358,6 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
       vz: 0,
       trashHold: 0,
       sprinting: false,
-      dropCooldown: 0,
       jolt: 0,
       mop: false,
       atMopStand: false,

@@ -28,6 +28,7 @@ export const SHADES = {
   flourBag: '#fff8ec',
   steam: '#e8e8e8',
   thumbGround: '#b9a77f',
+  floor: { light: '#ece3d4', dark: '#c2b6ab', grout: '#b3a79c' },
   splat: {
     tomato: '#d63c2f',
     egg: '#ffd54a',

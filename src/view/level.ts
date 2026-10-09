@@ -45,7 +45,7 @@ export class Level {
   readonly partyProps: THREE.Object3D[] = [];
   private doors: Door[] = [];
   private areas = new Map<string, AreaLook>();
-  private floor: THREE.InstancedMesh[] = [];
+  private floor = new THREE.Mesh();
   private props: { obj: THREE.Object3D; area?: string; party: boolean }[] = [];
 
   constructor(
@@ -116,27 +116,44 @@ export class Level {
     }
   }
 
+  /** Shop floor: one mesh of 1 m cells, a code-drawn checker anchored to the world, tinted per cell when locked. */
   private buildFloor(): void {
     const cells: Point[] = [];
     for (const f of this.L.floors)
       for (let x = Math.floor(f[0]); x < f[0] + f[2]; x++)
         for (let z = Math.floor(f[1]); z < f[1] + f[3]; z++) cells.push([x + 0.5, z + 0.5]);
-    const tile = model('market-floor', { fit: [1, 1] });
-    tile.updateMatrixWorld(true);
-    const m = new THREE.Matrix4();
-    tile.traverse((o) => {
-      const mesh = o as THREE.Mesh;
-      if (!mesh.isMesh) return;
-      const inst = new THREE.InstancedMesh(mesh.geometry, mesh.material, cells.length);
-      inst.receiveShadow = true;
-      cells.forEach(([x, z], i) => {
-        m.makeTranslation(x, 0.01, z).multiply(mesh.matrixWorld);
-        inst.setMatrixAt(i, m);
-        inst.setColorAt(i, new THREE.Color(1, 1, 1));
-      });
-      this.floor.push(inst);
-      this.group.add(inst);
+    const pos: number[] = [];
+    const uv: number[] = [];
+    const index: number[] = [];
+    const period = FLOOR.square * 2;
+    cells.forEach(([x, z], i) => {
+      for (const [dx, dz] of [
+        [-0.5, -0.5],
+        [0.5, -0.5],
+        [-0.5, 0.5],
+        [0.5, 0.5],
+      ]) {
+        pos.push(x + dx, FLOOR.y, z + dz);
+        uv.push((x + dx) / period, (z + dz) / period);
+      }
+      index.push(i * 4, i * 4 + 2, i * 4 + 1, i * 4 + 1, i * 4 + 2, i * 4 + 3);
     });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute(
+      'normal',
+      new THREE.Float32BufferAttribute(
+        cells.flatMap(() => [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]),
+        3,
+      ),
+    );
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(cells.length * 12).fill(1), 3));
+    g.setIndex(index);
+    const material = new THREE.MeshStandardMaterial({ map: floorTexture(), vertexColors: true, roughness: 0.9 });
+    this.floor = new THREE.Mesh(g, material);
+    this.floor.receiveShadow = true;
+    this.group.add(dynamic(this.floor));
     this.floorCells = cells;
   }
 
@@ -226,11 +243,13 @@ export class Level {
     }
     const locked = new THREE.Color(0.62, 0.55, 0.48);
     const white = new THREE.Color(1, 1, 1);
+    const colours = this.floor.geometry.attributes.color;
     this.floorCells.forEach(([x, z], i) => {
       const area = this.areaOf([x - 0.5, z - 0.5, 1, 1]);
-      for (const inst of this.floor) inst.setColorAt(i, area && !owned.has(area) ? locked : white);
+      const c = area && !owned.has(area) ? locked : white;
+      for (let k = 0; k < 4; k++) colours.setXYZ(i * 4 + k, c.r, c.g, c.b);
     });
-    for (const inst of this.floor) if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
+    colours.needsUpdate = true;
     for (const p of this.props) if (p.area && !p.party) p.obj.visible = owned.has(p.area);
     this.owned = owned;
   }
@@ -266,4 +285,32 @@ export class Level {
       }
     }
   }
+}
+
+/** Shop floor look (owner playtest 2: the old 0.5 m Kenney checker strobed while sprinting). */
+const FLOOR = { square: 1, grout: 0.05, y: 0.01, texture: 512, anisotropy: 16 };
+
+/** A 2 × 2 checker with grout lines; repeats every two squares. */
+function floorTexture(): THREE.CanvasTexture {
+  const size = FLOOR.texture;
+  const half = size / 2;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const g = canvas.getContext('2d') as CanvasRenderingContext2D;
+  for (let i = 0; i < 2; i++)
+    for (let j = 0; j < 2; j++) {
+      g.fillStyle = (i + j) % 2 ? SHADES.floor.dark : SHADES.floor.light;
+      g.fillRect(i * half, j * half, half, half);
+    }
+  const w = FLOOR.grout * half;
+  g.fillStyle = SHADES.floor.grout;
+  for (const k of [0, half, size]) {
+    g.fillRect(k - w / 2, 0, w, size);
+    g.fillRect(0, k - w / 2, size, w);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = FLOOR.anisotropy;
+  return tex;
 }

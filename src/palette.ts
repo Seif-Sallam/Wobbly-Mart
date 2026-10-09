@@ -51,6 +51,9 @@ export const SHADES = {
     bin: '#e86aa6',
   },
   cleanerCap: '#f2c230',
+  /** Robbery's Thief (beanie, shirt stripes) and the Health Inspector (suit, hat, glasses, clipboard). */
+  thief: { beanie: '#2d2a3a', stripe: '#f4efe4', shirt: '#2d2a3a' },
+  inspector: { suit: '#9aa0a8', hat: '#2b2b2b', glasses: '#2b2b2b', board: '#c17a43', paper: '#ffffff' },
   /** Delivery cars: a new one each time. */
   cars: ['#e0453a', '#3f7fd6', '#8e5cc4', '#2bb3a3', '#f2a03a', '#e86aa6', '#7fae3a'],
   customerTints: ['#ffffff', '#ffe3d6', '#e3f0ff', '#f0ffe3', '#fff4d6', '#f3e3ff'],

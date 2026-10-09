@@ -1,5 +1,5 @@
 // Messes and mopping: the Player's Mop, the Cleaner, and how a waiting Mess slows everyone.
-import type { Cleaner, Mess, World } from './world';
+import type { Cleaner, Mess, Mover, World } from './world';
 import { DT } from './world';
 import { cleanTime } from './economy';
 import { forgetPoint, inOwnedAreas, onGrid, walkAgent } from './walk';
@@ -18,6 +18,21 @@ export const inMess = (w: World, x: number, z: number): boolean =>
 /** Speed factor for the Player and Staff standing in a waiting Mess. */
 export const messSlowdown = (w: World, a: { x: number; z: number }): number =>
   inMess(w, a.x, a.z) ? TUNING.messSlowdownStaff : 1;
+
+/** Keeps a walker out of waiting Messes, sliding it around their edge, wherever it can still stand. */
+export function skirtMesses(w: World, a: Mover): void {
+  for (const m of w.messes) {
+    const dx = a.x - m.x;
+    const dz = a.z - m.z;
+    const d = Math.hypot(dx, dz);
+    if (d >= TUNING.messRadius || d < 1e-6) continue;
+    const x = m.x + (dx / d) * TUNING.messRadius - (dz / d) * TUNING.messSkirt;
+    const z = m.z + (dz / d) * TUNING.messRadius + (dx / d) * TUNING.messSkirt;
+    if (!onGrid(w, 'shopper', x, z)) continue;
+    a.x = x;
+    a.z = z;
+  }
+}
 
 function nearestMess(w: World, x: number, z: number): Mess | undefined {
   let best: Mess | undefined;

@@ -1,5 +1,5 @@
 // Map validator: runs in CI and live in the layout editor. Returns problems; an empty list means the map is valid.
-import type { Box, MapDef, StationDef } from './map';
+import type { Box, EventDef, MapDef, StationDef } from './map';
 import { stationModel } from './map';
 import { boxGap, boxesOverlap, frontPoint } from './geometry';
 import { TUNING } from './tuning';
@@ -60,7 +60,7 @@ export function validateMap(
   for (const id of map.start.owned) if (!ids.has(id)) out.push({ id, message: 'start owns an unknown id' });
   for (const [id, pad] of Object.entries(map.pads)) pad.requires.forEach((r) => checkReq(id, r));
   for (const [id, f] of Object.entries(map.freeStations)) f.requires.forEach((r) => checkReq(id, r));
-  for (const [id, e] of Object.entries(map.events)) e?.requires.forEach((r) => checkReq(id, r));
+  for (const [id, e] of Object.entries(map.events) as [string, EventDef][]) e.requires.forEach((r) => checkReq(id, r));
   for (const [id, up] of Object.entries(map.upgrades)) {
     up.requires.forEach((r) => checkReq(id, r));
     if (!FIXED_TARGETS.has(up.target) && !map.producers[up.target])

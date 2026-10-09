@@ -17,6 +17,17 @@ export class Character {
   private cap: THREE.Mesh[] = [];
 
   hatColour: string;
+  /** Height of the model's top (m), for placing things on its head. */
+  readonly top: number;
+
+  /** Puts parts (placed in the model's frame) on it; `onHead` ones ride the animated head bone so it doesn't bob through them. */
+  wear(parts: THREE.Object3D[], onHead: boolean): void {
+    this.visual.add(...parts);
+    const head = onHead ? this.visual.getObjectByName('head') : null;
+    if (!head) return;
+    this.visual.updateMatrixWorld(true);
+    for (const p of parts) head.attach(p);
+  }
 
   setHat(colour: string): void {
     if (colour === this.hatColour) return;
@@ -28,21 +39,14 @@ export class Character {
     this.visual = model(name, { tint: opts.tint });
     this.visual.traverse((o) => (o.castShadow = false));
     this.root.add(this.visual);
+    this.top = new THREE.Box3().setFromObject(this.visual).max.y;
     if (opts.hat) {
       const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.12, 12), paletteMaterial(opts.hat));
       const brim = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.03, 0.2), paletteMaterial(opts.hat));
-      const h = new THREE.Box3().setFromObject(this.visual).max.y;
-      cap.position.y = h + 0.05;
-      brim.position.set(0, h, 0.17);
-      this.visual.add(cap, brim);
+      cap.position.y = this.top + 0.05;
+      brim.position.set(0, this.top, 0.17);
+      this.wear([cap, brim], true);
       this.cap = [cap, brim];
-      // Ride the animated head bone, or the head bobs through the cap.
-      const head = this.visual.getObjectByName('head');
-      if (head) {
-        this.visual.updateMatrixWorld(true);
-        head.attach(cap);
-        head.attach(brim);
-      }
     }
     this.mixer = new THREE.AnimationMixer(this.visual);
     this.hatColour = opts.hat ?? '';

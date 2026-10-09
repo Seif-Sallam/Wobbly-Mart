@@ -184,7 +184,9 @@ export const customerCap = (w: World): number =>
 export function cashPilePoint(w: World, register: string): Point {
   const place = w.stations.get(register) ?? w.map.layout.places[register];
   const [long, depth] = footprint(place.box, place.rot);
-  return frontPoint(place.box, place.rot, -depth / 2, long / 2 + TUNING.cashPileOffset);
+  const def = w.map.pads[register]?.unlocks;
+  const end = def?.kind === 'register' && def.cashPileFlipped ? -1 : 1;
+  return frontPoint(place.box, place.rot, -depth / 2, end * (long / 2 + TUNING.cashPileOffset));
 }
 
 // ---------- Completion

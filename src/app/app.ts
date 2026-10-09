@@ -45,10 +45,9 @@ const EDGE_MARGIN = 44;
 const WIPE_SECONDS = 450;
 const TITLE_PAN_SPEED = 0.12;
 const SCENERY_PEOPLE = 4;
-const TITLE_FPS = 30;
 const SAVER_FPS = 30;
-/** A display frame this far into the frame-cap interval is drawn (screens don't tick exactly at the cap). */
-const FRAME_EARLY = 0.8;
+/** How quickly the measured screen tick follows changes (it varies with ProMotion and throttling). */
+const TICK_FOLLOW = 0.05;
 
 const isIos =
   /iP(hone|ad|od)/.test(navigator.userAgent) &&
@@ -77,7 +76,10 @@ export class App {
   private seenPads = new Set<string>();
   /** Paused game: draw one more frame (something behind the overlay changed). */
   private redraw = true;
-  private lastDraw = 0;
+  /** Measured time between screen ticks (ms) and ticks seen: a frame cap draws every Nth tick, evenly paced. */
+  private tickMs = 1000 / 60;
+  private lastTick = 0;
+  private ticks = 0;
   private officeKey = '';
 
   constructor() {
@@ -148,14 +150,16 @@ export class App {
       requestAnimationFrame(loop);
       const game = this.game;
       if (!game) return;
-      const fps =
-        this.ui.screen === 'title' ? TITLE_FPS : this.settings.batterySaver ? SAVER_FPS : this.settings.frameRate;
-      if (now - this.lastDraw < (1000 / fps) * FRAME_EARLY) return;
+      const gap = now - this.lastTick;
+      this.lastTick = now;
+      if (gap > 0 && gap < 100) this.tickMs += (gap - this.tickMs) * TICK_FOLLOW;
+      const cap = this.settings.batterySaver ? SAVER_FPS : this.settings.frameCap;
+      const every = cap === 'screen' ? 1 : Math.max(1, Math.round(1000 / cap / this.tickMs));
+      if (++this.ticks % every) return;
       const still = this.ui.screen === 'game' && game.paused && !this.editing;
       if (still && !this.redraw && !this.stage.zooming) return;
       this.redraw = false;
-      this.lastDraw = now;
-      game.frame(now, fps);
+      game.frame(now, 1000 / (this.tickMs * every));
     };
     requestAnimationFrame(loop);
     Object.assign(window, { app: this, game: this.game });

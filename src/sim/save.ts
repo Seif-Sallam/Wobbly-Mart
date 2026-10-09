@@ -15,7 +15,8 @@ export interface Settings {
   manualGrab: boolean;
   /** Metres across the screen's short side; null = the device default. */
   zoom: number | null;
-  frameRate: 60 | 30;
+  /** Frame cap: the screen's own rate, or 60 / 30 fps to save battery. */
+  frameCap: 'screen' | 60 | 30;
   /** Forces 30 fps, pixel ratio 1 and hard shadows. */
   batterySaver: boolean;
 }
@@ -25,7 +26,7 @@ export const DEFAULT_SETTINGS: Settings = {
   sounds: true,
   manualGrab: false,
   zoom: null,
-  frameRate: 60,
+  frameCap: 'screen',
   batterySaver: false,
 };
 

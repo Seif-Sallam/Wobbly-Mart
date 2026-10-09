@@ -40,6 +40,17 @@ export const SHADES = {
   } as Record<string, string>,
   /** Stocker caps by role; the Office role chips match. */
   roleCaps: { auto: '#e0453a', goods: '#8e5cc4', machines: '#3f7fd6' },
+  /** Cleaning fixtures: janitor cart, its posts and spray bottle, WET sign, mop clamp, clean ring, stink, pedal bin. */
+  cleaning: {
+    cart: '#3d7fd6',
+    metal: '#9aa3ad',
+    spray: '#2bb3a3',
+    sign: '#f2c230',
+    ring: '#7fc7e8',
+    stink: '#7fae3a',
+    bin: '#e86aa6',
+  },
+  cleanerCap: '#f2c230',
   customerTints: ['#ffffff', '#ffe3d6', '#e3f0ff', '#f0ffe3', '#fff4d6', '#f3e3ff'],
 } as const;
 

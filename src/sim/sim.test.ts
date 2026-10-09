@@ -112,8 +112,8 @@ describe('Map 1 opening loop', () => {
     run(w, 1.2);
     expect(w.money).toBeCloseTo(cash);
 
-    // Completion counts bought Pads and Upgrade levels: 3 of 79
-    expect(completion(w)).toBe(3 / 79);
+    // Completion counts bought Pads and Upgrade levels: 3 of 80
+    expect(completion(w)).toBe(3 / 80);
 
     // The tutorial follows along without blocking anything
     expect(w.tutorial.done).toBe(false);

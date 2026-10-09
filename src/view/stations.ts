@@ -180,6 +180,7 @@ function sails(len: number): THREE.Group {
     hub.add(arm);
   }
   cyl(hub, 0.1, 0.12, 'woodDark', 0, -0.06).rotation.x = Math.PI / 2;
+  mergeStatic(hub);
   return hub;
 }
 
@@ -236,6 +237,7 @@ function oven(w: number, d: number, v: StationVisual): void {
 function blender(w: number, d: number, v: StationVisual): void {
   const top = counter(w, d, v);
   const b = centred(model('kitchen-blender', { height: 1.3 }));
+  mergeStatic(b);
   const bx = 0.06 * w;
   b.position.set(bx, top, 0);
   v.body.add(dynamic(b));

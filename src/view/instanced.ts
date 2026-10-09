@@ -1,5 +1,7 @@
-// Draws many copies of a (multi-mesh) model with one InstancedMesh per sub-mesh: Items and Money bills.
+// Draws many copies of a (multi-mesh) model with one InstancedMesh per material: Items, Money bills, plants. Animals
+// keep their own animation but are drawn the same way (LiveInstances).
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { model } from './assets';
 import { ITEM_SIZE } from '../../catalog/assets';
 import { paletteMaterial } from './materials';
@@ -16,10 +18,7 @@ export class InstancedModel {
     parent: THREE.Object3D,
     shadows = true,
   ) {
-    source.updateMatrixWorld(true);
-    source.traverse((o) => {
-      const m = o as THREE.Mesh;
-      if (!m.isMesh) return;
+    for (const m of byMaterial(source)) {
       const mesh = new THREE.InstancedMesh(m.geometry, m.material, max);
       mesh.castShadow = shadows;
       mesh.receiveShadow = true;
@@ -27,7 +26,7 @@ export class InstancedModel {
       mesh.count = 0;
       parent.add(mesh);
       this.parts.push({ mesh, local: m.matrixWorld.clone() });
-    });
+    }
   }
 
   begin(): void {
@@ -44,6 +43,71 @@ export class InstancedModel {
     for (const p of this.parts) {
       p.mesh.count = this.count;
       p.mesh.instanceMatrix.needsUpdate = true;
+    }
+  }
+}
+
+/** A model's sub-meshes with the same material merged into one (fewer draw calls per copy). */
+function byMaterial(source: THREE.Object3D): THREE.Mesh[] {
+  source.updateMatrixWorld(true);
+  const groups = new Map<string, THREE.Mesh[]>();
+  source.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh || Array.isArray(m.material)) return;
+    const attrs = Object.keys(m.geometry.attributes).sort().join();
+    const key = `${m.material.uuid}|${attrs}|${m.geometry.index ? 'i' : 'n'}`;
+    groups.set(key, [...(groups.get(key) ?? []), m]);
+  });
+  return [...groups.values()].flatMap((list) => {
+    if (list.length === 1) return list;
+    const merged = mergeGeometries(list.map((m) => m.geometry.clone().applyMatrix4(m.matrixWorld)));
+    return merged ? [new THREE.Mesh(merged, list[0].material)] : list;
+  });
+}
+
+/** Animated copies (each moved by its own mixer) drawn as one InstancedMesh per part, from the parts' live matrices. */
+export class LiveInstances {
+  private parts = new Map<string, { mesh: THREE.InstancedMesh; sources: THREE.Mesh[] }>();
+
+  constructor(
+    private readonly parent: THREE.Object3D,
+    private readonly max: number,
+  ) {}
+
+  /** Takes over drawing every mesh under `obj`; it keeps animating, hidden. */
+  adopt(obj: THREE.Object3D): void {
+    obj.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || Array.isArray(m.material)) return;
+      const key = `${m.geometry.uuid}|${m.material.uuid}`;
+      let part = this.parts.get(key);
+      if (!part) {
+        const mesh = new THREE.InstancedMesh(m.geometry, m.material, this.max);
+        mesh.castShadow = m.castShadow;
+        mesh.receiveShadow = true;
+        mesh.frustumCulled = false;
+        mesh.count = 0;
+        this.parent.add(mesh);
+        this.parts.set(key, (part = { mesh, sources: [] }));
+      }
+      if (part.sources.length < this.max) part.sources.push(m);
+      m.visible = false;
+    });
+  }
+
+  clear(): void {
+    for (const p of this.parts.values()) p.sources = [];
+    this.update();
+  }
+
+  update(): void {
+    for (const { mesh, sources } of this.parts.values()) {
+      sources.forEach((m, i) => {
+        m.updateWorldMatrix(true, false);
+        mesh.setMatrixAt(i, m.matrixWorld);
+      });
+      mesh.count = sources.length;
+      mesh.instanceMatrix.needsUpdate = true;
     }
   }
 }

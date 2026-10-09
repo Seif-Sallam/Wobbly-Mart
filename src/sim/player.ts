@@ -4,7 +4,7 @@ import { cashPilePoint, cleanTime, own, padRemaining, playerSpeed, safeCount, st
 import { messSlowdown, mopAt } from './cleaning';
 import { tipDrops, transferTick } from './carry';
 import { boxCentre, distToBox, pushOutOfBox } from './geometry';
-import { inOwnedAreas } from './walk';
+import { inOwnedAreas, walkable } from './walk';
 import { TUNING } from './tuning';
 import { FEEL } from '../feel';
 
@@ -59,10 +59,13 @@ function move(w: World, intents: Intents): void {
     p.z = oz;
     p.vz = 0;
   }
+  const inSolid = () => w.nav.solids.some((b) => distToBox(p.x, p.z, b) < R - TUNING.collisionSlack);
   for (const b of w.nav.solids) pushOutOfBox(p, b, R);
-  if (!confined(w, p.x, p.z) || w.nav.solids.some((b) => distToBox(p.x, p.z, b) < R - TUNING.collisionSlack)) {
+  if (!confined(w, p.x, p.z) || inSolid()) {
     p.x = ox;
     p.z = oz;
+    // a fixture bought on top of the Player, pushed out past the store's edge: step to the nearest open floor
+    if (inSolid()) [p.x, p.z] = walkable(w, ox, oz);
   }
 }
 

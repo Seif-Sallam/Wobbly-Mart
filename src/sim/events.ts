@@ -12,7 +12,7 @@ const E = TUNING.events;
 export function addPickups(w: World): void {
   w.map.layout.carSpots.forEach((s, i) => {
     const id = `pickup_${i + 1}`;
-    w.stations.set(id, { id, kind: 'pickup', box: s.pickup, car: s.car, rot: 0, delivery: null, wait: null });
+    w.stations.set(id, { id, kind: 'pickup', box: s.pickup, car: s.car, rot: 0, delivery: null });
   });
 }
 
@@ -22,24 +22,27 @@ const unlocked = (w: World, kind: EventKind): boolean =>
 const pickups = (w: World): PickupStation[] =>
   [...w.stations.values()].filter((s): s is PickupStation => s.kind === 'pickup');
 
-const carGap = (w: World): number => E.deliveryGap[0] + nextRandom(w) * (E.deliveryGap[1] - E.deliveryGap[0]);
+const between = (w: World, [lo, hi]: readonly [number, number]): number => lo + nextRandom(w.eventRng) * (hi - lo);
+
+/** Cars that may wait at once: one, plus one per Stocker count reached in carStockers. */
+const carCap = (w: World): number => 1 + E.carStockers.filter((n) => w.stockers.length >= n).length;
 
 /** 1–3 Products on sale, the same count of each, the total within the range for the Areas bought. */
 function order(w: World): Delivery | null {
   const forSale = productsForSale(w);
   if (!forSale.length) return null;
-  const n = randomInt(w, 1, Math.min(E.orderProducts, forSale.length));
+  const n = randomInt(w.eventRng, 1, Math.min(E.orderProducts, forSale.length));
   const areas = Object.keys(w.map.layout.areas).filter((a) => w.owned.has(a)).length;
   const [lo, hi] = E.deliveryItems[Math.min(Math.max(1, areas), E.deliveryItems.length) - 1];
   const least = Math.max(1, Math.ceil(lo / n));
-  const each = randomInt(w, least, Math.max(least, Math.floor(hi / n)));
+  const each = randomInt(w.eventRng, least, Math.max(least, Math.floor(hi / n)));
   return {
-    order: shuffle(w, forSale)
+    order: shuffle(w.eventRng, forSale)
       .slice(0, n)
       .map((product) => ({ product, want: each, got: 0 })),
     t: 0,
     time: E.deliveryTime + E.deliveryPerItem * each * n,
-    look: nextRandom(w),
+    look: nextRandom(w.eventRng),
     honked: false,
   };
 }
@@ -52,20 +55,13 @@ function leave(w: World, st: PickupStation, d: Delivery, complete: boolean): voi
   w.money += amount + tip;
   w.events.push({ type: 'deliveryDone', station: st.id, amount, tip, complete });
   st.delivery = null;
-  st.wait = carGap(w);
 }
 
 function updateDeliveries(w: World): void {
-  for (const st of pickups(w)) {
+  const spots = pickups(w);
+  for (const st of spots) {
     const d = st.delivery;
-    if (!d) {
-      st.wait = (st.wait ?? carGap(w)) - DT;
-      if (st.wait > 0 || w.t < E.quietStart) continue;
-      st.delivery = order(w);
-      st.wait = st.delivery ? null : carGap(w);
-      if (st.delivery) w.events.push({ type: 'deliveryArrived', station: st.id });
-      continue;
-    }
+    if (!d) continue;
     d.t += DT;
     if (d.order.every((l) => l.got >= l.want)) leave(w, st, d, true);
     else if (d.t >= d.time) leave(w, st, d, false);
@@ -74,6 +70,18 @@ function updateDeliveries(w: World): void {
       w.events.push({ type: 'deliveryHonk', station: st.id });
     }
   }
+  w.carWait = (w.carWait ?? between(w, E.deliveryGap)) - DT;
+  if (w.carWait > 0 || w.t < E.quietStart) return;
+  const parked = spots.filter((s) => s.delivery).length;
+  const free = spots.find((s) => !s.delivery);
+  const cap = Math.min(carCap(w), spots.length);
+  w.carWait = between(w, E.deliveryGap);
+  if (!free || parked >= cap) return;
+  free.delivery = order(w);
+  if (!free.delivery) return;
+  w.events.push({ type: 'deliveryArrived', station: free.id });
+  // now and then another car follows soon, when the Stockers allow one more
+  if (parked + 1 < cap && nextRandom(w.eventRng) < E.extraCarChance) w.carWait = between(w, E.extraCarGap);
 }
 
 export function updateEvents(w: World): void {

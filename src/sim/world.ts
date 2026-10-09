@@ -167,8 +167,6 @@ export interface PickupStation extends StationBase {
   /** The Car Spot's bay, where the car parks. */
   car: Box;
   delivery: Delivery | null;
-  /** Seconds until the next car while free; null until Deliveries unlock (rolled then). */
-  wait: number | null;
 }
 
 export type Station = ShelfStation | ProducerStation | RegisterStation | SimpleStation | PickupStation;
@@ -249,6 +247,8 @@ export interface World {
   map: MapDef;
   t: number;
   rng: number;
+  /** Events roll on their own stream, so they never shift Customers, tipping or Staff. */
+  eventRng: { rng: number };
   money: number;
   owned: Set<string>;
   paid: Record<string, number>;
@@ -269,6 +269,8 @@ export interface World {
   events: SimEvent[];
   pan: { area: string; t: number; duration: number } | null;
   arrivalTimer: number;
+  /** Seconds until the next Delivery car; null until Deliveries unlock (rolled then). */
+  carWait: number | null;
   tutorial: { done: boolean; actions: Set<string> };
   complete: boolean;
   atOffice: boolean;
@@ -278,6 +280,7 @@ export interface World {
 }
 
 export const DT = 1 / TUNING.tickRate;
+const EVENT_SEED = 0x5eed;
 
 export const newCarrier = (): Carrier => ({
   stack: [],
@@ -295,6 +298,7 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
     map: { ...map, layout: { ...map.layout, places: { ...map.layout.places } } },
     t: 0,
     rng: seed,
+    eventRng: { rng: seed ^ EVENT_SEED },
     money: map.start.money,
     owned: new Set(),
     paid: {},
@@ -326,6 +330,7 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
     events: [],
     pan: null,
     arrivalTimer: 0,
+    carWait: null,
     tutorial: { done: tutorialDone || map.tutorial.length === 0, actions: new Set() },
     complete: false,
     atOffice: false,

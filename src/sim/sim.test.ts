@@ -177,6 +177,7 @@ function nextCustomer(w: World): Customer {
 describe('Map 1 fully built', () => {
   test('two Shelves, patience, Messes, the Trash hold, Stack tipping, Stocker roles and priorities', () => {
     const w = createWorld(cornerShop, null, 5, true);
+    w.map.events = {}; // Deliveries have their own test
     for (const id of Object.keys(cornerShop.pads)) own(w, id, false);
     refreshFreeStations(w);
     const staff = w.stockers;
@@ -378,7 +379,6 @@ describe('Map 1 fully built', () => {
     };
     for (const p of products) stock(w, p, 10);
     stock(w, 'tomato', 0);
-    for (const st of w.stations.values()) if (st.kind === 'pickup') st.delivery = null; // cars: see Deliveries
     const sinks = { goods: new Set<string>(), machines: new Set<string>() };
     const watch = (seconds: number, refill: () => void) => {
       for (let i = 0; i < seconds * 60; i++) {
@@ -483,9 +483,14 @@ describe('Deliveries', () => {
     refreshFreeStations(w);
     const cars = () => [...w.stations.values()].filter((s): s is PickupStation => s.kind === 'pickup');
     expect(cars().length).toBe(3);
+    let maxParked = 0;
+    const tick = () => {
+      step(w, idle());
+      maxParked = Math.max(maxParked, cars().filter((s) => s.delivery).length);
+    };
     const until = (seconds: number, done: (e: SimEvent) => boolean): SimEvent | undefined => {
       for (let i = 0; i < seconds * 60; i++) {
-        step(w, idle());
+        tick();
         const e = w.events.find(done);
         if (e) return e;
       }
@@ -495,7 +500,7 @@ describe('Deliveries', () => {
       Object.assign(w.player, { x: x + bw / 2, z: 51.5, vx: 0, vz: 0 });
     };
 
-    // nothing parks in the first 3 min; then each free Car Spot gets a car every 3–4 min
+    // nothing parks in the first 3 min; then a car every 3–4 min
     expect(until(300, (e) => e.type === 'deliveryArrived')).toBeDefined();
     expect(w.t).toBeGreaterThanOrEqual(180);
     expect(w.t).toBeLessThanOrEqual(241);
@@ -525,7 +530,7 @@ describe('Deliveries', () => {
     expect(car.delivery).toBeNull();
 
     // a partial order waits, honks at 15 s left, then pays plain Sale Price for what it got
-    for (let i = 0; i < 60 * 300 && !cars().some((s) => s.delivery); i++) step(w, idle());
+    for (let i = 0; i < 60 * 300 && !cars().some((s) => s.delivery); i++) tick();
     const late = cars().find((s) => s.delivery) as PickupStation;
     const line = late.delivery?.order[0] ?? { product: '', want: 0 };
     w.player.stack = [line.product];
@@ -534,6 +539,7 @@ describe('Deliveries', () => {
     const left = until(20, (e) => e.type === 'deliveryDone' && e.station === late.id);
     expect(left?.type === 'deliveryDone' && left.amount).toBe(w.map.products[line.product].price);
     expect(left?.type === 'deliveryDone' && !left.complete && left.tip === 0).toBe(true);
+    expect(maxParked).toBe(1); // no Stockers: one car at a time
 
     // a Goods Stocker fills an order by itself while the Shelves stay full
     w.player.stack = [];
@@ -550,10 +556,26 @@ describe('Deliveries', () => {
       stock(w, 'egg', 10);
       coop.tray = 4;
       bed.plants.fill(0);
-      step(w, idle());
+      tick();
       filled = w.events.find((e) => e.type === 'deliveryDone' && e.complete);
     }
     expect(filled).toBeDefined();
+    expect(maxParked).toBeLessThanOrEqual(2); // one Stocker: a second car may come
+
+    // three Stockers: now and then a car follows soon after the last (before the usual 3 min), never every time
+    own(w, 'stocker_3', false);
+    own(w, 'stocker_4', false);
+    maxParked = 0;
+    const arrivals: number[] = [];
+    for (let i = 0; i < 60 * 3600; i++) {
+      tick();
+      if (w.events.some((e) => e.type === 'deliveryArrived')) arrivals.push(w.t);
+    }
+    const soon = arrivals.filter((t, i) => i > 0 && t - arrivals[i - 1] < 180).length;
+    expect(arrivals.length).toBeGreaterThan(10);
+    expect(soon).toBeGreaterThan(0);
+    expect(soon).toBeLessThan(arrivals.length / 2);
+    expect(maxParked).toBeLessThanOrEqual(3);
   });
 });
 

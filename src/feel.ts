@@ -121,6 +121,14 @@ export const FEEL = {
   /** Order card height over the car (m) and its size × a Customer's receipt. */
   carCardY: 2.1,
   carCardScale: 1.5,
-  /** Event banner on screen (ms). */
+  /** Event banner on screen and its slide (ms, the slide matches style.css); the Inspector's report card (ms). */
   bannerMs: 3200,
+  bannerSlideMs: 400,
+  reportMs: 3000,
+  /** Thief Pan: camera glide to the Thief and back (s); the game freezes for the glide in plus the sim's freeze. */
+  thiefPanGlide: 0.35,
+  /** Visitors' bubbles over the head (m), the caught Thief's tumble (s), the BAD REVIEW stamp's slam (s). */
+  visitorBubbleY: 1.9,
+  tumbleTime: 0.8,
+  stampTime: 0.35,
 };

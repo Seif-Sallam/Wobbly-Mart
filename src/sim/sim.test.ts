@@ -579,6 +579,173 @@ describe('Deliveries', () => {
   });
 });
 
+const inspectorOf = (w: World): NonNullable<World['inspector']> => w.inspector as NonNullable<World['inspector']>;
+
+describe('Robbery and the Health Inspector', () => {
+  test('a Thief grabs and freezes the game, is caught or escapes; the Inspector warns, is escorted or left alone, then scores', () => {
+    const w = createWorld(cornerShop, null, 11, true);
+    for (const id of ['register', 'tomato_shelf', 'tomato_bed', 'egg_shelf', 'chicken_coop', 'area_2'])
+      own(w, id, false);
+    refreshFreeStations(w);
+    const events = cornerShop.events;
+    w.map.events = { robbery: events.robbery };
+    w.money = 1000;
+    const tomato = w.stations.get('tomato_shelf') as ShelfStation;
+    const egg = w.stations.get('egg_shelf') as ShelfStation;
+    const register = w.stations.get('register');
+    const stocked = () => {
+      tomato.items = 9;
+      egg.items = 3;
+    };
+    const far = () => Object.assign(w.player, { x: 8, z: 40, vx: 0, vz: 0 });
+    const until = (seconds: number, done: (e: SimEvent) => boolean, each = () => {}) => {
+      for (let i = 0; i < seconds * 60; i++) {
+        each();
+        step(w, idle());
+        const e = w.events.find(done);
+        if (e) return e;
+      }
+    };
+    far();
+
+    // 1. The first Robbery comes 3–5 min in: the Thief walks to the fullest Shelf, and the grab freezes the game
+    expect(until(310, (e) => e.type === 'thiefGrab', stocked)).toBeDefined();
+    expect(w.t).toBeGreaterThanOrEqual(180);
+    expect(w.thief?.target).toBe('tomato_shelf');
+    const frozenAt = w.t;
+    run(w, 0.5);
+    expect(w.t).toBe(frozenAt);
+    for (let i = 0; i < 60 * 5 && w.thief?.state === 'grab'; i++) step(w, idle());
+    expect(w.thief?.state).toBe('run');
+    expect(w.thief?.carry).toEqual(Array(5).fill('tomato'));
+
+    // 2. Caught: the bounty, and the Items go back onto their Shelf; restocked meanwhile, the rest lie Loose beside it
+    tomato.items = 7;
+    const money = w.money;
+    const th = w.thief as NonNullable<World['thief']>;
+    Object.assign(w.player, { x: th.x, z: th.z });
+    const caught = until(1, (e) => e.type === 'robberyDone');
+    expect(caught?.type === 'robberyDone' && caught.caught && caught.amount).toBe(40);
+    expect(w.money).toBe(money + 40);
+    expect(tomato.items).toBe(10);
+    expect(w.loose.length).toBe(2);
+    far();
+    expect(until(60, () => !w.thief)).toBeUndefined();
+    expect(w.thief).toBeNull();
+
+    // 3. A Cash Pile over $150 is robbed of half instead; the Thief escapes through a door with it
+    w.loose = [];
+    if (register?.kind === 'register') register.cash = 300;
+    w.visitWait = 0;
+    expect(until(60, (e) => e.type === 'thiefGrab', stocked)).toBeDefined();
+    expect(w.thief?.target).toBe('register');
+    expect(register?.kind === 'register' && register.cash).toBe(150);
+    const away = until(60, (e) => e.type === 'robberyDone', far);
+    expect(away?.type === 'robberyDone' && !away.caught && away.amount).toBe(150);
+    for (let i = 0; i < 60 * 60 && w.thief; i++) step(w, idle());
+
+    // 4. An empty store: no Thief comes
+    tomato.items = egg.items = 0;
+    if (register?.kind === 'register') register.cash = 0;
+    w.visitWait = 0;
+    step(w, idle());
+    expect(w.thief).toBeNull();
+
+    // 5. The Inspector: a 15 s warning, then in through a door; escorted, the alone clock drains back; spotless pays
+    for (const id of ['office', 'ketchup_shelf', 'blender', 'wheat_shelf', 'milk_fridge']) own(w, id, false);
+    w.map.events = { inspector: events.inspector };
+    w.visitWait = 0;
+    expect(until(1, (e) => e.type === 'inspectorWarning', stocked)).toBeDefined();
+    const ins = w.inspector as NonNullable<World['inspector']>;
+    expect(ins.stops.length).toBeGreaterThanOrEqual(4);
+    expect(ins.stops.length).toBeLessThanOrEqual(6);
+    run(w, 14);
+    expect(ins.state).toBe('warn');
+    for (let i = 0; i < 60 * 30 && ins.state !== 'visit'; i++) step(w, idle());
+    expect(ins.state).toBe('visit');
+    const escort = () => {
+      stocked();
+      Object.assign(w.player, { x: ins.x + 1, z: ins.z, vx: 0, vz: 0 });
+    };
+    until(5, () => false, far);
+    expect(ins.alone).toBeGreaterThan(4);
+    until(5, () => false, escort);
+    expect(ins.alone).toBeCloseTo(0);
+    let marks = 0;
+    const spotless = until(
+      120,
+      (e) => {
+        if (e.type === 'inspectorMark') marks++;
+        return e.type === 'inspection';
+      },
+      escort,
+    );
+    expect(marks).toBe(ins.stops.length);
+    const reward = spotless?.type === 'inspection' ? spotless.amount : 0;
+    expect(spotless?.type === 'inspection' && !spotless.review).toBe(true);
+    expect(reward).toBeGreaterThanOrEqual(100);
+    expect(reward).toBeLessThanOrEqual(200);
+    for (let i = 0; i < 60 * 60 && w.inspector; i++) step(w, idle());
+
+    // 6. Escorted with dirt: $20 per Mess and Loose Item
+    addMess(w, w.nextId++, 30, 40, ['milk'], -1);
+    addMess(w, w.nextId++, 32, 40, ['milk'], -1);
+    w.loose.push({ id: w.nextId++, x: 34, z: 40, product: 'egg' });
+    w.visitWait = 0;
+    step(w, idle());
+    const second = w.inspector as NonNullable<World['inspector']>;
+    const dirty = until(
+      150,
+      (e) => e.type === 'inspection',
+      () => {
+        stocked();
+        Object.assign(w.player, { x: second.x + 1, z: second.z });
+      },
+    );
+    expect(dirty?.type === 'inspection' && [dirty.messes, dirty.loose, dirty.amount]).toEqual([2, 1, -60]);
+    for (let i = 0; i < 60 * 60 && w.inspector; i++) step(w, idle());
+
+    // 7. Left alone 15 s: BAD REVIEW, the dirt fine plus $150, even when spotless
+    w.messes = [];
+    w.loose = [];
+    w.visitWait = 0;
+    const before = w.money;
+    const bad = until(
+      60,
+      (e) => e.type === 'inspection',
+      () => {
+        stocked();
+        far();
+      },
+    );
+    expect(bad?.type === 'inspection' && bad.review && bad.amount).toBe(-150);
+    expect(w.money).toBe(before - 150);
+    step(w, idle());
+    const stormer = w.inspector as NonNullable<World['inspector']>;
+    expect(Math.hypot(stormer.vx, stormer.vz)).toBeCloseTo(TUNING.events.inspector.stormSpeed); // storms out
+
+    // they step around a Mess in their way, so they're never seen standing in one far from a stop
+    w.inspector = null;
+    w.visitWait = 0;
+    step(w, idle());
+    const walker = inspectorOf(w);
+    addMess(w, w.nextId++, (walker.x + walker.door[0]) / 2, (walker.z + walker.door[1]) / 2, ['milk'], -1);
+    let inMess = 0;
+    let closest = Infinity;
+    for (let i = 0; i < 60 * 40; i++) {
+      Object.assign(w.player, { x: walker.x + 1, z: walker.z });
+      step(w, idle());
+      const m = w.messes[0];
+      const d = m ? Math.hypot(walker.x - m.x, walker.z - m.z) : Infinity;
+      closest = Math.min(closest, d);
+      if (d < TUNING.messRadius - 1e-6) inMess++;
+    }
+    expect(walker.state).toBe('visit');
+    expect(closest).toBeLessThan(TUNING.messRadius + 0.2); // it came right past the Mess …
+    expect(inMess).toBe(0); // … and around it
+  });
+});
+
 describe('Edit Layout', () => {
   test('Moves: where fixtures may go, the Register carries its Cashier, Moves cost money, the layout saves', () => {
     const w = createWorld(cornerShop, null, 7, true);

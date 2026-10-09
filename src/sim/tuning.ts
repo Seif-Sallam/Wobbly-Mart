@@ -22,6 +22,8 @@ export const TUNING = {
   messSlowdownStaff: 0.7,
   messPatience: 1.5,
   messRadius: 0.9,
+  /** Sideways slide (m per step) for a walker stepping around a Mess. */
+  messSkirt: 0.03,
   /** Cleaner: flat walk speeds (m/s), clean time × the Player's, wander spots snapped to this grid (m), show mopping (s). */
   cleaner: { wanderSpeed: 2, rushSpeed: 4, cleanFactor: 1.5, wanderGrid: 4, showMop: [2, 4] as const },
   playerCheckoutTime: 1.5,
@@ -113,6 +115,24 @@ export const TUNING = {
     honkAt: 15,
     deliveryPay: 1.5,
     tipMax: 0.25,
+    /** Robbery and the Health Inspector: one at a time, this many s apart. */
+    visitGap: [180, 300] as const,
+    /** Thief: takes up to `items` from the fullest Shelf over grabTime s, freezes the game `freeze` s (Thief Pan),
+     * runs at `speed` m/s to the nearest customer door; the Player catches them within catchRadius m. */
+    robbery: { items: 5, grabTime: 2, freeze: 0.5, speed: 6.5, catchRadius: 0.8 },
+    /** Inspector: warning s, stops (count range, s each), escort radius m, s alone before a bad review, a stop's ✗ when
+     * a Mess or Loose Item is within dirtRadius m; steps around Messes until skirtUntil m from a stop; storms out at
+     * stormSpeed m/s after a bad review. */
+    inspector: {
+      warning: 15,
+      stops: [4, 6] as const,
+      stopTime: 5,
+      escort: 5,
+      alone: 15,
+      dirtRadius: 4,
+      skirtUntil: 1.5,
+      stormSpeed: 4.5,
+    },
   },
   // base values Upgrades raise
   base: {

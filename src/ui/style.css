@@ -218,7 +218,7 @@ body {
   top: calc(max(10px, env(safe-area-inset-top)) + 52px);
   padding: 6px 20px 6px 8px;
   font-size: 22px;
-  animation: banner both;
+  animation: banner-in 0.4s both;
   white-space: nowrap;
 }
 .event-banner img {
@@ -229,19 +229,58 @@ body {
   display: block;
   font-size: 16px;
 }
-@keyframes banner {
+@keyframes banner-in {
   0% {
     transform: translate(-50%, -180px);
   }
-  10% {
+  70% {
     transform: translate(-50%, 0) scale(1.08, 0.92);
   }
-  15%,
-  88% {
+  100% {
     transform: translate(-50%, 0);
   }
-  100% {
+}
+@keyframes banner-out {
+  to {
     transform: translate(-50%, -180px);
+  }
+}
+.event-banner.out {
+  animation: banner-out 0.4s both;
+}
+.report-card {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 26px;
+  font-size: 30px;
+  animation: report both;
+  white-space: nowrap;
+}
+.report-card span {
+  font-size: 20px;
+}
+.report-card.good b {
+  color: var(--money);
+}
+.report-card.bad b {
+  color: var(--angry);
+}
+@keyframes report {
+  0% {
+    transform: translate(-50%, 0) scale(0.2);
+  }
+  10% {
+    transform: translate(-50%, 0) scale(1.12);
+  }
+  16%,
+  90% {
+    transform: translate(-50%, 0) scale(1);
+  }
+  100% {
+    transform: translate(-50%, 0) scale(0);
   }
 }
 .event-cards {

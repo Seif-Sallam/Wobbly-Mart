@@ -39,6 +39,7 @@ function move(w: World, intents: Intents): void {
   const speeding = Math.hypot(mx * speed, mz * speed) >= Math.hypot(p.vx, p.vz);
   const maxDelta = (top / (speeding ? FEEL.accelTime : FEEL.stopTime)) * DT;
   const d = Math.hypot(dx, dz);
+  p.jolt = d / top;
   if (d <= maxDelta) {
     p.vx += dx;
     p.vz += dz;
@@ -65,27 +66,34 @@ function move(w: World, intents: Intents): void {
   }
 }
 
-function sprintDrops(w: World): void {
+function tipDrops(w: World): void {
   const p = w.player;
-  const S = TUNING.sprint;
+  const T = TUNING.tip;
   p.dropCooldown = Math.max(0, p.dropCooldown - DT);
   const safe = safeCount(w);
   const n = p.stack.length;
-  if (!p.sprinting || n <= safe || p.dropCooldown > 0) return;
+  const v = Math.hypot(p.vx, p.vz);
+  const share = p.sprinting ? 1 : v > T.walkSpeed ? T.walkShare : 0;
+  if (share === 0 || n <= safe || p.dropCooldown > 0) return;
   const k = (n - safe) / Math.max(1, stackCap(w) - safe);
-  if (nextRandom(w) >= S.maxRate * k ** S.curve * DT) return;
-  const v = Math.hypot(p.vx, p.vz) || 1;
-  const side = (nextRandom(w) - 0.5) * S.dropSide;
-  const item = {
-    id: w.nextId++,
-    x: p.x - (p.vx / v) * S.dropBehind - (p.vz / v) * side,
-    z: p.z - (p.vz / v) * S.dropBehind + (p.vx / v) * side,
-    product: p.stack[n - 1],
-  };
-  w.events.push({ type: 'transfer', product: item.product, from: { agent: 'player' }, to: { loose: item.id } });
+  const jolt = 1 + T.joltBoost * Math.min(1, p.jolt);
+  if (nextRandom(w) >= T.maxRate * share * jolt * k ** T.curve * DT) return;
+  const dir = v || 1;
+  const side = (nextRandom(w) - 0.5) * T.dropSide;
+  const x = p.x - (p.vx / dir) * T.dropBehind - (p.vz / dir) * side;
+  const z = p.z - (p.vz / dir) * T.dropBehind + (p.vx / dir) * side;
+  const product = p.stack[n - 1];
   p.stack.pop();
-  w.loose.push(item);
-  p.dropCooldown = S.cooldown;
+  p.dropCooldown = T.cooldown;
+  const id = w.nextId++;
+  const breakChance = w.map.products[product]?.breakChance ?? 0;
+  if (breakChance > 0 && nextRandom(w) < breakChance) {
+    w.messes.push({ id, x, z, items: [product] });
+    w.events.push({ type: 'mess', mess: id, customer: -1 });
+    return;
+  }
+  w.events.push({ type: 'transfer', product, from: { agent: 'player' }, to: { loose: id } });
+  w.loose.push({ id, x, z, product });
 }
 
 function takeLoose(w: World): void {
@@ -167,7 +175,7 @@ export function stationAt(w: World, x: number, z: number, test: (st: Station) =>
 export function updatePlayer(w: World, intents: Intents): void {
   const p = w.player;
   move(w, intents);
-  sprintDrops(w);
+  tipDrops(w);
   takeLoose(w);
   payPads(w);
   collectCash(w);

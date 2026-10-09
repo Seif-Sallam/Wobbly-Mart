@@ -12,7 +12,7 @@ import { Juice } from './juice';
 import { Character } from './characters';
 import { PadVisual } from './pads';
 import { buildStation, ghostify, type StationVisual } from './stations';
-import { InstancedModel, billModel, itemModel } from './instanced';
+import { InstancedModel, LiveInstances, billModel, itemModel } from './instanced';
 import { model } from './assets';
 import { StationBatch } from './station-batch';
 import { CanvasTex, canvasSprite, outlinedText, roundRect } from './text';
@@ -31,6 +31,7 @@ const CART_SCALE = 0.7;
 const LOOSE_Y = 0.15;
 const RIPE_TOMATO_Y = 0.42;
 const RECEIPT_Y = 1.75;
+const MAX_ANIMALS = 32;
 const LOOSE_TILT = new THREE.Vector2(1.2, 0);
 
 interface Flight {
@@ -70,6 +71,7 @@ export class WorldView {
   private items = new Map<string, InstancedModel>();
   private plants = new Map<string, InstancedModel>();
   private batch = new StationBatch();
+  private animals: LiveInstances;
   private puffTimers = new Map<string, number>();
   private wanderers: { ch: Character; mover: Mover; target: Point }[] = [];
   private bills: InstancedModel;
@@ -114,6 +116,7 @@ export class WorldView {
     this.baskets = new InstancedModel(model('shopping-basket', { height: FEEL.basketHeight }), 40, this.root);
     for (const name of ['tomato-bush', 'wheat-plant'])
       this.plants.set(name, new InstancedModel(model(name), 64, this.root, false));
+    this.animals = new LiveInstances(this.root, MAX_ANIMALS);
     this.blobs = this.makeBlobs();
     this.player = new Character('player', { hat: 'orange' });
     this.root.add(this.player.root);
@@ -139,6 +142,7 @@ export class WorldView {
     for (const m of this.splats.values()) this.root.remove(m);
     this.stations.clear();
     this.batch.clear();
+    this.animals.clear();
     this.pads.clear();
     this.customers.clear();
     this.staff.clear();
@@ -217,6 +221,7 @@ export class WorldView {
       this.stations.set(st.id, v);
       this.root.add(v.root);
       this.batch.add(st.id, v.body, v.root.position);
+      for (const m of v.mixers) this.animals.adopt(m.getRoot() as THREE.Object3D);
       if (animate) {
         const id = st.id;
         const grow = (k: number) => {
@@ -559,6 +564,7 @@ export class WorldView {
           );
       }
     }
+    this.animals.update();
     this.updateScenery(dt);
     this.juice.update(dt);
     const near: Point[] = [

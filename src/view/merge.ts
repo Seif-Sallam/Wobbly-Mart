@@ -1,6 +1,7 @@
 // Merges static meshes under a root into one mesh per material (draw-call budget). Skips anything marked dynamic.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { bakePalette } from './materials';
 
 /** Mark a node (and everything under it) as moving/toggling so it stays its own mesh. */
 export function dynamic<T extends THREE.Object3D>(o: T): T {
@@ -27,17 +28,18 @@ export function mergeStatic(root: THREE.Object3D): void {
     )
       return;
     if (Array.isArray(m.material) || isDynamic(m, root) || !m.visible) return;
-    const g = m.geometry.clone();
-    g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, m.matrixWorld));
-    for (const name of Object.keys(g.attributes))
-      if (!['position', 'normal', 'uv', 'color'].includes(name)) g.deleteAttribute(name);
+    const clone = m.geometry.clone();
+    clone.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, m.matrixWorld));
+    for (const name of Object.keys(clone.attributes))
+      if (!['position', 'normal', 'uv', 'color'].includes(name)) clone.deleteAttribute(name);
+    const { geometry: g, material } = bakePalette(clone, m.material);
     const attrs = Object.keys(g.attributes)
       .sort()
       .map((n) => `${n}${g.attributes[n].itemSize}${g.attributes[n].normalized}`)
       .join();
-    const key = `${m.material.uuid}|${attrs}|${g.index ? 'i' : 'n'}|${g.attributes.position.array.constructor.name}`;
+    const key = `${material.uuid}|${attrs}|${g.index ? 'i' : 'n'}|${g.attributes.position.array.constructor.name}`;
     let b = buckets.get(key);
-    if (!b) buckets.set(key, (b = { material: m.material, geos: [], cast: false }));
+    if (!b) buckets.set(key, (b = { material, geos: [], cast: false }));
     b.geos.push(g);
     b.cast ||= m.castShadow;
     merged.push(m);

@@ -6,7 +6,7 @@ export const layout: MapLayout = {
   areas: {
     area_1: [
       [4, 4, 16, 22],
-      [4, 26, 16, 26],
+      [3, 26, 17, 26],
     ],
     area_2: [
       [20, 4, 14, 22],

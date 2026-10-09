@@ -665,3 +665,44 @@ body {
   width: min(180px, 40vw);
   accent-color: var(--orange);
 }
+
+/* ---------- Edit Layout: bill card and buttons along the bottom */
+.layout-panel {
+  position: fixed;
+  left: 50%;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto;
+}
+.layout-card {
+  background: var(--cream);
+  border: 3px solid var(--ink);
+  border-radius: 16px;
+  padding: 10px 14px;
+  box-shadow: 0 4px 0 var(--ink);
+  font:
+    600 16px Fredoka,
+    system-ui,
+    sans-serif;
+}
+.layout-card small {
+  font-weight: 500;
+  opacity: 0.85;
+}
+.layout-card.why {
+  background: var(--angry);
+  color: var(--cream);
+}
+.layout-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.layout-row .btn {
+  flex: 1;
+  min-width: 90px;
+}

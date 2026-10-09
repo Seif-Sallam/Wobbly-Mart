@@ -103,6 +103,8 @@ export interface MapDef {
   upgrades: Record<string, UpgradeDef>;
   start: { owned: string[]; money: number };
   tutorial: TutorialStep[];
+  /** Edit Layout: the price of each Move in order (3 per Area). */
+  movePrices: number[];
 }
 
 /** Model name a Station is drawn with (asset table key). Staff, Area Pads draw no Station. */

@@ -43,6 +43,9 @@ export const TUNING = {
   neverGiveUp: 0.25,
   /** Least clear distance between any two Station or Pad footprints (m): standing halfway between is out of reach of both (0.75 m > 0.6 m reach). */
   clearance: 1.5,
+  /** Edit Layout: nothing may stand this close to a door (m); each bought Area adds this many Moves. */
+  doorKeepClear: 1.5,
+  movesPerArea: 3,
   queueGap: 0.8,
   queueFirstOffset: 0.6,
   shelfSpotOffset: 0.7,

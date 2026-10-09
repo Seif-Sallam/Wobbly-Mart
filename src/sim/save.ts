@@ -1,4 +1,5 @@
 // What survives an Opening, and the versioned save file around it. Pure data — storage lives in src/app.
+import type { Placement } from './map';
 import type { StockerRole, World } from './world';
 
 export interface MapSave {
@@ -7,6 +8,9 @@ export interface MapSave {
   paid: Record<string, number>;
   levels: Record<string, number>;
   roles: Record<string, StockerRole>;
+  /** Edit Layout: places moved away from the map's, and Moves bought. */
+  layout?: Record<string, Placement>;
+  movesUsed?: number;
 }
 
 /** Lowest frame cap offered, and the one Battery saver uses (fps). */
@@ -48,7 +52,7 @@ export const DEFAULT_SETTINGS: Settings = {
   batterySaver: false,
 };
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export interface SaveFile {
   version: number;
@@ -80,6 +84,8 @@ export function snapshot(w: World): MapSave {
     paid: { ...w.paid },
     levels: { ...w.levels },
     roles: Object.fromEntries(w.stockers.map((s) => [s.id, s.role])),
+    layout: { ...w.placed },
+    movesUsed: w.movesUsed,
   };
 }
 
@@ -87,6 +93,8 @@ export function snapshot(w: World): MapSave {
 const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> = {
   // playtest pass 1: only the owner had a save, so it starts fresh instead of migrating
   1: (old) => ({ ...emptySave(String(old.currentMap)) }),
+  // Edit Layout: maps gain an optional layout and Moves used; older ones load with the map's layout
+  2: (old) => old,
 };
 
 /** Brings any older save up to date; throws with a clear message when it can't. */

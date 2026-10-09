@@ -62,3 +62,5 @@ export const freeStations: Record<string, FreeStationDef> = {
 };
 
 export const start = { owned: ['area_1'], money: 50 };
+
+export const movePrices = [40, 60, 90, 150, 200, 275, 400, 525, 650];

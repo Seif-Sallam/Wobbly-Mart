@@ -1,4 +1,4 @@
-import type { Box, MapDef, Point, Rot } from './map';
+import type { Box, MapDef, Placement, Point, Rot } from './map';
 import type { Grid } from './nav';
 import type { MapSave } from './save';
 import { TUNING } from './tuning';
@@ -230,6 +230,9 @@ export interface World {
   stockers: Stocker[];
   cashiers: Cashier[];
   cleaners: Cleaner[];
+  /** Edit Layout: places moved away from the map's, and Moves bought so far. */
+  placed: Record<string, Placement>;
+  movesUsed: number;
   messes: Mess[];
   loose: LooseItem[];
   drains: Drain[];
@@ -258,7 +261,8 @@ export const newCarrier = (): Carrier => ({
 export function createWorld(map: MapDef, save: MapSave | null, seed: number, tutorialDone = false): World {
   const [px, pz] = map.layout.playerStart;
   const w: World = {
-    map,
+    // the World's own places: Edit Layout moves fixtures without touching the map data
+    map: { ...map, layout: { ...map.layout, places: { ...map.layout.places } } },
     t: 0,
     rng: seed,
     money: map.start.money,
@@ -284,6 +288,8 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
     stockers: [],
     cashiers: [],
     cleaners: [],
+    placed: {},
+    movesUsed: 0,
     messes: [],
     loose: [],
     drains: [],

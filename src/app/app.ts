@@ -30,6 +30,7 @@ import { iconUrl, renderThumbs } from '../view/thumbs';
 import { moodOf } from '../view/receipt';
 import { Input } from '../input/input';
 import { Game } from './game';
+import { EditLayout } from './edit-layout';
 import {
   claimTab,
   loadSave,
@@ -89,6 +90,7 @@ export class App {
   private lastTick = 0;
   private ticks = 0;
   private officeKey = '';
+  private layout: EditLayout | null = null;
 
   constructor() {
     this.stage = new Stage(document.getElementById('scene') as HTMLCanvasElement);
@@ -128,6 +130,7 @@ export class App {
       settings: this.settings,
       zoom: 0,
       screenHz: 60,
+      layout: null,
     };
     this.ui.zoom = this.zoom();
     this.hud.onGear = () => this.openOverlay('pause');
@@ -159,6 +162,16 @@ export class App {
     this.game.view.scenery(SCENERY_PEOPLE);
     for (const st of this.game.world.stations.values()) if (st.kind === 'producer') st.plants.fill(0);
     this.game.onFrame = (events, dt) => this.onFrame(events, dt);
+    this.layout = new EditLayout(
+      this.game,
+      document.getElementById('joy') as HTMLElement,
+      () => {
+        this.ui.layout = this.layout?.ui() ?? null;
+        this.hud.visible(!this.ui.layout && this.ui.screen === 'game');
+        this.renderUi();
+      },
+      () => this.writeSave(),
+    );
     this.ui.loading = 1;
     this.renderUi();
     const loop = (now: number) => {
@@ -171,7 +184,7 @@ export class App {
       const cap = this.settings.batterySaver ? SAVER_FRAME_CAP : this.settings.frameCap;
       const every = ticksPerFrame(1000 / this.tickMs, cap);
       if (++this.ticks % every) return;
-      const still = this.ui.screen === 'game' && game.paused && !this.editing;
+      const still = this.ui.screen === 'game' && game.paused && !this.editing && !this.layout?.open;
       if (still && !this.redraw && !this.stage.zooming) return;
       this.redraw = false;
       game.frame(now, 1000 / (this.tickMs * every));
@@ -435,6 +448,7 @@ export class App {
 
   private escape(): void {
     if (this.ui.screen !== 'game') return;
+    if (this.layout?.open) return this.layout.escape();
     if (this.ui.overlay) this.openOverlay(this.ui.overlay === 'pause' ? null : 'pause');
     else if (this.ui.office) {
       this.officeDismissed = true;
@@ -451,6 +465,14 @@ export class App {
       this.renderUi();
     },
     buyUpgrade: (id) => this.game?.buyUpgrade(id),
+    editLayout: () => {
+      this.actions.closeOffice();
+      this.layout?.begin();
+    },
+    layoutTurn: () => this.layout?.turn(),
+    layoutPutBack: () => this.layout?.putBack(),
+    layoutCancel: () => this.layout?.cancel(),
+    layoutDone: () => this.layout?.done(),
     assign: (stocker, role) => this.game?.assign(stocker, role),
     setSetting: (key, value) => this.setSetting(key, value),
     fullscreen: () => {

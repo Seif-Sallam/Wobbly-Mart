@@ -74,8 +74,10 @@ export const TUNING = {
     dropSide: 0.8,
   },
   looseTakeRadius: 0.8,
-  /** Stocker job urgency (lower first): empty Shelf with waiting Customers 0, Shelves 1–2, then Producer inputs. */
-  urgency: { inputEmpty: 2.5, inputPartial: 3, trayFull: 4, feedsUrgentShelf: 0.5, distanceWeight: 0.01 },
+  /** Stocker job tiers are tierGap apart, so fill and distance (× distanceWeight per m) only order within one. */
+  urgency: { tierGap: 10, distanceWeight: 0.01 },
+  /** Seconds a Stocker holds a whole Stack of leftovers before putting them back on a Tray or in the Trash. */
+  leftoverTime: 10,
   stockerRethink: 0.5,
   exitPickRadius: 1.2,
   // base values Upgrades raise

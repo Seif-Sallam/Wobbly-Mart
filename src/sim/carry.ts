@@ -12,6 +12,13 @@ export function accepts(w: World, st: Station, product: string): boolean {
   return type.inputs.includes(product) && (st.input[product] ?? 0) < (type.inputCap ?? 0);
 }
 
+/** A Producer's Tray has room for its own output, counting the batch in the works (a Stocker putting leftovers back). */
+export function trayRoom(w: World, st: Station, product: string): boolean {
+  if (st.kind !== 'producer') return false;
+  const type = w.map.producers[st.type];
+  return type.output === product && st.tray + (st.work > 0 ? 1 : 0) < (type.trayCap ?? 0);
+}
+
 /** Product a Station can hand over right now, or null. */
 export function available(w: World, st: Station): string | null {
   if (st.kind !== 'producer') return null;
@@ -43,11 +50,13 @@ export interface TransferRules {
   cap: number;
   /** Stop picking once the Stack holds this many. */
   pickLimit?: number;
+  /** Drop onto the Producer's Tray instead of into its inputs. */
+  toTray?: boolean;
 }
 
 /**
  * One tick of transfers between `c` and the Station it stands at. Drop-offs come first and speed up per Item;
- * pick-ups slow down as the Stack fills. Returns what moved, if anything.
+ * pick-ups slow down as the Stack fills. Returns what moved, or `waiting` while a drop-off is due.
  */
 export function transferTick(
   w: World,
@@ -55,7 +64,7 @@ export function transferTick(
   st: Station | null,
   who: Ref,
   rules: TransferRules,
-): { dropped?: string; picked?: string } {
+): { dropped?: string; picked?: string; waiting?: boolean } {
   if ((st?.id ?? null) !== c.at) {
     c.at = st?.id ?? null;
     c.dropInterval = TUNING.dropInterval;
@@ -66,14 +75,16 @@ export function transferTick(
   c.timer += DT;
   for (let i = c.stack.length - 1; i >= 0; i--) {
     const product = c.stack[i];
-    if (!rules.drop(st, product) || !accepts(w, st, product)) continue;
-    if (c.timer < c.dropInterval) return {};
+    const fits = rules.toTray ? trayRoom(w, st, product) : accepts(w, st, product);
+    if (!rules.drop(st, product) || !fits) continue;
+    if (c.timer < c.dropInterval) return { waiting: true };
     c.stack.splice(i, 1);
     c.timer = 0;
     c.dropInterval = Math.max(TUNING.dropIntervalMin, c.dropInterval * TUNING.dropSpeedup);
     if (st.kind === 'trash') w.events.push({ type: 'trashed', product, from: who, station: st.id });
     else {
-      put(st, product);
+      if (rules.toTray && st.kind === 'producer') st.tray++;
+      else put(st, product);
       w.events.push({ type: 'transfer', product, from: who, to: { station: st.id } });
     }
     return { dropped: product };

@@ -7,6 +7,7 @@ import { snapshot } from './save';
 import type { Customer, ProducerStation, ShelfStation, World } from './world';
 import { distToBox } from './geometry';
 import { TUNING } from './tuning';
+import { addMess } from './cleaning';
 
 const idle = (): Intents => ({ move: { x: 0, z: 0 }, grab: false });
 
@@ -112,8 +113,8 @@ describe('Map 1 opening loop', () => {
     run(w, 1.2);
     expect(w.money).toBeCloseTo(cash);
 
-    // Completion counts bought Pads and Upgrade levels: 3 of 80
-    expect(completion(w)).toBe(3 / 80);
+    // Completion counts bought Pads and Upgrade levels: 3 of 83
+    expect(completion(w)).toBe(3 / 83);
 
     // The tutorial follows along without blocking anything
     expect(w.tutorial.done).toBe(false);
@@ -175,7 +176,9 @@ describe('Map 1 fully built', () => {
     for (const id of Object.keys(cornerShop.pads)) own(w, id, false);
     refreshFreeStations(w);
     const staff = w.stockers;
+    const [cleaner] = w.cleaners;
     w.stockers = [];
+    w.cleaners = [];
     const products = Object.keys(cornerShop.products);
     expect(products.every((p) => shelvesOf(w, p).length === 2)).toBe(true);
 
@@ -239,9 +242,53 @@ describe('Map 1 fully built', () => {
     const mess = w.messes.find((m) => m.items.join() === 'tomato,egg');
     expect(mess).toBeDefined();
 
-    // the Player clears it by walking over it, then trashes Items only after standing on the Trash Bin for 1.5 s
-    walk(w, [mess?.x ?? 0, mess?.z ?? 0], 40);
+    // walking over it no longer cleans it: that needs the Mop, which the Mop Stand gives only to an empty Stack
+    const spill: [number, number] = [mess?.x ?? 0, mess?.z ?? 0];
+    // the Mop Stand backs onto the Office partition: reach it from inside the room
+    const toMop = () => {
+      walk(w, [10, 21], 40);
+      walk(w, 'mop_stand', 40);
+    };
+    walk(w, spill, 40);
+    run(w, 3);
+    expect(w.messes).toContain(mess);
+    w.player.stack = ['wheat'];
+    toMop();
+    expect(w.player.mop).toBe(false);
+    walk(w, spill, 40);
+    w.player.stack = [];
+    toMop();
+    expect(w.player.mop).toBe(true);
+
+    // 2 s of mopping clears it; walking off keeps the progress
+    walk(w, spill, 40);
+    run(w, 0.5);
+    const part = mess?.progress ?? 0;
+    expect(part).toBeGreaterThan(0.2);
+    expect(part).toBeLessThan(1);
+    toMop();
+    expect(w.player.mop).toBe(false); // walking back to the stand returns it
+    const kept = mess?.progress ?? 0;
+    expect(kept).toBeGreaterThanOrEqual(part);
+    expect(w.messes).toContain(mess);
+    toMop(); // walking off and back takes it again
+    expect(w.player.mop).toBe(true);
+    walk(w, spill, 40);
+    run(w, 2 * (1 - kept));
     expect(w.messes).not.toContain(mess);
+
+    // with the Mop in hand nothing is picked up, not even a Loose Item underfoot
+    const dropped = { id: w.nextId++, x: w.player.x, z: w.player.z, product: 'egg' };
+    w.loose.push(dropped);
+    run(w, 0.5);
+    expect(w.player.stack).toEqual([]);
+    toMop();
+    expect(w.player.mop).toBe(false);
+    walk(w, [dropped.x, dropped.z], 40);
+    run(w, 0.2);
+    expect(w.player.stack).toEqual(['egg']);
+
+    // the Player trashes Items only after standing on the Trash Bin for 1.5 s
     w.player.stack = ['wheat', 'wheat'];
     walk(w, 'trash', 40);
     run(w, 1);
@@ -375,7 +422,7 @@ describe('Map 1 fully built', () => {
     follow(60);
     expect(flourAt).toBeGreaterThan(0);
     expect(flourAt).toBeLessThan(30);
-    expect(auto.stack).not.toContain('egg');
+    expect(maxHeld).toBeLessThan(12);
 
     // leftovers nothing needs go back on a Tray with room after 10 s, or in the Trash if no Tray takes them
     fillInputs();
@@ -395,5 +442,30 @@ describe('Map 1 fully built', () => {
     expect(trashed).toEqual(['tomato']);
     expect(w.loose.length).toBe(0);
     expect(maxHeld).toBeLessThan(12);
+
+    // 7. The Cleaner clears every waiting Mess, then wanders the shop floor mopping for show …
+    w.stockers = [];
+    w.cleaners = [cleaner];
+    for (let i = 0; i < 60 * 120 && w.messes.length; i++) step(w, idle());
+    expect(w.messes.length).toBe(0);
+    const start: [number, number] = [cleaner.x, cleaner.z];
+    let shows = 0;
+    for (let i = 0; i < 60 * 30; i++) {
+      step(w, idle());
+      if (cleaner.mopping) shows++;
+    }
+    expect(Math.hypot(cleaner.x - start[0], cleaner.z - start[1])).toBeGreaterThan(1);
+    expect(shows).toBeGreaterThan(0);
+
+    // … and rushes to a new Mess at 4 m/s, mopping it in 1.5 × the Player's 2 s
+    addMess(w, w.nextId++, cleaner.x + 2, cleaner.z, ['milk'], -1);
+    let took = 0;
+    while (w.messes.length && took < 20) {
+      step(w, idle());
+      took += DT;
+    }
+    expect(w.messes.length).toBe(0);
+    expect(took).toBeGreaterThan(3);
+    expect(took).toBeLessThan(5);
   });
 });

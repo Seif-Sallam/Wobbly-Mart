@@ -3,7 +3,17 @@ import type { Box, Point } from './map';
 import type { Mover, World } from './world';
 import { DT } from './world';
 import { boxCentre, distToBox, inBox } from './geometry';
-import { cellOf, fieldDistance, makeField, makeGrid, seedCells, waypoint, type Grid } from './nav';
+import {
+  cellCentre,
+  cellOf,
+  fieldDistance,
+  makeField,
+  makeGrid,
+  nearestFreeCell,
+  seedCells,
+  waypoint,
+  type Grid,
+} from './nav';
 import { TUNING } from './tuning';
 
 export type Target = { station: string } | { point: Point };
@@ -55,8 +65,15 @@ function stationBox(w: World, id: string): Box {
   return w.stations.get(id)?.box ?? w.map.layout.places[id].box;
 }
 
+const pointKey = (who: Walkers, [x, z]: Point): string => `${who}:p:${x},${z}`;
+
+/** Drops a one-off point's walk fields (a cleaned Mess) so they don't pile up. */
+export function forgetPoint(w: World, point: Point): void {
+  for (const who of ['walker', 'shopper'] as const) w.nav.fields.delete(pointKey(who, point));
+}
+
 export function fieldFor(w: World, who: Walkers, target: Target): Float32Array {
-  const key = 'station' in target ? `${who}:s:${target.station}` : `${who}:p:${target.point[0]},${target.point[1]}`;
+  const key = 'station' in target ? `${who}:s:${target.station}` : pointKey(who, target.point);
   let f = w.nav.fields.get(key);
   if (f) return f;
   const g = w.nav[who];
@@ -114,6 +131,13 @@ export function walkAgent(w: World, who: Walkers, a: Mover, target: Target, spee
 
 export const walkDistance = (w: World, who: Walkers, a: { x: number; z: number }, target: Target): number =>
   fieldDistance(w.nav[who], fieldFor(w, who, target), a.x, a.z);
+
+/** (x, z) if a walker can stand there, else the nearest cell centre where one can. */
+export function walkable(w: World, x: number, z: number): Point {
+  if (onGrid(w, 'walker', x, z)) return [x, z];
+  const c = nearestFreeCell(w.nav.walker, x, z);
+  return c < 0 ? [x, z] : cellCentre(w.nav.walker, c);
+}
 
 export const onGrid = (w: World, who: Walkers, x: number, z: number): boolean => {
   const c = cellOf(w.nav[who], x, z);

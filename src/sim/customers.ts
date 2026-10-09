@@ -6,6 +6,7 @@ import { distToBox, footprint, frontPoint } from './geometry';
 import { nextRandom, shuffle, weighted } from './rng';
 import { walkAgent } from './walk';
 import { TUNING } from './tuning';
+import { addMess, inMess } from './cleaning';
 
 const registers = (w: World): RegisterStation[] =>
   [...w.stations.values()].filter((s): s is RegisterStation => s.kind === 'register');
@@ -83,10 +84,8 @@ function spawn(w: World): void {
   w.customers.push(c);
 }
 
-function speedOf(w: World, c: Customer): number {
-  const slowed = w.messes.some((m) => Math.hypot(m.x - c.x, m.z - c.z) < TUNING.messRadius);
-  return TUNING.customerSpeed * (slowed ? TUNING.messSlowdown : 1);
-}
+const speedOf = (w: World, c: Customer): number =>
+  TUNING.customerSpeed * (inMess(w, c.x, c.z) ? TUNING.messSlowdown : 1);
 
 function leave(c: Customer): void {
   c.state = 'leave';
@@ -124,16 +123,14 @@ function shop(w: World, c: Customer): void {
     return;
   }
   if (!w.tutorial.done) return;
-  c.patience += DT;
+  c.patience += DT * (inMess(w, c.x, c.z) ? TUNING.messPatience : 1);
   if (c.patience >= c.patienceLimit && !c.angry) {
     c.angry = true;
     w.events.push({ type: 'angry', customer: c.id });
   }
   if (c.patience < c.patienceLimit + TUNING.patienceLeave) return;
   if (c.cart.length) {
-    const id = w.nextId++;
-    w.messes.push({ id, x: c.x, z: c.z, items: c.cart });
-    w.events.push({ type: 'mess', mess: id, customer: c.id });
+    addMess(w, w.nextId++, c.x, c.z, c.cart, c.id);
     c.cart = [];
   }
   leave(c);

@@ -1,9 +1,10 @@
 import type { Intents, Station, World } from './world';
 import { DT } from './world';
-import { cashPilePoint, own, padRemaining, playerSpeed, safeCount, stackCap, visiblePads } from './economy';
+import { cashPilePoint, cleanTime, own, padRemaining, playerSpeed, safeCount, stackCap, visiblePads } from './economy';
+import { addMess, messSlowdown, mopAt } from './cleaning';
 import { transferTick } from './carry';
 import { boxCentre, distToBox, pushOutOfBox } from './geometry';
-import { inOwnedAreas } from './walk';
+import { inOwnedAreas, walkable } from './walk';
 import { TUNING } from './tuning';
 import { nextRandom } from './rng';
 import { FEEL } from '../feel';
@@ -23,7 +24,7 @@ function confined(w: World, x: number, z: number): boolean {
 function move(w: World, intents: Intents): void {
   const p = w.player;
   p.sprinting = !!intents.sprint && Math.hypot(intents.move.x, intents.move.z) > 0 && !w.pan;
-  const top = playerSpeed(w) * (p.sprinting ? TUNING.sprint.speed : 1);
+  const top = playerSpeed(w) * (p.sprinting ? TUNING.sprint.speed : 1) * messSlowdown(w, p);
   const fullness = p.stack.length / stackCap(w);
   let mx = intents.move.x;
   let mz = intents.move.z;
@@ -80,16 +81,19 @@ function tipDrops(w: World): void {
   if (nextRandom(w) >= T.maxRate * share * jolt * k ** T.curve * DT) return;
   const dir = v || 1;
   const side = (nextRandom(w) - 0.5) * T.dropSide;
-  const x = p.x - (p.vx / dir) * T.dropBehind - (p.vz / dir) * side;
-  const z = p.z - (p.vz / dir) * T.dropBehind + (p.vx / dir) * side;
+  // lands where someone can stand, so its Mess can be mopped
+  const [x, z] = walkable(
+    w,
+    p.x - (p.vx / dir) * T.dropBehind - (p.vz / dir) * side,
+    p.z - (p.vz / dir) * T.dropBehind + (p.vx / dir) * side,
+  );
   const product = p.stack[n - 1];
   p.stack.pop();
   p.dropCooldown = T.cooldown;
   const id = w.nextId++;
   const breakChance = w.map.products[product]?.breakChance ?? 0;
   if (breakChance > 0 && nextRandom(w) < breakChance) {
-    w.messes.push({ id, x, z, items: [product] });
-    w.events.push({ type: 'mess', mess: id, customer: -1 });
+    addMess(w, id, x, z, [product], -1);
     return;
   }
   w.events.push({ type: 'transfer', product, from: { agent: 'player' }, to: { loose: id } });
@@ -147,13 +151,16 @@ function collectCash(w: World): void {
   w.drains = w.drains.filter((d) => d.t < d.duration);
 }
 
-function clearMesses(w: World): void {
+/** Walking up to the Mop Stand takes the Mop (with an empty Stack) or puts it back. */
+function mopStand(w: World): void {
   const p = w.player;
-  w.messes = w.messes.filter((m) => {
-    if (Math.hypot(p.x - m.x, p.z - m.z) > TUNING.messClearRadius) return true;
-    w.events.push({ type: 'messCleared', mess: m.id });
-    return false;
-  });
+  const stand = [...w.stations.values()].find((s) => s.kind === 'mopStand');
+  const near = !!stand && distToBox(p.x, p.z, stand.box) <= TUNING.reach;
+  if (near && !p.atMopStand && (p.mop || p.stack.length === 0)) {
+    p.mop = !p.mop;
+    w.events.push({ type: 'mop', taken: p.mop });
+  }
+  p.atMopStand = near;
 }
 
 const INTERACTIVE = new Set(['shelf', 'producer', 'trash']);
@@ -176,14 +183,15 @@ export function updatePlayer(w: World, intents: Intents): void {
   const p = w.player;
   move(w, intents);
   tipDrops(w);
-  takeLoose(w);
+  if (!p.mop) takeLoose(w);
   payPads(w);
   collectCash(w);
-  clearMesses(w);
+  mopStand(w);
+  if (p.mop) mopAt(w, p.x, p.z, cleanTime(w));
   const near = stationAt(w, p.x, p.z, (s) => INTERACTIVE.has(s.kind));
   p.trashHold = near?.kind === 'trash' ? p.trashHold + DT : 0;
   const st = near?.kind === 'trash' && p.trashHold < TUNING.trashHoldTime ? null : near;
-  const allowed = !intents.manualGrab || intents.grab;
+  const allowed = (!intents.manualGrab || intents.grab) && !p.mop;
   const moved = transferTick(
     w,
     p,

@@ -225,6 +225,8 @@ function ZoomRow({ s, a }: { s: UiState; a: UiActions }) {
   );
 }
 
+const NEXT_CAP: Record<Settings['frameCap'], Settings['frameCap']> = { screen: 60, 60: 30, 30: 'screen' };
+
 function Settings({ s, a }: { s: UiState; a: UiActions }) {
   const [copied, setCopied] = useState('');
   return (
@@ -243,10 +245,10 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
       )}
       <Toggle
         label="Frame rate"
-        on={s.settings.frameRate === 60 && !s.settings.batterySaver}
-        text={s.settings.batterySaver ? '30' : String(s.settings.frameRate)}
+        on={s.settings.frameCap === 'screen' && !s.settings.batterySaver}
+        text={s.settings.batterySaver ? '30' : s.settings.frameCap === 'screen' ? 'Max' : String(s.settings.frameCap)}
         disabled={s.settings.batterySaver}
-        set={() => a.setSetting('frameRate', s.settings.frameRate === 60 ? 30 : 60)}
+        set={() => a.setSetting('frameCap', NEXT_CAP[s.settings.frameCap])}
         actions={a}
       />
       <Toggle

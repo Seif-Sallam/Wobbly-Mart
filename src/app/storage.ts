@@ -1,5 +1,5 @@
 // localStorage under `wobbly-mart.*`; every access guarded. Saving may fail — the game still plays.
-import { DEFAULT_SETTINGS, emptySave, migrate, type SaveFile, type Settings } from '../sim/save';
+import { DEFAULT_SETTINGS, emptySave, validFrameCap, migrate, type SaveFile, type Settings } from '../sim/save';
 
 const KEY = 'wobbly-mart.save';
 const BACKUP = 'wobbly-mart.save-backup';
@@ -53,7 +53,8 @@ export function wipeSave(firstMap: string): SaveFile {
 
 export function loadSettings(): Settings {
   try {
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(read(SETTINGS) ?? '{}') };
+    const s: Settings = { ...DEFAULT_SETTINGS, ...JSON.parse(read(SETTINGS) ?? '{}') };
+    return validFrameCap(s.frameCap) ? s : { ...s, frameCap: DEFAULT_SETTINGS.frameCap };
   } catch {
     return { ...DEFAULT_SETTINGS };
   }

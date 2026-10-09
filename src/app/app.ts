@@ -2,7 +2,16 @@
 import * as THREE from 'three';
 import type { SimEvent } from '../sim/world';
 import type { MapDef } from '../sim/map';
-import { encodeSaveCode, decodeSaveCode, snapshot, type MapSave, type SaveFile, type Settings } from '../sim/save';
+import {
+  encodeSaveCode,
+  decodeSaveCode,
+  snapshot,
+  ticksPerFrame,
+  SAVER_FRAME_CAP,
+  type MapSave,
+  type SaveFile,
+  type Settings,
+} from '../sim/save';
 import {
   canBuyUpgrade,
   completion,
@@ -45,7 +54,6 @@ const EDGE_MARGIN = 44;
 const WIPE_SECONDS = 450;
 const TITLE_PAN_SPEED = 0.12;
 const SCENERY_PEOPLE = 4;
-const SAVER_FPS = 30;
 /** How quickly the measured screen tick follows changes (it varies with ProMotion and throttling). */
 const TICK_FOLLOW = 0.05;
 
@@ -113,6 +121,7 @@ export class App {
       comingSoon: COMING_SOON,
       settings: this.settings,
       zoom: 0,
+      screenHz: 60,
     };
     this.ui.zoom = this.zoom();
     this.hud.onGear = () => this.openOverlay('pause');
@@ -153,8 +162,8 @@ export class App {
       const gap = now - this.lastTick;
       this.lastTick = now;
       if (gap > 0 && gap < 100) this.tickMs += (gap - this.tickMs) * TICK_FOLLOW;
-      const cap = this.settings.batterySaver ? SAVER_FPS : this.settings.frameCap;
-      const every = cap === 'screen' ? 1 : Math.max(1, Math.round(1000 / cap / this.tickMs));
+      const cap = this.settings.batterySaver ? SAVER_FRAME_CAP : this.settings.frameCap;
+      const every = ticksPerFrame(1000 / this.tickMs, cap);
       if (++this.ticks % every) return;
       const still = this.ui.screen === 'game' && game.paused && !this.editing;
       if (still && !this.redraw && !this.stage.zooming) return;
@@ -411,6 +420,7 @@ export class App {
       }));
     }
     if (this.game && this.ui.screen === 'game') this.game.paused = !!o || this.lostTab;
+    this.ui.screenHz = Math.round(1000 / this.tickMs);
     this.redraw = true;
     this.sounds.pause(!!o);
     this.renderUi();

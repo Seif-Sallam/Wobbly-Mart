@@ -106,6 +106,16 @@ export function model(name: string, opts: ModelOptions = {}): THREE.Group {
   return group;
 }
 
+/** Shifts a model so its footprint is centred on its own origin. */
+export function centred(obj: THREE.Group): THREE.Group {
+  const c = new THREE.Box3().setFromObject(obj).getCenter(new THREE.Vector3());
+  obj.position.x -= c.x;
+  obj.position.z -= c.z;
+  const g = new THREE.Group();
+  g.add(obj);
+  return g;
+}
+
 /** Size of a model's natural bounding box (unscaled), for fitting decisions. */
 export const naturalSize = (name: string): THREE.Vector3 =>
   loaded.get(ASSETS[name]?.path ?? '')?.size.clone() ?? new THREE.Vector3(1, 1, 1);

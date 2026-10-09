@@ -8,6 +8,10 @@ import type { Customer, ProducerStation, ShelfStation, World } from './world';
 import { distToBox } from './geometry';
 import { TUNING } from './tuning';
 import { addMess } from './cleaning';
+import { canPayMoves, cutOff, moveBill, movesLeft, nextRot, payMoves, place, spotProblem, turned } from './layout';
+import { rebuildNav } from './walk';
+import { boxCentre, frontDir } from './geometry';
+import type { Box, Placement } from './map';
 
 const idle = (): Intents => ({ move: { x: 0, z: 0 }, grab: false });
 
@@ -467,5 +471,98 @@ describe('Map 1 fully built', () => {
     expect(w.messes.length).toBe(0);
     expect(took).toBeGreaterThan(3);
     expect(took).toBeLessThan(5);
+  });
+});
+
+describe('Edit Layout', () => {
+  test('Moves: where fixtures may go, the Register carries its Cashier, Moves cost money, the layout saves', () => {
+    const w = createWorld(cornerShop, null, 7, true);
+    for (const id of Object.keys(cornerShop.pads)) own(w, id, false);
+    refreshFreeStations(w);
+    rebuildNav(w);
+    w.money = 10_000;
+    const shelf = w.stations.get('egg_shelf');
+    if (shelf?.kind !== 'shelf') throw new Error('egg_shelf not bought');
+    shelf.items = 4;
+    const home: Placement = { box: [...shelf.box], rot: shelf.rot };
+
+    // scanning the floor at 0.5 m finds valid spots and every kind of reason why a spot is red
+    const reasons = new Map<string, Placement>();
+    const valid: Placement[] = [];
+    const [W, H] = w.map.layout.size;
+    for (let x = 0; x < W; x += 0.5)
+      for (let z = 0; z < H; z += 0.5) {
+        const spot: Placement = { box: [x, z, home.box[2], home.box[3]], rot: home.rot };
+        const why = spotProblem(w, 'egg_shelf', spot);
+        if (why) reasons.set(why, spot);
+        else if (Math.hypot(x - home.box[0], z - home.box[1]) > 2) valid.push(spot);
+      }
+    for (const why of [
+      'Outside the bought Areas',
+      'Shop fixtures stay in the shop',
+      'Hits a wall',
+      'Blocks a door',
+      'Overlaps the',
+      'Too close to the',
+    ])
+      expect([...reasons.keys()].some((r) => r.startsWith(why))).toBe(true);
+    expect(spotProblem(w, 'egg_shelf', home)).toBeNull(); // where it stands is fine
+    // standing closer to a fixture than the walk grid allows doesn't make everything look cut off
+    const office = w.stations.get('office');
+    if (office) [w.player.x, w.player.z] = [office.box[0] + office.box[2] / 2, office.box[1] - 0.35];
+    expect(cutOff(w)).toBeNull();
+    expect(valid.length).toBeGreaterThan(0);
+
+    // a valid drop moves the Shelf with its Items; everyone can still reach everything
+    const to = valid.find((s) => {
+      place(w, 'egg_shelf', s);
+      const ok = cutOff(w) === null;
+      if (!ok) place(w, 'egg_shelf', home);
+      return ok;
+    });
+    expect(to).toBeDefined();
+    expect(shelf.box).toEqual(to?.box);
+    expect(shelf.items).toBe(4);
+    expect(w.map.layout.places.egg_shelf.box).toEqual(to?.box);
+    expect(cornerShop.layout.places.egg_shelf.box).toEqual(home.box); // the map data never changes
+
+    // the Register turns with its Cashier spot: same offset in its own frame
+    const reg = w.stations.get('register');
+    if (reg?.kind !== 'register') throw new Error('register not bought');
+    const cashier = w.cashiers.find((c) => c.id === 'cashier_1');
+    const before = { ...reg, box: [...reg.box] as Box };
+    const turn: Placement = { box: turned(reg.box), rot: nextRot(reg.rot) };
+    const offset = (r: Placement, c: { x: number; z: number }) => {
+      const [fx, fz] = frontDir(r.rot);
+      const [rx, rz] = boxCentre(r.box);
+      return [(c.x - rx) * fx + (c.z - rz) * fz, -(c.x - rx) * fz + (c.z - rz) * fx].map((v) => v.toFixed(2));
+    };
+    const was = offset(before, cashier ?? { x: 0, z: 0 });
+    place(w, 'register', turn);
+    expect(offset(reg, cashier ?? { x: 0, z: 0 })).toEqual(was);
+    place(w, 'register', before);
+
+    // Moves: 3 per Area bought, prices rise; Done charges them, and Customers head for the Shelf's new spot
+    expect(movesLeft(w)).toBe(9);
+    expect(moveBill(w, 2)).toEqual({ prices: [40, 60], total: 100, next: 90 });
+    expect(canPayMoves(w, 10)).toBe(false);
+    payMoves(w, 1);
+    expect(w.money).toBe(10_000 - 40);
+    expect(movesLeft(w)).toBe(8);
+    expect(moveBill(w, 1).prices).toEqual([60]);
+    w.money = 60;
+    expect(canPayMoves(w, 1)).toBe(true);
+    expect(canPayMoves(w, 2)).toBe(false);
+
+    // the save keeps the moved place and the Moves used; an older save without them loads the map's layout
+    const again = createWorld(cornerShop, snapshot(w), 8, true);
+    expect(again.stations.get('egg_shelf')?.box).toEqual(to?.box);
+    expect(again.movesUsed).toBe(1);
+    const old = snapshot(w);
+    delete old.layout;
+    delete old.movesUsed;
+    const fresh = createWorld(cornerShop, old, 9, true);
+    expect(fresh.stations.get('egg_shelf')?.box).toEqual(home.box);
+    expect(fresh.movesUsed).toBe(0);
   });
 });

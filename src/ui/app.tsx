@@ -29,6 +29,20 @@ export interface UiState {
   zoom: number;
   /** Measured screen refresh rate: the Frame rate choices are its even steps. */
   screenHz: number;
+  /** Edit Layout is open: the bill card and buttons. */
+  layout: LayoutUi | null;
+}
+
+export interface LayoutUi {
+  /** The picked fixture's name, or null. */
+  picked: string | null;
+  /** Why the picked spot is red, or why a drop went back. */
+  why: string;
+  movesLeft: number;
+  prices: number[];
+  total: number;
+  next: number | null;
+  canDone: boolean;
 }
 
 export interface UiActions {
@@ -37,6 +51,11 @@ export interface UiActions {
   open: (o: Overlay) => void;
   closeOffice: () => void;
   buyUpgrade: (id: string) => void;
+  editLayout: () => void;
+  layoutTurn: () => void;
+  layoutPutBack: () => void;
+  layoutCancel: () => void;
+  layoutDone: () => void;
   assign: (stocker: string, role: StockerRole) => void;
   setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
   fullscreen: () => void;
@@ -89,6 +108,12 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
         ✕
       </button>
       <div class="office-scroll">
+        <section>
+          <h3>Layout</h3>
+          <Btn actions={actions} onClick={actions.editLayout}>
+            ✎ Edit Layout
+          </Btn>
+        </section>
         {FAMILY_ORDER.map((family) => {
           const list = ups.filter(([, u]) => u.family === family);
           if (!list.length) return null;
@@ -498,6 +523,57 @@ function Card({ s, a }: { s: UiState; a: UiActions }) {
   );
 }
 
+function LayoutPanel({ l, a }: { l: LayoutUi; a: UiActions }) {
+  const stop = (e: Event) => e.stopPropagation();
+  const n = l.prices.length;
+  const bill = n ? (
+    <>
+      {n} Move{n > 1 ? 's' : ''}: {l.prices.map(formatMoney).join(' + ')} = <b>{formatMoney(l.total)}</b>
+    </>
+  ) : (
+    'No Moves yet'
+  );
+  return (
+    <div class="layout-panel" onPointerDown={stop} onPointerUp={stop}>
+      {l.why && <div class="layout-card why">✋ {l.why}</div>}
+      <div class="layout-card">
+        {l.picked ? (
+          <>
+            <b>{l.picked}</b> <small>· drag it or tap a spot, ⟲ to turn</small>
+          </>
+        ) : (
+          <>
+            <b>Edit Layout</b> <small>· tap a fixture to pick it up</small>
+          </>
+        )}
+        <br />
+        <small>
+          Moves left: <b>{l.movesLeft}</b> · {bill}
+          {l.next !== null && <> · next Move {formatMoney(l.next)}</>}
+        </small>
+      </div>
+      <div class="layout-row">
+        {l.picked && (
+          <>
+            <Btn actions={a} onClick={a.layoutTurn}>
+              ⟲ Turn
+            </Btn>
+            <Btn actions={a} onClick={a.layoutPutBack}>
+              ↩ Put back
+            </Btn>
+          </>
+        )}
+        <Btn actions={a} onClick={a.layoutCancel}>
+          ✕ Cancel
+        </Btn>
+        <Btn class={l.canDone ? 'buy' : 'buy off'} actions={a} disabled={!l.canDone} onClick={a.layoutDone}>
+          ✓ Done{l.total ? ` · ${formatMoney(l.total)}` : ''}
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
 function Wipe({ on }: { on: boolean }) {
   return <div class={`wipe ${on ? 'closed' : ''}`} />;
 }
@@ -514,6 +590,7 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
     <>
       {s.screen === 'title' && <Title s={s} a={a} />}
       {s.screen === 'game' && s.office && world && !overlay && <Office world={world} actions={a} wide={wide} />}
+      {s.screen === 'game' && s.layout && !overlay && <LayoutPanel l={s.layout} a={a} />}
       {overlay && (
         <div class="modal" onPointerDown={(e) => e.stopPropagation()}>
           {overlay === 'pause' && (

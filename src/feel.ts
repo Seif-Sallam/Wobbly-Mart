@@ -106,4 +106,9 @@ export const FEEL = {
   bubbleFade: 0.6,
   binLidOpen: 1.1,
   flyRadius: 0.35,
+  // Edit Layout: the picked fixture's ghost lifts (m), bobs (rad/s) and shows at this opacity; a red reason stays (s)
+  layoutLift: 0.35,
+  layoutBob: 5.5,
+  layoutGhostOpacity: 0.85,
+  layoutReasonTime: 2.2,
 };

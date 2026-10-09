@@ -97,6 +97,10 @@ export function refreshFreeStations(w: World): void {
 /** Restores what a save keeps; drops unknown ids, clamps values. */
 export function applySave(w: World, save: MapSave): void {
   w.money = Math.max(0, Number(save.money) || 0);
+  // moved places first, so Stations are created where they were left
+  for (const [id, p] of Object.entries(save.layout ?? {}))
+    if (id in w.map.pads && w.map.layout.places[id]) w.placed[id] = w.map.layout.places[id] = p;
+  w.movesUsed = Math.max(0, Math.floor(Number(save.movesUsed) || 0));
   const known = (id: string) => id in w.map.pads || Object.keys(w.map.layout.areas).includes(id);
   // Pads first in map order so Staff find their Registers
   const owned = new Set(save.owned.filter(known));

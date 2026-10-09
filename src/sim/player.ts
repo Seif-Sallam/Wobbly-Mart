@@ -1,12 +1,11 @@
 import type { Intents, Station, World } from './world';
 import { DT } from './world';
 import { cashPilePoint, cleanTime, own, padRemaining, playerSpeed, safeCount, stackCap, visiblePads } from './economy';
-import { addMess, messSlowdown, mopAt } from './cleaning';
-import { transferTick } from './carry';
+import { messSlowdown, mopAt } from './cleaning';
+import { tipDrops, transferTick } from './carry';
 import { boxCentre, distToBox, pushOutOfBox } from './geometry';
-import { inOwnedAreas, walkable } from './walk';
+import { inOwnedAreas } from './walk';
 import { TUNING } from './tuning';
-import { nextRandom } from './rng';
 import { FEEL } from '../feel';
 
 const R = TUNING.playerRadius;
@@ -67,37 +66,11 @@ function move(w: World, intents: Intents): void {
   }
 }
 
-function tipDrops(w: World): void {
+function tipping(w: World): void {
   const p = w.player;
-  const T = TUNING.tip;
-  p.dropCooldown = Math.max(0, p.dropCooldown - DT);
-  const safe = safeCount(w);
-  const n = p.stack.length;
   const v = Math.hypot(p.vx, p.vz);
-  const share = p.sprinting ? 1 : v > T.walkSpeed ? T.walkShare : 0;
-  if (share === 0 || n <= safe || p.dropCooldown > 0) return;
-  const k = (n - safe) / Math.max(1, stackCap(w) - safe);
-  const jolt = 1 + T.joltBoost * Math.min(1, p.jolt);
-  if (nextRandom(w) >= T.maxRate * share * jolt * k ** T.curve * DT) return;
-  const dir = v || 1;
-  const side = (nextRandom(w) - 0.5) * T.dropSide;
-  // lands where someone can stand, so its Mess can be mopped
-  const [x, z] = walkable(
-    w,
-    p.x - (p.vx / dir) * T.dropBehind - (p.vz / dir) * side,
-    p.z - (p.vz / dir) * T.dropBehind + (p.vx / dir) * side,
-  );
-  const product = p.stack[n - 1];
-  p.stack.pop();
-  p.dropCooldown = T.cooldown;
-  const id = w.nextId++;
-  const breakChance = w.map.products[product]?.breakChance ?? 0;
-  if (breakChance > 0 && nextRandom(w) < breakChance) {
-    addMess(w, id, x, z, [product], -1);
-    return;
-  }
-  w.events.push({ type: 'transfer', product, from: { agent: 'player' }, to: { loose: id } });
-  w.loose.push({ id, x, z, product });
+  const share = p.sprinting ? 1 : v > TUNING.tip.walkSpeed ? TUNING.tip.walkShare : 0;
+  tipDrops(w, p, { agent: 'player' }, { cap: stackCap(w), safe: safeCount(w), share, jolt: p.jolt });
 }
 
 function takeLoose(w: World): void {
@@ -182,7 +155,7 @@ export function stationAt(w: World, x: number, z: number, test: (st: Station) =>
 export function updatePlayer(w: World, intents: Intents): void {
   const p = w.player;
   move(w, intents);
-  tipDrops(w);
+  tipping(w);
   if (!p.mop) takeLoose(w);
   payPads(w);
   collectCash(w);

@@ -3,7 +3,7 @@ import { render } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { STOCKER_ROLES, type StockerRole, type World } from '../sim/world';
 import type { MapDef } from '../sim/map';
-import type { Settings } from '../sim/save';
+import { SAVER_FRAME_CAP, frameSteps, ticksPerFrame, type Settings } from '../sim/save';
 import { canBuyUpgrade, nextLevelCost, upgradeVisible } from '../sim/economy';
 import { formatMoney } from '../format';
 import { FEEL } from '../feel';
@@ -27,6 +27,8 @@ export interface UiState {
   settings: Settings;
   /** Zoom in effect: the saved one or the device default (m across the short side). */
   zoom: number;
+  /** Measured screen refresh rate: the Frame rate choices are its even steps. */
+  screenHz: number;
 }
 
 export interface UiActions {
@@ -225,7 +227,25 @@ function ZoomRow({ s, a }: { s: UiState; a: UiActions }) {
   );
 }
 
-const NEXT_CAP: Record<Settings['frameCap'], Settings['frameCap']> = { screen: 60, 60: 30, 30: 'screen' };
+/** Cycles the screen's evenly paced frame rates, highest (the screen's own) first. */
+function FrameRate({ s, a }: { s: UiState; a: UiActions }) {
+  const steps = frameSteps(s.screenHz);
+  const { frameCap, batterySaver } = s.settings;
+  const current = steps.indexOf(
+    Math.round(s.screenHz / ticksPerFrame(s.screenHz, batterySaver ? SAVER_FRAME_CAP : frameCap)),
+  );
+  const next = steps[(Math.max(0, current) + 1) % steps.length];
+  return (
+    <Toggle
+      label="Frame rate"
+      on={frameCap === 'screen' && !batterySaver}
+      text={`${steps[Math.max(0, current)]} fps`}
+      disabled={batterySaver}
+      set={() => a.setSetting('frameCap', next === steps[0] ? 'screen' : next)}
+      actions={a}
+    />
+  );
+}
 
 function Settings({ s, a }: { s: UiState; a: UiActions }) {
   const [copied, setCopied] = useState('');
@@ -243,14 +263,7 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
           actions={a}
         />
       )}
-      <Toggle
-        label="Frame rate"
-        on={s.settings.frameCap === 'screen' && !s.settings.batterySaver}
-        text={s.settings.batterySaver ? '30' : s.settings.frameCap === 'screen' ? 'Max' : String(s.settings.frameCap)}
-        disabled={s.settings.batterySaver}
-        set={() => a.setSetting('frameCap', NEXT_CAP[s.settings.frameCap])}
-        actions={a}
-      />
+      <FrameRate s={s} a={a} />
       <Toggle
         label="Battery saver"
         on={s.settings.batterySaver}

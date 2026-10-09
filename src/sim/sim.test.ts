@@ -449,6 +449,28 @@ describe('Map 1 fully built', () => {
     expect(w.loose.length).toBe(0);
     expect(maxHeld).toBeLessThan(12);
 
+    // walking tips a Stocker's Stack like the Player's: above the safe count of 3 it drops now and then, never below
+    const shuttleStocker = (seconds: number): number => {
+      let drops = 0;
+      let leg = 0;
+      for (let i = 0; i < seconds * 60; i++) {
+        auto.job ??= { sink: leg++ % 2 ? 'tomato_shelf' : 'milk_fridge', source: null, product: 'bread', need: 0 };
+        step(w, idle());
+        for (const e of w.events)
+          if ((e.type === 'transfer' && 'agent' in e.from && e.from.agent === 'stocker') || e.type === 'mess') drops++;
+      }
+      return drops;
+    };
+    w.messes = [];
+    w.loose = [];
+    Object.assign(auto, { job: null, stack: Array(6).fill('bread'), leftover: null });
+    expect(shuttleStocker(300)).toBeGreaterThan(0);
+    expect(auto.stack.length).toBeGreaterThanOrEqual(3);
+    expect(w.loose.length + w.messes.length).toBe(6 - auto.stack.length);
+    auto.stack = Array(3).fill('bread');
+    expect(shuttleStocker(120)).toBe(0);
+    w.loose = [];
+
     // 7. The Cleaner clears every waiting Mess, then wanders the shop floor mopping for show …
     w.stockers = [];
     w.cleaners = [cleaner];

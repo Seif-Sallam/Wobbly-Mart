@@ -454,7 +454,9 @@ export class WorldView {
     const w = this.w;
     switch (e.type) {
       case 'transfer': {
-        if ('loose' in e.to) this.player.emote('no');
+        // whoever tipped it says "no!"
+        if ('loose' in e.to && 'agent' in e.from && e.from.agent !== 'thief')
+          (e.from.agent === 'player' ? this.player : this.staff.get(e.from.id)?.ch)?.emote('no');
         const fromCount = this.count(e.from, e.product);
         const from = this.refPos(e.from, e.product, fromCount);
         const key = this.containerKey(e.to, e.product);

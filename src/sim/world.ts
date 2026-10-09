@@ -40,6 +40,8 @@ export interface Job {
   source: string | null;
   product: string;
   need: number;
+  /** Put leftovers back on the sink's Tray. */
+  tray?: boolean;
 }
 
 export type StockerRole = 'auto' | 'goods' | 'machines';
@@ -50,6 +52,8 @@ export interface Stocker extends Mover, Carrier {
   role: StockerRole;
   job: Job | null;
   rethink: number;
+  /** Seconds the whole Stack has been leftovers nothing needs, or null. */
+  leftover: number | null;
 }
 
 export interface Cashier {

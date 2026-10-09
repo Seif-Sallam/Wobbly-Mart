@@ -212,6 +212,71 @@ body {
   }
 }
 
+.event-banner {
+  position: absolute;
+  left: 50%;
+  top: calc(max(10px, env(safe-area-inset-top)) + 52px);
+  padding: 6px 20px 6px 8px;
+  font-size: 22px;
+  animation: banner both;
+  white-space: nowrap;
+}
+.event-banner img {
+  width: 48px;
+  height: 48px;
+}
+.event-banner span {
+  display: block;
+  font-size: 16px;
+}
+@keyframes banner {
+  0% {
+    transform: translate(-50%, -180px);
+  }
+  10% {
+    transform: translate(-50%, 0) scale(1.08, 0.92);
+  }
+  15%,
+  88% {
+    transform: translate(-50%, 0);
+  }
+  100% {
+    transform: translate(-50%, -180px);
+  }
+}
+.event-cards {
+  position: absolute;
+  top: calc(max(10px, env(safe-area-inset-top)) + 46px);
+  left: max(12px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.event-card {
+  font-size: 18px;
+  padding: 2px 12px 2px 4px;
+  gap: 6px;
+}
+.event-card img {
+  width: 30px;
+  height: 30px;
+}
+.event-card i {
+  width: 56px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--ink);
+  overflow: hidden;
+}
+.event-card b {
+  display: block;
+  height: 100%;
+  background: var(--money);
+}
+.event-card.red b {
+  background: var(--angry);
+}
+
 .hint {
   position: absolute;
   left: 50%;

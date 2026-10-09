@@ -19,6 +19,7 @@ import { model } from './assets';
 import { StationBatch } from './station-batch';
 import { CanvasTex, canvasSprite, outlinedText, roundRect } from './text';
 import { Receipt } from './receipt';
+import { Car } from './cars';
 import { basketLean, basketPose, basketSlot, hasBasket } from './basket';
 import { paletteMaterial } from './materials';
 import { Tweens, ease } from '../tween';
@@ -55,6 +56,12 @@ interface StackLook {
   lean: THREE.Vector2;
   leanVel: THREE.Vector2;
   prevVel: THREE.Vector2;
+}
+
+interface CarLook {
+  car: Car;
+  card: Receipt;
+  leaving: boolean;
 }
 
 interface CustomerLook {
@@ -94,6 +101,8 @@ export class WorldView {
   private staff = new Map<string, { ch: Character; stack: StackLook }>();
   private cleaners = new Map<string, { ch: Character; mop: HeldMop }>();
   private cleaning = new CleaningLook();
+  /** Delivery cars by pickup tile id; a leaving one drives off before it goes. */
+  private cars = new Map<string, CarLook>();
   readonly layoutGhost = new LayoutGhost();
   private playerMop: HeldMop;
   private flights: Flight[] = [];
@@ -174,6 +183,7 @@ export class WorldView {
     }
     for (const s of [...this.staff.values(), ...this.cleaners.values()]) this.root.remove(s.ch.root);
     for (const m of this.splats.values()) this.root.remove(m);
+    for (const id of [...this.cars.keys()]) this.removeCar(id);
     this.stations.clear();
     this.batch.clear();
     this.animals.clear();
@@ -367,6 +377,8 @@ export class WorldView {
       const it = w.loose.find((o) => o.id === ref.loose) ?? w.player;
       return new THREE.Vector3(it.x, LOOSE_Y, it.z);
     }
+    const car = this.cars.get(ref.station)?.car.root.position;
+    if (car) return car.clone().setY(1);
     const st = w.stations.get(ref.station);
     const v = this.stations.get(ref.station);
     if (!st || !v) return new THREE.Vector3();
@@ -409,6 +421,7 @@ export class WorldView {
     const st = w.stations.get(ref.station);
     if (st?.kind === 'shelf') return st.items;
     if (st?.kind === 'producer') return w_isInput(w, st.type, product) ? (st.input[product] ?? 0) : st.tray;
+    if (st?.kind === 'pickup') return st.delivery?.order.reduce((n, l) => n + l.got, 0) ?? 0;
     return 0;
   }
 
@@ -523,10 +536,94 @@ export class WorldView {
         }
         break;
       }
+      case 'deliveryHonk':
+        this.hopCar(e.station, 0.5);
+        break;
+      case 'deliveryDone': {
+        const at = this.cars.get(e.station)?.car.root.position.clone().setY(2.4);
+        if (!at) break;
+        if (e.amount) this.juice.money(e.station, e.amount, at);
+        if (e.amount) this.juice.coin(at.clone().setY(1.4));
+        if (e.tip) this.juice.money(`${e.station}:tip`, e.tip, at.clone().setY(3), ' tip');
+        break;
+      }
       case 'complete':
         this.syncOwned(true);
         break;
     }
+  }
+
+  // ---------- Delivery cars
+
+  /** Cars follow the sim's pickups: drive in and bounce when an order comes, drive off with a puff when it goes. */
+  private syncCars(dt: number): void {
+    const w = this.w;
+    for (const st of w.stations.values()) {
+      if (st.kind !== 'pickup') continue;
+      const look = this.cars.get(st.id);
+      const d = st.delivery;
+      if (d && !look) this.driveIn(st.id, st.car, d.look);
+      if (!d && look && !look.leaving) this.driveOff(st.id, look);
+      if (!d || !look || look.leaving) continue;
+      const red = d.time - d.t <= TUNING.events.honkAt;
+      look.car.setFace(red);
+      look.card.sprite.position.copy(look.car.root.position).setY(FEEL.carCardY);
+      look.card.updateOrder(d, w.map.products, dt, red);
+    }
+  }
+
+  private driveIn(id: string, spot: Box, colour: number): void {
+    const car = new Car(spot, colour);
+    const card = new Receipt();
+    const [x, z] = boxCentre(spot);
+    const from = -car.length;
+    car.root.position.set(from, 0, z);
+    card.sprite.visible = false;
+    card.sprite.scale.multiplyScalar(FEEL.carCardScale);
+    this.root.add(car.root, card.sprite);
+    this.cars.set(id, { car, card, leaving: false });
+    this.tweens.add(FEEL.carDriveIn, (k) => (car.root.position.x = from + (x - from) * k), {
+      done: () => this.hopCar(id, 1),
+    });
+  }
+
+  private driveOff(id: string, look: CarLook): void {
+    look.leaving = true;
+    look.card.sprite.visible = false;
+    const car = look.car.root;
+    const from = car.position.x;
+    const to = this.w.map.layout.size[0] + look.car.length;
+    this.juice.puff(
+      car.position
+        .clone()
+        .setX(from - look.car.length / 2)
+        .setY(0.4),
+      SHADES.steam,
+      8,
+      0.8,
+    );
+    this.tweens.add(FEEL.carDriveOff, (k) => (car.position.x = from + (to - from) * k), {
+      ease: ease.inOutCubic,
+      done: () => this.removeCar(id),
+    });
+  }
+
+  private removeCar(id: string): void {
+    const look = this.cars.get(id);
+    if (!look) return;
+    this.root.remove(look.car.root, look.card.sprite);
+    look.car.dispose();
+    look.card.dispose();
+    this.cars.delete(id);
+  }
+
+  /** A bounce on parking or a honk; Items landing squash it instead (see bounce). */
+  private hopCar(id: string, scale: number): void {
+    const body = this.cars.get(id)?.car.body;
+    if (!body) return;
+    this.tweens.add(0.5, (k) => {
+      body.position.y = Math.abs(Math.sin(k * Math.PI * 2)) * (1 - k) * FEEL.carBounce * scale;
+    });
   }
 
   /** The basket tips over where the Mess spilled, lies there a moment, then fades. */
@@ -589,6 +686,7 @@ export class WorldView {
     this.syncGhosts();
     this.syncPads(dt);
     this.syncCharacters(dt, alpha);
+    this.syncCars(dt);
     this.drawItems(dt);
     for (const [id, v] of this.stations) {
       const st = w.stations.get(id);
@@ -917,6 +1015,12 @@ export class WorldView {
   }
 
   private bounce(id: string): void {
+    const car = this.cars.get(id)?.car.body;
+    if (car)
+      this.tweens.add(0.2, (k) => {
+        const b = Math.sin(k * Math.PI) * FEEL.carSquash;
+        car.scale.set(1 + b * 0.5, 1 - b, 1 + b * 0.5);
+      });
     const v = this.stations.get(id);
     if (!v || v.body.scale.x < 0.99) return;
     this.tweens.add(0.2, (k) => {

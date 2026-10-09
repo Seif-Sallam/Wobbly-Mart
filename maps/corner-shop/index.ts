@@ -2,7 +2,7 @@ import type { MapDef } from '../../src/sim/map';
 import { PRODUCTS } from '../../catalog/products';
 import { PRODUCERS } from '../../catalog/producers';
 import { layout } from './layout';
-import { freeStations, movePrices, pads, start } from './unlocks';
+import { events, freeStations, movePrices, pads, start } from './unlocks';
 import { upgrades } from './upgrades';
 import { tutorial } from './tutorial';
 
@@ -18,4 +18,5 @@ export const cornerShop: MapDef = {
   start,
   tutorial,
   movePrices,
+  events,
 };

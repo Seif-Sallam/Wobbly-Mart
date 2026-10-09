@@ -43,10 +43,11 @@ import {
   writeSave,
   writeSettings,
 } from './storage';
-import { Hud, type EdgeArrow } from '../ui/hud';
+import { Hud, type EdgeArrow, type EventCard } from '../ui/hud';
 import { renderUi, type Overlay, type UiActions, type UiState } from '../ui/app';
 import { Sounds } from '../audio/audio';
 import { FEEL } from '../feel';
+import { TUNING } from '../sim/tuning';
 
 const AUTOSAVE_SECONDS = 5;
 const COMING_SOON = 2;
@@ -334,6 +335,8 @@ export class App {
       }
     }
     if (e.type === 'complete') this.hud.celebrate();
+    if (e.type === 'deliveryArrived')
+      this.hud.banner(iconUrl('van'), 'Delivery!', 'Bring the order to the car out back');
   }
 
   private onScreen(p: THREE.Vector3): boolean {
@@ -381,6 +384,19 @@ export class App {
       });
       break;
     }
+    // Delivery cars: an edge arrow while off-screen, a HUD card with the timer and Items delivered
+    const cards: EventCard[] = [];
+    for (const st of w.stations.values()) {
+      const d = st.kind === 'pickup' ? st.delivery : null;
+      if (!d) continue;
+      const [x, z] = boxCentre(st.box);
+      targets.push({ at: new THREE.Vector3(x, 0, z), icon: iconUrl('van') });
+      const got = d.order.reduce((n, l) => n + l.got, 0);
+      const want = d.order.reduce((n, l) => n + l.want, 0);
+      const left = 1 - d.t / d.time;
+      cards.push({ icon: iconUrl('van'), text: `${got}/${want}`, left, red: d.time - d.t <= TUNING.events.honkAt });
+    }
+    this.hud.setCards(cards);
     const upgrade = Object.keys(w.map.upgrades).some((id) => upgradeVisible(w, id) && canBuyUpgrade(w, id));
     view.officeAlert = upgrade;
     if (upgrade) {

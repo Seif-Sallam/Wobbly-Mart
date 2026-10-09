@@ -76,7 +76,7 @@ export const TUNING = {
   tip: {
     maxRate: 0.3,
     curve: 1.2,
-    walkShare: 0.15,
+    walkShare: 0.12,
     walkSpeed: 0.5,
     joltBoost: 2,
     cooldown: 1,
@@ -90,6 +90,30 @@ export const TUNING = {
   leftoverTime: 10,
   stockerRethink: 0.5,
   exitPickRadius: 1.2,
+  /**
+   * Events: none in the first quietStart s of an Opening. Deliveries: the next car every deliveryGap s; one waits at a
+   * time unless the Stocker counts in carStockers allow a 2nd / 3rd, and then only by extraCarChance (the extra car
+   * comes extraCarGap s after the last one parked). Up to orderProducts Products per order, Items by Areas bought; timer deliveryTime + deliveryPerItem s per Item, honk at honkAt s left;
+   * a full order pays deliveryPay × Sale Price, plus up to tipMax of that, falling to 0 at half the timer.
+   */
+  events: {
+    quietStart: 180,
+    deliveryGap: [180, 240] as const,
+    carStockers: [1, 3],
+    extraCarChance: 0.3,
+    extraCarGap: [30, 90] as const,
+    orderProducts: 3,
+    deliveryItems: [
+      [3, 6],
+      [5, 9],
+      [7, 12],
+    ] as const,
+    deliveryTime: 90,
+    deliveryPerItem: 10,
+    honkAt: 15,
+    deliveryPay: 1.5,
+    tipMax: 0.25,
+  },
   // base values Upgrades raise
   base: {
     playerSpeed: 5.5,

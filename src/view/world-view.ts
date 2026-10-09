@@ -4,7 +4,7 @@ import type { Mover, Ref, SimEvent, World } from '../sim/world';
 import type { Box, Point } from '../sim/map';
 import { stationModel } from '../sim/map';
 import { boxCentre } from '../sim/geometry';
-import { areaOf, walkAgent } from '../sim/walk';
+import { areaOf, walkAgent, type Target } from '../sim/walk';
 import { cashPilePoint, padRemaining, stackCap, visiblePads } from '../sim/economy';
 import { Stage } from './stage';
 import { Level } from './level';
@@ -32,6 +32,8 @@ const LOOSE_Y = 0.15;
 const RIPE_TOMATO_Y = 0.42;
 const RECEIPT_Y = 1.75;
 const MAX_ANIMALS = 32;
+/** Tap Walk ring and glow: above the floor tiles. */
+const WALK_MARK_Y = 0.08;
 /** Copies of each Item model, bill or basket drawn at once. */
 const MAX_COPIES = 600;
 const BILL = 'bill';
@@ -97,6 +99,10 @@ export class WorldView {
   private ghosts: THREE.Object3D[] = [];
   private prev = new Map<string, Point>();
   private time = 0;
+  /** Set by the game: where a Tap Walk is heading, or null. */
+  walkTarget: Target | null = null;
+  private walkRing: THREE.Mesh;
+  private walkGlow: THREE.Mesh;
   /** Set by the app: tutorial / guidance target point, or null. */
   arrowTarget: THREE.Vector3 | null = null;
   officeAlert = false;
@@ -135,6 +141,18 @@ export class WorldView {
     this.arrow.rotation.x = Math.PI;
     this.arrow.castShadow = true;
     this.root.add(this.arrow);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: PALETTE.orange,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+    });
+    this.walkRing = new THREE.Mesh(new THREE.RingGeometry(0.75, 1, 40).rotateX(-Math.PI / 2), ringMat);
+    this.walkRing.renderOrder = 2;
+    const glowMat = new THREE.MeshBasicMaterial({ color: PALETTE.pad, transparent: true, depthWrite: false });
+    this.walkGlow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), glowMat);
+    this.walkGlow.renderOrder = 1;
+    this.root.add(this.walkRing, this.walkGlow);
     this.reset(w);
   }
 
@@ -873,6 +891,21 @@ export class WorldView {
     if (office) {
       const [x, z] = boxCentre(office.box);
       this.officeMark.position.set(x, 2 + Math.abs(Math.sin(this.time * 4)) * 0.3, z);
+    }
+    const t = this.walkTarget;
+    const station = t && 'station' in t ? w.stations.get(t.station) : undefined;
+    this.walkRing.visible = !!t;
+    this.walkGlow.visible = !!station;
+    if (t) {
+      const [x, z] = station ? boxCentre(station.box) : 'point' in t ? t.point : [0, 0];
+      this.walkRing.position.set(x, WALK_MARK_Y, z);
+      this.walkRing.scale.setScalar(FEEL.tapRing * (1 + FEEL.tapRingPulse * Math.sin(this.time * 8)));
+    }
+    if (station) {
+      const [bx, bz, bw, bd] = station.box;
+      this.walkGlow.position.set(bx + bw / 2, WALK_MARK_Y - 0.01, bz + bd / 2);
+      this.walkGlow.scale.set(bw + 2 * FEEL.tapGlowMargin, 1, bd + 2 * FEEL.tapGlowMargin);
+      (this.walkGlow.material as THREE.MeshBasicMaterial).opacity = 0.25 + 0.15 * Math.sin(this.time * 6);
     }
     this.arrow.visible = !!this.arrowTarget;
     if (this.arrowTarget)

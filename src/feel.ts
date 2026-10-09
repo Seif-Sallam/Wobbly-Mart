@@ -21,6 +21,25 @@ export const FEEL = {
   zoomEase: 10,
   /** Joystick stays off this long after a pinch (s). */
   pinchQuiet: 0.15,
+  // Tap Walk: a press under tapMs that moved under tapPx is a tap; double-tap within doubleTapMs sprints. Fixtures
+  // count as tapped within tapPickSlop (m); a joystick push over tapCancelPush cancels. Arrive: ease off inside
+  // tapArriveSlow (m, push ≥ tapMinPush), stop within tapArriveStop (m). A Station walk ends tapStationDepth × reach
+  // from its edge (settled within tapStationSettle); a Register walk ends tapBehindRegister (m) past its back edge.
+  tapMs: 250,
+  tapPx: 12,
+  doubleTapMs: 300,
+  tapPickSlop: 0.6,
+  tapCancelPush: 0.15,
+  tapArriveSlow: 1.2,
+  tapMinPush: 0.2,
+  tapArriveStop: 0.12,
+  tapStationDepth: 0.5,
+  tapStationSettle: 0.02,
+  tapBehindRegister: 0.5,
+  /** Destination ring size (m), pulse, and the tapped Station's glow margin (m). */
+  tapRing: 0.6,
+  tapRingPulse: 0.12,
+  tapGlowMargin: 0.3,
   followSharpness: 9,
   lookAhead: 0.44,
   // stack

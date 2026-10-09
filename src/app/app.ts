@@ -101,6 +101,12 @@ export class App {
     this.settings = loadSettings();
     this.stage.viewSize = this.zoom();
     this.stage.batterySaver(this.settings.batterySaver);
+    this.input.onTap = (x, y, double) => {
+      const game = this.game;
+      if (!game || this.ui.screen !== 'game' || game.paused || this.editing) return;
+      const p = this.stage.floorAt(x, y);
+      if (p) this.input.tap.start(game.world, p, double);
+    };
     this.input.onZoom = (k) => {
       if (this.ui.screen === 'game' && !this.editing) this.setZoom(this.zoom() * k);
     };
@@ -227,6 +233,7 @@ export class App {
     this.save.currentMap = map.id;
     if (!this.save.visited.includes(map.id)) this.save.visited.push(map.id);
     game.open(map, mapSave, this.save.tutorialDone);
+    this.input.tap.cancel();
     game.view.scenery(0);
     game.view.cameraOverride = null;
     game.paused = false;

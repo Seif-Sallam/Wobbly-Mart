@@ -1,12 +1,24 @@
 // Events: seeded happenings unlocked by purchases. Deliveries: cars park at the Car Spots with an order.
-import type { EventKind } from './map';
+import type { ByArea, EventKind } from './map';
 import type { Delivery, PickupStation, World } from './world';
 import { DT } from './world';
 import { productsForSale, requirementMet } from './economy';
 import { nextRandom, randomInt, shuffle } from './rng';
 import { TUNING } from './tuning';
+import { FEEL } from '../feel';
+import { startRobbery, updateThief } from './robbery';
+import { startInspector, updateInspector } from './inspector';
 
 const E = TUNING.events;
+
+/** How long a Thief Pan freezes the game: the camera's glide to the Thief, then the hold. */
+export const thiefFreeze = (): number => FEEL.thiefPanGlide + E.robbery.freeze;
+
+/** An Event's amounts for the latest bought Area the table lists. */
+export function byArea<T>(w: World, table: ByArea<T>): T {
+  const listed = Object.keys(w.map.layout.areas).filter((a) => w.owned.has(a) && a in table);
+  return table[listed.at(-1) ?? Object.keys(table)[0]];
+}
 
 /** One pickup tile Station per Car Spot, there from the start (it takes Items only while a car waits). */
 export function addPickups(w: World): void {
@@ -84,8 +96,24 @@ function updateDeliveries(w: World): void {
   if (parked + 1 < cap && nextRandom(w.eventRng) < E.extraCarChance) w.carWait = between(w, E.extraCarGap);
 }
 
+/** Robbery and the Inspector need the Player there: one at a time, a random gap after each. */
+function updateVisits(w: World): void {
+  if (w.thief) updateThief(w, w.thief);
+  if (w.inspector) updateInspector(w, w.inspector);
+  if (w.thief || w.inspector) return;
+  const kinds = (['robbery', 'inspector'] as const).filter((k) => unlocked(w, k));
+  if (!kinds.length) return;
+  w.visitWait = (w.visitWait ?? between(w, E.visitGap)) - DT;
+  if (w.visitWait > 0 || w.t < E.quietStart) return;
+  w.visitWait = null;
+  const kind = kinds[Math.floor(nextRandom(w.eventRng) * kinds.length)];
+  if (kind === 'robbery') startRobbery(w);
+  else startInspector(w);
+}
+
 export function updateEvents(w: World): void {
   if (unlocked(w, 'delivery')) updateDeliveries(w);
+  updateVisits(w);
 }
 
 /** The waiting car's line for this Product with room, or undefined. */

@@ -38,7 +38,8 @@ export class Juice {
   private puffs: Puff[] = [];
   private coins: Coin[] = [];
 
-  /** `+$X` (+ suffix, e.g. " tip") above a point; a repeat from the same source within ~0.3 s adds up and re-bounces. */
+  /** `+$X` (+ suffix, e.g. " tip"; red `-$X` when negative) above a point; a repeat from the same source within ~0.3 s
+   * adds up and re-bounces. */
   money(source: string, amount: number, at: THREE.Vector3, suffix = ''): void {
     const recent = this.floats.find((f) => f.source === source && f.age < FEEL.floatMerge);
     if (recent) {
@@ -57,7 +58,15 @@ export class Juice {
 
   private drawFloat(f: Float): void {
     f.tex.draw((g, w, h) =>
-      outlinedText(g, `+$${Math.round(f.amount)}${f.suffix}`, w / 2, h / 2, 64, PALETTE.money, SHADES.white),
+      outlinedText(
+        g,
+        `${f.amount < 0 ? '-' : '+'}$${Math.abs(Math.round(f.amount))}${f.suffix}`,
+        w / 2,
+        h / 2,
+        64,
+        f.amount < 0 ? SHADES.angry : PALETTE.money,
+        SHADES.white,
+      ),
     );
   }
 

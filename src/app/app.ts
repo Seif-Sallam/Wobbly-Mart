@@ -26,7 +26,7 @@ import { boxCentre } from '../sim/geometry';
 import { MAPS, mapById } from '../../maps';
 import { Stage } from '../view/stage';
 import { loadAssets } from '../view/assets';
-import { iconUrl, renderThumbs } from '../view/thumbs';
+import { emojiUrl, iconUrl, renderThumbs } from '../view/thumbs';
 import { moodOf } from '../view/receipt';
 import { Input } from '../input/input';
 import { Game } from './game';
@@ -43,7 +43,7 @@ import {
   writeSave,
   writeSettings,
 } from './storage';
-import { Hud, type EdgeArrow, type EventCard } from '../ui/hud';
+import { Hud, type EdgeArrow, type EventBanner, type EventCard } from '../ui/hud';
 import { renderUi, type Overlay, type UiActions, type UiState } from '../ui/app';
 import { Sounds } from '../audio/audio';
 import { FEEL } from '../feel';
@@ -92,6 +92,8 @@ export class App {
   private ticks = 0;
   private officeKey = '';
   private layout: EditLayout | null = null;
+  /** The Inspector's warning banner, counting down until they step in. */
+  private warning: EventBanner | null = null;
 
   constructor() {
     this.stage = new Stage(document.getElementById('scene') as HTMLCanvasElement);
@@ -337,6 +339,15 @@ export class App {
     if (e.type === 'complete') this.hud.celebrate();
     if (e.type === 'deliveryArrived')
       this.hud.banner(iconUrl('van'), 'Delivery!', 'Bring the order to the car out back');
+    if (e.type === 'thiefGrab') this.hud.banner(emojiUrl(THIEF), 'Thief!', 'Sprint and catch them before the door');
+    if (e.type === 'inspectorWarning')
+      this.warning = this.hud.banner(
+        emojiUrl(INSPECTOR),
+        'Health inspector',
+        '',
+        TUNING.events.inspector.warning * 1000,
+      );
+    if (e.type === 'inspection') this.hud.report(...inspectionReport(e));
   }
 
   private onScreen(p: THREE.Vector3): boolean {
@@ -395,6 +406,32 @@ export class App {
       const want = d.order.reduce((n, l) => n + l.want, 0);
       const left = 1 - d.t / d.time;
       cards.push({ icon: iconUrl('van'), text: `${got}/${want}`, left, red: d.time - d.t <= TUNING.events.honkAt });
+    }
+    const th = w.thief;
+    if (th && !th.caught && (th.state === 'grab' || th.state === 'run')) {
+      targets.push({ at: new THREE.Vector3(th.x, 1, th.z), icon: emojiUrl(THIEF) });
+      cards.push({ icon: emojiUrl(THIEF), text: 'Catch!', left: 1, red: true });
+    }
+    const ins = w.inspector;
+    if (ins?.state === 'warn') this.warning?.line(`Arriving in ${Math.ceil(ins.t)} s! Mop up, then stay close`);
+    else if (this.warning) {
+      this.warning.close();
+      this.warning = null;
+    }
+    if (ins && ins.state !== 'leave') {
+      const at = ins.state === 'warn' ? ins.door : [ins.x, ins.z];
+      targets.push({ at: new THREE.Vector3(at[0], 1, at[1]), icon: emojiUrl(INSPECTOR) });
+      const I = TUNING.events.inspector;
+      cards.push(
+        ins.state === 'warn'
+          ? { icon: emojiUrl(INSPECTOR), text: `in ${Math.ceil(ins.t)} s`, left: ins.t / I.warning, red: false }
+          : {
+              icon: emojiUrl(INSPECTOR),
+              text: `${Math.min(ins.stop + 1, ins.stops.length)}/${ins.stops.length}`,
+              left: 1 - ins.alone / I.alone,
+              red: ins.alone > 0,
+            },
+      );
     }
     this.hud.setCards(cards);
     const upgrade = Object.keys(w.map.upgrades).some((id) => upgradeVisible(w, id) && canBuyUpgrade(w, id));
@@ -562,6 +599,23 @@ export class App {
   private renderUi(): void {
     renderUi(this.uiRoot, this.ui, this.actions, this.ui.screen === 'game' ? (this.game?.world ?? null) : null);
   }
+}
+
+const THIEF = '🦹';
+const INSPECTOR = '🧐';
+
+/** The Inspector's report card: title, line, and whether it's good news. */
+function inspectionReport(e: Extract<SimEvent, { type: 'inspection' }>): [string, string, boolean] {
+  const dirt = [
+    e.messes ? `${e.messes} Mess${e.messes > 1 ? 'es' : ''}` : '',
+    e.loose ? `${e.loose} Loose Item${e.loose > 1 ? 's' : ''}` : '',
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const money = `${e.amount < 0 ? '-' : '+'}$${Math.abs(e.amount)}`;
+  if (e.review) return ['BAD REVIEW', `${dirt ? `${dirt}, ` : ''}left alone: ${money}`, false];
+  if (!dirt) return ['Spotless! ★★★', money, true];
+  return ['Dirty store', `${dirt}: ${money}`, false];
 }
 
 /** The title shows the map fully built. */

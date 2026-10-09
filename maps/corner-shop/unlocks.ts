@@ -1,4 +1,4 @@
-import type { EventDef, EventKind, FreeStationDef, PadDef } from '../../src/sim/map';
+import type { FreeStationDef, MapEvents, PadDef } from '../../src/sim/map';
 import type { ProductId } from '../../catalog/products';
 import type { ProducerTypeId } from '../../catalog/producers';
 
@@ -65,6 +65,18 @@ export const start = { owned: ['area_1'], money: 50 };
 
 export const movePrices = [40, 60, 90, 150, 200, 275, 400, 525, 650];
 
-export const events: Partial<Record<EventKind, EventDef>> = {
+// Event amounts from the price table's Events section.
+export const events: MapEvents = {
   delivery: { requires: ['tomato_shelf'] },
+  robbery: {
+    requires: ['area_2'],
+    byArea: { area_2: { bounty: 40, cashOver: 150 }, area_3: { bounty: 120, cashOver: 400 } },
+  },
+  inspector: {
+    requires: ['area_2'],
+    byArea: {
+      area_2: { reward: [100, 200], perDirt: 20, review: 150 },
+      area_3: { reward: [300, 600], perDirt: 60, review: 450 },
+    },
+  },
 };

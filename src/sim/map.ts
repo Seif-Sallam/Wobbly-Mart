@@ -92,12 +92,23 @@ export interface TutorialStep {
   station?: string;
 }
 
-export type EventKind = 'delivery';
-
 /** An Event the Map has: rolled once every id in `requires` is owned. */
 export interface EventDef {
   requires: string[];
 }
+
+/** Event amounts by Area: the latest bought Area listed applies. */
+export type ByArea<T> = Record<string, T>;
+
+export interface MapEvents {
+  delivery?: EventDef;
+  /** Bounty for a caught Thief; a Cash Pile over `cashOver` gets robbed of half. */
+  robbery?: EventDef & { byArea: ByArea<{ bounty: number; cashOver: number }> };
+  /** Spotless reward range, fine per Mess / Loose Item, and the extra bad-review fine. */
+  inspector?: EventDef & { byArea: ByArea<{ reward: [number, number]; perDirt: number; review: number }> };
+}
+
+export type EventKind = keyof MapEvents;
 
 export interface MapDef {
   id: string;
@@ -112,7 +123,7 @@ export interface MapDef {
   tutorial: TutorialStep[];
   /** Edit Layout: the price of each Move in order (3 per Area). */
   movePrices: number[];
-  events: Partial<Record<EventKind, EventDef>>;
+  events: MapEvents;
 }
 
 /** Model name a Station is drawn with (asset table key). Staff, Area Pads draw no Station. */

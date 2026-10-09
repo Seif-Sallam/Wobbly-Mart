@@ -41,7 +41,7 @@ function solids(w: World): Box[] {
   const L = w.map.layout;
   const out: Box[] = Object.values(L.walls).map((wall) => wall.box);
   for (const door of Object.values(L.doors)) if (!areaOwned(w, door.box)) out.push(door.box);
-  for (const s of w.stations.values()) out.push(s.box);
+  for (const s of w.stations.values()) if (s.kind !== 'pickup') out.push(s.box);
   for (const p of Object.values(L.props)) if (p.solid && !p.party && (!p.area || w.owned.has(p.area))) out.push(p.box);
   return out;
 }

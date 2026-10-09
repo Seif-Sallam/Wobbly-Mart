@@ -1,5 +1,5 @@
-// The Customer's bubble: a receipt card with one line per Product, plus patience tells shared by everyone.
-import type { Customer } from '../sim/world';
+// Receipt cards: the Customer's bubble (one line per Product, patience tells) and a Delivery car's order card.
+import type { Customer, Delivery } from '../sim/world';
 import { CanvasTex, canvasSprite, outlinedText, roundRect } from './text';
 import { icon } from './thumbs';
 import { PALETTE, SHADES } from '../palette';
@@ -12,6 +12,8 @@ const ROW = 76;
 const HEIGHT = 0.6 * (H / 128);
 const MOOD_COLOUR = [PALETTE.ink, SHADES.warn, PALETTE.orange, SHADES.angry];
 const MOOD_FACE = ['', '…', '>_<', '>:('];
+/** The timer ring redraws in this many steps. */
+const RING_STEPS = 60;
 
 /** 0 calm, 1 "…", 2 ">_<", 3 really angry. Never-give-up Customers top out at 2. */
 export function moodOf(c: Customer): number {
@@ -38,54 +40,100 @@ export class Receipt {
   }
 
   update(c: Customer, models: Record<string, { model: string } | undefined>, dt: number): void {
-    this.time += dt;
     const angryLeaving = c.state === 'leave' && c.angry;
-    this.sprite.visible = c.state === 'shop' || angryLeaving;
-    c.list.forEach((e, i) => {
-      if (e.got > (this.got[i] ?? 0)) this.popAt[i] = this.time;
-      this.got[i] = e.got;
-    });
-    const popping = this.popAt.some((t) => this.time - t < FEEL.receiptPop);
     const mood = moodOf(c);
     const lines = c.list.map((e, i) => ({
       model: models[e.product]?.model ?? e.product,
       left: e.want - e.got,
       current: c.state === 'shop' && i === c.li,
     }));
-    const key = JSON.stringify([lines, mood, this.sprite.visible, angryLeaving]);
-    if (key === this.key && !popping) return;
-    this.key = key;
-    this.tex.draw((g) => {
-      if (!this.sprite.visible) return;
+    this.render(dt, c.state === 'shop' || angryLeaving, c.list, [lines, mood, angryLeaving], (g) => {
       if (angryLeaving) {
         card(g, W / 2 - 80, H - 124, 160, 100, SHADES.angry);
         outlinedText(g, MOOD_FACE[3], W / 2, H - 74, 54, SHADES.angry);
         return;
       }
-      const h = lines.length * ROW + 24;
-      const y0 = H - 24 - h;
-      card(g, 30, y0, W - 60, h, MOOD_COLOUR[mood]);
-      lines.forEach((l, i) => {
-        const y = y0 + 12 + i * ROW + ROW / 2;
-        if (l.current && l.left > 0) {
-          g.fillStyle = PALETTE.orange;
-          g.globalAlpha = 0.22;
-          roundRect(g, 42, y - ROW / 2 + 4, W - 84, ROW - 8, 14);
-          g.fill();
-          g.globalAlpha = 1;
-        }
-        const s = this.pop(i);
-        const img = icon(l.model);
-        if (img) {
-          g.globalAlpha = l.left > 0 ? 1 : FEEL.receiptDoneAlpha;
-          g.drawImage(img, 92 - 36 * s, y - 36 * s, 72 * s, 72 * s);
-          g.globalAlpha = 1;
-        }
-        if (l.left > 0) outlinedText(g, `×${l.left}`, 196, y, 44 * s, PALETTE.cream);
-        else tick(g, 190, y, 20 * s);
-      });
+      const y0 = this.lines(g, lines, MOOD_COLOUR[mood]);
       if (mood) outlinedText(g, MOOD_FACE[mood], W - 52, y0 + 4, 40, MOOD_COLOUR[mood]);
     });
+  }
+
+  /** A car's order card: the same lines, plus a timer ring that turns red near the end. */
+  updateOrder(d: Delivery, models: Record<string, { model: string } | undefined>, dt: number, red: boolean): void {
+    const lines = d.order.map((l) => ({
+      model: models[l.product]?.model ?? l.product,
+      left: l.want - l.got,
+      current: false,
+    }));
+    const k = Math.round((1 - d.t / d.time) * RING_STEPS) / RING_STEPS;
+    this.render(dt, true, d.order, [lines, k, red], (g) => {
+      const y0 = this.lines(g, lines, red ? SHADES.angry : PALETTE.ink);
+      const [x, y, r] = [W - 50, y0 + 6, 26];
+      g.fillStyle = PALETTE.cream;
+      g.strokeStyle = PALETTE.ink;
+      g.lineWidth = 6;
+      g.beginPath();
+      g.arc(x, y, r + 6, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      g.fillStyle = red ? SHADES.angry : PALETTE.money;
+      g.beginPath();
+      g.moveTo(x, y);
+      g.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + k * Math.PI * 2);
+      g.fill();
+    });
+  }
+
+  /** Redraws only when what shows changed, or while a line pops after taking an Item. */
+  private render(
+    dt: number,
+    visible: boolean,
+    got: { got: number }[],
+    state: unknown,
+    paint: (g: CanvasRenderingContext2D) => void,
+  ): void {
+    this.time += dt;
+    this.sprite.visible = visible;
+    got.forEach((e, i) => {
+      if (e.got > (this.got[i] ?? 0)) this.popAt[i] = this.time;
+      this.got[i] = e.got;
+    });
+    const popping = this.popAt.some((t) => this.time - t < FEEL.receiptPop);
+    const key = JSON.stringify([state, visible]);
+    if (key === this.key && !popping) return;
+    this.key = key;
+    this.tex.draw((g) => visible && paint(g));
+  }
+
+  /** The card with one line per Product (icon, ×n left or a tick); returns its top. */
+  private lines(
+    g: CanvasRenderingContext2D,
+    lines: { model: string; left: number; current: boolean }[],
+    edge: string,
+  ): number {
+    const h = lines.length * ROW + 24;
+    const y0 = H - 24 - h;
+    card(g, 30, y0, W - 60, h, edge);
+    lines.forEach((l, i) => {
+      const y = y0 + 12 + i * ROW + ROW / 2;
+      if (l.current && l.left > 0) {
+        g.fillStyle = PALETTE.orange;
+        g.globalAlpha = 0.22;
+        roundRect(g, 42, y - ROW / 2 + 4, W - 84, ROW - 8, 14);
+        g.fill();
+        g.globalAlpha = 1;
+      }
+      const s = this.pop(i);
+      const img = icon(l.model);
+      if (img) {
+        g.globalAlpha = l.left > 0 ? 1 : FEEL.receiptDoneAlpha;
+        g.drawImage(img, 92 - 36 * s, y - 36 * s, 72 * s, 72 * s);
+        g.globalAlpha = 1;
+      }
+      if (l.left > 0) outlinedText(g, `×${l.left}`, 196, y, 44 * s, PALETTE.cream);
+      else tick(g, 190, y, 20 * s);
+    });
+    return y0;
   }
 
   /** ×1.35 and back after a line takes an Item. */

@@ -13,6 +13,7 @@ interface Float {
   amount: number;
   age: number;
   base: THREE.Vector3;
+  suffix: string;
 }
 
 interface Puff {
@@ -37,8 +38,8 @@ export class Juice {
   private puffs: Puff[] = [];
   private coins: Coin[] = [];
 
-  /** `+$X` above a point; a repeat from the same source within ~0.3 s adds up and re-bounces. */
-  money(source: string, amount: number, at: THREE.Vector3): void {
+  /** `+$X` (+ suffix, e.g. " tip") above a point; a repeat from the same source within ~0.3 s adds up and re-bounces. */
+  money(source: string, amount: number, at: THREE.Vector3, suffix = ''): void {
     const recent = this.floats.find((f) => f.source === source && f.age < FEEL.floatMerge);
     if (recent) {
       recent.amount += amount;
@@ -47,8 +48,8 @@ export class Juice {
       this.drawFloat(recent);
       return;
     }
-    const tex = new CanvasTex(256, 96);
-    const f: Float = { sprite: canvasSprite(tex, 0.75), tex, source, amount, age: 0, base: at.clone() };
+    const tex = new CanvasTex(suffix ? 384 : 256, 96);
+    const f: Float = { sprite: canvasSprite(tex, 0.75), tex, source, amount, age: 0, base: at.clone(), suffix };
     this.drawFloat(f);
     this.group.add(f.sprite);
     this.floats.push(f);
@@ -56,7 +57,7 @@ export class Juice {
 
   private drawFloat(f: Float): void {
     f.tex.draw((g, w, h) =>
-      outlinedText(g, `+$${Math.round(f.amount)}`, w / 2, h / 2, 64, PALETTE.money, SHADES.white),
+      outlinedText(g, `+$${Math.round(f.amount)}${f.suffix}`, w / 2, h / 2, 64, PALETTE.money, SHADES.white),
     );
   }
 

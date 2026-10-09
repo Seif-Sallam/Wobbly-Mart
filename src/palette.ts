@@ -51,6 +51,8 @@ export const SHADES = {
     bin: '#e86aa6',
   },
   cleanerCap: '#f2c230',
+  /** Delivery cars: a new one each time. */
+  cars: ['#e0453a', '#3f7fd6', '#8e5cc4', '#2bb3a3', '#f2a03a', '#e86aa6', '#7fae3a'],
   customerTints: ['#ffffff', '#ffe3d6', '#e3f0ff', '#f0ffe3', '#fff4d6', '#f3e3ff'],
 } as const;
 

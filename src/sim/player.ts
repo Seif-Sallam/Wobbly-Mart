@@ -163,7 +163,7 @@ function mopStand(w: World): void {
   p.atMopStand = near;
 }
 
-const INTERACTIVE = new Set(['shelf', 'producer', 'trash']);
+const INTERACTIVE = new Set(['shelf', 'producer', 'trash', 'pickup']);
 
 export function stationAt(w: World, x: number, z: number, test: (st: Station) => boolean): Station | null {
   let best: Station | null = null;

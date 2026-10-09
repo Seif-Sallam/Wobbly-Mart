@@ -77,6 +77,9 @@ export function spotProblem(w: World, id: string, spot: Placement): string | nul
   for (const [pid, p] of Object.entries(L.props))
     if (p.solid && !p.party && (!p.area || w.owned.has(p.area)) && mine.some((m) => boxesOverlap(m, p.box)))
       return `Hits the ${fixtureName(pid.replace(/^prop_/, ''))}`;
+  for (const { pickup } of L.carSpots)
+    if (mine.some((m) => boxesOverlap(m, pickup) || boxGap(m, pickup) < TUNING.clearance - 1e-6))
+      return "Blocks a car's pickup spot";
   // every other Station and Pad footprint, bought or not
   for (const other of [...Object.keys(w.map.pads), ...Object.keys(w.map.freeStations)]) {
     if (other === id || other === cid) continue;

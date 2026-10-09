@@ -3,10 +3,12 @@ import type { Carrier, ProducerStation, Ref, Station, World } from './world';
 import { DT } from './world';
 import { workMultiplier } from './economy';
 import { TUNING } from './tuning';
+import { orderLine } from './events';
 
 export function accepts(w: World, st: Station, product: string): boolean {
   if (st.kind === 'shelf') return st.product === product && st.items < TUNING.shelfCap;
   if (st.kind === 'trash') return true;
+  if (st.kind === 'pickup') return !!orderLine(st, product);
   if (st.kind !== 'producer') return false;
   const type = w.map.producers[st.type];
   return type.inputs.includes(product) && (st.input[product] ?? 0) < (type.inputCap ?? 0);
@@ -39,7 +41,10 @@ export function take(w: World, st: ProducerStation): void {
 
 export function put(st: Station, product: string): void {
   if (st.kind === 'shelf') st.items++;
-  else if (st.kind === 'producer') st.input[product] = (st.input[product] ?? 0) + 1;
+  else if (st.kind === 'pickup') {
+    const line = orderLine(st, product);
+    if (line) line.got++;
+  } else if (st.kind === 'producer') st.input[product] = (st.input[product] ?? 0) + 1;
 }
 
 export interface TransferRules {

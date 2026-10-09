@@ -146,6 +146,16 @@ export class Sounds {
         case 'stackFull':
           this.sfx('bonk');
           break;
+        case 'deliveryArrived':
+          this.sfx('horn', { volume: at(e.station) });
+          break;
+        case 'deliveryHonk':
+          this.sfx('honk', { volume: at(e.station) });
+          break;
+        case 'deliveryDone':
+          if (e.amount) this.sfx('kaching', { volume: at(e.station) });
+          if (e.tip) setTimeout(() => this.sfx('ding'), 250);
+          break;
         case 'complete':
           this.jingle('fanfare');
           setTimeout(() => this.sfx('horn'), 700);

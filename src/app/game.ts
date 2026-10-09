@@ -47,10 +47,11 @@ export class Game {
     this.commands.assign = { stocker, role };
   }
 
-  frame(now: number): void {
+  /** One drawn frame; `fps` is the frame cap it runs under. */
+  frame(now: number, fps: number): void {
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
-    this.stage.watchFrame(dt);
+    this.stage.watchFrame(dt, fps);
     const events: SimEvent[] = [];
     if (!this.paused) {
       this.acc += dt * this.speed;

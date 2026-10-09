@@ -13,9 +13,21 @@ export interface Settings {
   music: boolean;
   sounds: boolean;
   manualGrab: boolean;
+  /** Metres across the screen's short side; null = the device default. */
+  zoom: number | null;
+  frameRate: 60 | 30;
+  /** Forces 30 fps, pixel ratio 1 and hard shadows. */
+  batterySaver: boolean;
 }
 
-export const DEFAULT_SETTINGS: Settings = { music: true, sounds: true, manualGrab: false };
+export const DEFAULT_SETTINGS: Settings = {
+  music: true,
+  sounds: true,
+  manualGrab: false,
+  zoom: null,
+  frameRate: 60,
+  batterySaver: false,
+};
 
 export const SAVE_VERSION = 2;
 

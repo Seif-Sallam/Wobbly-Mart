@@ -6,9 +6,14 @@ import { paletteColor } from './materials';
 
 const YAW = THREE.MathUtils.degToRad(FEEL.cameraYawDeg);
 const CAMERA_DISTANCE = 60;
-const SHADOW_HALF = 20;
-const PIXEL_RATIOS = [2, 1.5, 1];
-const SLOW_FRAME = 1 / 45;
+/** The sun's shadow box covers the screen's floor (and up to this height) plus a margin, so casters just off screen
+ * still cast. */
+const SHADOW_TOP = 3;
+const SHADOW_MARGIN = 3;
+const PIXEL_RATIOS = [1.5, 1];
+const SHADOW_SIZE = 1024;
+/** A frame this many times longer than the frame cap's interval counts as slow (1/45 s at 60 fps). */
+const SLOW_FRAME = 4 / 3;
 
 /** Screen-right and screen-up directions projected onto the floor. */
 export const SCREEN_RIGHT = new THREE.Vector2(Math.cos(YAW), -Math.sin(YAW));
@@ -27,11 +32,14 @@ export class Stage {
   private ratioStep = 0;
   private slowTime = 0;
   private fastTime = 0;
-  viewSize = FEEL.viewSize;
+  /** Metres across the screen's short side; `zoomTo` eases it. */
+  viewSize = FEEL.zoomDesktop;
+  private zoomWant: number | null = null;
+  private saver = false;
   /** Layout editor: look straight down with north up. */
   topDown = false;
 
-  constructor(canvas: HTMLCanvasElement, phone: boolean) {
+  constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -43,19 +51,11 @@ export class Stage {
     this.sun.color.set(LIGHT.sun);
     this.sun.intensity = LIGHT.sunIntensity;
     this.sun.castShadow = true;
-    const size = phone ? 1024 : 2048;
-    this.sun.shadow.mapSize.set(size, size);
+    this.sun.shadow.mapSize.set(SHADOW_SIZE, SHADOW_SIZE);
     this.sun.shadow.radius = LIGHT.shadowRadius;
     this.sun.shadow.bias = -0.0005;
     this.sun.shadow.normalBias = 0.02;
-    Object.assign(this.sun.shadow.camera, {
-      left: -SHADOW_HALF,
-      right: SHADOW_HALF,
-      top: SHADOW_HALF,
-      bottom: -SHADOW_HALF,
-      near: 1,
-      far: 80,
-    });
+    Object.assign(this.sun.shadow.camera, { near: 1, far: 80 });
     this.scene.add(hemi, this.sun, this.sun.target);
     this.resize();
     addEventListener('resize', () => this.resize());
@@ -73,13 +73,31 @@ export class Stage {
       bottom: (-half * h) / short,
     });
     this.camera.updateProjectionMatrix();
-    this.renderer.setPixelRatio(PIXEL_RATIOS[this.ratioStep]);
+    this.renderer.setPixelRatio(this.saver ? 1 : PIXEL_RATIOS[this.ratioStep]);
     this.renderer.setSize(w, h, false);
   }
 
-  /** Steps the pixel ratio down 2 → 1.5 → 1 when frames run slow for a while. */
-  watchFrame(dt: number): void {
-    if (dt > SLOW_FRAME) {
+  /** Battery saver: pixel ratio 1 and hard shadows. */
+  batterySaver(on: boolean): void {
+    if (on === this.saver) return;
+    this.saver = on;
+    this.renderer.shadowMap.type = on ? THREE.BasicShadowMap : THREE.PCFShadowMap;
+    this.resize();
+  }
+
+  /** Eases the view toward this zoom (metres across the short side). */
+  zoomTo(metres: number): void {
+    this.zoomWant = metres;
+  }
+
+  /** The view is still easing toward a zoom. */
+  get zooming(): boolean {
+    return this.zoomWant !== null;
+  }
+
+  /** Steps the pixel ratio down 1.5 → 1 when frames run slow for a while. */
+  watchFrame(dt: number, fps: number): void {
+    if (dt > SLOW_FRAME / fps) {
       this.slowTime += dt;
       this.fastTime = 0;
     } else {
@@ -94,6 +112,12 @@ export class Stage {
   }
 
   render(dt: number): void {
+    if (this.zoomWant !== null) {
+      const v = this.viewSize + (this.zoomWant - this.viewSize) * (1 - Math.exp(-FEEL.zoomEase * dt));
+      this.viewSize = Math.abs(v - this.zoomWant) < 0.01 ? this.zoomWant : v;
+      if (this.viewSize === this.zoomWant) this.zoomWant = null;
+      this.resize();
+    }
     this.nudgeNow.lerp(this.nudge, 1 - Math.exp(-6 * dt));
     const PITCH = THREE.MathUtils.degToRad(FEEL.cameraPitchDeg);
     const offset = this.topDown
@@ -113,7 +137,35 @@ export class Stage {
     this.camera.lookAt(look);
     this.sun.position.copy(look).add(new THREE.Vector3(10, 22, 14));
     this.sun.target.position.copy(look);
+    this.fitShadow();
     this.renderer.render(this.scene, this.camera);
+  }
+
+  private fitShadow(): void {
+    const cam = this.sun.shadow.camera;
+    cam.position.copy(this.sun.position);
+    cam.lookAt(this.sun.target.position);
+    cam.updateMatrixWorld();
+    this.camera.updateMatrixWorld();
+    const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0);
+    const up = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 1);
+    const ahead = this.camera.getWorldDirection(new THREE.Vector3());
+    const box = new THREE.Box3();
+    const p = new THREE.Vector3();
+    for (const x of [this.camera.left, this.camera.right])
+      for (const y of [this.camera.bottom, this.camera.top])
+        for (const h of [0, SHADOW_TOP]) {
+          p.copy(this.camera.position).addScaledVector(right, x).addScaledVector(up, y);
+          p.addScaledVector(ahead, (h - p.y) / ahead.y);
+          box.expandByPoint(p.applyMatrix4(cam.matrixWorldInverse));
+        }
+    Object.assign(cam, {
+      left: box.min.x - SHADOW_MARGIN,
+      right: box.max.x + SHADOW_MARGIN,
+      bottom: box.min.y - SHADOW_MARGIN,
+      top: box.max.y + SHADOW_MARGIN,
+    });
+    cam.updateProjectionMatrix();
   }
 
   /** Screen position (CSS px) of a world point. */

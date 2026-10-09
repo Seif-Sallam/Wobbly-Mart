@@ -55,6 +55,7 @@ export class StationBatch {
   clear(): void {
     this.slots.clear();
     this.parts.clear();
+    for (const s of this.scale) s.set(1, 1, 0, 0);
     this.rebuild();
   }
 

@@ -118,7 +118,7 @@ export function stationModel(map: MapDef, def: StationDef): string | null {
     case 'exit':
       return def.kind;
     case 'mopStand':
-      return 'mop-stand';
+      return 'mop-cart';
     default:
       return null;
   }

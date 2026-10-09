@@ -242,8 +242,11 @@ class Editor {
   private focus = new THREE.Vector3();
   private listeners: [string, EventListener][] = [];
 
+  private zoomBefore: number;
+
   constructor(private readonly host: EditorHost) {
     const game = host.game;
+    this.zoomBefore = game.stage.viewSize;
     this.baseMap = game.world.map;
     this.L = structuredClone(this.baseMap.layout);
     const [W, H] = this.L.size;
@@ -271,7 +274,7 @@ class Editor {
     for (const [type, fn] of this.listeners) removeEventListener(type, fn);
     game.stage.scene.remove(this.overlay);
     game.stage.topDown = false;
-    game.stage.viewSize = 20;
+    game.stage.viewSize = this.zoomBefore;
     game.stage.resize();
     game.view.cameraOverride = null;
     (document.getElementById('joy') as HTMLElement).style.pointerEvents = '';

@@ -2,7 +2,16 @@
 import * as THREE from 'three';
 import type { SimEvent } from '../sim/world';
 import type { MapDef } from '../sim/map';
-import { encodeSaveCode, decodeSaveCode, snapshot, type MapSave, type SaveFile, type Settings } from '../sim/save';
+import {
+  encodeSaveCode,
+  decodeSaveCode,
+  snapshot,
+  ticksPerFrame,
+  SAVER_FRAME_CAP,
+  type MapSave,
+  type SaveFile,
+  type Settings,
+} from '../sim/save';
 import {
   canBuyUpgrade,
   completion,
@@ -36,6 +45,7 @@ import {
 import { Hud, type EdgeArrow } from '../ui/hud';
 import { renderUi, type Overlay, type UiActions, type UiState } from '../ui/app';
 import { Sounds } from '../audio/audio';
+import { FEEL } from '../feel';
 
 const AUTOSAVE_SECONDS = 5;
 const COMING_SOON = 2;
@@ -44,6 +54,8 @@ const EDGE_MARGIN = 44;
 const WIPE_SECONDS = 450;
 const TITLE_PAN_SPEED = 0.12;
 const SCENERY_PEOPLE = 4;
+/** How quickly the measured screen tick follows changes (it varies with ProMotion and throttling). */
+const TICK_FOLLOW = 0.05;
 
 const isIos =
   /iP(hone|ad|od)/.test(navigator.userAgent) &&
@@ -70,9 +82,16 @@ export class App {
   private claimTab: () => void;
   private editing = false;
   private seenPads = new Set<string>();
+  /** Paused game: draw one more frame (something behind the overlay changed). */
+  private redraw = true;
+  /** Measured time between screen ticks (ms) and ticks seen: a frame cap draws every Nth tick, evenly paced. */
+  private tickMs = 1000 / 60;
+  private lastTick = 0;
+  private ticks = 0;
+  private officeKey = '';
 
   constructor() {
-    this.stage = new Stage(document.getElementById('scene') as HTMLCanvasElement, isTouch);
+    this.stage = new Stage(document.getElementById('scene') as HTMLCanvasElement);
     this.input = new Input(document.getElementById('joy') as HTMLElement);
     this.hud = new Hud(document.getElementById('hud') as HTMLElement);
     this.hud.visible(false);
@@ -80,6 +99,12 @@ export class App {
     const loaded = loadSave(MAPS[0].id);
     this.save = loaded.save;
     this.settings = loadSettings();
+    this.stage.viewSize = this.zoom();
+    this.stage.batterySaver(this.settings.batterySaver);
+    this.input.onZoom = (k) => {
+      if (this.ui.screen === 'game' && !this.editing) this.setZoom(this.zoom() * k);
+    };
+    addEventListener('resize', () => (this.redraw = true));
     this.ui = {
       screen: 'title',
       loading: 0,
@@ -95,7 +120,10 @@ export class App {
       maps: [],
       comingSoon: COMING_SOON,
       settings: this.settings,
+      zoom: 0,
+      screenHz: 60,
     };
+    this.ui.zoom = this.zoom();
     this.hud.onGear = () => this.openOverlay('pause');
     this.input.onEscape = () => this.escape();
     this.claimTab = claimTab(() => {
@@ -128,8 +156,19 @@ export class App {
     this.ui.loading = 1;
     this.renderUi();
     const loop = (now: number) => {
-      this.game?.frame(now);
       requestAnimationFrame(loop);
+      const game = this.game;
+      if (!game) return;
+      const gap = now - this.lastTick;
+      this.lastTick = now;
+      if (gap > 0 && gap < 100) this.tickMs += (gap - this.tickMs) * TICK_FOLLOW;
+      const cap = this.settings.batterySaver ? SAVER_FRAME_CAP : this.settings.frameCap;
+      const every = ticksPerFrame(1000 / this.tickMs, cap);
+      if (++this.ticks % every) return;
+      const still = this.ui.screen === 'game' && game.paused && !this.editing;
+      if (still && !this.redraw && !this.stage.zooming) return;
+      this.redraw = false;
+      game.frame(now, 1000 / (this.tickMs * every));
     };
     requestAnimationFrame(loop);
     Object.assign(window, { app: this, game: this.game });
@@ -235,7 +274,11 @@ export class App {
     this.sinceSave += dt;
     if (this.sinceSave > AUTOSAVE_SECONDS && !game.paused) this.writeSave();
     this.uiTimer += dt;
-    if (office && this.uiTimer > 0.15) {
+    const officeKey = office
+      ? `${Math.floor(w.money)}|${w.owned.size}|${JSON.stringify(w.levels)}|${w.stockers.map((s) => s.role).join()}`
+      : '';
+    if (officeKey !== this.officeKey && this.uiTimer > 0.15) {
+      this.officeKey = officeKey;
       this.uiTimer = 0;
       this.renderUi();
     }
@@ -377,6 +420,8 @@ export class App {
       }));
     }
     if (this.game && this.ui.screen === 'game') this.game.paused = !!o || this.lostTab;
+    this.ui.screenHz = Math.round(1000 / this.tickMs);
+    this.redraw = true;
     this.sounds.pause(!!o);
     this.renderUi();
   }
@@ -400,14 +445,7 @@ export class App {
     },
     buyUpgrade: (id) => this.game?.buyUpgrade(id),
     assign: (stocker, role) => this.game?.assign(stocker, role),
-    setSetting: (key, value) => {
-      this.settings = { ...this.settings, [key]: value };
-      this.ui.settings = this.settings;
-      writeSettings(this.settings);
-      this.sounds.apply(this.settings);
-      if (this.game) this.game.manualGrab = !isTouch && this.settings.manualGrab;
-      this.renderUi();
-    },
+    setSetting: (key, value) => this.setSetting(key, value),
     fullscreen: () => {
       if (document.fullscreenElement) void document.exitFullscreen();
       else void document.documentElement.requestFullscreen?.();
@@ -453,6 +491,28 @@ export class App {
     icon: (name) => iconUrl(name),
     click: () => this.sounds.sfx('click'),
   };
+
+  private setSetting<K extends keyof Settings>(key: K, value: Settings[K]): void {
+    this.settings = { ...this.settings, [key]: value };
+    this.ui.settings = this.settings;
+    writeSettings(this.settings);
+    this.sounds.apply(this.settings);
+    this.stage.batterySaver(this.settings.batterySaver);
+    this.ui.zoom = this.zoom();
+    this.stage.zoomTo(this.ui.zoom);
+    if (this.game) this.game.manualGrab = !isTouch && this.settings.manualGrab;
+    this.redraw = true;
+    this.renderUi();
+  }
+
+  /** Wanted zoom: the saved one, or the device default. */
+  private zoom(): number {
+    return this.settings.zoom ?? (isTouch ? FEEL.zoomPhone : FEEL.zoomDesktop);
+  }
+
+  private setZoom(metres: number): void {
+    this.setSetting('zoom', Math.min(FEEL.zoomMax, Math.max(FEEL.zoomMin, metres)));
+  }
 
   private renderUi(): void {
     renderUi(this.uiRoot, this.ui, this.actions, this.ui.screen === 'game' ? (this.game?.world ?? null) : null);

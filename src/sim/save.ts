@@ -9,13 +9,44 @@ export interface MapSave {
   roles: Record<string, StockerRole>;
 }
 
+/** Lowest frame cap offered, and the one Battery saver uses (fps). */
+const MIN_FRAME_CAP = 30;
+export const SAVER_FRAME_CAP = 45;
+
+/** Evenly paced frame rates on a screen ticking at `hz`: a frame every 1st, 2nd, 3rd… tick, down to 30 fps. */
+export function frameSteps(hz: number): number[] {
+  const steps: number[] = [];
+  for (let n = 1; hz / n >= MIN_FRAME_CAP - 0.5; n++) steps.push(Math.round(hz / n));
+  return steps;
+}
+
+/** Screen ticks per drawn frame for a cap: the nearest evenly paced rate. */
+export const ticksPerFrame = (hz: number, cap: Settings['frameCap']): number =>
+  cap === 'screen' ? 1 : Math.max(1, Math.round(hz / cap));
+
+export const validFrameCap = (cap: unknown): cap is Settings['frameCap'] =>
+  cap === 'screen' || (typeof cap === 'number' && cap >= MIN_FRAME_CAP);
+
 export interface Settings {
   music: boolean;
   sounds: boolean;
   manualGrab: boolean;
+  /** Metres across the screen's short side; null = the device default. */
+  zoom: number | null;
+  /** Frame cap: the screen's own rate, or a lower fps (drawn at the nearest evenly paced rate, see frameSteps). */
+  frameCap: 'screen' | number;
+  /** Forces the 45 fps cap, pixel ratio 1 and hard shadows. */
+  batterySaver: boolean;
 }
 
-export const DEFAULT_SETTINGS: Settings = { music: true, sounds: true, manualGrab: false };
+export const DEFAULT_SETTINGS: Settings = {
+  music: true,
+  sounds: true,
+  manualGrab: false,
+  zoom: null,
+  frameCap: 'screen',
+  batterySaver: false,
+};
 
 export const SAVE_VERSION = 2;
 

@@ -2,7 +2,7 @@
 import { Howl, Howler } from 'howler';
 import * as THREE from 'three';
 import type { SimEvent, World } from '../sim/world';
-import type { Settings } from '../sim/save';
+import { DEFAULT_SETTINGS, type Settings } from '../sim/save';
 import { boxCentre } from '../sim/geometry';
 import { stackCap } from '../sim/economy';
 import SPRITE from './sprite.json';
@@ -21,7 +21,7 @@ export class Sounds {
   private sfxHowl: Howl | null = null;
   private music: Howl | null = null;
   private hum: number | null = null;
-  private settings: Settings = { music: true, sounds: true, manualGrab: false };
+  private settings: Settings = { ...DEFAULT_SETTINGS };
   private playing = new Map<string, number[]>();
   private dropStreak = 0;
   private sinceDrop = 0;

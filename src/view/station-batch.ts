@@ -33,7 +33,7 @@ export class StationBatch {
       if (!m.isMesh || m.userData.dynamic || Array.isArray(m.material)) continue;
       const g = m.geometry.clone().applyMatrix4(m.matrixWorld);
       for (const name of Object.keys(g.attributes))
-        if (!['position', 'normal', 'uv'].includes(name)) g.deleteAttribute(name);
+        if (!['position', 'normal', 'uv', 'color'].includes(name)) g.deleteAttribute(name);
       g.setAttribute(
         'aStation',
         new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count).fill(slot), 1),

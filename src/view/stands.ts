@@ -134,12 +134,15 @@ export function buildCheckout(w: number, d: number, v: StationVisual): void {
     b.add(roller);
   }
   slab(b, beltLen, 0.08, 0.04, 'cream', bx, top, bz + d * 0.27);
-  const stripes = new THREE.Group();
-  const stripeGeo = new THREE.BoxGeometry(0.035, 0.012, d * 0.48);
-  const stripeMat = paletteMaterial('cream');
   const STRIPES = 8;
-  for (let i = 0; i < STRIPES; i++) stripes.add(new THREE.Mesh(stripeGeo, stripeMat));
+  const stripes = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(0.035, 0.012, d * 0.48),
+    paletteMaterial('cream'),
+    STRIPES,
+  );
+  stripes.frustumCulled = false;
   stripes.position.set(bx, top + 0.055, bz);
+  const stripe = new THREE.Matrix4();
   b.add(dynamic(stripes));
   // till on a riser at the back, facing the Cashier
   const tx = w / 2 - 0.55;
@@ -173,7 +176,12 @@ export function buildCheckout(w: number, d: number, v: StationVisual): void {
   let glow = FEEL.laneLightIdle;
   v.animate = (dt, working) => {
     if (working) shift = (shift + dt * FEEL.beltSpeed) % (beltLen / STRIPES);
-    stripes.children.forEach((c, i) => (c.position.x = -beltLen / 2 + (((i * beltLen) / STRIPES + shift) % beltLen)));
+    for (let i = 0; i < STRIPES; i++)
+      stripes.setMatrixAt(
+        i,
+        stripe.makeTranslation(-beltLen / 2 + (((i * beltLen) / STRIPES + shift) % beltLen), 0, 0),
+      );
+    stripes.instanceMatrix.needsUpdate = true;
     glow += ((working ? FEEL.laneLightScan : FEEL.laneLightIdle) - glow) * Math.min(1, dt * 6);
     lampMat.emissiveIntensity = glow;
   };

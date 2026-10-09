@@ -47,16 +47,18 @@ export class Game {
     this.commands.assign = { stocker, role };
   }
 
-  frame(now: number): void {
+  /** One drawn frame; `fps` is the frame cap it runs under. */
+  frame(now: number, fps: number): void {
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
-    this.stage.watchFrame(dt);
+    this.stage.watchFrame(dt, fps);
     const events: SimEvent[] = [];
     if (!this.paused) {
       this.acc += dt * this.speed;
-      this.view.beforeSteps();
       let steps = 0;
       while (this.acc >= DT && steps < MAX_STEPS_PER_FRAME) {
+        // the view blends between the last two steps, however many run this frame
+        this.view.beforeSteps();
         step(this.world, {
           move: this.input.move(),
           grab: this.input.grab,

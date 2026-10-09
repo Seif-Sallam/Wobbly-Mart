@@ -41,6 +41,9 @@ export interface StationVisual {
 /** Output pallet: strip depth in the box, board size and height, Item gap (m). */
 const OUTPUT = { strip: 1.1, pallet: [1.46, 0.99], palletHeight: 0.1, gap: 0.42 } as const;
 
+/** Animal models, animated by their own mixers (the view draws them instanced). */
+export const ANIMAL_MODELS = ['chick', 'cow'] as const;
+
 function playIdle(obj: THREE.Object3D, name: string, mixers: THREE.AnimationMixer[], clip = 'idle'): void {
   const c = clipsOf(name).find((a) => a.name === clip);
   if (!c) return;
@@ -144,7 +147,7 @@ function coop(w: number, d: number, v: StationVisual): void {
     a.position.set((i - (chicks - 1) / 2) * (w / (chicks + 1)) + 0.1, 0.04, 0.1 + (i % 2) * 0.25);
     a.rotation.y = (Math.random() - 0.5) * 1.5;
     v.body.add(a);
-    playIdle(dynamic(a), 'chick', v.mixers);
+    playIdle(dynamic(a), ANIMAL_MODELS[0], v.mixers);
   }
   slab(v.body, 0.7, 0.18, 0.32, 'woodDark', w / 2 - 0.55, 0, -d / 2 + 0.35);
   v.inputSlots = grid(3, 2, 0.45, 0.12, 0.2, w / 2 - 0.55, -d / 2 + 0.35);
@@ -164,7 +167,7 @@ function cowPen(w: number, d: number, v: StationVisual): void {
   cow.position.set(0.2, 0.04, 0.15);
   cow.rotation.y = -0.5;
   v.body.add(cow);
-  playIdle(dynamic(cow), 'cow', v.mixers);
+  playIdle(dynamic(cow), ANIMAL_MODELS[1], v.mixers);
   slab(v.body, 0.9, 0.22, 0.38, 'woodDark', s / 2 - 0.65, 0, -s / 2 + 0.45);
   v.inputSlots = grid(3, 2, 0.55, 0.12, 0.22, s / 2 - 0.65, -s / 2 + 0.45);
 }
@@ -180,6 +183,7 @@ function sails(len: number): THREE.Group {
     hub.add(arm);
   }
   cyl(hub, 0.1, 0.12, 'woodDark', 0, -0.06).rotation.x = Math.PI / 2;
+  mergeStatic(hub);
   return hub;
 }
 
@@ -236,6 +240,7 @@ function oven(w: number, d: number, v: StationVisual): void {
 function blender(w: number, d: number, v: StationVisual): void {
   const top = counter(w, d, v);
   const b = centred(model('kitchen-blender', { height: 1.3 }));
+  mergeStatic(b);
   const bx = 0.06 * w;
   b.position.set(bx, top, 0);
   v.body.add(dynamic(b));

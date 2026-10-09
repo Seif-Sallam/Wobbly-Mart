@@ -81,7 +81,6 @@ export const ASSETS: Record<string, AssetDef> = {
   'wall-wood': { path: 'town/wall-wood' },
   'kitchen-blender': { path: 'furn/kitchenBlender', height: 0.8 },
   rope: { path: 'market/fence' },
-  'market-floor': { path: 'market/floor' },
   'market-wall': { path: 'market/wall' },
   'market-window': { path: 'market/wall-window' },
 

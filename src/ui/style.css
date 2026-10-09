@@ -56,7 +56,8 @@ body {
 .btn,
 .round,
 .completion,
-.menu .btn {
+.menu .btn,
+.zoom-row {
   border: 3px solid var(--ink);
   box-shadow:
     0 4px 0 var(--ink),
@@ -642,4 +643,25 @@ body {
 }
 .wipe.closed {
   transform: translate(-50%, -50%) scale(0);
+}
+
+.zoom-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 16px;
+  background: var(--cream);
+  color: var(--ink);
+  font:
+    600 18px Fredoka,
+    system-ui,
+    sans-serif;
+}
+.zoom-row span {
+  flex: 1;
+}
+.zoom-row input {
+  width: min(180px, 40vw);
+  accent-color: var(--orange);
 }

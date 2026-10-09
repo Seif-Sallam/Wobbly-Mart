@@ -33,10 +33,10 @@ Tapping or clicking the floor, a **Pad** or a **Station** sends the **Player** w
 Holding run makes the **Player** move 1.5× faster. A tipping **Stack** sheds its top **Item** much more often while sprinting.
 
 **Tipping**:
-With more **Items** than **Steady hands** allows, a **Stack** may shed its top **Item**: likelier the taller it is, most while sprinting, a little while walking, and more on sharp turns and sudden stops. The **Item** lands as a **Loose Item** or, depending on its **Product**, breaks into a **Mess**.
+With more **Items** than its safe count (the **Player**'s rises with **Steady hands**), a moving **Stack** (the **Player**'s or a **Stocker**'s) may shed its top **Item**: likelier the taller it is, most while sprinting, a little while walking, and more on sharp turns and sudden stops. The **Item** lands as a **Loose Item** or, depending on its **Product**, breaks into a **Mess**.
 
 **Loose Item**:
-An **Item** that fell off the **Player**'s **Stack** without breaking. It lies on the floor until the **Player** walks over it to take it back.
+An **Item** that fell off the **Player**'s or a **Stocker**'s **Stack** without breaking. It lies on the floor until the **Player** walks over it to take it back.
 _Avoid_: Mess (a Mess is lost; a Loose Item isn't)
 
 **Mess**:
@@ -128,7 +128,7 @@ Hired helpers, bought on **Pads**. Three kinds: **Cashier**, **Stocker** and **C
 **Staff** bought on an optional **Pad** in the last **Area**. Brings and always carries its own **Mop**; wanders the shop mopping for show, and hurries to any **Mess** to clean it, more slowly than the **Player**.
 
 **Stocker**:
-**Staff** that moves **Items** wherever they're needed. Has a role, picked in the **Office**: **Auto** takes the most urgent job of any kind; **Stock goods** only carries **Items** to **Shelves**; **Stock machines** only feeds **Animals** and **Machines**. A **Stocker** with no job in its role waits.
+**Staff** that moves **Items** wherever they're needed. Has a role, picked in the **Office**: **Auto** takes the most urgent job of any kind; **Stock goods** only carries **Items** to **Shelves** and **Delivery** cars; **Stock machines** only feeds **Animals** and **Machines**. A **Stocker** with no job in its role waits.
 
 **Area**:
 A section of the map unlocked by a **Pad**; holds the **Pads** for its own stations.
@@ -162,7 +162,7 @@ _Avoid_: stars, rating, prestige
 A timed happening on a **Map** that asks the **Player** to act: a warning, a running phase, then a reward if handled or a cost if not. Paid in **Money** and **Items** only. **Deliveries** run alongside anything; the **Player**-bound ones (**Robbery**, **Health Inspector**) come one at a time.
 
 **Delivery**:
-An **Event** where a car parks at a **Car Spot** with an order; bring the **Items** to its pickup tile before it leaves to earn more than their **Sale Price**. Partial orders are paid at plain price; ignoring one only misses the reward. **Stockers** can fill them too.
+An **Event** where a car parks at a **Car Spot** with an order; bring the **Items** to its pickup tile before it leaves to earn more than their **Sale Price**. Partial orders are paid at plain price; ignoring one only misses the reward. **Stockers** can fill them too. Usually one car waits at a time; with **Stockers** hired, now and then two or three.
 
 **Robbery**:
 An **Event** where a **Thief**, looking like a **Customer** without a **Shopping List**, takes **Items** from a **Shelf** or cash from a **Cash Pile** and runs for the door, faster than the **Player** walks. Only the **Player** can stop them, by catching them before they're out.
@@ -202,7 +202,7 @@ _Avoid_: entrance, exit (as single points)
 A door in the shop's back wall leading the **Player** from an **Area**'s shop part to its farm yard. **Customers** never go through it.
 
 **Car Spot**:
-A reserved bay where a car parks for a **Delivery**, with a pickup tile beside it where the **Player** hands over the order. Each **Map** has several, usable from the start.
+A reserved bay where a car parks for a **Delivery**, with a pickup tile beside it where the **Player** or a **Stocker** hands over the order. Each **Map** has several, usable from the start.
 _Avoid_: parking, drive-through (as a noun for the spot)
 
 **Queue Spot**:

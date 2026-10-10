@@ -43,6 +43,10 @@ export class Game {
     this.commands.buyUpgrade = id;
   }
 
+  skipTutorial(): void {
+    this.commands.skipTutorial = true;
+  }
+
   assign(stocker: string, role: StockerRole): void {
     this.commands.assign = { stocker, role };
   }

@@ -1,4 +1,4 @@
-// Receipt cards: the Customer's bubble (one line per Product, patience tells) and a Delivery car's order card.
+// Receipt cards: the Customer's bubble (one line per Product, patience tells), a Delivery car's order card and a Station's needs card.
 import type { Customer, Delivery } from '../sim/world';
 import { CanvasTex, canvasSprite, outlinedText, roundRect } from './text';
 import { icon } from './thumbs';
@@ -84,6 +84,24 @@ export class Receipt {
     });
   }
 
+  /** A Station's needs card: one line per Product it takes (icon, have/cap), the empty ones red. */
+  updateNeeds(needs: { model: string; have: number; cap: number }[], visible: boolean, dt: number): void {
+    const lines = needs.map((n) => ({
+      model: n.model,
+      left: 0,
+      current: false,
+      text: `${n.have}/${n.cap}`,
+      red: !n.have,
+    }));
+    this.render(
+      dt,
+      visible,
+      needs.map((n) => ({ got: n.have })),
+      lines,
+      (g) => this.lines(g, lines, PALETTE.orange),
+    );
+  }
+
   /** Redraws only when what shows changed, or while a line pops after taking an Item. */
   private render(
     dt: number,
@@ -105,10 +123,10 @@ export class Receipt {
     this.tex.draw((g) => visible && paint(g));
   }
 
-  /** The card with one line per Product (icon, ×n left or a tick); returns its top. */
+  /** The card with one line per Product (icon, then its text, ×n left or a tick); returns its top. */
   private lines(
     g: CanvasRenderingContext2D,
-    lines: { model: string; left: number; current: boolean }[],
+    lines: { model: string; left: number; current: boolean; text?: string; red?: boolean }[],
     edge: string,
   ): number {
     const h = lines.length * ROW + 24;
@@ -126,11 +144,12 @@ export class Receipt {
       const s = this.pop(i);
       const img = icon(l.model);
       if (img) {
-        g.globalAlpha = l.left > 0 ? 1 : FEEL.receiptDoneAlpha;
+        g.globalAlpha = l.text || l.left > 0 ? 1 : FEEL.receiptDoneAlpha;
         g.drawImage(img, 92 - 36 * s, y - 36 * s, 72 * s, 72 * s);
         g.globalAlpha = 1;
       }
-      if (l.left > 0) outlinedText(g, `×${l.left}`, 196, y, 44 * s, PALETTE.cream);
+      if (l.text) outlinedText(g, l.text, 196, y, 44 * s, l.red ? SHADES.angry : PALETTE.cream);
+      else if (l.left > 0) outlinedText(g, `×${l.left}`, 196, y, 44 * s, PALETTE.cream);
       else tick(g, 190, y, 20 * s);
     });
     return y0;

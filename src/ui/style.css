@@ -316,6 +316,55 @@ body {
   background: var(--angry);
 }
 
+.tutor {
+  position: absolute;
+  left: 50%;
+  top: calc(max(10px, env(safe-area-inset-top)) + 64px);
+  transform: translateX(-50%);
+  width: min(300px, calc(100vw - 32px));
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 14px;
+  font-size: 14px;
+  pointer-events: auto;
+  transition: opacity 0.3s;
+}
+.tutor.gone {
+  opacity: 0;
+  pointer-events: none;
+}
+.tutor.pop {
+  animation: tutor-pop 0.35s both;
+}
+@keyframes tutor-pop {
+  0% {
+    transform: translateX(-50%) scale(0.8);
+  }
+  70% {
+    transform: translateX(-50%) scale(1.05, 0.95);
+  }
+}
+.tutor small {
+  font-size: 11px;
+  opacity: 0.7;
+}
+.tutor p {
+  margin: 0;
+  line-height: 1.3;
+}
+.tutor div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.tutor .btn {
+  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 10px;
+}
+
 .hint {
   position: absolute;
   left: 50%;

@@ -6,7 +6,12 @@ import { own } from '../sim/economy';
 
 const BUDGET = { phone: { calls: 100, triangles: 150_000 }, desktop: { calls: 300, triangles: 500_000 } };
 
-export async function openDebug(game: Game, phone: boolean): Promise<void> {
+/** App hooks the panel needs: `resetMap` wipes the current Map's save and reopens it fresh. */
+export interface DebugHooks {
+  resetMap: () => void;
+}
+
+export async function openDebug(game: Game, phone: boolean, hooks: DebugHooks): Promise<void> {
   const { default: GUI } = await import('lil-gui');
   const gui = new GUI({ title: 'Debug' });
   gui.domElement.style.zIndex = '10';
@@ -27,6 +32,7 @@ export async function openDebug(game: Game, phone: boolean): Promise<void> {
     last = now;
     const info = game.stage.renderer.info.render;
     stats.calls = info.calls;
+    if (cheats.noCustomers) game.world.arrivalTimer = Infinity;
     stats.triangles = info.triangles;
     if ((info.calls > budget.calls || info.triangles > budget.triangles) && now - warned > 5000) {
       warned = now;
@@ -39,6 +45,7 @@ export async function openDebug(game: Game, phone: boolean): Promise<void> {
   requestAnimationFrame(sample);
 
   const cheats = {
+    noCustomers: false,
     money100: () => (game.world.money += 100),
     money1000: () => (game.world.money += 1000),
     unlockAll: () => {
@@ -46,11 +53,28 @@ export async function openDebug(game: Game, phone: boolean): Promise<void> {
       for (const id of Object.keys(w.map.pads)) own(w, id, true);
       for (const [id, up] of Object.entries(w.map.upgrades)) w.levels[id] = up.levels.length;
     },
+    fillProducers: () => {
+      const w = game.world;
+      for (const st of w.stations.values()) {
+        if (st.kind !== 'producer') continue;
+        const type = w.map.producers[st.type];
+        for (const p of type.inputs) st.input[p] = type.inputCap ?? 0;
+        st.tray = type.trayCap ?? st.tray;
+        st.plants.fill(0);
+      }
+    },
+    resetMap: () => hooks.resetMap(),
   };
   const fCheat = gui.addFolder('Cheats');
   fCheat.add(cheats, 'money100').name('+$100');
   fCheat.add(cheats, 'money1000').name('+$1,000');
   fCheat.add(cheats, 'unlockAll').name('unlock all');
+  fCheat
+    .add(cheats, 'noCustomers')
+    .name('no new Customers')
+    .onChange((v: boolean) => !v && (game.world.arrivalTimer = 0));
+  fCheat.add(cheats, 'fillProducers').name('fill Animals & Machines');
+  fCheat.add(cheats, 'resetMap').name('reset this Map');
   fCheat.add(game, 'speed', 0.25, 30, 0.25).name('sim speed');
 
   const fFeel = gui.addFolder('Feel (feel.ts)').close();

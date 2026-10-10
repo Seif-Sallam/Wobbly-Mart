@@ -205,7 +205,19 @@ export class App {
     requestAnimationFrame(loop);
     Object.assign(window, { app: this, game: this.game });
     const params = new URLSearchParams(location.search);
-    if (params.has('debug')) void import('./debug').then((m) => this.game && m.openDebug(this.game, isTouch));
+    if (params.has('debug'))
+      void import('./debug').then(
+        (m) =>
+          this.game &&
+          m.openDebug(this.game, isTouch, {
+            resetMap: () => {
+              const map = this.game?.world.map;
+              if (!map) return;
+              delete this.save.maps[map.id];
+              this.openMap(map);
+            },
+          }),
+      );
     if (import.meta.env.DEV) {
       const { installEditor } = await import('../editor/editor');
       const game = this.game;

@@ -59,6 +59,8 @@ const SCENERY_PEOPLE = 4;
 /** How quickly the measured screen tick follows changes (it varies with ProMotion and throttling). */
 const TICK_FOLLOW = 0.05;
 
+const tutorKey = (map: string, step: number): string => `tutor.${map}.${step}`;
+
 const isIos =
   /iP(hone|ad|od)/.test(navigator.userAgent) &&
   !('standalone' in navigator && (navigator as { standalone?: boolean }).standalone);
@@ -78,7 +80,7 @@ export class App {
   private officeDismissed = false;
   private exitDismissed = false;
   private hintFrom: [number, number] | null = null;
-  /** The tutorial step whose pop-up the Player closed with Next. */
+  /** The tutorial step whose pop-up the Player closed with OK (also kept in storage, for reloads). */
   private tutorNexted = -1;
   private lostTab = false;
   private titleTime = 0;
@@ -140,7 +142,9 @@ export class App {
     this.ui.zoom = this.zoom();
     this.hud.onGear = () => this.openOverlay('pause');
     this.hud.onTutorNext = () => {
-      if (this.game) this.tutorNexted = tutorialStep(this.game.world);
+      if (!this.game) return;
+      this.tutorNexted = tutorialStep(this.game.world);
+      markSeen(tutorKey(this.game.world.map.id, this.tutorNexted));
     };
     this.hud.onTutorSkip = () => this.game?.skipTutorial();
     this.input.onEscape = () => this.escape();
@@ -376,7 +380,8 @@ export class App {
       return iconUrl(name ?? (def?.kind === 'exit' ? 'van' : 'employee'));
     };
     const step = tutorialStep(w);
-    const text = step >= 0 && step !== this.tutorNexted ? w.map.tutorial[step].text : undefined;
+    const closed = step === this.tutorNexted || seen(tutorKey(w.map.id, step));
+    const text = step >= 0 && !closed ? w.map.tutorial[step].text : undefined;
     this.hud.tutorial(text ?? null, step + 1, w.map.tutorial.length);
     view.arrowTarget = null;
     if (step >= 0) {

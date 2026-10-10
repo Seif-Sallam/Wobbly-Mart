@@ -121,9 +121,16 @@ export const FEEL = {
   /** Order card height over the car (m) and its size × a Customer's receipt. */
   carCardY: 2.1,
   carCardScale: 1.5,
-  /** Needs card over an empty Shelf or a stalled Producer: height (m) and size × a Customer's receipt. */
+  /** Needs card over a Shelf or an Animal / Machine: height (m), size × a Customer's receipt; it shows for
+   * needCardHold (s) each time the Player comes within needCardRange (m) of the Station's edge, fading in/out
+   * over needCardFade (s), rising needCardRise (m) and growing from needCardGrow × its size. */
   needCardY: 1.5,
   needCardScale: 1.1,
+  needCardRange: 3,
+  needCardHold: 2,
+  needCardFade: 0.25,
+  needCardRise: 0.2,
+  needCardGrow: 0.8,
   /** Event banner on screen and its slide (ms, the slide matches style.css); the Inspector's report card (ms). */
   bannerMs: 3200,
   bannerSlideMs: 400,

@@ -3,13 +3,14 @@ import type { Carrier, Mover, ProducerStation, Ref, Station, World } from './wor
 import { DT } from './world';
 import { workMultiplier } from './economy';
 import { TUNING } from './tuning';
+import { shelfCap } from './map';
 import { orderLine } from './events';
 import { addMess } from './cleaning';
 import { walkable } from './walk';
 import { nextRandom } from './rng';
 
 export function accepts(w: World, st: Station, product: string): boolean {
-  if (st.kind === 'shelf') return st.product === product && st.items < TUNING.shelfCap;
+  if (st.kind === 'shelf') return st.product === product && st.items < shelfCap(w.map, st.product);
   if (st.kind === 'trash') return true;
   if (st.kind === 'pickup') return !!orderLine(st, product);
   if (st.kind !== 'producer') return false;

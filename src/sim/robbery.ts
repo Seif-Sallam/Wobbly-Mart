@@ -10,6 +10,7 @@ import { nextRandom } from './rng';
 import { byArea, thiefFreeze } from './events';
 import { FEEL } from '../feel';
 import { TUNING } from './tuning';
+import { shelfCap } from './map';
 
 const R = TUNING.events.robbery;
 
@@ -89,7 +90,7 @@ function grab(w: World, th: Thief): void {
 function caught(w: World, th: Thief): void {
   const st = w.stations.get(th.target);
   for (const product of th.carry) {
-    if (st?.kind === 'shelf' && st.items < TUNING.shelfCap) {
+    if (st?.kind === 'shelf' && st.items < shelfCap(w.map, st.product)) {
       st.items++;
       w.events.push({ type: 'transfer', product, from: { agent: 'thief' }, to: { station: st.id } });
       continue;

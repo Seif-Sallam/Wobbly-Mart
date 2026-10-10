@@ -9,7 +9,7 @@ npm ci
 npm run dev          # http://localhost:5173 — add ?debug for the debug panel
 ```
 
-Dev-only tools: press **V** (or open `?edit`) for the layout editor; `?map=<id>` picks a map.
+Dev-only tools: press **V** (or open `?edit`) for the layout editor (modes 1–5; V again saves `layout.ts` and exits); `?map=<id>` picks a map.
 
 ## Test
 

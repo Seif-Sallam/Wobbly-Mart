@@ -25,7 +25,8 @@ import { basketLean, basketPose, basketSlot, hasBasket } from './basket';
 import { paletteMaterial } from './materials';
 import { Tweens, ease } from '../tween';
 import { FEEL } from '../feel';
-import { PALETTE, SHADES, withAlpha } from '../palette';
+import { PALETTE, SHADES, withAlpha, THEMES } from '../palette';
+import { PRODUCTS } from '../../catalog/products';
 import { TUNING } from '../sim/tuning';
 
 const CUSTOMER_MODELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((k) => `customer-${k}`);
@@ -79,7 +80,7 @@ const newStack = (): StackLook => ({
 });
 
 export class WorldView {
-  readonly level: Level;
+  level: Level;
   readonly juice = new Juice();
   readonly tweens = new Tweens();
   readonly root = new THREE.Group();
@@ -133,14 +134,15 @@ export class WorldView {
     private readonly stage: Stage,
     private w: World,
   ) {
-    this.level = new Level(w.map.layout, (b: Box) => areaOf(this.w, b), w.map.start.owned);
+    this.level = this.buildLevel(w);
     this.root.add(this.level.group, this.juice.group, this.batch.group, this.cleaning.group, this.layoutGhost.group);
     stage.scene.add(this.root);
     const models = new Map<string, THREE.Object3D>([
       [BILL, billModel()],
       [BASKET, model('shopping-basket', { height: FEEL.basketHeight })],
     ]);
-    for (const p of Object.values(w.map.products)) if (!models.has(p.model)) models.set(p.model, itemModel(p.model));
+    // every Map's Products, so switching Maps needs no new drawers
+    for (const p of Object.values(PRODUCTS)) if (!models.has(p.model)) models.set(p.model, itemModel(p.model));
     const multiDraw = stage.renderer.extensions.has('WEBGL_multi_draw');
     this.items = modelDrawer(models, MAX_COPIES, this.root, multiDraw);
     for (const name of ['tomato-bush', 'wheat-plant'])
@@ -176,9 +178,19 @@ export class WorldView {
     this.reset(w);
   }
 
+  private buildLevel(w: World): Level {
+    return new Level(w.map.layout, (b: Box) => areaOf(this.w, b), w.map.start.owned, THEMES[w.map.id]);
+  }
+
   /** Point the view at a (new) World, e.g. after a reload. Clears everything dynamic. */
   reset(w: World): void {
+    const newMap = w.map.id !== this.w.map.id;
     this.w = w;
+    if (newMap) {
+      this.root.remove(this.level.group);
+      this.level = this.buildLevel(w);
+      this.root.add(this.level.group);
+    }
     for (const v of this.stations.values()) this.root.remove(v.root);
     for (const p of this.pads.values()) this.root.remove(p.group);
     for (const c of this.customers.values()) {
@@ -921,6 +933,8 @@ export class WorldView {
         this.staff.set(c.id, look);
         this.root.add(look.ch.root);
       }
+      const reg = w.stations.get(c.register);
+      if (reg) look.ch.facing = Math.atan2(reg.box[0] + reg.box[2] / 2 - c.x, reg.box[1] + reg.box[3] / 2 - c.z);
       look.ch.update(dt, c.x, c.z, 0, 0, false);
     }
     // blob shadows
@@ -971,6 +985,9 @@ export class WorldView {
             const at = v.plants[i];
             if (!at) return;
             const grown = 0.35 + 0.65 * (1 - Math.min(1, t / type.workTime));
+            // no plant model (Juice Bar Crops): the output Item itself grows in place
+            if (!v.plantModel)
+              return put(type.output, this.local(v, at), i * 2.4, (t <= 0 ? 1 : grown * 0.8) * (v.plantScale ?? 1));
             plants?.add(
               m.compose(this.local(v, at), q.setFromEuler(new THREE.Euler(0, i * 2.4, 0)), s.setScalar(grown)),
             );
@@ -983,8 +1000,9 @@ export class WorldView {
           type.inputs.forEach((p, k) => {
             const count = this.shown(`input:${st.id}:${p}`, st.input[p] ?? 0);
             for (let i = 0; i < count; i++) {
-              const slot = v.inputSlots[(i + k * 3) % Math.max(1, v.inputSlots.length)];
-              if (slot) put(p, this.local(v, slot).add(new THREE.Vector3(0, Math.floor(i / 6) * 0.3, 0)), i);
+              const [n, layer] = v.inputColumns ? [k * 3 + (i % 3), Math.floor(i / 3)] : [i + k * 3, Math.floor(i / 6)];
+              const slot = v.inputSlots[n % Math.max(1, v.inputSlots.length)];
+              if (slot) put(p, this.local(v, slot).add(new THREE.Vector3(0, layer * 0.3, 0)), i);
             }
           });
         }

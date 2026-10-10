@@ -18,7 +18,7 @@ const NAMES: Record<Variant, string> = {
 // prototype-only colours (would move to palette.ts)
 const C = {
   ink: '#3a2416', tomato: '#e0453a', sauce: '#c8281e', sauceDark: '#9e1d15', crust: '#e2a55a', crustRaw: '#f3dcae',
-  cheese: '#ffd75e', cheeseRind: '#e0a92e', pepperoni: '#a8261c', pepper: '#3fae3a', olive: '#3a3a28', oliveGreen: '#6b7f2a',
+  cheese: '#ffd75e', cheeseRind: '#e0a92e', pepperoni: '#a8261c', pepper: '#3fae3a', olive: '#3a3a28', oliveGreen: '#6f9a2a', olivePale: '#c4d47a',
   mushroom: '#efe3cf', basil: '#2f8a2a', dough: '#f6e6c4', flour: '#ffffff', sack: '#efe2c8', milk: '#ffffff',
   blueCap: '#6fa8dc', glass: '#d8f0f4', fire: '#ff8a2a', fireCore: '#ffd23a', smoke: '#d9d4cc', steam: '#f0f0f0',
   leaf: '#8aa66a', leafDark: '#6d8a52', trunk: '#7a6248', dirt: '#8a5a3a', steel: '#c9d2da', steelDark: '#9aa5ae',
@@ -297,12 +297,12 @@ function oliveTree(w: number, d: number, L: Look): Built {
     [0, 0, 0, 0.55], [0.45, -0.05, 0.15, 0.4], [-0.45, 0, -0.1, 0.42], [0.1, 0.1, -0.42, 0.38], [-0.15, -0.05, 0.42, 0.38],
   ])
     sph(top, r, (x + z) > 0 ? C.leaf : C.leafDark, x, y, z).scale.set(1, 0.6, 1);
-  // each cluster ripens on a branch (green → near-black), drops into the soil below and waits there to be picked
+  // each cluster ripens on a branch (pale → olive green), drops into the soil below and waits there to be picked
   const topY = 0.5 + h + 0.25;
   const soil = 0.5;
   const r = 0.06 * P.oliveSize;
-  const unripe = new THREE.Color(C.oliveGreen);
-  const ripe = new THREE.Color(C.olive);
+  const unripe = new THREE.Color(C.olivePale);
+  const ripe = new THREE.Color(C.oliveGreen);
   const clusters = [0, 1, 2, 3].map((i) => {
     const a = (i / 4) * Math.PI * 2 + 0.4;
     const hang = new THREE.Vector3(Math.cos(a) * 0.55, topY - 0.36, Math.sin(a) * 0.55);

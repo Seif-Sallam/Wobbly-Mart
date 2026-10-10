@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>PROTOTYPE — Juice Bar Producers</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; touch-action: none; }
+      #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+      .lbl { position: fixed; transform: translate(-50%, -100%); pointer-events: auto; cursor: pointer; white-space: nowrap;
+        background: #3a2416; color: #fff1d0; font: 600 12px system-ui; padding: 3px 8px; border-radius: 999px; }
+      .lbl.on { background: #2f9e4f; }
+      #cap { position: fixed; left: 50%; bottom: 64px; transform: translateX(-50%); background: #fff1d0; color: #3a2416;
+        border: 3px solid #3a2416; border-radius: 16px; padding: 8px 14px; font: 600 15px system-ui; text-align: center; max-width: 92vw; }
+      #switch { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; align-items: center;
+        white-space: nowrap; background: #111; color: #fff; padding: 6px 12px; border-radius: 999px; font: 14px system-ui; z-index: 5; }
+      #switch button { background: none; border: 0; color: #fff; font-size: 18px; cursor: pointer; }
+      #dump { position: fixed; left: 8px; top: 8px; max-height: 60vh; overflow: auto; background: #fff1d0; border: 2px solid #3a2416;
+        font: 11px ui-monospace, monospace; padding: 8px; display: none; user-select: text; z-index: 6; }
+    </style>
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+    <div id="labels"></div>
+    <div id="cap"></div>
+    <pre id="dump"></pre>
+    <div id="switch"><button id="prev">←</button><span id="vname"></span><button id="next">→</button></div>
+    <script type="module" src="./src/view/juice-models-prototype.ts"></script>
+  </body>
+</html>

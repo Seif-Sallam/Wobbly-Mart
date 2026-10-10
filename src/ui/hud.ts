@@ -42,8 +42,11 @@ export class Hud {
   onTutorNext: () => void = () => {};
   onTutorSkip: () => void = () => {};
 
+  /** Everything but the edge arrows, scaled by the HUD size setting. */
+  private ui: HTMLElement;
+
   constructor(private readonly root: HTMLElement) {
-    root.innerHTML = `
+    root.innerHTML = `<div class="hud-ui">
       <div class="hud-top">
         <div class="completion"><i></i></div>
         <div class="money pill">${BILL}<span>$0</span></div>
@@ -51,7 +54,8 @@ export class Hud {
       </div>
       <div class="event-cards"></div>
       <div class="tutor pill gone"><small></small><p></p><div><button class="btn skip">Skip tutorial</button><button class="btn buy next">OK</button></div></div>
-      <div class="hint"></div>`;
+      <div class="hint"></div></div>`;
+    this.ui = root.querySelector('.hud-ui') as HTMLElement;
     this.cardBox = root.querySelector('.event-cards') as HTMLElement;
     this.money = root.querySelector('.money') as HTMLElement;
     this.bar = root.querySelector('.completion') as HTMLElement;
@@ -70,6 +74,10 @@ export class Hud {
 
   visible(on: boolean): void {
     this.root.style.display = on ? '' : 'none';
+  }
+
+  scale(s: number): void {
+    this.ui.style.setProperty('--hud-scale', String(s));
   }
 
   /** Jump straight to a value (new Opening). */
@@ -135,7 +143,7 @@ export class Hud {
     (el.querySelector('b') as HTMLElement).textContent = name;
     const span = el.querySelector('span') as HTMLElement;
     span.textContent = line;
-    this.root.appendChild(el);
+    this.ui.appendChild(el);
     const close = () => {
       if (el.classList.contains('out')) return;
       el.classList.add('out');
@@ -182,7 +190,7 @@ export class Hud {
     (el.querySelector('b') as HTMLElement).textContent = title;
     (el.querySelector('span') as HTMLElement).textContent = line;
     el.style.animationDuration = `${FEEL.reportMs}ms`;
-    this.root.appendChild(el);
+    this.ui.appendChild(el);
     setTimeout(() => el.remove(), FEEL.reportMs);
   }
 
@@ -212,7 +220,7 @@ export class Hud {
     const banner = document.createElement('div');
     banner.className = 'banner100';
     banner.textContent = '100%!';
-    this.root.appendChild(banner);
+    this.ui.appendChild(banner);
     const colors = ['--money', '--orange', '--pad', '--sky', '--cream'];
     for (let i = 0; i < 90; i++) {
       const c = document.createElement('i');

@@ -37,6 +37,8 @@ export interface Settings {
   manualGrab: boolean;
   /** Metres across the screen's short side; null = the device default. */
   zoom: number | null;
+  /** HUD scale, 1 = as designed. */
+  hudScale: number;
   /** Frame cap: the screen's own rate, or a lower fps (drawn at the nearest evenly paced rate, see frameSteps). */
   frameCap: 'screen' | number;
   /** Forces the 45 fps cap, pixel ratio 1 and hard shadows. */
@@ -48,6 +50,7 @@ export const DEFAULT_SETTINGS: Settings = {
   sounds: true,
   manualGrab: false,
   zoom: null,
+  hudScale: 1,
   frameCap: 'screen',
   batterySaver: false,
 };

@@ -44,7 +44,11 @@ export const pads: Record<string, PadDef> = {
   chicken_coop: { cost: 500, requires: ['egg_shelf'], unlocks: producer('chicken_coop') },
   pudding_shelf: { cost: 500, requires: ['chicken_coop'], unlocks: shelf('pudding') },
   pudding_pot: { cost: 700, requires: ['pudding_shelf'], unlocks: producer('pudding_pot') },
-  register_2: { cost: 600, requires: ['pudding_pot'], unlocks: { kind: 'register', queueLength: 6 } },
+  register_2: {
+    cost: 600,
+    requires: ['pudding_pot'],
+    unlocks: { kind: 'register', queueLength: 6, cashPileFlipped: true },
+  },
   cashier_2: { cost: 750, requires: ['register_2'], unlocks: { kind: 'cashier', register: 'register_2' } },
   wheat_field_3: { cost: 750, requires: ['pudding_pot'], unlocks: producer('wheat_field') },
   cow_3: { cost: 750, requires: ['pudding_pot'], unlocks: producer('cow_pen') },

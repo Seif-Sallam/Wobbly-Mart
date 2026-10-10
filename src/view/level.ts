@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import type { Box, MapLayout, Point } from '../sim/map';
 import { boxCentre, footprint, inBox } from '../sim/geometry';
-import { model } from './assets';
+import { centred, model } from './assets';
 import { paletteMaterial } from './materials';
 import { FEEL } from '../feel';
 import { SHADES, THEMES, type ShopTheme } from '../palette';
@@ -81,7 +81,8 @@ export class Level {
     for (const d of Object.values(L.doors)) this.buildDoor(d.kind, d.box);
     for (const p of Object.values(L.props)) {
       const fit = footprint(p.box, p.rot);
-      const obj = model(p.model, { fit });
+      // Kenney models' origins are often a corner; centre them so a Prop sits in its box
+      const obj = centred(model(p.model, { fit }));
       const [x, z] = boxCentre(p.box);
       obj.position.set(x, 0, z);
       obj.rotation.y = THREE.MathUtils.degToRad(p.rot);

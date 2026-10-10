@@ -19,6 +19,25 @@ import { SHADES } from '../src/palette';
 export const ITEM_SIZE = 0.544;
 const ITEM = ITEM_SIZE;
 
+/** Decoration Props: the layout editor's add list. */
+const PROPS: Record<string, AssetDef> = {
+  bookshelf: { path: 'furn/bookcaseOpen' },
+  sofa: { path: 'furn/loungeSofa' },
+  rug: { path: 'furn/rugRectangle' },
+  plant: { path: 'furn/pottedPlant', height: 1.1 },
+  cooler: { path: 'furn/kitchenFridgeSmall', height: 1.2 },
+  table: { path: 'furn/table' },
+  tree: { path: 'nature/tree_default', height: 3.6 },
+  'tree-oak': { path: 'nature/tree_oak', height: 4.2 },
+  bush: { path: 'nature/plant_bushLarge', height: 1 },
+  flower: { path: 'nature/flower_yellowA', height: 0.4 },
+  'banner-red': { path: 'town/banner-red', height: 2.2 },
+  'banner-green': { path: 'town/banner-green', height: 2.2 },
+  flag: { path: 'platformer/flag', height: 1.8 },
+};
+
+export const PROP_MODELS = Object.keys(PROPS);
+
 export const ASSETS: Record<string, AssetDef> = {
   // characters
   player: { path: 'chars/character-male-a', height: 1.25 },
@@ -102,21 +121,7 @@ export const ASSETS: Record<string, AssetDef> = {
   rope: { path: 'market/fence' },
   'market-wall': { path: 'market/wall' },
   'market-window': { path: 'market/wall-window' },
-
-  // props
-  bookshelf: { path: 'furn/bookcaseOpen' },
-  sofa: { path: 'furn/loungeSofa' },
-  rug: { path: 'furn/rugRectangle' },
-  plant: { path: 'furn/pottedPlant', height: 1.1 },
-  cooler: { path: 'furn/kitchenFridgeSmall', height: 1.2 },
-  table: { path: 'furn/table' },
-  tree: { path: 'nature/tree_default', height: 3.6 },
-  'tree-oak': { path: 'nature/tree_oak', height: 4.2 },
-  bush: { path: 'nature/plant_bushLarge', height: 1 },
-  flower: { path: 'nature/flower_yellowA', height: 0.4 },
-  'banner-red': { path: 'town/banner-red', height: 2.2 },
-  'banner-green': { path: 'town/banner-green', height: 2.2 },
-  flag: { path: 'platformer/flag', height: 1.8 },
+  ...PROPS,
 };
 
 /** Untextured Kenney materials (Nature, Furniture, Fantasy Town) by name → palette colour. */

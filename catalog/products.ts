@@ -16,6 +16,16 @@ export const PRODUCTS = {
   milk: { name: 'Milk', model: 'milk', shelf: 'milk-stand', price: 7, breakChance: 0.3 },
   flour: { name: 'Flour', model: 'flour', shelf: 'flour-stand', price: 8, breakChance: 0.5 },
   bread: { name: 'Bread', model: 'bread', shelf: 'bread-stand', price: 20, breakChance: 0.05 },
+  // Juice Bar: sold from the Corner Shop's stand shapes
+  apple: { name: 'Apple', model: 'apple', shelf: 'tomato-stand', price: 3, breakChance: 0.2 },
+  orange: { name: 'Orange', model: 'orange', shelf: 'tomato-stand', price: 4, breakChance: 0.2 },
+  apple_juice: { name: 'Apple juice', model: 'apple-juice', shelf: 'milk-stand', price: 6, breakChance: 0.6 },
+  orange_juice: { name: 'Orange juice', model: 'orange-juice', shelf: 'milk-stand', price: 8, breakChance: 0.6 },
+  sugar_cane: { name: 'Sugar cane', model: 'sugar-cane', shelf: 'wheat-stand', price: 2, breakChance: 0.05 },
+  sugar: { name: 'Sugar', model: 'sugar', shelf: 'flour-stand', price: 8, breakChance: 0.5 },
+  candy_apple: { name: 'Candy apple', model: 'candy-apple', shelf: 'egg-stand', price: 16, breakChance: 0.4 },
+  strawberry: { name: 'Strawberry', model: 'strawberry', shelf: 'tomato-stand', price: 5, breakChance: 0.8 },
+  smoothie: { name: 'Smoothie', model: 'smoothie', shelf: 'ketchup-stand', price: 24, breakChance: 0.7 },
 } satisfies Record<string, Product>;
 
 export type ProductId = keyof typeof PRODUCTS;

@@ -483,9 +483,14 @@ export class App {
   private openOverlay(o: Overlay | null): void {
     this.ui.overlay = o;
     if (o === 'maps') {
-      this.ui.maps = MAPS.map((map) => ({
+      // a Map opens once it was visited or the Map before it has its Exit Pad bought
+      const exitBought = (id: string) =>
+        id === this.game?.world.map.id
+          ? this.game.world.owned.has('exit')
+          : !!this.save.maps[id]?.owned.includes('exit');
+      this.ui.maps = MAPS.map((map, i) => ({
         map,
-        visited: this.save.visited.includes(map.id),
+        visited: this.save.visited.includes(map.id) || (i > 0 && exitBought(MAPS[i - 1].id)),
         completion:
           map.id === this.game?.world.map.id
             ? completion(this.game.world)

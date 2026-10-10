@@ -12,7 +12,7 @@ import { slab } from './shapes';
 import type { StationVisual } from './stations';
 
 /** Item height and gap between neighbours on a stand, in base Item sizes. */
-const ITEM: Record<ProductId, { h: number; gap: number }> = {
+const ITEM: Record<string, { h: number; gap: number }> = {
   tomato: { h: 0.92, gap: 0.92 },
   egg: { h: 1, gap: 0.77 },
   ketchup: { h: 1.25, gap: 0.59 },
@@ -89,6 +89,8 @@ function stand(product: ProductId, w: number, d: number, v: StationVisual): Tier
       slab(b, w * 0.8, 0.08, d * 0.75, 'wood', 0, top);
       return [0.12, -0.18].map((z) => ({ y: top + 0.08, z, span: w * 0.32 }));
     }
+    default:
+      throw new Error(`No stand for ${product}`);
   }
 }
 

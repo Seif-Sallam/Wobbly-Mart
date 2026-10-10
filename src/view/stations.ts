@@ -13,6 +13,7 @@ import { cyl, grid, slab } from './shapes';
 import { buildCheckout, buildStand } from './stands';
 import { buildMopStand, buildPedalBin } from './cleaning';
 import type { ProductId } from '../../catalog/products';
+import { JUICE_STATIONS } from './juice-stations';
 
 /** Shelf stands are named `<product>-stand` in the asset table. */
 const STAND = '-stand';
@@ -32,6 +33,10 @@ export interface StationVisual {
   inputSlots: THREE.Vector3[];
   /** Local positions of Crop plants. */
   plants: THREE.Vector3[];
+  /** Crops without a plant model draw their growing output Item, this much bigger. */
+  plantScale?: number;
+  /** Input slots come in columns of 3, one column per Recipe input. */
+  inputColumns?: boolean;
   /** Crop plants are drawn instanced by the view with this model. */
   plantModel: string | null;
   mixers: THREE.AnimationMixer[];
@@ -263,7 +268,27 @@ function counter(w: number, d: number, v: StationVisual): number {
   return new THREE.Box3().setFromObject(bar).max.y;
 }
 
+/** The Juice Bar's code-built Producers, animated whole (they move while working). */
+function juice(name: string, w: number, d: number, v: StationVisual): boolean {
+  const make = JUICE_STATIONS[name];
+  if (!make) return false;
+  const built = make(w, d);
+  v.body.add(dynamic(built.group));
+  v.root.updateMatrixWorld(true);
+  for (const p of built.plants ?? []) v.plants.push(v.body.worldToLocal(p.getWorldPosition(new THREE.Vector3())));
+  v.plantModel = null;
+  v.plantScale = built.plantScale;
+  if (built.inputs) {
+    v.inputSlots = built.inputs;
+    v.inputColumns = true;
+  }
+  let t = 0;
+  v.animate = (dt, working) => built.animate(dt, (t += dt), working);
+  return true;
+}
+
 function build(name: string, w: number, d: number, v: StationVisual): void {
+  if (juice(name, w, d, v)) return;
   if (name.endsWith(STAND)) return buildStand(name.slice(0, -STAND.length) as ProductId, w, d, v);
   switch (name) {
     case 'tomato-bed':
@@ -309,7 +334,18 @@ function build(name: string, w: number, d: number, v: StationVisual): void {
   }
 }
 
-const PALLETED = new Set(['chicken-coop', 'cow-pen', 'blender', 'mill', 'oven']);
+const PALLETED = new Set([
+  'chicken-coop',
+  'cow-pen',
+  'blender',
+  'mill',
+  'oven',
+  'apple-press',
+  'squeezer',
+  'sugar-mill',
+  'candy-pot',
+  'smoothie-blender',
+]);
 
 export function buildStation(name: string, box: Box, rot: Rot): StationVisual {
   const [w, d] = footprint(box, rot);

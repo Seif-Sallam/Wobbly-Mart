@@ -19,6 +19,7 @@ const ITEM: Record<string, { h: number; gap: number }> = {
   milk: { h: 1.2, gap: 0.74 },
   flour: { h: 1.2, gap: 0.92 },
   bread: { h: 0.85, gap: 1.14 },
+  cheese: { h: 0.4, gap: 1.2 },
 };
 /** Loose produce heaps a second layer when its stand has fewer spots than its Shelf holds. */
 const HEAPS = new Set<ProductId>(['tomato', 'bread', 'flour']);
@@ -87,6 +88,20 @@ function stand(product: ProductId, w: number, d: number, v: StationVisual): Tier
       b.add(table);
       slab(b, w * 0.8, 0.08, d * 0.75, 'wood', 0, top);
       return [0.12, -0.18].map((z) => ({ y: top + 0.08, z, span: w * 0.32 }));
+    }
+    case 'cheese': {
+      // deli counter filling its box: a long wooden top on steel legs, a raised back step for a second row
+      const D = SHADES.dairy;
+      for (const x of [-w / 2 + 0.12, w / 2 - 0.12])
+        for (const z of [-d / 2 + 0.12, d / 2 - 0.12]) slab(b, 0.08, 0.72, 0.08, D.steelDark, x, 0, z);
+      slab(b, w, 0.06, d, 'wood', 0, 0.72);
+      slab(b, w * 0.96, 0.05, 0.08, D.blue, 0, 0.62, d / 2 - 0.06);
+      slab(b, w * 0.96, 0.22, d * 0.42, 'woodDark', 0, 0.78, -d * 0.24);
+      const span = w / 2 - 0.35;
+      return [
+        { y: 0.78, z: d * 0.24, span },
+        { y: 1.0, z: -d * 0.24, span },
+      ];
     }
     default:
       throw new Error(`No stand for ${product}`);

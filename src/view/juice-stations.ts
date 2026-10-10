@@ -8,16 +8,24 @@ const J = SHADES.juice;
 const glassMat = new THREE.MeshStandardMaterial({ color: J.glass, transparent: true, opacity: 0.45, roughness: 0.1 });
 const chromeMat = new THREE.MeshStandardMaterial({ color: J.chrome, roughness: 0.25, metalness: 0.6 });
 
-function put<T extends THREE.Mesh>(parent: THREE.Object3D, m: T, x = 0, y = 0, z = 0): T {
+export function put<T extends THREE.Mesh>(parent: THREE.Object3D, m: T, x = 0, y = 0, z = 0): T {
   m.position.set(x, y, z);
   m.castShadow = m.receiveShadow = true;
   parent.add(m);
   return m;
 }
 const matOf = (c: string | THREE.Material) => (typeof c === 'string' ? paletteMaterial(c) : c);
-const box = (p: THREE.Object3D, w: number, h: number, d: number, c: string | THREE.Material, x = 0, y = 0, z = 0) =>
-  put(p, new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matOf(c)), x, y + h / 2, z);
-const cyl = (
+export const box = (
+  p: THREE.Object3D,
+  w: number,
+  h: number,
+  d: number,
+  c: string | THREE.Material,
+  x = 0,
+  y = 0,
+  z = 0,
+) => put(p, new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matOf(c)), x, y + h / 2, z);
+export const cyl = (
   p: THREE.Object3D,
   r: number,
   h: number,
@@ -28,11 +36,19 @@ const cyl = (
   rb = r,
   seg = 16,
 ) => put(p, new THREE.Mesh(new THREE.CylinderGeometry(r, rb, h, seg), matOf(c)), x, y + h / 2, z);
-const sph = (p: THREE.Object3D, r: number, c: string | THREE.Material, x = 0, y = 0, z = 0, detail = 1) =>
+export const sph = (p: THREE.Object3D, r: number, c: string | THREE.Material, x = 0, y = 0, z = 0, detail = 1) =>
   put(p, new THREE.Mesh(new THREE.IcosahedronGeometry(r, detail), matOf(c)), x, y, z);
-const cone = (p: THREE.Object3D, r: number, h: number, c: string, x = 0, y = 0, z = 0, seg = 12) =>
-  put(p, new THREE.Mesh(new THREE.ConeGeometry(r, h, seg), matOf(c)), x, y + h / 2, z);
-const torus = (p: THREE.Object3D, r: number, t: number, c: string, x = 0, y = 0, z = 0) => {
+export const cone = (
+  p: THREE.Object3D,
+  r: number,
+  h: number,
+  c: string | THREE.Material,
+  x = 0,
+  y = 0,
+  z = 0,
+  seg = 12,
+) => put(p, new THREE.Mesh(new THREE.ConeGeometry(r, h, seg), matOf(c)), x, y + h / 2, z);
+export const torus = (p: THREE.Object3D, r: number, t: number, c: string | THREE.Material, x = 0, y = 0, z = 0) => {
   const m = put(p, new THREE.Mesh(new THREE.TorusGeometry(r, t, 8, 24), matOf(c)), x, y, z);
   m.rotation.x = Math.PI / 2;
   return m;
@@ -286,7 +302,7 @@ function smoothieBlender(w: number): JuiceStation {
 // ---------- input spots
 
 /** One column of 3 per Recipe input, each a painted square in its input's colour so an empty one shows what's missing. */
-function inputSpots(g: THREE.Object3D, x0: number, y: number, colours: string[]): THREE.Vector3[] {
+export function inputSpots(g: THREE.Object3D, x0: number, y: number, colours: string[]): THREE.Vector3[] {
   const cols = colours.length === 1 ? [colours[0], colours[0]] : colours;
   return cols.flatMap((c, k) =>
     [0, 1, 2].map((r) => {
@@ -307,12 +323,17 @@ function inputSpots(g: THREE.Object3D, x0: number, y: number, colours: string[])
   );
 }
 
-/** A low wooden tray left of a floor Machine (the Machine shifts right to make room). */
-function withTray(s: JuiceStation, w: number, colours: string[]): JuiceStation {
+/** A low tray left of a floor Machine (the Machine shifts right to make room); wooden unless `look` says. */
+export function withTray(
+  s: JuiceStation,
+  w: number,
+  colours: string[],
+  look: { base: string; top: string | THREE.Material } = { base: J.wood, top: J.woodDark },
+): JuiceStation {
   for (const c of s.group.children) c.position.x += 0.3;
   const x0 = -w / 2 + 0.2;
-  box(s.group, 0.66, 0.32, 0.92, J.wood, x0 + 0.13, 0, 0);
-  box(s.group, 0.7, 0.04, 0.96, J.woodDark, x0 + 0.13, 0.32, 0);
+  box(s.group, 0.66, 0.32, 0.92, look.base, x0 + 0.13, 0, 0);
+  box(s.group, 0.7, 0.04, 0.96, look.top, x0 + 0.13, 0.32, 0);
   return { ...s, inputs: inputSpots(s.group, x0, 0.36, colours) };
 }
 

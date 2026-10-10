@@ -321,6 +321,15 @@ describe('Map 1 fully built', () => {
     expect(w.messes.some((m) => m.id === quick)).toBe(false);
     w.levels.mop_speed = 0;
 
+    // a Mess can't sit under a Station: none spawns there, and one already there goes when the Station lands on it
+    const under = [...w.stations.values()].find((s) => s.kind !== 'pickup');
+    const [ux, uz] = boxCentre(under?.box ?? [0, 0, 0, 0]);
+    addMess(w, w.nextId++, ux, uz, ['milk'], -1);
+    expect(w.messes.some((m) => m.x === ux && m.z === uz)).toBe(false);
+    w.messes.push({ id: w.nextId++, x: ux, z: uz, items: ['milk'], progress: 0 });
+    rebuildNav(w);
+    expect(w.messes.some((m) => m.x === ux && m.z === uz)).toBe(false);
+
     // with the Mop in hand nothing is picked up, not even a Loose Item underfoot
     const dropped = { id: w.nextId++, x: w.player.x, z: w.player.z, product: 'egg' };
     w.loose.push(dropped);

@@ -29,7 +29,7 @@ export const layout: MapLayout = {
       rot: 0,
     },
     trash: {
-      box: [24.9, 7.6, 1, 1],
+      box: [25.45, 7.65, 1, 1],
       rot: 0,
     },
     cashier_1: {
@@ -77,7 +77,7 @@ export const layout: MapLayout = {
       rot: 0,
     },
     butter_churn: {
-      box: [31, 22, 2, 2.8],
+      box: [31, 22.45, 2, 2.8],
       rot: 0,
     },
     cow_pen: {
@@ -121,36 +121,36 @@ export const layout: MapLayout = {
       rot: 0,
     },
     cashier_3: {
-      box: [4.5, 31.8, 1, 1],
+      box: [4.85, 43.25, 1, 1],
       rot: 90,
     },
     register_3: {
-      box: [5.8, 31, 1, 2.6],
+      box: [6.75, 42.4, 1, 2.6],
       rot: 90,
     },
     cheese_press_2: {
-      box: [14.5, 30.5, 2.2, 3.3],
-      rot: 0,
+      box: [13.6, 30, 3.3, 2.2],
+      rot: 270,
     },
     cheese_shelf_2: {
-      box: [5.5, 36.5, 3, 1],
+      box: [5.5, 34.5, 3, 1],
       rot: 0,
     },
     goat_cheese_shelf_2: {
-      box: [10, 36.5, 3, 1],
+      box: [10.55, 34.5, 3, 1],
       rot: 0,
     },
     cheese_shelf_3: {
-      box: [5.5, 41.5, 3, 1],
+      box: [5.5, 39, 3, 1],
       rot: 0,
     },
     goat_cheese_shelf_3: {
-      box: [10, 41.5, 3, 1],
+      box: [10.15, 39.15, 3, 1],
       rot: 0,
     },
     goat_cheese_press_2: {
-      box: [14.5, 41, 2.2, 3.3],
-      rot: 0,
+      box: [13.8, 41.7, 3.3, 2.2],
+      rot: 270,
     },
     area_3: {
       box: [6, 46.5, 1, 1],
@@ -173,19 +173,19 @@ export const layout: MapLayout = {
       rot: 0,
     },
     cheese_press: {
-      box: [19.4, 39.5, 2.2, 3.3],
-      rot: 0,
+      box: [18.85, 40.05, 3.3, 2.2],
+      rot: 90,
     },
     goat_cheese_press: {
-      box: [25, 39.5, 2.2, 3.3],
-      rot: 0,
+      box: [24.45, 40.05, 3.3, 2.2],
+      rot: 90,
     },
     trash_3: {
       box: [42.5, 7.6, 1, 1],
       rot: 0,
     },
     exit: {
-      box: [40.4, 45.9, 1, 1],
+      box: [39.9, 45.9, 1, 1],
       rot: 0,
     },
     strawberry_shelf: {
@@ -229,20 +229,20 @@ export const layout: MapLayout = {
       rot: 0,
     },
     ice_cream_maker: {
-      box: [43.5, 33.5, 2.2, 3.3],
-      rot: 0,
+      box: [42.95, 34.05, 3.3, 2.2],
+      rot: 90,
     },
     pudding_pot: {
-      box: [48, 33.5, 2.2, 3.3],
-      rot: 0,
+      box: [49, 34, 3.3, 2.2],
+      rot: 90,
     },
     ice_cream_maker_2: {
-      box: [43.5, 39.8, 2.2, 3.3],
-      rot: 0,
+      box: [42.95, 40.35, 3.3, 2.2],
+      rot: 90,
     },
     pudding_pot_2: {
-      box: [48, 39.8, 2.2, 3.3],
-      rot: 0,
+      box: [49, 40.5, 3.3, 2.2],
+      rot: 90,
     },
     cashier_2: {
       box: [42.4, 45.6, 1, 1],
@@ -419,7 +419,7 @@ export const layout: MapLayout = {
     },
     prop_rug_office: {
       model: 'rug',
-      box: [19.6, 8.3, 1.8, 1.2],
+      box: [19.7, 8.7, 1.8, 1.2],
       rot: 0,
       solid: false,
       area: 'area_1',
@@ -475,14 +475,14 @@ export const layout: MapLayout = {
     },
     party_banner_1: {
       model: 'banner-red',
-      box: [26, 7.9, 0.8, 0.4],
+      box: [24.25, 7.6, 0.8, 0.4],
       rot: 0,
       solid: false,
       party: true,
     },
     party_banner_2: {
       model: 'banner-green',
-      box: [30.2, 7.9, 0.8, 0.4],
+      box: [30.4, 7.95, 0.8, 0.4],
       rot: 0,
       solid: false,
       party: true,
@@ -496,7 +496,7 @@ export const layout: MapLayout = {
     },
     party_banner_4: {
       model: 'banner-red',
-      box: [4.9, 29.5, 0.4, 0.8],
+      box: [4.8, 30.35, 0.4, 0.8],
       rot: 90,
       solid: false,
       party: true,

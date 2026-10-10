@@ -165,10 +165,10 @@ A timed happening on a **Map** that asks the **Player** to act: a warning, a run
 An **Event** where a car parks at a **Car Spot** with an order; bring the **Items** to its pickup tile before it leaves to earn more than their **Sale Price**. Partial orders are paid at plain price; ignoring one only misses the reward. **Stockers** can fill them too. Usually one car waits at a time; with **Stockers** hired, now and then two or three.
 
 **Robbery**:
-An **Event** where a **Thief**, looking like a **Customer** without a **Shopping List**, takes **Items** from a **Shelf** or cash from a **Cash Pile** and runs for the door, faster than the **Player** walks. Only the **Player** can stop them, by catching them before they're out.
+An **Event** where a **Thief**, looking like a **Customer** without a **Shopping List**, takes **Items** from a **Shelf** or cash from a **Cash Pile** for a couple of seconds, then walks off slowly under the load and is gone at the door. Only the **Player** can stop them, by catching them before they're out.
 
 **Thief Pan**:
-When a **Thief** grabs, the camera sweeps to them and the game freezes for half a second before the chase. Like an **Area Pan**, but short.
+When a **Thief** grabs, the camera sweeps to them and the game freezes for two seconds before the grab plays out. Like an **Area Pan**, but short.
 
 **Health Inspector**:
 An **Event** visitor who walks a fresh route through the shop and must be escorted by the **Player**; the store's dirt (**Messes**, **Loose Items**) decides a bonus or a fine, and leaving them alone too long earns a bad review.

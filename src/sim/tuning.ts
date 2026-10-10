@@ -118,8 +118,9 @@ export const TUNING = {
     /** Robbery and the Health Inspector: one at a time, this many s apart. */
     visitGap: [180, 300] as const,
     /** Thief: takes up to `items` from the fullest Shelf over grabTime s, freezes the game `freeze` s (Thief Pan),
-     * runs at `speed` m/s to the nearest customer door; the Player catches them within catchRadius m. */
-    robbery: { items: 5, grabTime: 2, freeze: 0.5, speed: 6.5, catchRadius: 0.8 },
+     * walks off at `speed` m/s (weighed down) to the nearest customer door and is gone; the Player catches them within
+     * catchRadius m. */
+    robbery: { items: 5, grabTime: 2, freeze: 2, speed: 2.5, catchRadius: 0.8 },
     /** Inspector: warning s, stops (count range, s each), escort radius m, s alone before a bad review, a stop's ✗ when
      * a Mess or Loose Item is within dirtRadius m; steps around Messes until skirtUntil m from a stop; storms out at
      * stormSpeed m/s after a bad review. */

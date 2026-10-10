@@ -1,4 +1,4 @@
-// Robbery: a Thief steals from the fullest Shelf or a rich Cash Pile and runs for a door; only the Player catches them.
+// Robbery: a Thief steals from the fullest Shelf or a rich Cash Pile and walks off through a door; only the Player catches them.
 import type { Point } from './map';
 import type { RegisterStation, ShelfStation, Thief, World } from './world';
 import { DT } from './world';
@@ -103,13 +103,13 @@ function caught(w: World, th: Thief): void {
   const bounty = w.map.events.robbery ? byArea(w, w.map.events.robbery.byArea).bounty : 0;
   w.money += bounty;
   w.events.push({ type: 'robberyDone', caught: true, amount: bounty, cash: th.cash });
-  Object.assign(th, { carry: [], cash: 0, caught: true, state: 'leave' });
+  Object.assign(th, { carry: [], cash: 0, caught: true, state: 'leave', door: nearestDoor(w, th) });
 }
 
 function escaped(w: World, th: Thief): void {
   const value = th.carry.reduce((sum, p) => sum + w.map.products[p].price, 0) + th.cash;
   w.events.push({ type: 'robberyDone', caught: false, amount: value, cash: th.cash });
-  th.state = 'leave';
+  w.thief = null;
 }
 
 export function updateThief(w: World, th: Thief): void {
@@ -120,7 +120,7 @@ export function updateThief(w: World, th: Thief): void {
       if (loot(w, th.target) > 0) return grab(w, th);
       const next = pickTarget(w);
       if (next) th.target = next;
-      else th.state = 'leave';
+      else Object.assign(th, { state: 'leave', door: nearestDoor(w, th) });
       return;
     }
     case 'grab': {
@@ -143,6 +143,6 @@ export function updateThief(w: World, th: Thief): void {
       if (walkAgent(w, 'shopper', th, { point: th.door }, speed(w, th, R.speed))) escaped(w, th);
       return;
     case 'leave':
-      if (walkAgent(w, 'shopper', th, { point: th.home }, speed(w, th, TUNING.customerSpeed))) w.thief = null;
+      if (walkAgent(w, 'shopper', th, { point: th.door }, speed(w, th, TUNING.customerSpeed))) w.thief = null;
   }
 }

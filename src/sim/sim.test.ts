@@ -499,6 +499,16 @@ describe('Map 1 fully built', () => {
     expect(w.loose.length + w.messes.length).toBe(6 - auto.stack.length);
     auto.stack = Array(3).fill('bread');
     expect(shuttleStocker(120)).toBe(0);
+
+    // a Stocker walking over a Loose Item takes it like the Player does, any Product, while its Stack has room
+    w.loose = [{ id: w.nextId++, x: auto.x, z: auto.z, product: 'egg' }];
+    step(w, idle());
+    expect(w.loose.length).toBe(0);
+    expect(auto.stack).toEqual(['bread', 'bread', 'bread', 'egg']);
+    auto.stack = Array(6).fill('bread');
+    w.loose = [{ id: w.nextId++, x: auto.x, z: auto.z, product: 'egg' }];
+    step(w, idle());
+    expect(w.loose.length).toBe(1);
     w.loose = [];
 
     // 7. The Cleaner clears every waiting Mess, then wanders the shop floor mopping for show …
@@ -681,15 +691,16 @@ describe('Robbery and the Health Inspector', () => {
     };
     far();
 
-    // 1. The first Robbery comes 3–5 min in: the Thief walks to the fullest Shelf, and the grab freezes the game
+    // 1. The first Robbery comes 3–5 min in: the Thief walks to the fullest Shelf; the grab freezes the game 2 s, then takes 2 s
     expect(until(310, (e) => e.type === 'thiefGrab', stocked)).toBeDefined();
     expect(w.t).toBeGreaterThanOrEqual(180);
     expect(w.thief?.target).toBe('tomato_shelf');
     const frozenAt = w.t;
-    run(w, 0.5);
+    run(w, 2);
     expect(w.t).toBe(frozenAt);
     for (let i = 0; i < 60 * 5 && w.thief?.state === 'grab'; i++) step(w, idle());
     expect(w.thief?.state).toBe('run');
+    expect(w.t - frozenAt).toBeGreaterThanOrEqual(2);
     expect(w.thief?.carry).toEqual(Array(5).fill('tomato'));
 
     // 2. Caught: the bounty, and the Items go back onto their Shelf; restocked meanwhile, the rest lie Loose beside it
@@ -706,7 +717,7 @@ describe('Robbery and the Health Inspector', () => {
     expect(until(60, () => !w.thief)).toBeUndefined();
     expect(w.thief).toBeNull();
 
-    // 3. A Cash Pile over $150 is robbed of half instead; the Thief escapes through a door with it
+    // 3. A Cash Pile over $150 is robbed of half instead; the Thief escapes through a door with it and is gone
     w.loose = [];
     if (register?.kind === 'register') register.cash = 300;
     w.visitWait = 0;
@@ -715,7 +726,7 @@ describe('Robbery and the Health Inspector', () => {
     expect(register?.kind === 'register' && register.cash).toBe(150);
     const away = until(60, (e) => e.type === 'robberyDone', far);
     expect(away?.type === 'robberyDone' && !away.caught && away.amount).toBe(150);
-    for (let i = 0; i < 60 * 60 && w.thief; i++) step(w, idle());
+    expect(w.thief).toBeNull();
 
     // 4. An empty store: no Thief comes
     tomato.items = egg.items = 0;

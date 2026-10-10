@@ -2,7 +2,7 @@ import type { Intents, Station, World } from './world';
 import { DT } from './world';
 import { cashPilePoint, cleanTime, own, padRemaining, playerSpeed, safeCount, stackCap, visiblePads } from './economy';
 import { messSlowdown, mopAt } from './cleaning';
-import { tipDrops, transferTick } from './carry';
+import { takeLoose, tipDrops, transferTick } from './carry';
 import { boxCentre, distToBox, pushOutOfBox } from './geometry';
 import { inOwnedAreas, walkable } from './walk';
 import { TUNING } from './tuning';
@@ -74,16 +74,6 @@ function tipping(w: World): void {
   const v = Math.hypot(p.vx, p.vz);
   const share = p.sprinting ? 1 : v > TUNING.tip.walkSpeed ? TUNING.tip.walkShare : 0;
   tipDrops(w, p, { agent: 'player' }, { cap: stackCap(w), safe: safeCount(w), share, jolt: p.jolt });
-}
-
-function takeLoose(w: World): void {
-  const p = w.player;
-  w.loose = w.loose.filter((it) => {
-    if (p.stack.length >= stackCap(w) || Math.hypot(p.x - it.x, p.z - it.z) > TUNING.looseTakeRadius) return true;
-    p.stack.push(it.product);
-    w.events.push({ type: 'transfer', product: it.product, from: { loose: it.id }, to: { agent: 'player' } });
-    return false;
-  });
 }
 
 function payPads(w: World): void {
@@ -159,7 +149,7 @@ export function updatePlayer(w: World, intents: Intents): void {
   const p = w.player;
   move(w, intents);
   tipping(w);
-  if (!p.mop) takeLoose(w);
+  if (!p.mop) takeLoose(w, p, { agent: 'player' }, stackCap(w));
   payPads(w);
   collectCash(w);
   mopStand(w);

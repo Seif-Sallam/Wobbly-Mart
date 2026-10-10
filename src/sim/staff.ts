@@ -1,6 +1,6 @@
 // Stockers (and the bot) pick carrying jobs by tier; demand runs from the Shelves back down the Producer chain.
 import type { Job, PickupStation, ProducerStation, ShelfStation, Station, Stocker, StockerRole, World } from './world';
-import { accepts, availableCount, tipDrops, transferTick, trayRoom } from './carry';
+import { accepts, availableCount, takeLoose, tipDrops, transferTick, trayRoom } from './carry';
 import { stockerCarry, stockerSpeed } from './economy';
 import { walkAgent, walkDistance } from './walk';
 import { messSlowdown } from './cleaning';
@@ -164,6 +164,7 @@ function updateStocker(w: World, s: Stocker): void {
   const cap = stockerCarry(w);
   const who = { agent: 'stocker', id: s.id } as const;
   s.rethink -= DT;
+  takeLoose(w, s, who, cap);
   if (!s.stack.length) s.leftover = null;
   if (s.leftover !== null) s.leftover += DT;
   if (!s.job && s.rethink <= 0) {

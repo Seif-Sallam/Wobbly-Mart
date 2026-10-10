@@ -37,6 +37,7 @@ export const SHADES = {
     milk: '#ffffff',
     flour: '#f4ead8',
     bread: '#c98b4a',
+    cheese: '#f5c542',
   } as Record<string, string>,
   /** Stocker caps by role; the Office role chips match. */
   roleCaps: { auto: '#e0453a', goods: '#8e5cc4', machines: '#3f7fd6' },

@@ -29,8 +29,8 @@ export const PRODUCTS = {
   // Dairy Farm: code-built Items (src/view/dairy-stations.ts), sold from the Corner Shop's stand shapes
   butter: { name: 'Butter', model: 'butter', shelf: 'milk-stand', price: 9, breakChance: 0.2 },
   goat_milk: { name: 'Goat milk', model: 'goat-milk', shelf: 'milk-stand', price: 9, breakChance: 0.5 },
-  cheese: { name: 'Cheese', model: 'cheese', shelf: 'bread-stand', price: 12, breakChance: 0.15 },
-  goat_cheese: { name: 'Goat cheese', model: 'goat-cheese', shelf: 'bread-stand', price: 15, breakChance: 0.15 },
+  cheese: { name: 'Cheese', model: 'cheese', shelf: 'cheese-stand', price: 12, breakChance: 0.15 },
+  goat_cheese: { name: 'Goat cheese', model: 'goat-cheese', shelf: 'cheese-stand', price: 15, breakChance: 0.15 },
   ice_cream: { name: 'Ice cream', model: 'ice-cream', shelf: 'milk-stand', price: 22, breakChance: 0.6 },
   pudding: { name: 'Pudding', model: 'pudding', shelf: 'egg-stand', price: 20, breakChance: 0.6 },
 } satisfies Record<string, Product>;
@@ -46,4 +46,5 @@ export const SHELF_CAPS: Record<string, number> = {
   'milk-stand': 12,
   'flour-stand': 15,
   'bread-stand': 12,
+  'cheese-stand': 8,
 };

@@ -84,6 +84,7 @@ export const ASSETS: Record<string, AssetDef> = {
   'milk-stand': {},
   'flour-stand': {},
   'bread-stand': {},
+  'cheese-stand': {},
 
   // Station composites and their parts
   register: {},

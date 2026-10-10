@@ -109,8 +109,8 @@ export class WorldView {
   private inspector: InspectorLook | null = null;
   /** Delivery cars by pickup tile id; a leaving one drives off before it goes. */
   private cars = new Map<string, CarLook>();
-  /** Needs cards by Station id, made the first time one is needed. */
-  private needs = new Map<string, Receipt>();
+  /** Needs cards by Station id, made the first time one is needed; `k` 0–1 is how far it has faded in. */
+  private needs = new Map<string, { card: Receipt; k: number; scale: THREE.Vector3 }>();
   readonly layoutGhost = new LayoutGhost();
   private playerMop: HeldMop;
   private flights: Flight[] = [];
@@ -686,27 +686,33 @@ export class WorldView {
     for (const id of this.needs.keys()) if (!w.stations.has(id)) this.removeNeeds(id);
     for (const st of w.stations.values()) {
       const needs = needsOf(w, st);
-      let card = this.needs.get(st.id);
+      let look = this.needs.get(st.id);
       const show =
         !!needs?.show && !this.cameraOverride && distToBox(w.player.x, w.player.z, st.box) <= FEEL.needCardRange;
-      if (!needs || (!show && !card)) continue;
-      if (!card) {
-        card = new Receipt();
+      if (!needs || (!show && !look)) continue;
+      if (!look) {
+        const card = new Receipt();
         card.sprite.scale.multiplyScalar(FEEL.needCardScale);
         // drawn over the Station's own sign and props
         (card.sprite.material as THREE.SpriteMaterial).depthTest = false;
         card.sprite.renderOrder = 10;
         this.root.add(card.sprite);
-        this.needs.set(st.id, card);
+        look = { card, k: 0, scale: card.sprite.scale.clone() };
+        this.needs.set(st.id, look);
       }
+      look.k = Math.min(1, Math.max(0, look.k + (show ? dt : -dt) / FEEL.needCardFade));
+      const k = ease.outCubic(look.k);
       const [x, z] = boxCentre(st.box);
-      card.sprite.position.set(x, FEEL.needCardY, z);
-      card.updateNeeds(needs.lines, show, dt);
+      const { sprite } = look.card;
+      sprite.position.set(x, FEEL.needCardY + (k - 1) * FEEL.needCardRise, z);
+      sprite.scale.copy(look.scale).multiplyScalar(FEEL.needCardGrow + (1 - FEEL.needCardGrow) * k);
+      (sprite.material as THREE.SpriteMaterial).opacity = k;
+      look.card.updateNeeds(needs.lines, look.k > 0, dt);
     }
   }
 
   private removeNeeds(id: string): void {
-    const card = this.needs.get(id);
+    const card = this.needs.get(id)?.card;
     if (!card) return;
     this.root.remove(card.sprite);
     card.dispose();

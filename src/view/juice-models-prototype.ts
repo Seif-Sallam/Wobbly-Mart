@@ -56,7 +56,7 @@ const torus = (p: THREE.Object3D, r: number, t: number, c: string | THREE.Materi
 /** Tunable numbers; the panel edits these live and "Show values" dumps them. */
 const P = {
   style: (new URLSearchParams(location.search).get('variant') ?? 'A') as Style,
-  focus: 'overview',
+  focus: new URLSearchParams(location.search).get('focus') ?? 'overview',
   working: 'cycle' as 'cycle' | 'on' | 'off',
   harvest: true,
   showFootprints: true,
@@ -68,6 +68,7 @@ const P = {
   shake: 1,
   spin: 1,
   bubbles: 1,
+  berryLook: (new URLSearchParams(location.search).get('berry') ?? 'rows') as 'rows' | 'barrels' | 'pyramid',
   footprints: {
     apple_tree: [2.5, 2.5],
     orange_tree: [2.5, 2.5],
@@ -258,39 +259,108 @@ function berryMound(p: THREE.Object3D, style: Style, x: number, z: number, y = 0
   return berry;
 }
 
-function strawberryPatch(style: Style, w: number, d: number): Built {
+/** A readable strawberry: a fat red cone pointing down, yellow seeds, a green star cap and a stalk. */
+function berry(size: number): THREE.Group {
+  const b = new THREE.Group();
+  const r = size * P.fruitSize;
+  const body = cone(b, r, r * 1.5, C.strawberry, 0, -r * 1.5, 0, 10);
+  body.rotation.x = Math.PI;
+  body.position.y = -r * 0.75;
+  sph(b, r * 0.98, C.strawberry, 0, -r * 0.05, 0, 1).scale.y = 0.55;
+  for (let i = 0; i < 10; i++) {
+    const a = i * 2.4;
+    const k = (i % 3) / 3;
+    sph(b, r * 0.09, C.seed, Math.cos(a) * r * (0.85 - k * 0.4), -r * (0.2 + k * 0.7), Math.sin(a) * r * (0.85 - k * 0.4), 0);
+  }
+  for (let i = 0; i < 5; i++) {
+    const l = box(b, r * 0.9, r * 0.08, r * 0.3, C.leafDark, 0, r * 0.2, 0);
+    l.geometry.translate(r * 0.45, 0, 0);
+    l.rotation.set(0, (i / 5) * Math.PI * 2, -0.25);
+  }
+  cyl(b, r * 0.08, r * 0.5, C.leafDark, 0, r * 0.2, 0);
+  return b;
+}
+
+/** Flat rosette of leaves with a white flower; its berries lie outside the leaves where the camera sees them. */
+function rosette(p: THREE.Object3D, x: number, z: number, y: number): THREE.Group {
+  const g = new THREE.Group();
+  g.position.set(x, y, z);
+  p.add(g);
+  for (let i = 0; i < 6; i++) {
+    const l = box(g, 0.34, 0.035, 0.2, i % 2 ? C.leaf : C.leafDark, 0, 0.05 + (i % 2) * 0.03, 0);
+    l.geometry.translate(0.17, 0, 0);
+    l.rotation.set(0, (i / 6) * Math.PI * 2, 0.35);
+  }
+  for (let i = 0; i < 5; i++) sph(g, 0.03, C.cream, 0.05 + Math.cos(i * 1.26) * 0.05, 0.18, Math.sin(i * 1.26) * 0.05, 0);
+  sph(g, 0.025, C.seed, 0.05, 0.2, 0, 0);
+  return g;
+}
+
+function strawberryPatch(_style: Style, w: number, d: number): Built {
   const g = new THREE.Group();
   const fruits: THREE.Object3D[] = [];
-  const leaves: THREE.Object3D[] = [];
-  if (style === 'A') {
+  const sway: THREE.Object3D[] = [];
+  const look = P.berryLook;
+  if (look === 'rows') {
+    // A: straw-mulched raised bed, low leaf rosettes, fat berries lying on the straw in front of each plant
     const len = w * 0.9;
-    const dep = Math.min(d * 0.5, 1.1);
-    box(g, len, 0.2, dep, C.straw);
-    for (const z of [-1, 1]) box(g, len + 0.16, 0.3, 0.08, C.wood, 0, 0, (z * (dep + 0.08)) / 2);
-    for (const x of [-1, 1]) box(g, 0.08, 0.3, dep, C.wood, (x * (len + 0.08)) / 2, 0, 0);
-    for (let i = 0; i < 6; i++) fruits.push(berryMound(g, style, (i / 5 - 0.5) * (len - 0.6), (i % 2 ? 0.15 : -0.15), 0.2));
-  } else if (style === 'B') {
-    box(g, w * 0.95, 0.06, d * 0.8, C.grass);
+    const dep = Math.min(d * 0.55, 1.2);
+    box(g, len, 0.22, dep, C.straw);
+    for (const z of [-1, 1]) box(g, len + 0.16, 0.32, 0.08, C.wood, 0, 0, (z * (dep + 0.08)) / 2);
+    for (const x of [-1, 1]) box(g, 0.08, 0.32, dep, C.wood, (x * (len + 0.08)) / 2, 0, 0);
     for (let i = 0; i < 6; i++) {
-      cyl(g, 0.32, 0.1, C.dirt, ((i % 3) - 1) * w * 0.3, 0.06, (Math.floor(i / 3) - 0.5) * d * 0.4);
-      fruits.push(berryMound(g, style, ((i % 3) - 1) * w * 0.3, (Math.floor(i / 3) - 0.5) * d * 0.4, 0.12));
+      const x = (i / 5 - 0.5) * (len - 0.5);
+      const z = i % 2 ? 0.18 : -0.18;
+      sway.push(rosette(g, x, z - 0.12, 0.22));
+      const b = berry(0.15);
+      b.position.set(x + 0.05, 0.22 + 0.15, z + 0.2);
+      b.rotation.z = 0.5;
+      g.add(b);
+      fruits.push(b);
+    }
+  } else if (look === 'barrels') {
+    // half-barrel planters in a row, berries spilling over the rims on their stalks
+    const n = 3;
+    for (let i = 0; i < n; i++) {
+      const x = (i / (n - 1) - 0.5) * (w - 1);
+      cyl(g, 0.45, 0.5, C.wood, x, 0, 0, 0.4);
+      for (const y of [0.1, 0.4]) torus(g, 0.43 + y * 0.1, 0.025, C.iron, x, y);
+      cyl(g, 0.42, 0.04, C.dirt, x, 0.48);
+      sway.push(rosette(g, x, 0, 0.5));
+      for (const s of [-1, 1]) {
+        const b = berry(0.16);
+        b.position.set(x + s * 0.24, 0.62, 0.34);
+        b.rotation.z = s * 0.5;
+        g.add(b);
+        fruits.push(b);
+      }
     }
   } else {
-    // three-tier vertical planter, like a stepped shelf
+    // stepped wooden pyramid: plants on each tier, berries dangling over every edge
     for (let k = 0; k < 3; k++) {
-      const y = k * 0.45;
-      const z = (1 - k) * 0.42;
-      box(g, w * 0.85, 0.3, 0.42, C.pink, 0, y, z);
-      box(g, w * 0.8, 0.04, 0.36, C.dirt, 0, y + 0.3, z);
-      for (let i = 0; i < 2; i++) fruits.push(berryMound(g, style, (i - 0.5) * w * 0.4, z, y + 0.3));
+      const s = 1.6 - k * 0.5;
+      box(g, s * (w / 2.4), 0.3, s, C.wood, 0, k * 0.3, 0);
+      box(g, s * (w / 2.4) - 0.1, 0.04, s - 0.1, C.dirt, 0, k * 0.3 + 0.3, 0);
     }
-    for (const x of [-1, 1]) box(g, 0.06, 1.4, 1.3, C.cream, (x * w * 0.43), 0, 0);
+    const tiers: [number, number, number][] = [
+      [-0.55, 0.3, 0.62], [0.55, 0.3, 0.62], [0, 0.3, 0.7], [-0.35, 0.6, 0.38], [0.35, 0.6, 0.38], [0, 0.9, 0.12],
+    ];
+    for (const [x, y, z] of tiers) {
+      sway.push(rosette(g, x * (w / 2.4), z - 0.2, y + 0.04));
+      const b = berry(0.16);
+      b.position.set(x * (w / 2.4) + 0.12, y + 0.2, z - 0.02);
+      b.rotation.z = 0.4;
+      g.add(b);
+      fruits.push(b);
+    }
   }
-  g.traverse((o) => o !== g && leaves.push(o));
   return {
     group: g,
     fruits,
-    animate: (_dt, t) => fruits.forEach((f, i) => (f.rotation.z = Math.sin(t * 2 + i) * 0.08 * P.sway)),
+    animate: (_dt, t) => {
+      sway.forEach((s, i) => (s.rotation.y = Math.sin(t * 1.5 + i) * 0.12 * P.sway));
+      fruits.forEach((f, i) => (f.rotation.x = Math.sin(t * 2 + i) * 0.1 * P.sway));
+    },
   };
 }
 
@@ -761,6 +831,7 @@ gui.add(P, 'showItems').name('Show Items');
 gui.add(P, 'showFootprints').name('Footprints').onChange(rebuild);
 gui.add(P, 'zoom', 4, 14, 0.5).name('Close-up zoom m').onChange(() => focusOn(P.focus));
 const look = gui.addFolder('Look');
+look.add(P, 'berryLook', { 'Straw bed, berries on top': 'rows', 'Half barrels, berries spilling': 'barrels', 'Stepped pyramid, berries dangling': 'pyramid' }).name('Strawberry patch').onChange(rebuild);
 look.add(P, 'fruitSize', 0.6, 1.8, 0.05).name('Fruit size').onFinishChange(rebuild);
 look.add(P, 'treeHeight', 0.6, 1.6, 0.05).name('Tree height').onFinishChange(rebuild);
 const motion = gui.addFolder('Motion');

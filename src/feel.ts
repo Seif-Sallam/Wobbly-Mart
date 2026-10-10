@@ -122,8 +122,8 @@ export const FEEL = {
   carCardY: 2.1,
   carCardScale: 1.5,
   /** Needs card over an empty Shelf or a stalled Producer: height (m) and size × a Customer's receipt. */
-  needCardY: 1.4,
-  needCardScale: 0.8,
+  needCardY: 1.7,
+  needCardScale: 1.7,
   /** Event banner on screen and its slide (ms, the slide matches style.css); the Inspector's report card (ms). */
   bannerMs: 3200,
   bannerSlideMs: 400,

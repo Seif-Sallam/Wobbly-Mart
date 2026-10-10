@@ -68,6 +68,12 @@ export const ASSETS: Record<string, AssetDef> = {
   sugar: { path: 'food/bag', height: ITEM * 1.1, tint: SHADES.white },
   'candy-apple': { path: 'food/apple', height: ITEM, tint: SHADES.juice.candyAppleTint },
   'sugar-cane': {},
+  butter: {},
+  'goat-milk': {},
+  cheese: {},
+  'goat-cheese': {},
+  'ice-cream': {},
+  pudding: {},
   coin: { path: 'platformer/coin-gold', height: 0.35 },
 
   // shelves: code-built stands
@@ -78,6 +84,7 @@ export const ASSETS: Record<string, AssetDef> = {
   'milk-stand': {},
   'flour-stand': {},
   'bread-stand': {},
+  'cheese-stand': {},
 
   // Station composites and their parts
   register: {},
@@ -108,6 +115,12 @@ export const ASSETS: Record<string, AssetDef> = {
   'candy-pot': {},
   'strawberry-patch': {},
   'smoothie-blender': {},
+  'goat-pen': {},
+  'butter-churn': {},
+  'cheese-press': {},
+  'goat-cheese-press': {},
+  'ice-cream-maker': {},
+  'pudding-pot': {},
   'wheat-plant': { path: 'nature/crops_wheatStageB', height: 0.9 },
   'wheat-sprout': { path: 'nature/crops_wheatStageA', height: 0.5 },
   'tomato-bush': { path: 'nature/plant_bush', height: 0.55 },

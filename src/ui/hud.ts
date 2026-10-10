@@ -1,4 +1,4 @@
-// Per-frame HUD in plain DOM: Money, Completion bar, gear, edge arrows, Event banner and cards, movement hint, 100% banner.
+// Per-frame HUD in plain DOM: Money, Completion bar, gear, edge arrows, Event banner and cards, tutorial pop-up, movement hint, 100% banner.
 import { formatMoney } from '../format';
 import { FEEL } from '../feel';
 
@@ -33,11 +33,14 @@ export class Hud {
   private cardBox: HTMLElement;
   private cards: HTMLElement[] = [];
   private hint: HTMLElement;
+  private tutor: HTMLElement;
   private shown = 0;
   private target = 0;
   /** Last values written to the DOM: only changes are written. */
-  private drawn = { money: '', width: '', gold: false, arrows: [] as string[], cards: [] as string[] };
+  private drawn = { money: '', width: '', gold: false, arrows: [] as string[], cards: [] as string[], tutor: '' };
   onGear: () => void = () => {};
+  onTutorNext: () => void = () => {};
+  onTutorSkip: () => void = () => {};
 
   constructor(private readonly root: HTMLElement) {
     root.innerHTML = `
@@ -47,17 +50,22 @@ export class Hud {
         <button class="gear round" aria-label="Pause">${GEAR}</button>
       </div>
       <div class="event-cards"></div>
+      <div class="tutor pill gone"><small></small><p></p><div><button class="btn skip">Skip tutorial</button><button class="btn buy next">Next</button></div></div>
       <div class="hint"></div>`;
     this.cardBox = root.querySelector('.event-cards') as HTMLElement;
     this.money = root.querySelector('.money') as HTMLElement;
     this.bar = root.querySelector('.completion') as HTMLElement;
     this.barFill = root.querySelector('.completion i') as HTMLElement;
     this.hint = root.querySelector('.hint') as HTMLElement;
-    const gear = root.querySelector('.gear') as HTMLElement;
-    gear.addEventListener('pointerdown', (e) => {
-      e.stopPropagation();
-      this.onGear();
-    });
+    this.tutor = root.querySelector('.tutor') as HTMLElement;
+    const press = (sel: string, fn: () => void) =>
+      (root.querySelector(sel) as HTMLElement).addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        fn();
+      });
+    press('.gear', () => this.onGear());
+    press('.tutor .next', () => this.onTutorNext());
+    press('.tutor .skip', () => this.onTutorSkip());
   }
 
   visible(on: boolean): void {
@@ -176,6 +184,20 @@ export class Hud {
     el.style.animationDuration = `${FEEL.reportMs}ms`;
     this.root.appendChild(el);
     setTimeout(() => el.remove(), FEEL.reportMs);
+  }
+
+  /** The tutorial pop-up: the step's text and "n/of". `null` hides it. */
+  tutorial(text: string | null, n = 0, of = 0): void {
+    const key = text ? `${n}|${text}` : '';
+    if (key === this.drawn.tutor) return;
+    this.drawn.tutor = key;
+    this.tutor.classList.toggle('gone', !text);
+    if (!text) return;
+    (this.tutor.querySelector('small') as HTMLElement).textContent = `Tutorial ${n}/${of}`;
+    (this.tutor.querySelector('p') as HTMLElement).textContent = text;
+    this.tutor.classList.remove('pop');
+    void this.tutor.offsetWidth;
+    this.tutor.classList.add('pop');
   }
 
   /** Movement hint: keycaps on desktop, a dragging hand on touch. `null` hides it. */

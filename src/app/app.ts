@@ -78,6 +78,8 @@ export class App {
   private officeDismissed = false;
   private exitDismissed = false;
   private hintFrom: [number, number] | null = null;
+  /** The tutorial step whose pop-up the Player closed with Next. */
+  private tutorNexted = -1;
   private lostTab = false;
   private titleTime = 0;
   private uiTimer = 0;
@@ -137,6 +139,10 @@ export class App {
     };
     this.ui.zoom = this.zoom();
     this.hud.onGear = () => this.openOverlay('pause');
+    this.hud.onTutorNext = () => {
+      if (this.game) this.tutorNexted = tutorialStep(this.game.world);
+    };
+    this.hud.onTutorSkip = () => this.game?.skipTutorial();
     this.input.onEscape = () => this.escape();
     this.claimTab = claimTab(() => {
       this.lostTab = true;
@@ -370,6 +376,8 @@ export class App {
       return iconUrl(name ?? (def?.kind === 'exit' ? 'van' : 'employee'));
     };
     const step = tutorialStep(w);
+    const text = step >= 0 && step !== this.tutorNexted ? w.map.tutorial[step].text : undefined;
+    this.hud.tutorial(text ?? null, step + 1, w.map.tutorial.length);
     view.arrowTarget = null;
     if (step >= 0) {
       const s = w.map.tutorial[step];

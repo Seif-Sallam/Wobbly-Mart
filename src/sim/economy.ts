@@ -168,6 +168,10 @@ export function applyCommands(w: World, intents: Intents): void {
     w.events.push({ type: 'upgradeBought', upgrade: id });
     w.tutorial.actions.add('upgrade:office');
   }
+  if (intents.skipTutorial && !w.tutorial.done) {
+    w.tutorial.done = true;
+    w.events.push({ type: 'tutorialDone' });
+  }
   if (intents.assign) {
     const s = w.stockers.find((x) => x.id === intents.assign?.stocker);
     if (s) {

@@ -274,6 +274,7 @@ export interface Intents {
   manualGrab?: boolean;
   sprint?: boolean;
   buyUpgrade?: string;
+  skipTutorial?: boolean;
   assign?: { stocker: string; role: StockerRole };
 }
 

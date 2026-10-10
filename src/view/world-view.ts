@@ -1,11 +1,12 @@
 // Mirrors the sim into the scene every frame; turns sim events into motion (flying Items, springs, puffs, numbers).
 import * as THREE from 'three';
-import type { Mover, Ref, SimEvent, World } from '../sim/world';
+import type { Mover, Ref, SimEvent, Station, World } from '../sim/world';
 import type { Box, Point } from '../sim/map';
 import { stationModel } from '../sim/map';
 import { boxCentre } from '../sim/geometry';
 import { areaOf, walkAgent, type Target } from '../sim/walk';
 import { cashPilePoint, padRemaining, stackCap, visiblePads } from '../sim/economy';
+import { stalled } from '../sim/producers';
 import { Stage } from './stage';
 import { Level } from './level';
 import { Juice } from './juice';
@@ -108,6 +109,8 @@ export class WorldView {
   private inspector: InspectorLook | null = null;
   /** Delivery cars by pickup tile id; a leaving one drives off before it goes. */
   private cars = new Map<string, CarLook>();
+  /** Needs cards by Station id, made the first time one is needed. */
+  private needs = new Map<string, Receipt>();
   readonly layoutGhost = new LayoutGhost();
   private playerMop: HeldMop;
   private flights: Flight[] = [];
@@ -200,6 +203,7 @@ export class WorldView {
     for (const s of [...this.staff.values(), ...this.cleaners.values()]) this.root.remove(s.ch.root);
     for (const m of this.splats.values()) this.root.remove(m);
     for (const id of [...this.cars.keys()]) this.removeCar(id);
+    for (const id of [...this.needs.keys()]) this.removeNeeds(id);
     this.thief?.look.dispose();
     this.inspector?.dispose();
     this.thief = null;
@@ -676,6 +680,34 @@ export class WorldView {
     }
   }
 
+  /** A needs card over each empty Shelf and each Animal or Machine stalled for an input. */
+  private syncNeeds(dt: number): void {
+    const w = this.w;
+    for (const id of this.needs.keys()) if (!w.stations.has(id)) this.removeNeeds(id);
+    for (const st of w.stations.values()) {
+      const needs = needsOf(w, st);
+      let card = this.needs.get(st.id);
+      if (!needs || (!needs.show && !card)) continue;
+      if (!card) {
+        card = new Receipt();
+        card.sprite.scale.multiplyScalar(FEEL.needCardScale);
+        this.root.add(card.sprite);
+        this.needs.set(st.id, card);
+      }
+      const [x, z] = boxCentre(st.box);
+      card.sprite.position.set(x, FEEL.needCardY, z);
+      card.updateNeeds(needs.lines, needs.show, dt);
+    }
+  }
+
+  private removeNeeds(id: string): void {
+    const card = this.needs.get(id);
+    if (!card) return;
+    this.root.remove(card.sprite);
+    card.dispose();
+    this.needs.delete(id);
+  }
+
   private driveIn(id: string, spot: Box, colour: number): void {
     const car = new Car(spot, colour);
     const card = new Receipt();
@@ -791,6 +823,7 @@ export class WorldView {
     this.syncPads(dt);
     this.syncCharacters(dt, alpha);
     this.syncCars(dt);
+    this.syncNeeds(dt);
     this.syncVisitors(dt, alpha);
     this.drawItems(dt);
     for (const [id, v] of this.stations) {
@@ -1266,6 +1299,20 @@ export class WorldView {
     const [x, z] = boxCentre(place.box);
     return new THREE.Vector3(x, 0, z);
   }
+}
+
+function needsOf(
+  w: World,
+  st: Station,
+): { show: boolean; lines: { model: string; have: number; cap: number }[] } | null {
+  const model = (p: string) => w.map.products[p]?.model ?? p;
+  if (st.kind === 'shelf')
+    return { show: !st.items, lines: [{ model: model(st.product), have: st.items, cap: TUNING.shelfCap }] };
+  if (st.kind !== 'producer') return null;
+  const type = w.map.producers[st.type];
+  if (!type.inputs.length) return null;
+  const lines = type.inputs.map((p) => ({ model: model(p), have: st.input[p] ?? 0, cap: type.inputCap ?? 0 }));
+  return { show: stalled(w, st), lines };
 }
 
 const w_isInput = (w: World, type: string, product: string): boolean => {

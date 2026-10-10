@@ -90,6 +90,8 @@ export interface TutorialStep {
   /** … or once this action happened this session. */
   action?: 'pick' | 'drop' | 'checkout' | 'collect' | 'upgrade';
   station?: string;
+  /** What the pop-up tells the Player to do, and why. */
+  text?: string;
 }
 
 /** An Event the Map has: rolled once every id in `requires` is owned. */

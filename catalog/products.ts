@@ -38,5 +38,5 @@ export const SHELF_CAPS: Record<string, number> = {
   'wheat-stand': 12,
   'milk-stand': 12,
   'flour-stand': 15,
-  'bread-stand': 10,
+  'bread-stand': 12,
 };

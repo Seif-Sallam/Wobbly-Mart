@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import type { Mover, Ref, SimEvent, Station, World } from '../sim/world';
 import type { Box, Point } from '../sim/map';
-import { stationModel } from '../sim/map';
+import { shelfCap, stationModel } from '../sim/map';
 import { boxCentre, distToBox } from '../sim/geometry';
 import { areaOf, walkAgent, type Target } from '../sim/walk';
 import { cashPilePoint, padRemaining, stackCap, visiblePads } from '../sim/economy';
@@ -1317,7 +1317,7 @@ export class WorldView {
 /** What a Shelf holds, or what an Animal or Machine has of each input; null for other Stations and Crops. */
 function needsOf(w: World, st: Station): { model: string; have: number; cap: number }[] | null {
   const model = (p: string) => w.map.products[p]?.model ?? p;
-  if (st.kind === 'shelf') return [{ model: model(st.product), have: st.items, cap: TUNING.shelfCap }];
+  if (st.kind === 'shelf') return [{ model: model(st.product), have: st.items, cap: shelfCap(w.map, st.product) }];
   if (st.kind !== 'producer') return null;
   const type = w.map.producers[st.type];
   if (!type.inputs.length) return null;

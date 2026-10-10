@@ -29,3 +29,14 @@ export const PRODUCTS = {
 } satisfies Record<string, Product>;
 
 export type ProductId = keyof typeof PRODUCTS;
+
+/** Items a Shelf holds, by stand: one per spot its stand lays out (src/view/stands.ts), so full looks full. */
+export const SHELF_CAPS: Record<string, number> = {
+  'tomato-stand': 10,
+  'egg-stand': 12,
+  'ketchup-stand': 27,
+  'wheat-stand': 12,
+  'milk-stand': 12,
+  'flour-stand': 15,
+  'bread-stand': 10,
+};

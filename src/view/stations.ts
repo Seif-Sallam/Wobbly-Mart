@@ -346,6 +346,7 @@ const PALLETED = new Set([
   'sugar-mill',
   'candy-pot',
   'smoothie-blender',
+  ...Object.keys(DAIRY_STATIONS),
 ]);
 
 export function buildStation(name: string, box: Box, rot: Rot): StationVisual {

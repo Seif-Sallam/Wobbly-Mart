@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import type { Mover, Ref, SimEvent, Station, World } from '../sim/world';
 import type { Box, Point } from '../sim/map';
 import { stationModel } from '../sim/map';
-import { boxCentre } from '../sim/geometry';
+import { boxCentre, distToBox } from '../sim/geometry';
 import { areaOf, walkAgent, type Target } from '../sim/walk';
 import { cashPilePoint, padRemaining, stackCap, visiblePads } from '../sim/economy';
 import { stalled } from '../sim/producers';
@@ -680,14 +680,16 @@ export class WorldView {
     }
   }
 
-  /** A needs card over each empty Shelf and each Animal or Machine stalled for an input. */
+  /** A needs card over each empty Shelf and each Animal or Machine stalled for an input, while the Player is near. */
   private syncNeeds(dt: number): void {
     const w = this.w;
     for (const id of this.needs.keys()) if (!w.stations.has(id)) this.removeNeeds(id);
     for (const st of w.stations.values()) {
       const needs = needsOf(w, st);
       let card = this.needs.get(st.id);
-      if (!needs || (!needs.show && !card)) continue;
+      const show =
+        !!needs?.show && !this.cameraOverride && distToBox(w.player.x, w.player.z, st.box) <= FEEL.needCardRange;
+      if (!needs || (!show && !card)) continue;
       if (!card) {
         card = new Receipt();
         card.sprite.scale.multiplyScalar(FEEL.needCardScale);
@@ -699,7 +701,7 @@ export class WorldView {
       }
       const [x, z] = boxCentre(st.box);
       card.sprite.position.set(x, FEEL.needCardY, z);
-      card.updateNeeds(needs.lines, needs.show && !this.cameraOverride, dt);
+      card.updateNeeds(needs.lines, show, dt);
     }
   }
 

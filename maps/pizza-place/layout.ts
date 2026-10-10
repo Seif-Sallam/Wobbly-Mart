@@ -416,9 +416,7 @@ export const layout: MapLayout = {
       party: true,
     },
   },
-  floors: [
-    [4, 7, 48, 16],
-  ],
+  floors: [[4, 7, 48, 16]],
   street: [
     [0, 3, 56, 4],
     [0, 7, 4, 48],

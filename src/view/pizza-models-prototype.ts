@@ -580,7 +580,7 @@ function ovenSign(g: THREE.Object3D, L: Look, veggie: boolean, x: number, y: num
 function peel(g: THREE.Object3D, L: Look, veggie: boolean, x: number, y: number, zIn: number, zOut: number) {
   const pl = group(g, x, y, zOut);
   box(pl, 0.5, 0.02, 0.45, L.wood, 0, 0, 0);
-  box(pl, 0.06, 0.03, 0.9, L.wood, 0, 0, 0.6);
+  box(pl, 0.06, 0.03, 0.4, L.wood, 0, 0, 0.42);
   const raw = pizza(pl, veggie, true);
   const baked = pizza(pl, veggie);
   raw.position.y = baked.position.y = 0.02;
@@ -608,17 +608,28 @@ function pizzaOven(w: number, _d: number, L: Look, v: Variant, veggie: boolean):
     dome(g, 0.75, tiles ? gloss(L.base) : L.brick, 0, domeY, -0.1);
     if (tiles) for (let i = 0; i < 3; i++) torus(g, 0.74 - i * 0.12 - 0.05, 0.035, gloss(i % 2 ? L.accent : L.top), 0, domeY + 0.18 + i * 0.18, -0.1).scale.set(1, 1, 1 - i * 0.05);
     else torus(g, 0.74, 0.05, L.woodDark, 0, domeY + 0.05, -0.1);
-    // arched mouth with a coloured rim; the fire flickers inside
-    const mouth = group(g, 0, domeY, 0.55);
-    box(mouth, 0.6, 0.35, 0.12, C.iron, 0, 0, 0);
-    torus(mouth, 0.3, 0.06, gloss(band), 0, 0.35, 0.02).rotation.x = 0;
-    box(mouth, 0.72, 0.08, 0.16, gloss(band), 0, -0.02, 0.02);
-    const fire = flames(g, [[-0.2, -0.1], [0, -0.25], [0.2, -0.1]], domeY, 0.12);
-    const ember = box(g, 0.5, 0.04, 0.4, glow(C.fire), 0, domeY, -0.15);
+    // an arched opening set into the dome's front: dark inside, a coloured arched rim and sill, embers and flames in the doorway
+    const face = 0.66;
+    const half = 0.26;
+    const rise = 0.12;
+    const arch = new THREE.Shape();
+    arch.moveTo(-half, 0);
+    arch.lineTo(half, 0);
+    arch.lineTo(half, rise);
+    arch.absarc(0, rise, half, 0, Math.PI, false);
+    arch.lineTo(-half, 0);
+    const hole = new THREE.Mesh(new THREE.ExtrudeGeometry(arch, { depth: 0.45, bevelEnabled: false }), mat('#1a0f0a'));
+    put(g, hole, 0, domeY, face - 0.45);
+    const rim = put(g, new THREE.Mesh(new THREE.TorusGeometry(half + 0.04, 0.05, 8, 20, Math.PI), gloss(band)), 0, domeY + rise, face);
+    rim.castShadow = false;
+    for (const x of [-1, 1]) box(g, 0.1, rise, 0.1, gloss(band), x * (half + 0.04), domeY, face);
+    box(g, half * 2 + 0.3, 0.06, 0.22, gloss(band), 0, domeY - 0.06, face + 0.02);
+    const ember = box(g, half * 1.6, 0.03, 0.02, glow(C.fire), 0, domeY + 0.005, face + 0.005);
+    const fire = flames(g, [[-0.12, face + 0.01], [0, face + 0.01], [0.12, face + 0.01]], domeY + 0.02, 0.06);
     // chimney and smoke
     cyl(g, 0.1, 0.5, tiles ? gloss(L.top) : C.iron, 0, domeY + 0.65, 0.2);
     const smoke = puffs(g, 0, domeY + 1.2, 0.2, C.smoke, 1);
-    const slide = peel(g, L, veggie, 0, domeY + 0.02, -0.05, 0.6);
+    const slide = peel(g, L, veggie, 0, domeY + 0.01, face - 0.15, face + 0.3);
     ovenSign(g, L, veggie, 0.62, domeY + 0.6, -0.1);
     animate = (_dt, t, wk) => {
       fire(t, wk);

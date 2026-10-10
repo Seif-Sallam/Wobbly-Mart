@@ -691,6 +691,9 @@ export class WorldView {
       if (!card) {
         card = new Receipt();
         card.sprite.scale.multiplyScalar(FEEL.needCardScale);
+        // drawn over the Station's own sign and props
+        (card.sprite.material as THREE.SpriteMaterial).depthTest = false;
+        card.sprite.renderOrder = 10;
         this.root.add(card.sprite);
         this.needs.set(st.id, card);
       }

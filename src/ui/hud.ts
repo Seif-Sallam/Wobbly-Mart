@@ -50,7 +50,7 @@ export class Hud {
         <button class="gear round" aria-label="Pause">${GEAR}</button>
       </div>
       <div class="event-cards"></div>
-      <div class="tutor pill gone"><small></small><p></p><div><button class="btn skip">Skip tutorial</button><button class="btn buy next">Next</button></div></div>
+      <div class="tutor pill gone"><small></small><p></p><div><button class="btn skip">Skip tutorial</button><button class="btn buy next">OK</button></div></div>
       <div class="hint"></div>`;
     this.cardBox = root.querySelector('.event-cards') as HTMLElement;
     this.money = root.querySelector('.money') as HTMLElement;

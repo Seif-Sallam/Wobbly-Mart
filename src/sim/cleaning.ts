@@ -2,12 +2,13 @@
 import type { Cleaner, Mess, Mover, World } from './world';
 import { DT } from './world';
 import { cleanTime } from './economy';
-import { forgetPoint, inOwnedAreas, onGrid, walkAgent } from './walk';
+import { buried, forgetPoint, inOwnedAreas, onGrid, walkAgent } from './walk';
 import { nextRandom } from './rng';
 import { TUNING } from './tuning';
 
 /** `customer` is who spilled it, or -1 for an Item tipped off the Player's Stack. */
 export function addMess(w: World, id: number, x: number, z: number, items: string[], customer: number): void {
+  if (buried(w, x, z)) return;
   w.messes.push({ id, x, z, items, progress: 0 });
   w.events.push({ type: 'mess', mess: id, customer });
 }

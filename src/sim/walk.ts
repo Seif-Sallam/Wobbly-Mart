@@ -59,7 +59,15 @@ export function rebuildNav(w: World): void {
   });
   w.nav = { walker, shopper, fields: new Map(), solids: all };
   w.navDirty = false;
+  // a Mess under a Station or prop can't be mopped
+  for (const m of w.messes.filter((o) => buried(w, o.x, o.z))) {
+    w.messes = w.messes.filter((o) => o !== m);
+    forgetPoint(w, [m.x, m.z]);
+    w.events.push({ type: 'messCleared', mess: m.id });
+  }
 }
+
+export const buried = (w: World, x: number, z: number): boolean => w.nav.solids.some((b) => inBox(x, z, b));
 
 function stationBox(w: World, id: string): Box {
   return w.stations.get(id)?.box ?? w.map.layout.places[id].box;

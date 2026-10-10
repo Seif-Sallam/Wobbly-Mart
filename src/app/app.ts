@@ -224,6 +224,12 @@ export class App {
               delete this.save.maps[map.id];
               this.openMap(map);
             },
+            openMaps: () => {
+              this.save.visited = MAPS.map((m) => m.id);
+              this.writeSave();
+              this.refreshMaps();
+              this.renderUi();
+            },
           }),
       );
     if (import.meta.env.DEV) {

@@ -14,6 +14,7 @@ import { buildCheckout, buildStand } from './stands';
 import { buildMopStand, buildPedalBin } from './cleaning';
 import type { ProductId } from '../../catalog/products';
 import { JUICE_STATIONS } from './juice-stations';
+import { DAIRY_STATIONS } from './dairy-stations';
 
 /** Shelf stands are named `<product>-stand` in the asset table. */
 const STAND = '-stand';
@@ -268,9 +269,9 @@ function counter(w: number, d: number, v: StationVisual): number {
   return new THREE.Box3().setFromObject(bar).max.y;
 }
 
-/** The Juice Bar's code-built Producers, animated whole (they move while working). */
+/** The Juice Bar's and Dairy Farm's code-built Producers, animated whole (they move while working). */
 function juice(name: string, w: number, d: number, v: StationVisual): boolean {
-  const make = JUICE_STATIONS[name];
+  const make = JUICE_STATIONS[name] ?? DAIRY_STATIONS[name];
   if (!make) return false;
   const built = make(w, d);
   v.body.add(dynamic(built.group));

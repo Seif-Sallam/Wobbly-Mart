@@ -33,6 +33,8 @@ export interface StationVisual {
   inputSlots: THREE.Vector3[];
   /** Local positions of Crop plants. */
   plants: THREE.Vector3[];
+  /** PROTOTYPE: Crops without a plant model draw their output Item this much bigger. */
+  plantScale?: number;
   /** Crop plants are drawn instanced by the view with this model. */
   plantModel: string | null;
   mixers: THREE.AnimationMixer[];
@@ -276,6 +278,7 @@ function juice(name: string, w: number, d: number, v: StationVisual): boolean {
     f.removeFromParent();
   }
   v.inputSlots = built.inputs?.at.map((p) => p.clone()) ?? [];
+  v.plantScale = built.plantScale;
   let t = 0;
   v.animate = (dt, working) => built.animate(dt, (t += dt), working);
   return true;

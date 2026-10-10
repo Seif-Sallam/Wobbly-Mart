@@ -80,6 +80,8 @@ export interface Built {
   group: THREE.Group;
   animate: (dt: number, t: number, working: boolean) => void;
   fruits?: THREE.Object3D[];
+  /** In the game, the Crop's output Item is drawn this much bigger at each plant spot. */
+  plantScale?: number;
   inputs?: { at: THREE.Vector3[]; colour: string };
   output?: string;
 }
@@ -170,7 +172,12 @@ function caneField(style: Style, w: number, d: number): Built {
   const g = new THREE.Group();
   const s = Math.min(w, d);
   const stalks: THREE.Group[] = [];
+  const clumps: THREE.Group[] = [];
   const clump = (x: number, z: number, n: number, hgt: number) => {
+    const cg = new THREE.Group();
+    cg.position.set(x, 0, z);
+    g.add(cg);
+    clumps.push(cg);
     for (let i = 0; i < n; i++) {
       const st = new THREE.Group();
       const hh = hgt * (0.8 + ((i * 37) % 10) / 25);
@@ -183,8 +190,8 @@ function caneField(style: Style, w: number, d: number): Built {
         const leaf = box(st, 0.05, 0.6, 0.015, C.leafLight, 0, hh - 0.3 - k * 0.2, 0);
         leaf.rotation.set(0.6 * (k ? 1 : -1), i, 0.4);
       }
-      st.position.set(x + Math.cos(i * 2.4) * 0.12, 0, z + Math.sin(i * 2.4) * 0.12);
-      g.add(st);
+      st.position.set(Math.cos(i * 2.4) * 0.12, 0, Math.sin(i * 2.4) * 0.12);
+      cg.add(st);
       stalks.push(st);
     }
   };
@@ -214,12 +221,15 @@ function caneField(style: Style, w: number, d: number): Built {
     for (let i = 0; i < 6; i++) {
       const before = stalks.length;
       clump(((i % 3) - 1) * s * 0.3, (Math.floor(i / 3) - 0.5) * s * 0.4, 3, 1.6);
-      for (const st of stalks.slice(before)) st.position.y = 0.48;
+      clumps[clumps.length - 1].position.y = 0.48;
+      void before;
     }
   }
   return {
     group: g,
-    fruits: stalks.filter((_, i) => i % 3 === 0).slice(0, 6),
+    // each clump is one plant: in the game it is drawn as a growing cane bundle, small after a harvest
+    fruits: clumps.slice(0, 6),
+    plantScale: 2.2,
     animate: (_dt, t) => {
       stalks.forEach((st, i) => (st.rotation.z = Math.sin(t * 1.6 + i * 0.7) * 0.05 * P.sway));
     },
@@ -424,7 +434,7 @@ function applePress(style: Style, w: number, d: number): Built {
       tank.rotation.y = t;
     };
   }
-  return { group: g, animate: anim, inputs: { at: slotsLeft(w, d), colour: C.apple }, output: C.appleJuice };
+  return { group: g, animate: anim, inputs: { at: frontLeft(w, d), colour: C.apple }, output: C.appleJuice };
 }
 
 function squeezer(style: Style, w: number, d: number): Built {
@@ -481,7 +491,7 @@ function squeezer(style: Style, w: number, d: number): Built {
       });
     };
   }
-  return { group: g, animate: anim, inputs: { at: slotsLeft(w, d), colour: C.orange }, output: C.orangeJuice };
+  return { group: g, animate: anim, inputs: { at: style === 'A' ? onCounter(w, 0.91) : slotsLeft(w, d), colour: C.orange }, output: C.orangeJuice };
 }
 
 function sugarMill(style: Style, w: number, d: number): Built {
@@ -541,7 +551,7 @@ function sugarMill(style: Style, w: number, d: number): Built {
       puff.scale.setScalar(0.5 + k);
     };
   }
-  return { group: g, animate: anim, inputs: { at: slotsLeft(w, d), colour: C.cane }, output: C.sugar };
+  return { group: g, animate: anim, inputs: { at: frontLeft(w, d), colour: C.cane }, output: C.sugar };
 }
 
 function candyPot(style: Style, w: number, d: number): Built {
@@ -554,10 +564,11 @@ function candyPot(style: Style, w: number, d: number): Built {
     // copper cauldron over a brick fire ring, an apple on a stick dips in and out
     cyl(g, 0.6, 0.35, C.brick, 0, 0, 0, 0.65);
     cone(g, 0.25, 0.35, C.fire, 0, 0.2, 0, 6);
-    const pot = new THREE.Mesh(new THREE.SphereGeometry(0.55, 18, 10, 0, Math.PI * 2, Math.PI / 2.6, Math.PI / 1.6), mat(C.copper, { side: THREE.DoubleSide }));
-    put(g, pot, 0, 0.95);
-    pot.rotation.x = Math.PI;
-    potTop = 0.95;
+    // open pot: tapered copper body, a rolled rim, two handles
+    cyl(g, 0.5, 0.55, C.copper, 0, 0.35, 0, 0.36);
+    torus(g, 0.5, 0.05, C.copper, 0, 0.9);
+    for (const k of [-1, 1]) torus(g, 0.09, 0.025, C.iron, k * 0.56, 0.75).rotation.set(0, Math.PI / 2, 0);
+    potTop = 0.9;
     cyl(g, 0.5, 0.03, C.candy, 0, potTop - 0.05);
   } else if (style === 'B') {
     // the pot IS a candy apple: glossy red ball with a cut top, a giant stick handle, caramel drips
@@ -587,7 +598,7 @@ function candyPot(style: Style, w: number, d: number): Built {
   g.add(dipper);
   return {
     group: g,
-    inputs: { at: slotsLeft(w, d), colour: C.apple },
+    inputs: { at: frontLeft(w, d), colour: C.apple },
     output: C.candy,
     animate: (_dt, t, wk) => {
       bubbles.forEach((b, i) => {
@@ -661,9 +672,15 @@ function smoothieBlender(style: Style, w: number, d: number): Built {
     box(g, 1.1, 0.14, 0.6, C.pink, 0, top + 1.0);
     anim = (dt, _t, wk) => drums.forEach((dr, i) => (dr.rotation.y += dt * (wk ? 3 * P.spin : 0.3) * (i ? -1 : 1)));
   }
-  return { group: g, animate: anim, inputs: { at: slotsLeft(w, d), colour: C.strawberry }, output: C.smoothie };
+  return { group: g, animate: anim, inputs: { at: style === 'A' ? onCounter(w, 0.91) : slotsLeft(w, d), colour: C.strawberry }, output: C.smoothie };
 }
 
+/** Input spots on a counter top's left end (x from the left edge), visible from the camera. */
+const onCounter = (w: number, top: number) =>
+  [0, 1, 2, 3].map((i) => new THREE.Vector3(-w * 0.4 + 0.22 + (i % 2) * 0.26, top, -0.14 + Math.floor(i / 2) * 0.28));
+/** Input spots on the floor at the structure's front-left corner, clear of its body. */
+const frontLeft = (w: number, d: number) =>
+  [0, 1, 2, 3].map((i) => new THREE.Vector3(-w / 2 + 0.25 + (i % 2) * 0.28, 0.02, d / 2 - 0.45 + Math.floor(i / 2) * 0.28));
 /** Input queue spots on the structure's left, like the Corner Shop's. */
 const slotsLeft = (w: number, _d: number) =>
   [0, 1, 2, 3].map((i) => new THREE.Vector3(-w / 2 + 0.25 + (i % 2) * 0.28, 0.02, -0.2 + Math.floor(i / 2) * 0.32));

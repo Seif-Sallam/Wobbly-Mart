@@ -28,6 +28,7 @@ export const pads: Record<string, PadDef> = {
   candy_apple_shelf: { cost: 120, requires: ['sugar_mill'], unlocks: shelf('candy_apple') },
   candy_pot: { cost: 150, requires: ['candy_apple_shelf'], unlocks: producer('candy_pot') },
   cane_field_2: { cost: 150, requires: ['candy_pot'], unlocks: producer('sugar_cane_field') },
+  sugar_mill_2: { cost: 175, requires: ['cane_field_2'], unlocks: producer('sugar_mill') },
   area_3: { cost: 1100, requires: ['cane_field_2'], unlocks: { kind: 'area', area: 'area_3' } },
   strawberry_shelf: { cost: 300, requires: ['area_3'], unlocks: shelf('strawberry') },
   strawberry_patch: { cost: 350, requires: ['strawberry_shelf'], unlocks: producer('strawberry_patch') },

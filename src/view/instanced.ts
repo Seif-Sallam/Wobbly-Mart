@@ -258,6 +258,23 @@ export function caneBundle(height: number): THREE.Group {
   return g;
 }
 
+/** PROTOTYPE juice bottle: a coloured glass bottle with a white cap and a little fruit on top. */
+export function juiceBottle(height: number, juice: string, fruit: string): THREE.Group {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(height * 0.2, height * 0.22, height * 0.62, 12), paletteMaterial(juice));
+  body.position.y = height * 0.31;
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(height * 0.09, height * 0.18, height * 0.16, 12), paletteMaterial(juice));
+  neck.position.y = height * 0.7;
+  const label = new THREE.Mesh(new THREE.CylinderGeometry(height * 0.205, height * 0.215, height * 0.2, 12), paletteMaterial('cream'));
+  label.position.y = height * 0.32;
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(height * 0.1, height * 0.1, height * 0.08, 10), paletteMaterial('#ffffff'));
+  cap.position.y = height * 0.82;
+  const top = new THREE.Mesh(new THREE.IcosahedronGeometry(height * 0.1, 1), paletteMaterial(fruit));
+  top.position.y = height * 0.94;
+  g.add(body, neck, label, cap, top);
+  return g;
+}
+
 /** Procedural Money: a green bill with a cream band. */
 export function billModel(): THREE.Group {
   const g = new THREE.Group();
@@ -270,5 +287,7 @@ export function billModel(): THREE.Group {
 /** The model an Item of this product is drawn with. */
 export function itemModel(name: string): THREE.Group {
   if (name === 'sugar-cane') return caneBundle(ITEM_SIZE * 1.3);
+  if (name === 'apple-juice') return juiceBottle(ITEM_SIZE * 1.25, '#d9cf3a', '#d63c2f');
+  if (name === 'orange-juice') return juiceBottle(ITEM_SIZE * 1.25, '#f5891d', '#f28a1d');
   return name === 'wheat' ? wheatSheaf(ITEM_SIZE * 1.24) : model(name);
 }

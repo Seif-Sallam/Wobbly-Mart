@@ -921,6 +921,8 @@ export class WorldView {
         this.staff.set(c.id, look);
         this.root.add(look.ch.root);
       }
+      const reg = w.stations.get(c.register);
+      if (reg) look.ch.facing = Math.atan2(reg.box[0] + reg.box[2] / 2 - c.x, reg.box[1] + reg.box[3] / 2 - c.z);
       look.ch.update(dt, c.x, c.z, 0, 0, false);
     }
     // blob shadows
@@ -972,7 +974,7 @@ export class WorldView {
             if (!at) return;
             const grown = 0.35 + 0.65 * (1 - Math.min(1, t / type.workTime));
             // PROTOTYPE: Juice Bar Crops have no plant model; their fruit itself grows in place
-            if (!v.plantModel) return put(type.output, this.local(v, at), i * 2.4, t <= 0 ? 1 : grown * 0.8);
+            if (!v.plantModel) return put(type.output, this.local(v, at), i * 2.4, (t <= 0 ? 1 : grown * 0.8) * (v.plantScale ?? 1));
             plants?.add(
               m.compose(this.local(v, at), q.setFromEuler(new THREE.Euler(0, i * 2.4, 0)), s.setScalar(grown)),
             );

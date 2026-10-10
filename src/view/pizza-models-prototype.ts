@@ -24,6 +24,7 @@ const C = {
   leaf: '#8aa66a', leafDark: '#6d8a52', trunk: '#7a6248', dirt: '#8a5a3a', steel: '#c9d2da', steelDark: '#9aa5ae',
   white: '#fbf7f0', iron: '#3a3a40',
 };
+const FLAG = { black: '#1a1a1a', white: '#fbf7f0', green: '#149954', red: '#e4312b' };
 
 interface Look {
   base: string; top: string; accent: string; veggie: string; trim: string;
@@ -94,7 +95,7 @@ const el = (id: string) => document.getElementById(id) as HTMLElement;
 const Q = new URLSearchParams(location.search);
 /** Tunable numbers; the panel edits these live and "Show values" dumps them. */
 const P = {
-  variant: (Q.get('variant') ?? 'A') as Variant,
+  variant: (Q.get('variant') ?? 'C') as Variant,
   focus: Q.get('focus') ?? 'overview',
   working: 'cycle' as 'cycle' | 'on' | 'off',
   showFootprints: true,
@@ -102,8 +103,13 @@ const P = {
   zoom: 7,
   ovenSign: true,
   toppingSize: 1,
-  oliveSize: 1,
+  oliveSize: 1.4,
+  groundScale: 1.3,
+  dropSpeed: 1,
   treeHeight: 1,
+  flagSize: 1.3,
+  scarfSize: 1.4,
+  wave: 1,
   spin: 1,
   fire: 1,
   steam: 1,
@@ -124,8 +130,6 @@ interface Built {
   output: ItemKind;
   /** Where input Items sit (the game's input tray: one column of 3 painted spots per Recipe input). */
   inputs: { at: THREE.Vector3; kind: ItemKind }[];
-  /** Crops: where the output grows. */
-  plants?: THREE.Object3D[];
 }
 
 const PRODUCERS: { id: string; name: string; recipe: string }[] = [
@@ -293,24 +297,134 @@ function oliveTree(w: number, d: number, L: Look): Built {
     [0, 0, 0, 0.55], [0.45, -0.05, 0.15, 0.4], [-0.45, 0, -0.1, 0.42], [0.1, 0.1, -0.42, 0.38], [-0.15, -0.05, 0.42, 0.38],
   ])
     sph(top, r, (x + z) > 0 ? C.leaf : C.leafDark, x, y, z).scale.set(1, 0.6, 1);
-  const plants = [0, 1, 2, 3].map((i) => {
+  // each cluster ripens on a branch (green → near-black), drops into the soil below and waits there to be picked
+  const topY = 0.5 + h + 0.25;
+  const soil = 0.5;
+  const r = 0.06 * P.oliveSize;
+  const unripe = new THREE.Color(C.oliveGreen);
+  const ripe = new THREE.Color(C.olive);
+  const clusters = [0, 1, 2, 3].map((i) => {
     const a = (i / 4) * Math.PI * 2 + 0.4;
-    const o = group(top, Math.cos(a) * 0.55, -0.32, Math.sin(a) * 0.55);
-    // a little cluster of olives on a stalk
-    cyl(o, 0.008, 0.12, C.trunk, 0, -0.02);
-    for (let k = 0; k < 3; k++) sph(o, 0.06 * P.oliveSize, gloss(C.olive), Math.cos(k * 2.1) * 0.05, -0.04, Math.sin(k * 2.1) * 0.05, 1).scale.set(1, 1.3, 1);
-    return o;
+    const hang = new THREE.Vector3(Math.cos(a) * 0.55, topY - 0.36, Math.sin(a) * 0.55);
+    const ground = new THREE.Vector3(Math.cos(a) * 0.42, soil, Math.sin(a) * 0.42);
+    const m = gloss(C.oliveGreen).clone();
+    const o = group(g, hang.x, hang.y, hang.z);
+    const stalk = cyl(o, 0.01, 0.14, C.trunk, 0, 0.02);
+
+    for (let k = 0; k < 4; k++) {
+      const heap = k === 3 ? [0, r * 1.5, 0] : [Math.cos(k * 2.1) * r * 1.1, r * 0.9, Math.sin(k * 2.1) * r * 1.1];
+      sph(o, r, m, heap[0], heap[1] - r * 2.4, heap[2], 1).scale.set(1, 1.3, 1);
+    }
+    return { o, m, stalk, hang, ground, offset: i * 0.8 };
   });
+  const flag = palestineFlag(g, -s * 0.29, 0.51, s * 0.29, 2.9);
+  const scarf = keffiyeh(g, 0.02, 0.5 + h * 0.5, 0.05);
+  const cycle = 6 / P.dropSpeed;
   return {
     group: g,
     output: 'olives',
     inputs: [],
-    plants,
     animate: (_dt, t) => {
       top.rotation.z = Math.sin(t * 1.1) * 0.03;
       top.rotation.x = Math.sin(t * 0.8 + 1) * 0.02;
+      for (const c of clusters) {
+        const k = ((t + c.offset * cycle) % (cycle * 1.4)) / cycle;
+        c.o.visible = P.showItems && k < 1.3;
+        if (k < 0.55) {
+          // growing and ripening on the branch
+          c.o.position.copy(c.hang);
+          c.o.scale.setScalar(Math.max(0.05, k / 0.55));
+          c.m.color.copy(unripe).lerp(ripe, Math.min(1, k / 0.5));
+          c.stalk.visible = true;
+        } else if (k < 0.7) {
+          // falls with a little bounce at the end
+          const f = (k - 0.55) / 0.15;
+          c.o.position.lerpVectors(c.hang, c.ground, f * f);
+          c.o.scale.setScalar(1);
+          c.stalk.visible = false;
+        } else {
+          // lying in the soil, ready to pick; drawn bigger there so it reads
+          const b = Math.max(0, 1 - (k - 0.7) / 0.08);
+          c.o.position.set(c.ground.x, c.ground.y + Math.abs(Math.sin(b * Math.PI)) * 0.08 * b + r * 2.4 * P.groundScale, c.ground.z);
+          c.o.scale.setScalar(P.groundScale);
+        }
+      }
+      flag.forEach((seg, i) => (seg.rotation.y = Math.sin(t * 3 - i * 0.9) * 0.25 * P.wave));
+      scarf.rotation.x = Math.sin(t * 1.4) * 0.05 * P.wave;
     },
   };
+}
+
+/** The Palestinian flag on a pole in the planter's front corner, flying over the canopy; returns its waving segments. */
+function palestineFlag(g: THREE.Object3D, x: number, y: number, z: number, pole: number): THREE.Group[] {
+  cyl(g, 0.025, pole, gloss(C.white), x, y, z);
+  sph(g, 0.045, gloss('#d9a72a'), x, y + pole + 0.03, z, 1);
+  const len = 0.8 * P.flagSize;
+  const hgt = len / 2;
+  const n = 4;
+  const segW = len / n;
+  const segs: THREE.Group[] = [];
+  let parent: THREE.Object3D = group(g, x, y + pole - hgt - 0.02, z);
+  for (let i = 0; i < n; i++) {
+    // each segment hangs off the last one so the cloth ripples
+    const seg = group(parent, i ? segW : 0, 0, 0);
+    [FLAG.green, FLAG.white, FLAG.black].forEach((c, k) => box(seg, segW, hgt / 3, 0.012, mat(c, { side: THREE.DoubleSide }), segW / 2, (k * hgt) / 3, 0));
+    if (i === 0) {
+      // the red triangle at the hoist, a third of the length
+      const tri = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(0, hgt), new THREE.Vector2(len / 3, hgt / 2)]);
+      const m = new THREE.Mesh(new THREE.ExtrudeGeometry(tri, { depth: 0.02, bevelEnabled: false }), mat(FLAG.red));
+      put(seg, m, 0, 0, -0.01);
+    }
+    segs.push(seg);
+    parent = seg;
+  }
+  return segs;
+}
+
+/** The keffiyeh's look: white cloth, black fishnet weave, black border bands and a tasselled edge. */
+function keffiyehTexture(): THREE.CanvasTexture {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 256;
+  const x = cv.getContext('2d') as CanvasRenderingContext2D;
+  x.fillStyle = '#fbf7f0';
+  x.fillRect(0, 0, 256, 256);
+  x.strokeStyle = '#1a1a1a';
+  x.lineWidth = 3;
+  for (let i = -256; i < 512; i += 22) {
+    x.beginPath();
+    x.moveTo(i, 0);
+    x.lineTo(i + 256, 256);
+    x.moveTo(i, 256);
+    x.lineTo(i + 256, 0);
+    x.stroke();
+  }
+  x.fillStyle = '#1a1a1a';
+  for (const y of [0, 236]) x.fillRect(0, y, 256, 20);
+  // a row of olive-leaf marks inside each border
+  for (const y of [32, 214])
+    for (let i = 8; i < 256; i += 20) {
+      x.beginPath();
+      x.ellipse(i, y, 7, 3.5, 0.6, 0, Math.PI * 2);
+      x.fill();
+    }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** A keffiyeh draped over the trunk's fork: two panels folded over a branch, tassels along the bottom edges. */
+function keffiyeh(g: THREE.Object3D, x: number, y: number, z: number): THREE.Group {
+  const k = group(g, x, y, z);
+  const cloth = new THREE.MeshStandardMaterial({ map: keffiyehTexture(), roughness: 0.95, side: THREE.DoubleSide });
+  const w = 0.5 * P.scarfSize;
+  const hh = 0.42 * P.scarfSize;
+  cyl(k, 0.07, w, cloth, 0, -0.07 + w / 2, 0).rotation.z = Math.PI / 2;
+  for (const s of [1, -1]) {
+    const panel = box(k, w, hh, 0.015, cloth, 0, -hh, s * 0.07);
+    panel.rotation.x = s * 0.12;
+    for (let i = 0; i < 7; i++) cyl(k, 0.012, 0.07, mat('#1a1a1a'), -w / 2 + 0.03 + (i * (w - 0.06)) / 6, -hh - 0.07, s * (0.07 + hh * 0.12));
+  }
+  return k;
 }
 
 // ---------- Sauce pot
@@ -615,7 +729,6 @@ function rebuild(): void {
         const built = BUILDERS[id](w, d, L, P.variant);
         root.add(built.group);
         p.built = built;
-        for (const pl of built.plants ?? []) p.inItems.push(pl);
       } else {
         const strip = 1.1;
         const built = BUILDERS[id](w, d - strip, L, P.variant);
@@ -697,8 +810,13 @@ gui.add(P, 'zoom', 4, 14, 0.5).name('Close-up zoom m').onChange(() => focusOn(P.
 const look = gui.addFolder('Look');
 look.add(P, 'ovenSign').name('Pizza sign on ovens').onChange(rebuild);
 look.add(P, 'toppingSize', 0.6, 1.8, 0.05).name('Topping size').onFinishChange(rebuild);
-look.add(P, 'oliveSize', 0.6, 2, 0.05).name('Olive size').onFinishChange(rebuild);
+look.add(P, 'oliveSize', 0.6, 2.5, 0.05).name('Olive size').onFinishChange(rebuild);
+look.add(P, 'groundScale', 0.6, 2.5, 0.05).name('Olives on the ground ×');
+look.add(P, 'dropSpeed', 0.3, 3, 0.1).name('Ripen / drop speed').onFinishChange(rebuild);
 look.add(P, 'treeHeight', 0.6, 1.6, 0.05).name('Tree height').onFinishChange(rebuild);
+look.add(P, 'flagSize', 0.5, 1.8, 0.05).name('Flag size').onFinishChange(rebuild);
+look.add(P, 'scarfSize', 0.5, 1.8, 0.05).name('Keffiyeh size').onFinishChange(rebuild);
+look.add(P, 'wave', 0, 3, 0.1).name('Flag / keffiyeh wave');
 const motion = gui.addFolder('Motion');
 motion.add(P, 'spin', 0, 3, 0.1).name('Speed (stir / knead / belt)');
 motion.add(P, 'fire', 0, 2, 0.1).name('Fire');
@@ -733,7 +851,7 @@ addEventListener('keydown', (e) => {
 });
 el('scene').addEventListener('click', () => focusOn('overview'));
 
-setVariant(KEYS.includes(P.variant) ? P.variant : 'A');
+setVariant(KEYS.includes(P.variant) ? P.variant : 'C');
 
 // ---------- loop
 
@@ -749,11 +867,6 @@ function frame(): void {
     if (p.animateRef) p.animateRef(dt, wk);
     if (p.built) {
       p.built.animate(dt, t, wk);
-      if (p.built.plants) {
-        // olives regrow one after another, then are picked
-        p.built.plants.forEach((pl, i) => pl.scale.setScalar(P.showItems ? Math.min(1, ((t * 0.25 + p.phase + i * 0.25) % 1.3)) : 0.001));
-        continue;
-      }
       if (wk) p.outCount = Math.min(6, p.outCount + dt * 0.6);
       else if (p.outCount >= 6) p.outCount = 0;
       p.outItems.forEach((m, i) => (m.visible = P.showItems && i < Math.floor(p.outCount)));

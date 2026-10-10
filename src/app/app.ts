@@ -195,6 +195,7 @@ export class App {
     requestAnimationFrame(loop);
     Object.assign(window, { app: this, game: this.game });
     const params = new URLSearchParams(location.search);
+    if (params.get('map') === 'juice-bar') void import('./juice-switch').then((m) => m.installJuiceSwitch());
     if (params.has('debug')) void import('./debug').then((m) => this.game && m.openDebug(this.game, isTouch));
     if (import.meta.env.DEV) {
       const { installEditor } = await import('../editor/editor');

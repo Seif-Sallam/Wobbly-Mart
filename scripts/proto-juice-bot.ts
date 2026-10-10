@@ -1,6 +1,6 @@
 // PROTOTYPE: the bot on the Juice Bar for the shape in JLAYOUT; prints minutes to 100% and the mean trip length.
 import { juiceBar } from '../maps/juice-bar';
-import { SHAPE_NAME } from '../maps/juice-bar/layout';
+import { SHAPE_NAME } from '../maps/juice-bar/shapes';
 import { createWorld, step } from '../src/sim/world';
 import { Bot } from '../src/sim/bot';
 import { completion } from '../src/sim/economy';

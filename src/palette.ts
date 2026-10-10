@@ -145,6 +145,8 @@ export interface ShopTheme {
   wall: string;
   trim: string;
   door: string;
+  /** Output pallets under Animals and Machines (default: dark wood). */
+  pallet?: string;
 }
 export const THEMES: Record<string, ShopTheme> = {
   'corner-shop': { floor: SHADES.floor, wall: PALETTE.cream, trim: PALETTE.wood, door: '#7a4a2a' },
@@ -159,6 +161,7 @@ export const THEMES: Record<string, ShopTheme> = {
     wall: '#dfeaf5',
     trim: '#6fa8dc',
     door: '#3d6f9e',
+    pallet: SHADES.dairy.steelDark,
   },
 };
 

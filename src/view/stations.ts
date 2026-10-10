@@ -64,9 +64,9 @@ function playIdle(obj: THREE.Object3D, name: string, mixers: THREE.AnimationMixe
 }
 
 /** Output on a dark pallet; Items piled 3 + 2 + 1. */
-function pallet(body: THREE.Group, z: number): THREE.Vector3[] {
+function pallet(body: THREE.Group, z: number, colour: string): THREE.Vector3[] {
   const [pw, pd] = OUTPUT.pallet;
-  slab(body, pw, OUTPUT.palletHeight, pd, 'woodDark', 0, 0, z);
+  slab(body, pw, OUTPUT.palletHeight, pd, colour, 0, 0, z);
   const y = OUTPUT.palletHeight;
   return [
     ...grid(3, 1, OUTPUT.gap * 2, 0, y, 0, z),
@@ -349,7 +349,8 @@ const PALLETED = new Set([
   ...Object.keys(DAIRY_STATIONS),
 ]);
 
-export function buildStation(name: string, box: Box, rot: Rot): StationVisual {
+/** `palletColour`: the output pallet's colour, from the Map's shop theme. */
+export function buildStation(name: string, box: Box, rot: Rot, palletColour = 'woodDark'): StationVisual {
   const [w, d] = footprint(box, rot);
   const root = new THREE.Group();
   root.position.set(box[0] + box[2] / 2, 0, box[1] + box[3] / 2);
@@ -372,7 +373,7 @@ export function buildStation(name: string, box: Box, rot: Rot): StationVisual {
   if (strip) {
     for (const c of v.body.children) c.position.z -= strip / 2;
     for (const p of [...v.inputSlots, ...v.plants]) p.z -= strip / 2;
-    v.slots = pallet(v.body, d / 2 - strip / 2);
+    v.slots = pallet(v.body, d / 2 - strip / 2, palletColour);
   }
   mergeStatic(v.body);
   return v;

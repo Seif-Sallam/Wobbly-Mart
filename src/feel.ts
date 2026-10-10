@@ -19,6 +19,10 @@ export const FEEL = {
   zoomSlider: 0.5,
   zoomStep: 0.08,
   zoomEase: 10,
+  /** HUD size slider: scale range and step. */
+  hudScaleMin: 1,
+  hudScaleMax: 1.6,
+  hudScaleSlider: 0.05,
   /** Joystick stays off this long after a pinch (s). */
   pinchQuiet: 0.15,
   // Tap Walk: a press under tapMs that moved under tapPx is a tap; double-tap within doubleTapMs sprints. Fixtures

@@ -39,6 +39,16 @@ body {
   z-index: 2;
   pointer-events: none;
 }
+/* laid out at 1/scale of the screen, then scaled up to fill it, so % and centring hold at any HUD size */
+.hud-ui {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(100% / var(--hud-scale, 1));
+  height: calc(100% / var(--hud-scale, 1));
+  transform: scale(var(--hud-scale, 1));
+  transform-origin: 0 0;
+}
 #ui {
   position: fixed;
   inset: 0;
@@ -57,7 +67,7 @@ body {
 .round,
 .completion,
 .menu .btn,
-.zoom-row {
+.slider-row {
   border: 3px solid var(--ink);
   box-shadow:
     0 4px 0 var(--ink),
@@ -129,7 +139,7 @@ body {
   pointer-events: auto;
 }
 .completion {
-  width: min(28vw, 150px);
+  width: min(28%, 150px);
   height: 18px;
   border-radius: 999px;
   background: var(--cream);
@@ -321,7 +331,7 @@ body {
   left: 50%;
   top: calc(max(10px, env(safe-area-inset-top)) + 64px);
   transform: translateX(-50%);
-  width: min(300px, calc(100vw - 32px));
+  width: min(300px, calc(100% - 32px));
   flex-direction: column;
   align-items: stretch;
   gap: 4px;
@@ -798,7 +808,7 @@ body {
   transform: translate(-50%, -50%) scale(0);
 }
 
-.zoom-row {
+.slider-row {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -811,10 +821,10 @@ body {
     system-ui,
     sans-serif;
 }
-.zoom-row span {
+.slider-row span {
   flex: 1;
 }
-.zoom-row input {
+.slider-row input {
   width: min(180px, 40vw);
   accent-color: var(--orange);
 }

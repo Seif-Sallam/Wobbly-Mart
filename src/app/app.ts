@@ -109,6 +109,7 @@ export class App {
     this.settings = loadSettings();
     this.stage.viewSize = this.zoom();
     this.stage.batterySaver(this.settings.batterySaver);
+    this.hud.scale(this.settings.hudScale);
     this.input.onTap = (x, y, double) => {
       const game = this.game;
       if (!game || this.ui.screen !== 'game' || game.paused || this.editing) return;
@@ -633,6 +634,7 @@ export class App {
     writeSettings(this.settings);
     this.sounds.apply(this.settings);
     this.stage.batterySaver(this.settings.batterySaver);
+    this.hud.scale(this.settings.hudScale);
     this.ui.zoom = this.zoom();
     this.stage.zoomTo(this.ui.zoom);
     if (this.game) this.game.manualGrab = !isTouch && this.settings.manualGrab;

@@ -234,22 +234,30 @@ function Toggle(props: {
   );
 }
 
-/** Zoom slider: + (closer) on the left, − (farther) on the right; the view behind zooms live. */
-function ZoomRow({ s, a }: { s: UiState; a: UiActions }) {
+/** A Settings slider with a mark at each end; whatever it sets updates live behind the panel. */
+function SliderRow(props: {
+  label: string;
+  ends: [string, string];
+  min: number;
+  max: number;
+  step: number;
+  value: number;
+  set: (v: number) => void;
+}) {
   return (
-    <label class="zoom-row">
-      <span>Zoom</span>
-      <b>+</b>
+    <label class="slider-row">
+      <span>{props.label}</span>
+      <b>{props.ends[0]}</b>
       <input
         type="range"
-        min={FEEL.zoomMin}
-        max={FEEL.zoomMax}
-        step={FEEL.zoomSlider}
-        value={s.zoom}
+        min={props.min}
+        max={props.max}
+        step={props.step}
+        value={props.value}
         onPointerDown={(e) => e.stopPropagation()}
-        onInput={(e) => a.setSetting('zoom', Number((e.target as HTMLInputElement).value))}
+        onInput={(e) => props.set(Number((e.target as HTMLInputElement).value))}
       />
-      <b>−</b>
+      <b>{props.ends[1]}</b>
     </label>
   );
 }
@@ -279,7 +287,25 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
   return (
     <div class="panel">
       <h2>Settings</h2>
-      <ZoomRow s={s} a={a} />
+      {/* + (closer) on the left, − (farther) on the right */}
+      <SliderRow
+        label="Zoom"
+        ends={['+', '−']}
+        min={FEEL.zoomMin}
+        max={FEEL.zoomMax}
+        step={FEEL.zoomSlider}
+        value={s.zoom}
+        set={(v) => a.setSetting('zoom', v)}
+      />
+      <SliderRow
+        label="HUD size"
+        ends={['A', 'A']}
+        min={FEEL.hudScaleMin}
+        max={FEEL.hudScaleMax}
+        step={FEEL.hudScaleSlider}
+        value={s.settings.hudScale}
+        set={(v) => a.setSetting('hudScale', v)}
+      />
       <Toggle label="Music" on={s.settings.music} set={(v) => a.setSetting('music', v)} actions={a} />
       <Toggle label="Sounds" on={s.settings.sounds} set={(v) => a.setSetting('sounds', v)} actions={a} />
       {!s.touch && (

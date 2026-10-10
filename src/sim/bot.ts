@@ -115,6 +115,8 @@ export class Bot {
   }
 
   private decide(w: World): string | Point | null {
+    // It picks up the mop only by walking past it empty-handed; take it back
+    if (w.player.mop) return [...w.stations.values()].find((s) => s.kind === 'mopStand')?.id ?? null;
     const pads = visiblePads(w).sort((a, b) => padRemaining(w, a) - padRemaining(w, b));
     const pad = pads[0];
     if (pad && padRemaining(w, pad) <= w.money + 1e-6) return pad;

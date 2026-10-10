@@ -108,7 +108,7 @@ const P = {
   dropSpeed: 1,
   treeHeight: 1,
   flagSize: 1.3,
-  scarfSize: 1.4,
+  scarfSize: 1,
   wave: 1,
   spin: 1,
   fire: 1,
@@ -318,7 +318,7 @@ function oliveTree(w: number, d: number, L: Look): Built {
     return { o, m, stalk, hang, ground, offset: i * 0.8 };
   });
   const flag = palestineFlag(g, -s * 0.29, 0.51, s * 0.29, 2.9);
-  const scarf = keffiyeh(g, 0.02, 0.5 + h * 0.5, 0.05);
+  keffiyeh(g, s * 0.2, 0.51, s * 0.2);
   const cycle = 6 / P.dropSpeed;
   return {
     group: g,
@@ -350,7 +350,6 @@ function oliveTree(w: number, d: number, L: Look): Built {
         }
       }
       flag.forEach((seg, i) => (seg.rotation.y = Math.sin(t * 3 - i * 0.9) * 0.25 * P.wave));
-      scarf.rotation.x = Math.sin(t * 1.4) * 0.05 * P.wave;
     },
   };
 }
@@ -412,17 +411,24 @@ function keffiyehTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-/** A keffiyeh draped over the trunk's fork: two panels folded over a branch, tassels along the bottom edges. */
+/** A keffiyeh lying folded on the ground beside the tree: a square with one corner folded over, tassels on two edges. */
 function keffiyeh(g: THREE.Object3D, x: number, y: number, z: number): THREE.Group {
   const k = group(g, x, y, z);
+  k.rotation.y = 0.3;
   const cloth = new THREE.MeshStandardMaterial({ map: keffiyehTexture(), roughness: 0.95, side: THREE.DoubleSide });
-  const w = 0.5 * P.scarfSize;
-  const hh = 0.42 * P.scarfSize;
-  cyl(k, 0.07, w, cloth, 0, -0.07 + w / 2, 0).rotation.z = Math.PI / 2;
-  for (const s of [1, -1]) {
-    const panel = box(k, w, hh, 0.015, cloth, 0, -hh, s * 0.07);
-    panel.rotation.x = s * 0.12;
-    for (let i = 0; i < 7; i++) cyl(k, 0.012, 0.07, mat('#1a1a1a'), -w / 2 + 0.03 + (i * (w - 0.06)) / 6, -hh - 0.07, s * (0.07 + hh * 0.12));
+  const w = 0.46 * P.scarfSize;
+  box(k, w, 0.012, w, cloth);
+  // the folded-over half lies on top as a triangle
+  const tri = new THREE.Shape([new THREE.Vector2(-w / 2, -w / 2), new THREE.Vector2(w / 2, -w / 2), new THREE.Vector2(w / 2, w / 2)]);
+  const flapGeo = new THREE.ShapeGeometry(tri);
+  const uv = flapGeo.attributes.uv;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / w + 0.5, uv.getY(i) / w + 0.5);
+  const flap = put(k, new THREE.Mesh(flapGeo, cloth), 0, 0.016, 0);
+  flap.rotation.x = -Math.PI / 2;
+  for (let i = 0; i < 8; i++) {
+    const u = -w / 2 + 0.03 + (i * (w - 0.06)) / 7;
+    cyl(k, 0.012, 0.012, mat('#1a1a1a'), u, 0, w / 2 + 0.03).rotation.x = Math.PI / 2;
+    cyl(k, 0.012, 0.012, mat('#1a1a1a'), w / 2 + 0.03, 0, u).rotation.z = Math.PI / 2;
   }
   return k;
 }
@@ -816,7 +822,7 @@ look.add(P, 'dropSpeed', 0.3, 3, 0.1).name('Ripen / drop speed').onFinishChange(
 look.add(P, 'treeHeight', 0.6, 1.6, 0.05).name('Tree height').onFinishChange(rebuild);
 look.add(P, 'flagSize', 0.5, 1.8, 0.05).name('Flag size').onFinishChange(rebuild);
 look.add(P, 'scarfSize', 0.5, 1.8, 0.05).name('Keffiyeh size').onFinishChange(rebuild);
-look.add(P, 'wave', 0, 3, 0.1).name('Flag / keffiyeh wave');
+look.add(P, 'wave', 0, 3, 0.1).name('Flag wave');
 const motion = gui.addFolder('Motion');
 motion.add(P, 'spin', 0, 3, 0.1).name('Speed (stir / knead / belt)');
 motion.add(P, 'fire', 0, 2, 0.1).name('Fire');

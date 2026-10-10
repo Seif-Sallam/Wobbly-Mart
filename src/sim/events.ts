@@ -1,5 +1,5 @@
 // Events: seeded happenings unlocked by purchases. Deliveries: cars park at the Car Spots with an order.
-import type { ByArea, EventKind } from './map';
+import type { ByArea, EventKind, EventTiming, MapEvents } from './map';
 import type { Delivery, PickupStation, World } from './world';
 import { DT } from './world';
 import { productsForSale, requirementMet } from './economy';
@@ -10,6 +10,14 @@ import { startRobbery, updateThief } from './robbery';
 import { startInspector, updateInspector } from './inspector';
 
 const E = TUNING.events;
+
+const timings = new WeakMap<MapEvents, EventTiming>();
+/** TUNING.events with the Map's own timing on top. */
+const timing = (w: World): EventTiming => {
+  let t = timings.get(w.map.events);
+  if (!t) timings.set(w.map.events, (t = { ...E, ...w.map.events.timing }));
+  return t;
+};
 
 /** How long a Thief Pan freezes the game: the camera's glide to the Thief, then the hold. */
 export const thiefFreeze = (): number => FEEL.thiefPanGlide + E.robbery.freeze;
@@ -37,15 +45,15 @@ const pickups = (w: World): PickupStation[] =>
 const between = (w: World, [lo, hi]: readonly [number, number]): number => lo + nextRandom(w.eventRng) * (hi - lo);
 
 /** Cars that may wait at once: one, plus one per Stocker count reached in carStockers. */
-const carCap = (w: World): number => 1 + E.carStockers.filter((n) => w.stockers.length >= n).length;
+const carCap = (w: World): number => 1 + timing(w).carStockers.filter((n) => w.stockers.length >= n).length;
 
 /** 1–3 Products on sale, the same count of each, the total within the range for the Areas bought. */
 function order(w: World): Delivery | null {
   const forSale = productsForSale(w);
   if (!forSale.length) return null;
-  const n = randomInt(w.eventRng, 1, Math.min(E.orderProducts, forSale.length));
+  const n = randomInt(w.eventRng, 1, Math.min(timing(w).orderProducts, forSale.length));
   const areas = Object.keys(w.map.layout.areas).filter((a) => w.owned.has(a)).length;
-  const [lo, hi] = E.deliveryItems[Math.min(Math.max(1, areas), E.deliveryItems.length) - 1];
+  const [lo, hi] = timing(w).deliveryItems[Math.min(Math.max(1, areas), timing(w).deliveryItems.length) - 1];
   const least = Math.max(1, Math.ceil(lo / n));
   const each = randomInt(w.eventRng, least, Math.max(least, Math.floor(hi / n)));
   return {
@@ -53,7 +61,7 @@ function order(w: World): Delivery | null {
       .slice(0, n)
       .map((product) => ({ product, want: each, got: 0 })),
     t: 0,
-    time: E.deliveryTime + E.deliveryPerItem * each * n,
+    time: timing(w).deliveryTime + timing(w).deliveryPerItem * each * n,
     look: nextRandom(w.eventRng),
     honked: false,
   };
@@ -62,8 +70,8 @@ function order(w: World): Delivery | null {
 /** Full: deliveryPay × Sale Price plus the speed tip; timed out: plain Sale Price for what was delivered. */
 function leave(w: World, st: PickupStation, d: Delivery, complete: boolean): void {
   const value = d.order.reduce((sum, l) => sum + l.got * w.map.products[l.product].price, 0);
-  const amount = Math.round(complete ? value * E.deliveryPay : value);
-  const tip = complete ? Math.round(amount * E.tipMax * Math.max(0, 1 - d.t / (d.time / 2))) : 0;
+  const amount = Math.round(complete ? value * timing(w).deliveryPay : value);
+  const tip = complete ? Math.round(amount * timing(w).tipMax * Math.max(0, 1 - d.t / (d.time / 2))) : 0;
   w.money += amount + tip;
   w.events.push({ type: 'deliveryDone', station: st.id, amount, tip, complete });
   st.delivery = null;
@@ -77,37 +85,45 @@ function updateDeliveries(w: World): void {
     d.t += DT;
     if (d.order.every((l) => l.got >= l.want)) leave(w, st, d, true);
     else if (d.t >= d.time) leave(w, st, d, false);
-    else if (!d.honked && d.time - d.t <= E.honkAt) {
+    else if (!d.honked && d.time - d.t <= timing(w).honkAt) {
       d.honked = true;
       w.events.push({ type: 'deliveryHonk', station: st.id });
     }
   }
-  w.carWait = (w.carWait ?? between(w, E.deliveryGap)) - DT;
-  if (w.carWait > 0 || w.t < E.quietStart) return;
+  w.carWait = (w.carWait ?? between(w, timing(w).deliveryGap)) - DT;
+  if (w.carWait > 0 || w.t < timing(w).quietStart) return;
   const parked = spots.filter((s) => s.delivery).length;
   const free = spots.find((s) => !s.delivery);
   const cap = Math.min(carCap(w), spots.length);
-  w.carWait = between(w, E.deliveryGap);
+  w.carWait = between(w, timing(w).deliveryGap);
   if (!free || parked >= cap) return;
   free.delivery = order(w);
   if (!free.delivery) return;
   w.events.push({ type: 'deliveryArrived', station: free.id });
   // now and then another car follows soon, when the Stockers allow one more
-  if (parked + 1 < cap && nextRandom(w.eventRng) < E.extraCarChance) w.carWait = between(w, E.extraCarGap);
+  if (parked + 1 < cap && nextRandom(w.eventRng) < timing(w).extraCarChance)
+    w.carWait = between(w, timing(w).extraCarGap);
 }
 
-/** Robbery and the Inspector need the Player there: one at a time, a random gap after each. */
+const VISITS = ['robbery', 'inspector'] as const;
+
+/** Robbery and the Inspector need the Player there: each on its own timer, one at a time, spaced out. */
 function updateVisits(w: World): void {
+  const T = timing(w);
   if (w.thief) updateThief(w, w.thief);
   if (w.inspector) updateInspector(w, w.inspector);
-  if (w.thief || w.inspector) return;
-  const kinds = (['robbery', 'inspector'] as const).filter((k) => unlocked(w, k));
-  if (!kinds.length) return;
-  w.visitWait = (w.visitWait ?? between(w, E.visitGap)) - DT;
-  if (w.visitWait > 0 || w.t < E.quietStart) return;
-  w.visitWait = null;
-  const kind = kinds[Math.floor(nextRandom(w.eventRng) * kinds.length)];
-  if (kind === 'robbery') startRobbery(w);
+  const running = w.thief ? 'robbery' : w.inspector ? 'inspector' : null;
+  if (running) w.lastVisit = w.t;
+  const kinds = VISITS.filter((k) => unlocked(w, k) && k !== running);
+  for (const k of kinds) w.visitWait[k] = (w.visitWait[k] ?? between(w, T[`${k}Gap`])) - DT;
+  if (running || w.t < T.quietStart || w.t - w.lastVisit < T.visitSpacing) return;
+  // a visit due inside the spacing waits; the longest overdue goes first
+  const due = kinds
+    .filter((k) => (w.visitWait[k] ?? 1) <= 0)
+    .sort((a, b) => (w.visitWait[a] ?? 0) - (w.visitWait[b] ?? 0))[0];
+  if (!due) return;
+  w.visitWait[due] = null;
+  if (due === 'robbery') startRobbery(w);
   else startInspector(w);
 }
 

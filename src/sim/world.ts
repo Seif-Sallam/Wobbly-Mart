@@ -313,8 +313,10 @@ export interface World {
   arrivalTimer: number;
   /** Seconds until the next Delivery car; null until Deliveries unlock (rolled then). */
   carWait: number | null;
-  /** Seconds until the next Robbery or Inspector visit; null while one runs or before they unlock. */
-  visitWait: number | null;
+  /** Seconds until each kind of visit is due; null before it unlocks and while it runs. */
+  visitWait: Record<'robbery' | 'inspector', number | null>;
+  /** When the last Robbery or Inspector visit ended. */
+  lastVisit: number;
   thief: Thief | null;
   inspector: Inspector | null;
   /** Thief Pan: the game freezes while the camera glides to the Thief and holds. */
@@ -379,7 +381,8 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
     pan: null,
     arrivalTimer: 0,
     carWait: null,
-    visitWait: null,
+    visitWait: { robbery: null, inspector: null },
+    lastVisit: -Infinity,
     thief: null,
     inspector: null,
     thiefPan: null,

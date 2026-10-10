@@ -1,4 +1,6 @@
 // Gameplay numbers the sim reads that are not per-map data.
+type Range = readonly [number, number];
+
 export const TUNING = {
   tickRate: 60,
   playerRadius: 0.4,
@@ -99,8 +101,8 @@ export const TUNING = {
    */
   events: {
     quietStart: 180,
-    deliveryGap: [180, 240] as const,
-    carStockers: [1, 3],
+    deliveryGap: [180, 240] as Range,
+    carStockers: [1, 3] as readonly number[],
     extraCarChance: 0.3,
     extraCarGap: [30, 90] as const,
     orderProducts: 3,
@@ -114,8 +116,11 @@ export const TUNING = {
     honkAt: 15,
     deliveryPay: 1.5,
     tipMax: 0.25,
-    /** Robbery and the Health Inspector: one at a time, this many s apart. */
-    visitGap: [180, 300] as const,
+    /** Robbery and the Health Inspector: each on its own timer (s), one at a time, a new one visitSpacing s after the
+     * last left at the earliest. */
+    robberyGap: [360, 600] as Range,
+    inspectorGap: [360, 600] as Range,
+    visitSpacing: 120,
     /** Thief: takes up to `items` from the fullest Shelf over grabTime s, freezes the game `freeze` s (Thief Pan),
      * walks off at `speed` m/s (weighed down) to the nearest customer door and is gone; the Player catches them within
      * catchRadius m. */

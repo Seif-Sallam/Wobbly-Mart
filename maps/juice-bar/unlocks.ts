@@ -72,16 +72,28 @@ export const freeStations: Record<string, FreeStationDef> = {
 export const start = { owned: ['area_1'], money: 50 };
 
 export const movePrices = [40, 60, 90, 150, 200, 275, 400, 525, 650];
-
+// #40: every Event from the first Opening; Deliveries are the twist (a car every 110–150 s, a 4th with 5 Stockers).
 export const events: MapEvents = {
-  delivery: { requires: ['apple_shelf'] },
+  timing: {
+    deliveryGap: [110, 150],
+    carStockers: [1, 3, 5],
+    extraCarChance: 0.5,
+    robberyGap: [600, 900],
+    inspectorGap: [600, 900],
+  },
+  delivery: { requires: [] },
   robbery: {
-    requires: ['area_2'],
-    byArea: { area_2: { bounty: 40, cashOver: 150 }, area_3: { bounty: 120, cashOver: 400 } },
+    requires: [],
+    byArea: {
+      area_1: { bounty: 15, cashOver: 60 },
+      area_2: { bounty: 40, cashOver: 150 },
+      area_3: { bounty: 120, cashOver: 400 },
+    },
   },
   inspector: {
-    requires: ['area_2'],
+    requires: [],
     byArea: {
+      area_1: { reward: [40, 80], perDirt: 10, review: 60 },
       area_2: { reward: [100, 200], perDirt: 20, review: 150 },
       area_3: { reward: [300, 600], perDirt: 60, review: 450 },
     },

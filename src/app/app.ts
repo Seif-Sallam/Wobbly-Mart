@@ -21,7 +21,7 @@ import {
   upgradeVisible,
   visiblePads,
 } from '../sim/economy';
-import { stationModel } from '../sim/map';
+import { shelfCap, stationModel } from '../sim/map';
 import { boxCentre } from '../sim/geometry';
 import { MAPS, mapById } from '../../maps';
 import { Stage } from '../view/stage';
@@ -175,7 +175,7 @@ export class App {
     this.game.view.scenery(SCENERY_PEOPLE);
     const { world } = this.game;
     for (const st of world.stations.values()) {
-      if (st.kind === 'shelf') st.items = TUNING.shelfCap;
+      if (st.kind === 'shelf') st.items = shelfCap(world.map, st.product);
       if (st.kind !== 'producer') continue;
       const type = world.map.producers[st.type];
       st.plants.fill(0);

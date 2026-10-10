@@ -1,5 +1,6 @@
 import { SHELF_CAPS, type Product } from '../../catalog/products';
 import type { ProducerType } from '../../catalog/producers';
+import type { TUNING } from './tuning';
 
 /** [x, z, w, d] in metres: top-left corner (x east, z south) and size. */
 export type Box = [number, number, number, number];
@@ -102,7 +103,12 @@ export interface EventDef {
 /** Event amounts by Area: the latest bought Area listed applies. */
 export type ByArea<T> = Record<string, T>;
 
+/** A Map's Event timing: any of TUNING.events' fields but the Thief's and Inspector's rules. */
+export type EventTiming = Omit<typeof TUNING.events, 'robbery' | 'inspector'>;
+
 export interface MapEvents {
+  /** Overrides of the Event timing for this Map; the rest uses TUNING.events. */
+  timing?: Partial<EventTiming>;
   delivery?: EventDef;
   /** Bounty for a caught Thief; a Cash Pile over `cashOver` gets robbed of half. */
   robbery?: EventDef & { byArea: ByArea<{ bounty: number; cashOver: number }> };
@@ -110,7 +116,7 @@ export interface MapEvents {
   inspector?: EventDef & { byArea: ByArea<{ reward: [number, number]; perDirt: number; review: number }> };
 }
 
-export type EventKind = keyof MapEvents;
+export type EventKind = Exclude<keyof MapEvents, 'timing'>;
 
 export interface MapDef {
   id: string;

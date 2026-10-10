@@ -680,7 +680,7 @@ describe('Robbery and the Health Inspector', () => {
       own(w, id, false);
     refreshFreeStations(w);
     const events = cornerShop.events;
-    w.map.events = { robbery: events.robbery };
+    w.map.events = { robbery: events.robbery, timing: { robberyGap: [180, 300] } };
     w.money = 1000;
     const tomato = w.stations.get('tomato_shelf') as ShelfStation;
     const egg = w.stations.get('egg_shelf') as ShelfStation;
@@ -690,6 +690,7 @@ describe('Robbery and the Health Inspector', () => {
       egg.items = 3;
     };
     const far = () => Object.assign(w.player, { x: 8, z: 40, vx: 0, vz: 0 });
+    const visitNow = () => Object.assign(w, { visitWait: { robbery: 0, inspector: 0 }, lastVisit: -Infinity });
     const until = (seconds: number, done: (e: SimEvent) => boolean, each = () => {}) => {
       for (let i = 0; i < seconds * 60; i++) {
         each();
@@ -729,7 +730,7 @@ describe('Robbery and the Health Inspector', () => {
     // 3. A Cash Pile over $150 is robbed of half instead; the Thief escapes through a door with it and is gone
     w.loose = [];
     if (register?.kind === 'register') register.cash = 300;
-    w.visitWait = 0;
+    visitNow();
     expect(until(60, (e) => e.type === 'thiefGrab', stocked)).toBeDefined();
     expect(w.thief?.target).toBe('register');
     expect(register?.kind === 'register' && register.cash).toBe(150);
@@ -740,14 +741,14 @@ describe('Robbery and the Health Inspector', () => {
     // 4. An empty store: no Thief comes
     tomato.items = egg.items = 0;
     if (register?.kind === 'register') register.cash = 0;
-    w.visitWait = 0;
+    visitNow();
     step(w, idle());
     expect(w.thief).toBeNull();
 
     // 5. The Inspector: a 15 s warning, then in through a door; escorted, the alone clock drains back; spotless pays
     for (const id of ['office', 'ketchup_shelf', 'blender', 'wheat_shelf', 'milk_fridge']) own(w, id, false);
     w.map.events = { inspector: events.inspector };
-    w.visitWait = 0;
+    visitNow();
     expect(until(1, (e) => e.type === 'inspectorWarning', stocked)).toBeDefined();
     const ins = w.inspector as NonNullable<World['inspector']>;
     expect(ins.stops.length).toBeGreaterThanOrEqual(4);
@@ -784,7 +785,7 @@ describe('Robbery and the Health Inspector', () => {
     addMess(w, w.nextId++, 30, 40, ['milk'], -1);
     addMess(w, w.nextId++, 32, 40, ['milk'], -1);
     w.loose.push({ id: w.nextId++, x: 34, z: 40, product: 'egg' });
-    w.visitWait = 0;
+    visitNow();
     step(w, idle());
     const second = w.inspector as NonNullable<World['inspector']>;
     const dirty = until(
@@ -799,9 +800,7 @@ describe('Robbery and the Health Inspector', () => {
     for (let i = 0; i < 60 * 60 && w.inspector; i++) step(w, idle());
 
     // 7. Left alone 15 s: BAD REVIEW, the dirt fine plus $150, even when spotless
-    w.messes = [];
-    w.loose = [];
-    w.visitWait = 0;
+    visitNow();
     const before = w.money;
     const bad = until(
       60,
@@ -809,6 +808,8 @@ describe('Robbery and the Health Inspector', () => {
       () => {
         stocked();
         far();
+        w.messes = [];
+        w.loose = [];
       },
     );
     expect(bad?.type === 'inspection' && bad.review && bad.amount).toBe(-150);
@@ -819,9 +820,11 @@ describe('Robbery and the Health Inspector', () => {
 
     // they step around a Mess in their way, so they're never seen standing in one far from a stop
     w.inspector = null;
-    w.visitWait = 0;
+    visitNow();
     step(w, idle());
     const walker = inspectorOf(w);
+    // in by the east door, across open floor where they can step round
+    Object.assign(walker, { door: [12.5, 4.15], stops: ['wheat_shelf', 'tomato_shelf', 'milk_fridge', 'register'] });
     addMess(w, w.nextId++, (walker.x + walker.door[0]) / 2, (walker.z + walker.door[1]) / 2, ['milk'], -1);
     let inMess = 0;
     let closest = Infinity;
@@ -836,6 +839,38 @@ describe('Robbery and the Health Inspector', () => {
     expect(walker.state).toBe('visit');
     expect(closest).toBeLessThan(TUNING.messRadius + 0.2); // it came right past the Mess …
     expect(inMess).toBe(0); // … and around it
+
+    // 8. Each kind on its own timer, a Map's timing on top (an Inspector every 2–4 min, a Thief every 10–15):
+    //    one visit at a time, the next at least 2 min after the last left
+    w.inspector = null;
+    w.map.events = {
+      timing: { inspectorGap: [120, 240], robberyGap: [600, 900] },
+      robbery: { requires: [], byArea: events.robbery?.byArea ?? {} },
+      inspector: { requires: [], byArea: events.inspector?.byArea ?? {} },
+    };
+    w.visitWait = { robbery: null, inspector: null };
+    const starts = { robbery: 0, inspector: 0 };
+    let left = w.t;
+    let soonest = Infinity;
+    let both = false;
+    for (let i = 0; i < 60 * 45 * 60; i++) {
+      const was = w.thief ?? w.inspector;
+      stocked();
+      far();
+      step(w, idle());
+      both ||= !!(w.thief && w.inspector);
+      const now = w.thief ?? w.inspector;
+      if (!was && now) {
+        starts[w.thief ? 'robbery' : 'inspector']++;
+        soonest = Math.min(soonest, w.t - left);
+      }
+      if (was && !now) left = w.t;
+    }
+    expect(both).toBe(false);
+    expect(soonest).toBeGreaterThanOrEqual(TUNING.events.visitSpacing - DT);
+    expect(starts.inspector).toBeGreaterThanOrEqual(7);
+    expect(starts.robbery).toBeGreaterThanOrEqual(2);
+    expect(starts.robbery).toBeLessThanOrEqual(5);
   });
 });
 

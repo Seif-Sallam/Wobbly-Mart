@@ -9,6 +9,7 @@ import { formatMoney } from '../format';
 import { FEEL } from '../feel';
 import { Logo } from './logo';
 import { CREDITS } from '../../catalog/credits';
+import { TitlePrototype } from './title-prototype';
 
 export type Overlay = 'pause' | 'settings' | 'maps' | 'credits' | 'controls' | 'paste' | 'home-tip';
 
@@ -320,7 +321,7 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
         </Btn>
       )}
       <HoldButton onDone={a.resetProgress}>Hold to reset progress</HoldButton>
-      <Btn class="back" actions={a} onClick={() => a.open('pause')}>
+      <Btn class="back" actions={a} onClick={() => (s.screen === 'title' ? a.close() : a.open('pause'))}>
         Back
       </Btn>
     </div>
@@ -471,6 +472,7 @@ function HomeTip({ a }: { a: UiActions }) {
 
 function Title({ s, a }: { s: UiState; a: UiActions }) {
   const ready = s.loading >= 1;
+  if (ready) return <TitlePrototype s={s} a={a} />;
   return (
     <div class="title">
       <Logo />

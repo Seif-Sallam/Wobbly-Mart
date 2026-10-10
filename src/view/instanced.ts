@@ -236,6 +236,28 @@ export function wheatSheaf(height: number): THREE.Group {
   return g;
 }
 
+/** PROTOTYPE Sugar cane: three green jointed stalks tied together. */
+export function caneBundle(height: number): THREE.Group {
+  const g = new THREE.Group();
+  const stalk = new THREE.CylinderGeometry(0.05, 0.05, height, 6);
+  const node = new THREE.CylinderGeometry(0.06, 0.06, 0.03, 6);
+  for (let i = 0; i < 3; i++) {
+    const a = (i / 3) * Math.PI * 2;
+    const m = new THREE.Mesh(stalk, paletteMaterial('#9ccc4a'));
+    m.position.set(Math.cos(a) * 0.06, height / 2, Math.sin(a) * 0.06);
+    g.add(m);
+    for (const k of [0.3, 0.6, 0.9]) {
+      const n = new THREE.Mesh(node, paletteMaterial('#6f9a2e'));
+      n.position.set(m.position.x, height * k, m.position.z);
+      g.add(n);
+    }
+  }
+  const tie = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.05, 8), paletteMaterial('wood'));
+  tie.position.y = height * 0.45;
+  g.add(tie);
+  return g;
+}
+
 /** Procedural Money: a green bill with a cream band. */
 export function billModel(): THREE.Group {
   const g = new THREE.Group();
@@ -247,5 +269,6 @@ export function billModel(): THREE.Group {
 
 /** The model an Item of this product is drawn with. */
 export function itemModel(name: string): THREE.Group {
+  if (name === 'sugar-cane') return caneBundle(ITEM_SIZE * 1.3);
   return name === 'wheat' ? wheatSheaf(ITEM_SIZE * 1.24) : model(name);
 }

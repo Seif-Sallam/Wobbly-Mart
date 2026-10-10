@@ -971,6 +971,8 @@ export class WorldView {
             const at = v.plants[i];
             if (!at) return;
             const grown = 0.35 + 0.65 * (1 - Math.min(1, t / type.workTime));
+            // PROTOTYPE: Juice Bar Crops have no plant model; their fruit itself grows in place
+            if (!v.plantModel) return put(type.output, this.local(v, at), i * 2.4, t <= 0 ? 1 : grown * 0.8);
             plants?.add(
               m.compose(this.local(v, at), q.setFromEuler(new THREE.Euler(0, i * 2.4, 0)), s.setScalar(grown)),
             );

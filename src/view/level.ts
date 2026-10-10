@@ -5,7 +5,7 @@ import { boxCentre, footprint, inBox } from '../sim/geometry';
 import { model } from './assets';
 import { paletteMaterial } from './materials';
 import { FEEL } from '../feel';
-import { SHADES } from '../palette';
+import { SHADES, THEMES, type ShopTheme } from '../palette';
 import { dynamic, mergeStatic } from './merge';
 
 const WALL_HEIGHT = { tall: 2.4, low: 0.6, partition: 1.2, window: 1 };
@@ -52,6 +52,7 @@ export class Level {
     private readonly L: MapLayout,
     private readonly areaOf: (b: Box) => string | null,
     alwaysOwned: string[],
+    private readonly theme: ShopTheme = THEMES['corner-shop'],
   ) {
     const [W, H] = L.size;
     this.group.add(slab('grass', [0, 0, W, H], 0, 0.2));
@@ -72,8 +73,8 @@ export class Level {
     }
     for (const w of Object.values(L.walls)) {
       const h = WALL_HEIGHT[w.kind];
-      this.group.add(block(w.kind === 'window' ? 'wood' : 'cream', w.box, h));
-      this.group.add(block('wood', [w.box[0] - 0.02, w.box[1] - 0.02, w.box[2] + 0.04, w.box[3] + 0.04], 0.12, h));
+      this.group.add(block(w.kind === 'window' ? this.theme.trim : this.theme.wall, w.box, h));
+      this.group.add(block(this.theme.trim, [w.box[0] - 0.02, w.box[1] - 0.02, w.box[2] + 0.04, w.box[3] + 0.04], 0.12, h));
     }
     for (const d of Object.values(L.doors)) this.buildDoor(d.kind, d.box);
     for (const p of Object.values(L.props)) {
@@ -150,7 +151,7 @@ export class Level {
     g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     g.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(cells.length * 12).fill(1), 3));
     g.setIndex(index);
-    const material = new THREE.MeshStandardMaterial({ map: floorTexture(), vertexColors: true, roughness: 0.9 });
+    const material = new THREE.MeshStandardMaterial({ map: floorTexture(this.theme.floor), vertexColors: true, roughness: 0.9 });
     this.floor = new THREE.Mesh(g, material);
     this.floor.receiveShadow = true;
     this.group.add(dynamic(this.floor));
@@ -205,7 +206,7 @@ export class Level {
       const mat =
         kind === 'customer'
           ? new THREE.MeshStandardMaterial({ color: SHADES.glass, transparent: true, opacity: 0.55, roughness: 0.1 })
-          : paletteMaterial('woodDark');
+          : paletteMaterial(this.theme.door);
       for (const side of [-1, 1]) {
         const w = len / 2;
         const g = new THREE.BoxGeometry(axis === 'x' ? w : 0.08, DOOR_HEIGHT, axis === 'x' ? 0.08 : w);
@@ -291,7 +292,7 @@ export class Level {
 const FLOOR = { square: 1, grout: 0.05, y: 0.01, texture: 512, anisotropy: 16 };
 
 /** A 2 × 2 checker with grout lines; repeats every two squares. */
-function floorTexture(): THREE.CanvasTexture {
+function floorTexture(floor: ShopTheme['floor']): THREE.CanvasTexture {
   const size = FLOOR.texture;
   const half = size / 2;
   const canvas = document.createElement('canvas');
@@ -299,11 +300,11 @@ function floorTexture(): THREE.CanvasTexture {
   const g = canvas.getContext('2d') as CanvasRenderingContext2D;
   for (let i = 0; i < 2; i++)
     for (let j = 0; j < 2; j++) {
-      g.fillStyle = (i + j) % 2 ? SHADES.floor.dark : SHADES.floor.light;
+      g.fillStyle = (i + j) % 2 ? floor.dark : floor.light;
       g.fillRect(i * half, j * half, half, half);
     }
   const w = FLOOR.grout * half;
-  g.fillStyle = SHADES.floor.grout;
+  g.fillStyle = floor.grout;
   for (const k of [0, half, size]) {
     g.fillRect(k - w / 2, 0, w, size);
     g.fillRect(0, k - w / 2, size, w);

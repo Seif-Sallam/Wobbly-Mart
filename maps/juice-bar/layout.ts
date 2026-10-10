@@ -19,6 +19,14 @@ export const layout: MapLayout = {
     ],
   },
   places: {
+    stocker_7: {
+      box: [17.6, 33, 1, 1],
+      rot: 0,
+    },
+    candy_pot_2: {
+      box: [45.55, 13.7, 3.3, 2.2],
+      rot: 270,
+    },
     sugar_mill_2: {
       box: [44.35, 26.85, 2.4, 3.5],
       rot: 180,
@@ -140,7 +148,7 @@ export const layout: MapLayout = {
       rot: 0,
     },
     area_3: {
-      box: [46.6, 16.5, 1, 1],
+      box: [48.5, 18.2, 1, 1],
       rot: 0,
     },
     sugar_cane_field: {

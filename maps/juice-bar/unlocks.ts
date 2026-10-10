@@ -29,6 +29,7 @@ export const pads: Record<string, PadDef> = {
   candy_pot: { cost: 150, requires: ['candy_apple_shelf'], unlocks: producer('candy_pot') },
   cane_field_2: { cost: 150, requires: ['candy_pot'], unlocks: producer('sugar_cane_field') },
   sugar_mill_2: { cost: 175, requires: ['cane_field_2'], unlocks: producer('sugar_mill') },
+  candy_pot_2: { cost: 225, requires: ['sugar_mill_2'], unlocks: producer('candy_pot') },
   area_3: { cost: 1100, requires: ['cane_field_2'], unlocks: { kind: 'area', area: 'area_3' } },
   strawberry_shelf: { cost: 300, requires: ['area_3'], unlocks: shelf('strawberry') },
   strawberry_patch: { cost: 350, requires: ['strawberry_shelf'], unlocks: producer('strawberry_patch') },
@@ -57,6 +58,7 @@ export const pads: Record<string, PadDef> = {
   stocker_5: { cost: 900, requires: ['smoothie_blender'], unlocks: { kind: 'stocker' } },
   stocker_2: { cost: 900, requires: ['cow_2'], unlocks: { kind: 'stocker' } },
   stocker_6: { cost: 1100, requires: ['smoothie_blender_2'], unlocks: { kind: 'stocker' } },
+  stocker_7: { cost: 1300, requires: ['stocker_6'], unlocks: { kind: 'stocker' } },
   cleaner: { cost: 900, requires: ['smoothie_blender'], unlocks: { kind: 'cleaner' } },
 };
 

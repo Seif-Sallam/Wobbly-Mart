@@ -6,12 +6,15 @@ import { events, freeStations, movePrices, pads, start } from './unlocks';
 import { upgrades } from './upgrades';
 import { tutorial } from './tutorial';
 
+const pick = <T>(all: Record<string, T>, ids: string[]): Record<string, T> =>
+  Object.fromEntries(ids.map((id) => [id, all[id]]));
+
 export const cornerShop: MapDef = {
   id: 'corner-shop',
   name: 'Corner shop',
   layout,
-  products: PRODUCTS,
-  producers: PRODUCERS,
+  products: pick(PRODUCTS, ['tomato', 'egg', 'ketchup', 'wheat', 'milk', 'flour', 'bread']),
+  producers: pick(PRODUCERS, ['tomato_bed', 'chicken_coop', 'blender', 'wheat_field', 'cow_pen', 'mill', 'oven']),
   pads,
   freeStations,
   upgrades,

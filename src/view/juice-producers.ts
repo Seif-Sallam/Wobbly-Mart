@@ -685,15 +685,46 @@ const frontLeft = (w: number, d: number) =>
 const slotsLeft = (w: number, _d: number) =>
   [0, 1, 2, 3].map((i) => new THREE.Vector3(-w / 2 + 0.25 + (i % 2) * 0.28, 0.02, -0.2 + Math.floor(i / 2) * 0.32));
 
+/** Colour-coded input spots: one column of 3 per Recipe input (slot order matches the view's i + k * 3), each spot
+ * a painted square in its input's colour so an empty spot shows what is missing. */
+function inputSpots(g: THREE.Object3D, x0: number, y: number, z0: number, colours: string[]): THREE.Vector3[] {
+  const out: THREE.Vector3[] = [];
+  const cols = colours.length === 1 ? [colours[0], colours[0]] : colours;
+  cols.forEach((c, k) => {
+    for (let r = 0; r < 3; r++) {
+      const x = x0 + k * 0.27;
+      const z = z0 + (r - 1) * 0.27;
+      box(g, 0.22, 0.012, 0.22, mat(c, { transparent: true, opacity: 0.55 }), x, y, z);
+      out.push(new THREE.Vector3(x, y + 0.012, z));
+    }
+  });
+  return out;
+}
+
+/** A low wooden tray left of a floor Machine (the Machine itself shifts right to make room). */
+function withTray(built: Built, w: number, colours: string[]): Built {
+  for (const c of built.group.children) c.position.x += 0.3;
+  const g = built.group;
+  const x0 = -w / 2 + 0.2;
+  box(g, 0.66, 0.32, 0.92, C.wood, x0 + 0.13, 0, 0);
+  box(g, 0.7, 0.04, 0.96, C.woodDark, x0 + 0.13, 0.32, 0);
+  return { ...built, inputs: { at: inputSpots(g, x0, 0.36, 0, colours), colour: colours[0] } };
+}
+
+/** Painted spots on a counter top's left end. */
+function onCounterSpots(built: Built, w: number, colours: string[]): Built {
+  return { ...built, inputs: { at: inputSpots(built.group, -w * 0.4 + 0.18, 0.91, 0, colours), colour: colours[0] } };
+}
+
 export const BUILDERS: Record<string, (s: Style, w: number, d: number) => Built> = {
   apple_tree: (s, w, d) => fruitTree(s, w, d, C.apple, C.leaf, 1),
   orange_tree: (s, w, d) => fruitTree(s, w, d, C.orange, C.leafDark, 1.15),
   sugar_cane_field: caneField,
   strawberry_patch: strawberryPatch,
-  apple_press: applePress,
-  squeezer,
-  sugar_mill: sugarMill,
-  candy_pot: candyPot,
-  smoothie_blender: smoothieBlender,
+  apple_press: (s, w, d) => withTray(applePress(s, w, d), w, [C.apple]),
+  squeezer: (s, w, d) => onCounterSpots(squeezer(s, w, d), w, [C.orange]),
+  sugar_mill: (s, w, d) => withTray(sugarMill(s, w, d), w, [C.cane]),
+  candy_pot: (s, w, d) => withTray(candyPot(s, w, d), w, [C.apple, C.sugar]),
+  smoothie_blender: (s, w, d) => onCounterSpots(smoothieBlender(s, w, d), w, [C.strawberry, C.milk]),
 };
 

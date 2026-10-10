@@ -67,6 +67,24 @@ export function withAlpha(hex: string, alpha: number): string {
 
 export const DERIVED = { dirtDark: ['dirt', 0.75], woodDark: ['wood', 0.75] } as const;
 
+/** Per-Map shop looks (floor checker, wall face, wall trim and window frames, back doors). The Corner Shop's is the
+ * default: SHADES.floor, cream walls, wood trim. PROTOTYPE: the Juice Bar's tropical one. */
+export interface ShopTheme {
+  floor: { light: string; dark: string; grout: string };
+  wall: string;
+  trim: string;
+  door: string;
+}
+export const THEMES: Record<string, ShopTheme> = {
+  'corner-shop': { floor: SHADES.floor, wall: PALETTE.cream, trim: PALETTE.wood, door: '#7a4a2a' },
+  'juice-bar': {
+    floor: { light: '#f2fbf7', dark: '#9be0d0', grout: '#79c8b8' },
+    wall: '#ffb3a1',
+    trim: '#17a398',
+    door: '#11796f',
+  },
+};
+
 export const LIGHT = { sun: '#ffcf8a', sunIntensity: 3.0, hemiIntensity: 0.9, shadowRadius: 3, exposure: 1 };
 
 export function applyCssPalette(root: HTMLElement): void {

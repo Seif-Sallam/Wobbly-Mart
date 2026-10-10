@@ -25,7 +25,7 @@ import { basketLean, basketPose, basketSlot, hasBasket } from './basket';
 import { paletteMaterial } from './materials';
 import { Tweens, ease } from '../tween';
 import { FEEL } from '../feel';
-import { PALETTE, SHADES, withAlpha } from '../palette';
+import { PALETTE, SHADES, withAlpha, THEMES } from '../palette';
 import { TUNING } from '../sim/tuning';
 
 const CUSTOMER_MODELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((k) => `customer-${k}`);
@@ -133,7 +133,7 @@ export class WorldView {
     private readonly stage: Stage,
     private w: World,
   ) {
-    this.level = new Level(w.map.layout, (b: Box) => areaOf(this.w, b), w.map.start.owned);
+    this.level = new Level(w.map.layout, (b: Box) => areaOf(this.w, b), w.map.start.owned, THEMES[w.map.id]);
     this.root.add(this.level.group, this.juice.group, this.batch.group, this.cleaning.group, this.layoutGhost.group);
     stage.scene.add(this.root);
     const models = new Map<string, THREE.Object3D>([
@@ -987,8 +987,9 @@ export class WorldView {
           type.inputs.forEach((p, k) => {
             const count = this.shown(`input:${st.id}:${p}`, st.input[p] ?? 0);
             for (let i = 0; i < count; i++) {
-              const slot = v.inputSlots[(i + k * 3) % Math.max(1, v.inputSlots.length)];
-              if (slot) put(p, this.local(v, slot).add(new THREE.Vector3(0, Math.floor(i / 6) * 0.3, 0)), i);
+              // PROTOTYPE: each input keeps its own column of 3 spots, stacking up a layer every 3
+              const slot = v.inputSlots[(k * 3 + (i % 3)) % Math.max(1, v.inputSlots.length)];
+              if (slot) put(p, this.local(v, slot).add(new THREE.Vector3(0, Math.floor(i / 3) * 0.3, 0)), i);
             }
           });
         }

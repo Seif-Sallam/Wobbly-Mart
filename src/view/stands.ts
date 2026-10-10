@@ -14,7 +14,7 @@ import type { StationVisual } from './stations';
 const ITEM: Record<string, { h: number; gap: number }> = {
   tomato: { h: 0.92, gap: 0.92 },
   egg: { h: 1, gap: 0.77 },
-  ketchup: { h: 1.25, gap: 0.59 },
+  ketchup: { h: 1.25, gap: 1.08 },
   wheat: { h: 1.24, gap: 0.55 },
   milk: { h: 1.2, gap: 0.74 },
   flour: { h: 1.2, gap: 0.92 },

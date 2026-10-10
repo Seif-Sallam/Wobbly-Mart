@@ -34,7 +34,7 @@ export type ProductId = keyof typeof PRODUCTS;
 export const SHELF_CAPS: Record<string, number> = {
   'tomato-stand': 10,
   'egg-stand': 12,
-  'ketchup-stand': 27,
+  'ketchup-stand': 15,
   'wheat-stand': 12,
   'milk-stand': 12,
   'flour-stand': 15,

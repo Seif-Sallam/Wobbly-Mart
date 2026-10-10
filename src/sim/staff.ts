@@ -6,6 +6,7 @@ import { walkAgent, walkDistance } from './walk';
 import { messSlowdown } from './cleaning';
 import { DT } from './world';
 import { TUNING } from './tuning';
+import { shelfCap } from './map';
 
 /** Which sinks a role fills: Goods Shelves and car orders, Machines Animal and Machine inputs, Auto all. */
 function inRole(st: Station, role: StockerRole): boolean {
@@ -19,10 +20,10 @@ const TIER = { urgentShelf: 0, bottleneck: 1, lowShelf: 2, input: 3 };
 
 /** Final demand at a Shelf, lower first: 0 Customers waiting at it empty, 1 heading to it, 2–3 by fill. */
 function shelfDemand(w: World, st: ShelfStation): number {
-  if (st.items >= TUNING.shelfCap) return Infinity;
+  if (st.items >= shelfCap(w.map, st.product)) return Infinity;
   const heading = w.customers.some((c) => c.state === 'shop' && c.list[c.li]?.shelf === st.id);
   if (heading) return st.items === 0 ? 0 : 1;
-  return 2 + st.items / TUNING.shelfCap;
+  return 2 + st.items / shelfCap(w.map, st.product);
 }
 
 /** A car order's share still missing, 0–1: ranks with low Shelves by fill. */
@@ -62,7 +63,9 @@ function demand(w: World, product: string, seen: string[] = []): number {
 function urgency(w: World, st: Station, product: string): number {
   const gap = TUNING.urgency.tierGap;
   if (st.kind === 'shelf') {
-    return shelfDemand(w, st) === 0 ? TIER.urgentShelf * gap : TIER.lowShelf * gap + st.items / TUNING.shelfCap;
+    return shelfDemand(w, st) === 0
+      ? TIER.urgentShelf * gap
+      : TIER.lowShelf * gap + st.items / shelfCap(w.map, st.product);
   }
   if (st.kind === 'pickup') return TIER.lowShelf * gap + 1 - orderGap(st);
   if (st.kind !== 'producer' || !wantsInput(w, st, product)) return Infinity;
@@ -73,7 +76,7 @@ function urgency(w: World, st: Station, product: string): number {
 }
 
 function freeSpace(w: World, st: Station, product: string): number {
-  if (st.kind === 'shelf') return TUNING.shelfCap - st.items;
+  if (st.kind === 'shelf') return shelfCap(w.map, st.product) - st.items;
   if (st.kind === 'producer') return (w.map.producers[st.type].inputCap ?? 0) - (st.input[product] ?? 0);
   if (st.kind === 'pickup')
     return (st.delivery?.order ?? []).reduce((n, l) => n + (l.product === product ? l.want - l.got : 0), 0);

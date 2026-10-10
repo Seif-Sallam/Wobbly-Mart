@@ -10,9 +10,9 @@ import { TUNING } from './tuning';
 import { addMess, messSlowdown } from './cleaning';
 import { canPayMoves, cutOff, moveBill, movesLeft, nextRot, payMoves, place, spotProblem, turned } from './layout';
 import { rebuildNav } from './walk';
-import { stalled } from './producers';
 import { boxCentre, frontDir } from './geometry';
 import type { Box, Placement } from './map';
+import { shelfCap } from './map';
 
 const idle = (): Intents => ({ move: { x: 0, z: 0 }, grab: false });
 
@@ -132,14 +132,6 @@ describe('Map 1 opening loop', () => {
     expect(w.owned.has('blender')).toBe(true);
     walk(w, 'tomato_shelf');
 
-    // A Machine with an empty input is stalled; loaded, it works
-    const blender = w.stations.get('blender') as ProducerStation;
-    expect(stalled(w, blender)).toBe(true);
-    blender.input.tomato = 1;
-    step(w, idle());
-    expect(blender.work).toBeGreaterThan(0);
-    expect(stalled(w, blender)).toBe(false);
-
     // Skipping the tutorial ends it for good
     expect(w.tutorial.done).toBe(false);
     step(w, { ...idle(), skipTutorial: true });
@@ -184,7 +176,9 @@ const producerAt = (w: World, id: string): ProducerStation => {
   return st;
 };
 
-const stock = (w: World, product: string, items: number) => shelvesOf(w, product).forEach((s) => (s.items = items));
+/** Sets every Shelf of a Product to `items`, or to what it holds when 'full'. */
+const stock = (w: World, product: string, items: number | 'full') =>
+  shelvesOf(w, product).forEach((s) => (s.items = items === 'full' ? shelfCap(w.map, product) : items));
 
 /** Steps until a new Customer walks in, returning it. */
 function nextCustomer(w: World): Customer {
@@ -245,13 +239,13 @@ describe('Map 1 fully built', () => {
     expect(c.state).toBe('shop');
     expect(c.angry).toBe(false);
     for (let i = 0; i < 60 * 60 && c.state === 'shop'; i++) {
-      for (const e of c.list) stock(w, e.product, 10);
+      for (const e of c.list) stock(w, e.product, 'full');
       step(w, idle());
     }
     expect(c.state).not.toBe('shop');
 
     // 3. A normal Customer's patience runs out → 15 s angry → their basket spills a Mess
-    for (const p of products) stock(w, p, 10);
+    for (const p of products) stock(w, p, 'full');
     const angry = nextCustomer(w);
     angry.patienceLimit = 45;
     angry.cart = ['tomato', 'egg'];
@@ -422,7 +416,7 @@ describe('Map 1 fully built', () => {
         if (type.inputs.length) st.tray = type.trayCap ?? 0; // a full output stops Machines eating their inputs
       }
     };
-    for (const p of products) stock(w, p, 10);
+    for (const p of products) stock(w, p, 'full');
     stock(w, 'tomato', 0);
     const sinks = { goods: new Set<string>(), machines: new Set<string>() };
     const watch = (seconds: number, refill: () => void) => {
@@ -444,7 +438,7 @@ describe('Map 1 fully built', () => {
     coop.input.tomato = coop.tray = 0;
     sinks.goods.clear();
     watch(20, () => {
-      for (const p of products) stock(w, p, p === 'egg' ? 3 : 10);
+      for (const p of products) stock(w, p, p === 'egg' ? 3 : 'full');
     });
     expect(sinks.goods.has('producer')).toBe(false); // it may finish a Shelf job, never take a Machine one
     expect([...sinks.machines]).toEqual(['producer']);
@@ -454,7 +448,7 @@ describe('Map 1 fully built', () => {
     w.stockers = [auto];
     Object.assign(auto, { role: 'auto', job: null, stack: ['egg'], leftover: null });
     fillInputs();
-    for (const p of products) stock(w, p, p === 'bread' ? 0 : 10);
+    for (const p of products) stock(w, p, p === 'bread' ? 0 : 'full');
     const oven = producerAt(w, 'oven');
     Object.assign(oven, { input: { egg: 4, flour: 0 }, tray: 0, work: 0 });
     producerAt(w, 'mill').tray = 4;
@@ -477,7 +471,7 @@ describe('Map 1 fully built', () => {
 
     // leftovers nothing needs go back on a Tray with room after 10 s, or in the Trash if no Tray takes them
     fillInputs();
-    for (const p of products) stock(w, p, 10);
+    for (const p of products) stock(w, p, 'full');
     Object.assign(coop, { input: { tomato: 0 }, tray: 0, work: 0 });
     auto.stack = ['egg', 'egg', 'tomato'];
     auto.job = null;
@@ -650,8 +644,8 @@ describe('Deliveries', () => {
     const bed = producerAt(w, 'tomato_bed');
     let filled: SimEvent | undefined;
     for (let i = 0; i < 60 * 600 && !filled; i++) {
-      stock(w, 'tomato', 10);
-      stock(w, 'egg', 10);
+      stock(w, 'tomato', 'full');
+      stock(w, 'egg', 'full');
       coop.tray = 4;
       bed.plants.fill(0);
       tick();

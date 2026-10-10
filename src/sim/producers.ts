@@ -1,4 +1,4 @@
-import type { ProducerStation, World } from './world';
+import type { World } from './world';
 import { DT } from './world';
 import { workMultiplier } from './economy';
 
@@ -28,10 +28,4 @@ export function updateProducers(w: World): void {
     for (const p of type.inputs) st.input[p]--;
     st.work = type.workTime * workMultiplier(w, st.type);
   }
-}
-
-/** An Animal or Machine sitting idle for want of an input (a full Tray doesn't count). */
-export function stalled(w: World, st: ProducerStation): boolean {
-  const type = w.map.producers[st.type];
-  return st.work <= 0 && st.tray < (type.trayCap ?? 0) && type.inputs.some((p) => !(st.input[p] ?? 0));
 }

@@ -1,12 +1,11 @@
 // Code-built Shelf stands (one per Product) and the big checkout counter. Item slots are authored, not raycast.
 import * as THREE from 'three';
-import type { ProductId } from '../../catalog/products';
+import { SHELF_CAPS, type ProductId } from '../../catalog/products';
 import { ITEM_SIZE } from '../../catalog/assets';
 import { centred, model } from './assets';
 import { paletteMaterial } from './materials';
 import { PALETTE, SHADES } from '../palette';
 import { FEEL } from '../feel';
-import { TUNING } from '../sim/tuning';
 import { dynamic } from './merge';
 import { slab } from './shapes';
 import type { StationVisual } from './stations';
@@ -15,13 +14,13 @@ import type { StationVisual } from './stations';
 const ITEM: Record<string, { h: number; gap: number }> = {
   tomato: { h: 0.92, gap: 0.92 },
   egg: { h: 1, gap: 0.77 },
-  ketchup: { h: 1.25, gap: 0.59 },
+  ketchup: { h: 1.25, gap: 1.08 },
   wheat: { h: 1.24, gap: 0.55 },
   milk: { h: 1.2, gap: 0.74 },
   flour: { h: 1.2, gap: 0.92 },
   bread: { h: 0.85, gap: 1.14 },
 };
-/** Loose produce heaps a second layer when its stand has fewer than 10 spots. */
+/** Loose produce heaps a second layer when its stand has fewer spots than its Shelf holds. */
 const HEAPS = new Set<ProductId>(['tomato', 'bread', 'flour']);
 
 /** A surface Items stand on: height, depth row, and the x positions (default: columns across `span`). */
@@ -95,7 +94,7 @@ function stand(product: ProductId, w: number, d: number, v: StationVisual): Tier
 }
 
 /** Lowest tier first, then front row first, then left to right; loose produce heaps when short of spots. */
-function slotsFor(product: ProductId, tiers: Tier[], w: number): THREE.Vector3[] {
+function slotsFor(product: ProductId, tiers: Tier[], w: number, cap: number): THREE.Vector3[] {
   const it = ITEM[product];
   const gap = it.gap * ITEM_SIZE;
   const spots = tiers.flatMap((t) => {
@@ -105,8 +104,8 @@ function slotsFor(product: ProductId, tiers: Tier[], w: number): THREE.Vector3[]
     return xs.map((x) => new THREE.Vector3(x, t.y + 0.005, t.z));
   });
   spots.sort((a, b) => a.y - b.y || b.z - a.z || a.x - b.x);
-  const out = spots.slice(0, TUNING.shelfCap);
-  for (let i = 0; HEAPS.has(product) && out.length < TUNING.shelfCap && i < out.length; i++)
+  const out = spots.slice(0, cap);
+  for (let i = 0; HEAPS.has(product) && out.length < cap && i < out.length; i++)
     out.push(out[i].clone().setY(out[i].y + it.h * ITEM_SIZE));
   return out;
 }
@@ -116,7 +115,7 @@ export function buildStand(product: ProductId, w: number, d: number, v: StationV
   // Product-coloured sign on a post at the back
   slab(v.body, 0.06, 1.75, 0.06, 'woodDark', 0, 0, -d / 2 - 0.05);
   slab(v.body, 0.9, 0.32, 0.06, SHADES.splat[product], 0, 1.59, -d / 2 - 0.05);
-  v.slots = slotsFor(product, tiers, w);
+  v.slots = slotsFor(product, tiers, w, SHELF_CAPS[`${product}-stand`]);
 }
 
 /** Counter with a moving belt on the Customer side, the till on a riser, a bagging tray and a lane light. */

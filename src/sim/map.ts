@@ -1,4 +1,4 @@
-import type { Product } from '../../catalog/products';
+import { SHELF_CAPS, type Product } from '../../catalog/products';
 import type { ProducerType } from '../../catalog/producers';
 
 /** [x, z, w, d] in metres: top-left corner (x east, z south) and size. */
@@ -126,6 +126,11 @@ export interface MapDef {
   /** Edit Layout: the price of each Move in order (3 per Area). */
   movePrices: number[];
   events: MapEvents;
+}
+
+/** Items a Shelf of this Product holds. */
+export function shelfCap(map: MapDef, product: string): number {
+  return SHELF_CAPS[map.products[product]?.shelf ?? ''] ?? 0;
 }
 
 /** Model name a Station is drawn with (asset table key). Staff, Area Pads draw no Station. */

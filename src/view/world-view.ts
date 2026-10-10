@@ -185,15 +185,24 @@ export class WorldView {
     return new Level(w.map.layout, (b: Box) => areaOf(this.w, b), w.map.start.owned, THEMES[w.map.id]);
   }
 
+  private swapLevel(): void {
+    this.root.remove(this.level.group);
+    this.level = this.buildLevel(this.w);
+    this.root.add(this.level.group);
+  }
+
+  /** Layout editor: walls, floors and Props changed under the same map id. */
+  rebuildLevel(): void {
+    this.swapLevel();
+    this.ownedKey = '';
+    this.syncOwned(false);
+  }
+
   /** Point the view at a (new) World, e.g. after a reload. Clears everything dynamic. */
   reset(w: World): void {
     const newMap = w.map.id !== this.w.map.id;
     this.w = w;
-    if (newMap) {
-      this.root.remove(this.level.group);
-      this.level = this.buildLevel(w);
-      this.root.add(this.level.group);
-    }
+    if (newMap) this.swapLevel();
     for (const v of this.stations.values()) this.root.remove(v.root);
     for (const p of this.pads.values()) this.root.remove(p.group);
     for (const c of this.customers.values()) {

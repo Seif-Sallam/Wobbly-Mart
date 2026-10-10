@@ -296,6 +296,16 @@ function rosette(p: THREE.Object3D, x: number, z: number, y: number): THREE.Grou
   return g;
 }
 
+/** A berry resting on top of a rosette's leaves, a little off centre, tipped over. */
+function onLeaves(g: THREE.Object3D, plant: THREE.Group, i: number): THREE.Group {
+  const b = berry(0.15);
+  const a = 0.8 + i * 2.1;
+  b.position.set(plant.position.x + Math.cos(a) * 0.12, plant.position.y + 0.27, plant.position.z + Math.abs(Math.sin(a)) * 0.12);
+  b.rotation.set(0.5, a, 0.6);
+  g.add(b);
+  return b;
+}
+
 function strawberryPatch(_style: Style, w: number, d: number): Built {
   const g = new THREE.Group();
   const fruits: THREE.Object3D[] = [];
@@ -311,12 +321,9 @@ function strawberryPatch(_style: Style, w: number, d: number): Built {
     for (let i = 0; i < 6; i++) {
       const x = (i / 5 - 0.5) * (len - 0.5);
       const z = i % 2 ? 0.18 : -0.18;
-      sway.push(rosette(g, x, z - 0.12, 0.22));
-      const b = berry(0.15);
-      b.position.set(x + 0.05, 0.22 + 0.15, z + 0.2);
-      b.rotation.z = 0.5;
-      g.add(b);
-      fruits.push(b);
+      const plant = rosette(g, x, z, 0.22);
+      sway.push(plant);
+      fruits.push(onLeaves(g, plant, i));
     }
   } else if (look === 'barrels') {
     // half-barrel planters in a row, berries spilling over the rims on their stalks
@@ -326,14 +333,9 @@ function strawberryPatch(_style: Style, w: number, d: number): Built {
       cyl(g, 0.45, 0.5, C.wood, x, 0, 0, 0.4);
       for (const y of [0.1, 0.4]) torus(g, 0.43 + y * 0.1, 0.025, C.iron, x, y);
       cyl(g, 0.42, 0.04, C.dirt, x, 0.48);
-      sway.push(rosette(g, x, 0, 0.5));
-      for (const s of [-1, 1]) {
-        const b = berry(0.16);
-        b.position.set(x + s * 0.24, 0.62, 0.34);
-        b.rotation.z = s * 0.5;
-        g.add(b);
-        fruits.push(b);
-      }
+      const plant = rosette(g, x, 0, 0.5);
+      sway.push(plant);
+      for (const k of [0, 1]) fruits.push(onLeaves(g, plant, i * 2 + k));
     }
   } else {
     // stepped wooden pyramid: plants on each tier, berries dangling over every edge
@@ -346,12 +348,9 @@ function strawberryPatch(_style: Style, w: number, d: number): Built {
       [-0.55, 0.3, 0.62], [0.55, 0.3, 0.62], [0, 0.3, 0.7], [-0.35, 0.6, 0.38], [0.35, 0.6, 0.38], [0, 0.9, 0.12],
     ];
     for (const [x, y, z] of tiers) {
-      sway.push(rosette(g, x * (w / 2.4), z - 0.2, y + 0.04));
-      const b = berry(0.16);
-      b.position.set(x * (w / 2.4) + 0.12, y + 0.2, z - 0.02);
-      b.rotation.z = 0.4;
-      g.add(b);
-      fruits.push(b);
+      const plant = rosette(g, x * (w / 2.4), z - 0.15, y + 0.04);
+      sway.push(plant);
+      fruits.push(onLeaves(g, plant, fruits.length));
     }
   }
   return {

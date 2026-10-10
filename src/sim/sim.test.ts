@@ -499,6 +499,16 @@ describe('Map 1 fully built', () => {
     expect(w.loose.length + w.messes.length).toBe(6 - auto.stack.length);
     auto.stack = Array(3).fill('bread');
     expect(shuttleStocker(120)).toBe(0);
+
+    // a Stocker walking over a Loose Item takes it like the Player does, any Product, while its Stack has room
+    w.loose = [{ id: w.nextId++, x: auto.x, z: auto.z, product: 'egg' }];
+    step(w, idle());
+    expect(w.loose.length).toBe(0);
+    expect(auto.stack).toEqual(['bread', 'bread', 'bread', 'egg']);
+    auto.stack = Array(6).fill('bread');
+    w.loose = [{ id: w.nextId++, x: auto.x, z: auto.z, product: 'egg' }];
+    step(w, idle());
+    expect(w.loose.length).toBe(1);
     w.loose = [];
 
     // 7. The Cleaner clears every waiting Mess, then wanders the shop floor mopping for show …

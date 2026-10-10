@@ -151,3 +151,13 @@ export function tipDrops(
   w.events.push({ type: 'transfer', product, from: who, to: { loose: id } });
   w.loose.push({ id, x, z, product });
 }
+
+/** Loose Items within looseTakeRadius jump onto the carrier's Stack while it has room. */
+export function takeLoose(w: World, c: Carrier & Mover, who: Ref, cap: number): void {
+  w.loose = w.loose.filter((it) => {
+    if (c.stack.length >= cap || Math.hypot(c.x - it.x, c.z - it.z) > TUNING.looseTakeRadius) return true;
+    c.stack.push(it.product);
+    w.events.push({ type: 'transfer', product: it.product, from: { loose: it.id }, to: who });
+    return false;
+  });
+}

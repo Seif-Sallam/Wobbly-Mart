@@ -36,7 +36,7 @@ Holding run makes the **Player** move 1.5× faster. A tipping **Stack** sheds it
 With more **Items** than its safe count (the **Player**'s rises with **Steady hands**), a moving **Stack** (the **Player**'s or a **Stocker**'s) may shed its top **Item**: likelier the taller it is, most while sprinting, a little while walking, and more on sharp turns and sudden stops. The **Item** lands as a **Loose Item** or, depending on its **Product**, breaks into a **Mess**.
 
 **Loose Item**:
-An **Item** that fell off the **Player**'s or a **Stocker**'s **Stack** without breaking. It lies on the floor until the **Player** walks over it to take it back.
+An **Item** that fell off the **Player**'s or a **Stocker**'s **Stack** without breaking. It lies on the floor until the **Player** or a **Stocker** walks over it and takes it back (if their **Stack** has room); **Stockers** never go out of their way for one.
 _Avoid_: Mess (a Mess is lost; a Loose Item isn't)
 
 **Mess**:

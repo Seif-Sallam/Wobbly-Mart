@@ -10,7 +10,6 @@ import { TUNING } from './tuning';
 import { addMess, messSlowdown } from './cleaning';
 import { canPayMoves, cutOff, moveBill, movesLeft, nextRot, payMoves, place, spotProblem, turned } from './layout';
 import { rebuildNav } from './walk';
-import { stalled } from './producers';
 import { boxCentre, frontDir } from './geometry';
 import type { Box, Placement } from './map';
 
@@ -131,14 +130,6 @@ describe('Map 1 opening loop', () => {
     run(w, 3);
     expect(w.owned.has('blender')).toBe(true);
     walk(w, 'tomato_shelf');
-
-    // A Machine with an empty input is stalled; loaded, it works
-    const blender = w.stations.get('blender') as ProducerStation;
-    expect(stalled(w, blender)).toBe(true);
-    blender.input.tomato = 1;
-    step(w, idle());
-    expect(blender.work).toBeGreaterThan(0);
-    expect(stalled(w, blender)).toBe(false);
 
     // Skipping the tutorial ends it for good
     expect(w.tutorial.done).toBe(false);

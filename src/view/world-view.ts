@@ -6,7 +6,6 @@ import { stationModel } from '../sim/map';
 import { boxCentre, distToBox } from '../sim/geometry';
 import { areaOf, walkAgent, type Target } from '../sim/walk';
 import { cashPilePoint, padRemaining, stackCap, visiblePads } from '../sim/economy';
-import { stalled } from '../sim/producers';
 import { Stage } from './stage';
 import { Level } from './level';
 import { Juice } from './juice';
@@ -109,8 +108,9 @@ export class WorldView {
   private inspector: InspectorLook | null = null;
   /** Delivery cars by pickup tile id; a leaving one drives off before it goes. */
   private cars = new Map<string, CarLook>();
-  /** Needs cards by Station id, made the first time one is needed; `k` 0–1 is how far it has faded in. */
-  private needs = new Map<string, { card: Receipt; k: number; scale: THREE.Vector3 }>();
+  /** Needs cards by Station id, made on the Player's first approach; `k` 0–1 is how far it has faded in,
+   * `hold` the seconds it stays up after the Player comes near. */
+  private needs = new Map<string, { card: Receipt; k: number; scale: THREE.Vector3; near: boolean; hold: number }>();
   readonly layoutGhost = new LayoutGhost();
   private playerMop: HeldMop;
   private flights: Flight[] = [];
@@ -680,16 +680,15 @@ export class WorldView {
     }
   }
 
-  /** A needs card over each empty Shelf and each Animal or Machine stalled for an input, while the Player is near. */
+  /** A Shelf's or Animal's / Machine's needs card: shown for a moment each time the Player comes near. */
   private syncNeeds(dt: number): void {
     const w = this.w;
     for (const id of this.needs.keys()) if (!w.stations.has(id)) this.removeNeeds(id);
     for (const st of w.stations.values()) {
       const needs = needsOf(w, st);
       let look = this.needs.get(st.id);
-      const show =
-        !!needs?.show && !this.cameraOverride && distToBox(w.player.x, w.player.z, st.box) <= FEEL.needCardRange;
-      if (!needs || (!show && !look)) continue;
+      const near = !this.cameraOverride && distToBox(w.player.x, w.player.z, st.box) <= FEEL.needCardRange;
+      if (!needs || (!near && !look)) continue;
       if (!look) {
         const card = new Receipt();
         card.sprite.scale.multiplyScalar(FEEL.needCardScale);
@@ -697,17 +696,20 @@ export class WorldView {
         (card.sprite.material as THREE.SpriteMaterial).depthTest = false;
         card.sprite.renderOrder = 10;
         this.root.add(card.sprite);
-        look = { card, k: 0, scale: card.sprite.scale.clone() };
+        look = { card, k: 0, scale: card.sprite.scale.clone(), near: false, hold: 0 };
         this.needs.set(st.id, look);
       }
-      look.k = Math.min(1, Math.max(0, look.k + (show ? dt : -dt) / FEEL.needCardFade));
+      if (near && !look.near) look.hold = FEEL.needCardHold;
+      look.near = near;
+      look.hold = Math.max(0, look.hold - dt);
+      look.k = Math.min(1, Math.max(0, look.k + (look.hold > 0 ? dt : -dt) / FEEL.needCardFade));
       const k = ease.outCubic(look.k);
       const [x, z] = boxCentre(st.box);
       const { sprite } = look.card;
       sprite.position.set(x, FEEL.needCardY + (k - 1) * FEEL.needCardRise, z);
       sprite.scale.copy(look.scale).multiplyScalar(FEEL.needCardGrow + (1 - FEEL.needCardGrow) * k);
       (sprite.material as THREE.SpriteMaterial).opacity = k;
-      look.card.updateNeeds(needs.lines, look.k > 0, dt);
+      look.card.updateNeeds(needs, look.k > 0, dt);
     }
   }
 
@@ -1312,18 +1314,14 @@ export class WorldView {
   }
 }
 
-function needsOf(
-  w: World,
-  st: Station,
-): { show: boolean; lines: { model: string; have: number; cap: number }[] } | null {
+/** What a Shelf holds, or what an Animal or Machine has of each input; null for other Stations and Crops. */
+function needsOf(w: World, st: Station): { model: string; have: number; cap: number }[] | null {
   const model = (p: string) => w.map.products[p]?.model ?? p;
-  if (st.kind === 'shelf')
-    return { show: !st.items, lines: [{ model: model(st.product), have: st.items, cap: TUNING.shelfCap }] };
+  if (st.kind === 'shelf') return [{ model: model(st.product), have: st.items, cap: TUNING.shelfCap }];
   if (st.kind !== 'producer') return null;
   const type = w.map.producers[st.type];
   if (!type.inputs.length) return null;
-  const lines = type.inputs.map((p) => ({ model: model(p), have: st.input[p] ?? 0, cap: type.inputCap ?? 0 }));
-  return { show: stalled(w, st), lines };
+  return type.inputs.map((p) => ({ model: model(p), have: st.input[p] ?? 0, cap: type.inputCap ?? 0 }));
 }
 
 const w_isInput = (w: World, type: string, product: string): boolean => {

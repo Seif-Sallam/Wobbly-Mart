@@ -164,12 +164,20 @@ export class App {
       document.fonts.load('700 48px Fredoka'),
     ]);
     this.renderThumbs();
-    const map = this.currentMap();
+    const map = MAPS[Math.floor(Math.random() * MAPS.length)];
     this.game = new Game(this.stage, this.input, map, showcaseSave(map), true);
     this.game.paused = true;
     this.game.view.cameraOverride = new THREE.Vector3();
     this.game.view.scenery(SCENERY_PEOPLE);
-    for (const st of this.game.world.stations.values()) if (st.kind === 'producer') st.plants.fill(0);
+    const { world } = this.game;
+    for (const st of world.stations.values()) {
+      if (st.kind === 'shelf') st.items = TUNING.shelfCap;
+      if (st.kind !== 'producer') continue;
+      const type = world.map.producers[st.type];
+      st.plants.fill(0);
+      st.tray = type.trayCap ?? 0;
+      for (const p of type.inputs) st.input[p] = type.inputCap ?? 0;
+    }
     this.game.onFrame = (events, dt) => this.onFrame(events, dt);
     this.layout = new EditLayout(
       this.game,

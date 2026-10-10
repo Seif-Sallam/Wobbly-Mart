@@ -14,6 +14,7 @@ import { buildCheckout, buildStand } from './stands';
 import { buildMopStand, buildPedalBin } from './cleaning';
 import type { ProductId } from '../../catalog/products';
 import { JUICE_STATIONS } from './juice-stations';
+import { DAIRY_STATIONS } from './dairy-stations';
 
 /** Shelf stands are named `<product>-stand` in the asset table. */
 const STAND = '-stand';
@@ -63,9 +64,9 @@ function playIdle(obj: THREE.Object3D, name: string, mixers: THREE.AnimationMixe
 }
 
 /** Output on a dark pallet; Items piled 3 + 2 + 1. */
-function pallet(body: THREE.Group, z: number): THREE.Vector3[] {
+function pallet(body: THREE.Group, z: number, colour: string): THREE.Vector3[] {
   const [pw, pd] = OUTPUT.pallet;
-  slab(body, pw, OUTPUT.palletHeight, pd, 'woodDark', 0, 0, z);
+  slab(body, pw, OUTPUT.palletHeight, pd, colour, 0, 0, z);
   const y = OUTPUT.palletHeight;
   return [
     ...grid(3, 1, OUTPUT.gap * 2, 0, y, 0, z),
@@ -268,9 +269,9 @@ function counter(w: number, d: number, v: StationVisual): number {
   return new THREE.Box3().setFromObject(bar).max.y;
 }
 
-/** The Juice Bar's code-built Producers, animated whole (they move while working). */
+/** The Juice Bar's and Dairy Farm's code-built Producers, animated whole (they move while working). */
 function juice(name: string, w: number, d: number, v: StationVisual): boolean {
-  const make = JUICE_STATIONS[name];
+  const make = JUICE_STATIONS[name] ?? DAIRY_STATIONS[name];
   if (!make) return false;
   const built = make(w, d);
   v.body.add(dynamic(built.group));
@@ -345,9 +346,11 @@ const PALLETED = new Set([
   'sugar-mill',
   'candy-pot',
   'smoothie-blender',
+  ...Object.keys(DAIRY_STATIONS),
 ]);
 
-export function buildStation(name: string, box: Box, rot: Rot): StationVisual {
+/** `palletColour`: the output pallet's colour, from the Map's shop theme. */
+export function buildStation(name: string, box: Box, rot: Rot, palletColour = 'woodDark'): StationVisual {
   const [w, d] = footprint(box, rot);
   const root = new THREE.Group();
   root.position.set(box[0] + box[2] / 2, 0, box[1] + box[3] / 2);
@@ -370,7 +373,7 @@ export function buildStation(name: string, box: Box, rot: Rot): StationVisual {
   if (strip) {
     for (const c of v.body.children) c.position.z -= strip / 2;
     for (const p of [...v.inputSlots, ...v.plants]) p.z -= strip / 2;
-    v.slots = pallet(v.body, d / 2 - strip / 2);
+    v.slots = pallet(v.body, d / 2 - strip / 2, palletColour);
   }
   mergeStatic(v.body);
   return v;

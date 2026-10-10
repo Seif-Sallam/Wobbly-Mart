@@ -37,6 +37,7 @@ export const SHADES = {
     milk: '#ffffff',
     flour: '#f4ead8',
     bread: '#c98b4a',
+    cheese: '#f5c542',
   } as Record<string, string>,
   /** Stocker caps by role; the Office role chips match. */
   roleCaps: { auto: '#e0453a', goods: '#8e5cc4', machines: '#3f7fd6' },
@@ -88,6 +89,43 @@ export const SHADES = {
     smoothieTint: '#f7a8c4',
     candyAppleTint: '#9a1c14',
   },
+  /** Dairy Farm (Creamery look): its code-built Producers, Items and shop. */
+  dairy: {
+    trim: '#fff6e6',
+    ink: '#3a2416',
+    hay: '#e8c46a',
+    steel: '#c9d2da',
+    steelDark: '#9aa5ae',
+    tile: '#f4f6f8',
+    blue: '#6fa8dc',
+    glass: '#bfe6f2',
+    rubber: '#4a4f57',
+    pink: '#f7a8c4',
+    lilac: '#c7b3f0',
+    goat: '#f2efe8',
+    goatDark: '#cfc8bb',
+    horn: '#b8a98a',
+    nose: '#e8a0a0',
+    bell: '#e0b030',
+    milk: '#ffffff',
+    cream: '#fff1d0',
+    butter: '#ffe39a',
+    foil: '#d9dde2',
+    cheese: '#f5c542',
+    cheeseRind: '#e0a92e',
+    goatCheese: '#f4f1e8',
+    ash: '#6b6b6b',
+    teal: '#3aa39a',
+    vanilla: '#fff3d6',
+    waffle: '#d99a4e',
+    cherry: '#d63c2f',
+    strawberry: '#e0453a',
+    pudding: '#e9c27a',
+    caramel: '#a8601c',
+    egg: '#fff8ea',
+    wheat: '#e8c46a',
+    steam: '#f0f0f0',
+  },
   /** Delivery cars: a new one each time. */
   cars: ['#e0453a', '#3f7fd6', '#8e5cc4', '#2bb3a3', '#f2a03a', '#e86aa6', '#7fae3a'],
   customerTints: ['#ffffff', '#ffe3d6', '#e3f0ff', '#f0ffe3', '#fff4d6', '#f3e3ff'],
@@ -108,6 +146,8 @@ export interface ShopTheme {
   wall: string;
   trim: string;
   door: string;
+  /** Output pallets under Animals and Machines (default: dark wood). */
+  pallet?: string;
 }
 export const THEMES: Record<string, ShopTheme> = {
   'corner-shop': { floor: SHADES.floor, wall: PALETTE.cream, trim: PALETTE.wood, door: '#7a4a2a' },
@@ -116,6 +156,13 @@ export const THEMES: Record<string, ShopTheme> = {
     wall: '#ffb3a1',
     trim: '#17a398',
     door: '#11796f',
+  },
+  'dairy-farm': {
+    floor: { light: '#f7f9fb', dark: '#cfe0ef', grout: '#b7c9da' },
+    wall: '#dfeaf5',
+    trim: '#6fa8dc',
+    door: '#3d6f9e',
+    pallet: SHADES.dairy.steelDark,
   },
 };
 

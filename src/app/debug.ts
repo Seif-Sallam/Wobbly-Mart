@@ -3,6 +3,7 @@ import type { Game } from './game';
 import { FEEL } from '../feel';
 import { TUNING } from '../sim/tuning';
 import { own } from '../sim/economy';
+import { areaOf } from '../sim/walk';
 
 const BUDGET = { phone: { calls: 100, triangles: 150_000 }, desktop: { calls: 300, triangles: 500_000 } };
 
@@ -53,6 +54,15 @@ export async function openDebug(game: Game, phone: boolean, hooks: DebugHooks): 
       for (const id of Object.keys(w.map.pads)) own(w, id, true);
       for (const [id, up] of Object.entries(w.map.upgrades)) w.levels[id] = up.levels.length;
     },
+    // every Pad in the Areas owned now, the next Area's Pad among them; not the new Area's own Pads
+    buyToNextArea: () => {
+      const w = game.world;
+      const here = new Set(Object.keys(w.map.layout.areas).filter((a) => w.owned.has(a)));
+      for (const [id, pad] of Object.entries(w.map.pads)) {
+        const place = w.map.layout.places[id];
+        if (place && pad.unlocks.kind !== 'exit' && here.has(areaOf(w, place.box) ?? '')) own(w, id, true);
+      }
+    },
     fillProducers: () => {
       const w = game.world;
       for (const st of w.stations.values()) {
@@ -69,6 +79,7 @@ export async function openDebug(game: Game, phone: boolean, hooks: DebugHooks): 
   fCheat.add(cheats, 'money100').name('+$100');
   fCheat.add(cheats, 'money1000').name('+$1,000');
   fCheat.add(cheats, 'unlockAll').name('unlock all');
+  fCheat.add(cheats, 'buyToNextArea').name('buy until next Area');
   fCheat
     .add(cheats, 'noCustomers')
     .name('no new Customers')

@@ -467,7 +467,7 @@ function saucePot(w: number, _d: number, L: Look, v: Variant): Built {
     torus(g, 0.48, 0.04, gloss(L.accent), 0, 1.22);
     top = 1.22;
   }
-  cyl(g, 0.45, 0.03, gloss(C.sauce), 0, top - 0.06);
+  cyl(g, 0.44, 0.02, gloss(C.sauce), 0, top);
   const bubbles = [0, 1, 2, 3, 4].map((i) => sph(g, 0.06, gloss(C.sauceDark), Math.cos(i * 2) * 0.25, top, Math.sin(i * 2) * 0.25, 0));
   // the stirrer: ladle (A), motor paddle on an arm (B), wooden spoon (C)
   const stir = group(g, 0, top, 0);
@@ -492,7 +492,7 @@ function saucePot(w: number, _d: number, L: Look, v: Variant): Built {
         bubbles.forEach((b, i) => {
           const k = (t * 1.2 + i / 5) % 1;
           b.visible = wk;
-          b.position.y = top - 0.04 + k * 0.12;
+          b.position.y = top + 0.01 + k * 0.1;
           b.scale.setScalar(0.4 + k * 0.8);
         });
         fire(t, wk);

@@ -696,7 +696,7 @@ export class WorldView {
       }
       const [x, z] = boxCentre(st.box);
       card.sprite.position.set(x, FEEL.needCardY, z);
-      card.updateNeeds(needs.lines, needs.show, dt);
+      card.updateNeeds(needs.lines, needs.show && !this.cameraOverride, dt);
     }
   }
 

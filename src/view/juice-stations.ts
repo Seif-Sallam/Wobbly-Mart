@@ -307,17 +307,18 @@ export function inputSpots(g: THREE.Object3D, x0: number, y: number, colours: st
   );
 }
 
-/** A low tray left of a floor Machine (the Machine shifts right to make room); wooden unless `look` says. */
+/** A low tray left of a floor Machine (the Machine shifts right to make room, more for a 3rd input); wooden unless `look` says. */
 export function withTray(
   s: JuiceStation,
   w: number,
   colours: string[],
   look: { base: string; top: string | THREE.Material } = { base: J.wood, top: J.woodDark },
 ): JuiceStation {
-  for (const c of s.group.children) c.position.x += 0.3;
+  const extra = Math.max(0, colours.length - 2) * 0.27;
+  for (const c of s.group.children) c.position.x += 0.3 + extra;
   const x0 = -w / 2 + 0.2;
-  box(s.group, 0.66, 0.32, 0.92, look.base, x0 + 0.13, 0, 0);
-  box(s.group, 0.7, 0.04, 0.96, look.top, x0 + 0.13, 0.32, 0);
+  box(s.group, 0.66 + extra, 0.32, 0.92, look.base, x0 + 0.13 + extra / 2, 0, 0);
+  box(s.group, 0.7 + extra, 0.04, 0.96, look.top, x0 + 0.13 + extra / 2, 0.32, 0);
   return { ...s, inputs: inputSpots(s.group, x0, 0.36, colours) };
 }
 

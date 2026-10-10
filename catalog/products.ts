@@ -33,6 +33,12 @@ export const PRODUCTS = {
   goat_cheese: { name: 'Goat cheese', model: 'goat-cheese', shelf: 'cheese-stand', price: 15, breakChance: 0.15 },
   ice_cream: { name: 'Ice cream', model: 'ice-cream', shelf: 'milk-stand', price: 22, breakChance: 0.6 },
   pudding: { name: 'Pudding', model: 'pudding', shelf: 'egg-stand', price: 20, breakChance: 0.6 },
+  // Pizza Place: code-built Items (src/view/pizza-stations.ts)
+  pizza_sauce: { name: 'Pizza sauce', model: 'pizza-sauce', shelf: 'ketchup-stand', price: 7, breakChance: 0.6 },
+  dough: { name: 'Dough', model: 'dough', shelf: 'bread-stand', price: 12, breakChance: 0.05 },
+  olives: { name: 'Olives', model: 'olives', shelf: 'egg-stand', price: 5, breakChance: 0.3 },
+  pizza: { name: 'Pizza', model: 'pizza', shelf: 'bread-stand', price: 30, breakChance: 0.3 },
+  veggie_pizza: { name: 'Veggie pizza', model: 'veggie-pizza', shelf: 'bread-stand', price: 28, breakChance: 0.3 },
 } satisfies Record<string, Product>;
 
 export type ProductId = keyof typeof PRODUCTS;

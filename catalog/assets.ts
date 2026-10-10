@@ -74,6 +74,11 @@ export const ASSETS: Record<string, AssetDef> = {
   'goat-cheese': {},
   'ice-cream': {},
   pudding: {},
+  'pizza-sauce': {},
+  dough: {},
+  olives: {},
+  pizza: {},
+  'veggie-pizza': {},
   coin: { path: 'platformer/coin-gold', height: 0.35 },
 
   // shelves: code-built stands
@@ -121,6 +126,11 @@ export const ASSETS: Record<string, AssetDef> = {
   'goat-cheese-press': {},
   'ice-cream-maker': {},
   'pudding-pot': {},
+  'sauce-pot': {},
+  'dough-mixer': {},
+  'olive-tree': {},
+  'pizza-oven': {},
+  'veggie-pizza-oven': {},
   'wheat-plant': { path: 'nature/crops_wheatStageB', height: 0.9 },
   'wheat-sprout': { path: 'nature/crops_wheatStageA', height: 0.5 },
   'tomato-bush': { path: 'nature/plant_bush', height: 0.55 },

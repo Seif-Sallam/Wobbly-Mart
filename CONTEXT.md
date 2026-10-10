@@ -36,7 +36,7 @@ Holding run makes the **Player** move 1.5× faster. A tipping **Stack** sheds it
 With more **Items** than its safe count (the **Player**'s rises with **Steady hands**), a moving **Stack** (the **Player**'s or a **Stocker**'s) may shed its top **Item**: likelier the taller it is, most while sprinting, a little while walking, and more on sharp turns and sudden stops. The **Item** lands as a **Loose Item** or, depending on its **Product**, breaks into a **Mess**.
 
 **Loose Item**:
-An **Item** that fell off the **Player**'s or a **Stocker**'s **Stack** without breaking. It lies on the floor until the **Player** walks over it to take it back.
+An **Item** that fell off the **Player**'s or a **Stocker**'s **Stack** without breaking. It lies on the floor until the **Player** or a **Stocker** walks over it and takes it back (if their **Stack** has room); **Stockers** never go out of their way for one.
 _Avoid_: Mess (a Mess is lost; a Loose Item isn't)
 
 **Mess**:
@@ -165,10 +165,10 @@ A timed happening on a **Map** that asks the **Player** to act: a warning, a run
 An **Event** where a car parks at a **Car Spot** with an order; bring the **Items** to its pickup tile before it leaves to earn more than their **Sale Price**. Partial orders are paid at plain price; ignoring one only misses the reward. **Stockers** can fill them too. Usually one car waits at a time; with **Stockers** hired, now and then two or three.
 
 **Robbery**:
-An **Event** where a **Thief**, looking like a **Customer** without a **Shopping List**, takes **Items** from a **Shelf** or cash from a **Cash Pile** and runs for the door, faster than the **Player** walks. Only the **Player** can stop them, by catching them before they're out.
+An **Event** where a **Thief**, looking like a **Customer** without a **Shopping List**, takes **Items** from a **Shelf** or cash from a **Cash Pile** for a couple of seconds, then walks off slowly under the load and is gone at the door. Only the **Player** can stop them, by catching them before they're out.
 
 **Thief Pan**:
-When a **Thief** grabs, the camera sweeps to them and the game freezes for half a second before the chase. Like an **Area Pan**, but short.
+When a **Thief** grabs, the camera sweeps to them and the game freezes for two seconds before the grab plays out. Like an **Area Pan**, but short.
 
 **Health Inspector**:
 An **Event** visitor who walks a fresh route through the shop and must be escorted by the **Player**; the store's dirt (**Messes**, **Loose Items**) decides a bonus or a fine, and leaving them alone too long earns a bad review.

@@ -2,6 +2,7 @@
 // InstancedMesh per model and material where the browser can't multi-draw. Animals keep their own animation (LiveInstances).
 import * as THREE from 'three';
 import { dairyItem } from './dairy-stations';
+import { pizzaItem } from './pizza-stations';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { model } from './assets';
 import { ITEM_SIZE } from '../../catalog/assets';
@@ -299,8 +300,8 @@ export function billModel(): THREE.Group {
 
 /** The model an Item of this product is drawn with. */
 export function itemModel(name: string): THREE.Group {
-  const dairy = dairyItem(name);
-  if (dairy) return dairy;
+  const coded = dairyItem(name) ?? pizzaItem(name);
+  if (coded) return coded;
   if (name === 'sugar-cane') return caneBundle(ITEM_SIZE * 1.3);
   if (name === 'apple-juice') return juiceBottle(ITEM_SIZE * 1.25, SHADES.juice.appleJuice, SHADES.juice.apple);
   if (name === 'orange-juice') return juiceBottle(ITEM_SIZE * 1.25, SHADES.juice.orangeJuice, SHADES.juice.orange);

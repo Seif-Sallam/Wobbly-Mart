@@ -8,7 +8,8 @@ const D = SHADES.dairy;
 
 const steel = new THREE.MeshStandardMaterial({ color: D.steel, roughness: 0.3, metalness: 0.25 });
 const steelDark = new THREE.MeshStandardMaterial({ color: D.steelDark, roughness: 0.3, metalness: 0.25 });
-const glass = (o = 0.45) => new THREE.MeshStandardMaterial({ color: D.glass, transparent: true, opacity: o, roughness: 0.1 });
+const glass = (o = 0.45) =>
+  new THREE.MeshStandardMaterial({ color: D.glass, transparent: true, opacity: o, roughness: 0.1 });
 const gloss = (c: string) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.3 });
 const steam = new THREE.MeshStandardMaterial({ color: D.steam, transparent: true, opacity: 0.7, roughness: 0.9 });
 const TRAY = { base: D.tile, top: steel };

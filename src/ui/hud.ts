@@ -23,7 +23,7 @@ export interface EventBanner {
 }
 
 const BILL = `<svg viewBox="0 0 40 26" class="bill"><rect x="2" y="2" width="36" height="22" rx="4" fill="var(--money)" stroke="var(--ink)" stroke-width="3"/><rect x="16" y="2" width="8" height="22" fill="var(--cream)" stroke="var(--ink)" stroke-width="2"/></svg>`;
-const GEAR = `<svg viewBox="0 0 24 24"><path fill="var(--ink)" d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.4 2.7a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.4-2.7a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>`;
+export const GEAR = `<svg viewBox="0 0 24 24"><path fill="var(--ink)" d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.4 2.7a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.4-2.7a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>`;
 
 export class Hud {
   private money: HTMLElement;

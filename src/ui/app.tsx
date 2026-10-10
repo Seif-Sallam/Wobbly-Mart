@@ -8,6 +8,7 @@ import { canBuyUpgrade, nextLevelCost, upgradeVisible } from '../sim/economy';
 import { formatMoney } from '../format';
 import { FEEL } from '../feel';
 import { Logo } from './logo';
+import { GEAR } from './hud';
 import { CREDITS } from '../../catalog/credits';
 
 export type Overlay = 'pause' | 'settings' | 'maps' | 'credits' | 'controls' | 'paste' | 'home-tip';
@@ -23,7 +24,8 @@ export interface UiState {
   touch: boolean;
   ios: boolean;
   maps: { map: MapDef; completion: number; visited: boolean }[];
-  comingSoon: number;
+  /** The Map Play last opened: the title shelf starts on it. */
+  lastMap: string;
   settings: Settings;
   /** Zoom in effect: the saved one or the device default (m across the short side). */
   zoom: number;
@@ -46,7 +48,7 @@ export interface LayoutUi {
 }
 
 export interface UiActions {
-  play: () => void;
+  play: (mapId: string) => void;
   close: () => void;
   open: (o: Overlay) => void;
   closeOffice: () => void;
@@ -320,7 +322,7 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
         </Btn>
       )}
       <HoldButton onDone={a.resetProgress}>Hold to reset progress</HoldButton>
-      <Btn class="back" actions={a} onClick={() => a.open('pause')}>
+      <Btn class="back" actions={a} onClick={() => (s.screen === 'title' ? a.close() : a.open('pause'))}>
         Back
       </Btn>
     </div>
@@ -384,12 +386,6 @@ function Maps({ s, a }: { s: UiState; a: UiActions }) {
             </span>
             <small>{Math.round(m.completion * 100)}%</small>
           </Btn>
-        ))}
-        {Array.from({ length: s.comingSoon }, (_, i) => (
-          <div class="map-card locked" key={i}>
-            <b>?</b>
-            <small>coming soon</small>
-          </div>
         ))}
       </div>
       <Btn class="back" actions={a} onClick={a.close}>
@@ -469,15 +465,77 @@ function HomeTip({ a }: { a: UiActions }) {
   );
 }
 
+// The Maps are the title: a shelf of cards, Play under the one in front.
 function Title({ s, a }: { s: UiState; a: UiActions }) {
   const ready = s.loading >= 1;
+  const [at, setAt] = useState(-1);
+  const count = s.maps.length;
+  const front =
+    at >= 0
+      ? at
+      : Math.max(
+          0,
+          s.maps.findIndex((m) => m.map.id === s.lastMap),
+        );
+  const cur = s.maps[front];
+  const step = (d: number) => {
+    a.click();
+    setAt(Math.min(count - 1, Math.max(0, front + d)));
+  };
   return (
     <div class="title">
+      {ready && (
+        <div class="title-corner">
+          <button class="round" aria-label="Credits" onClick={() => (a.click(), a.open('credits'))}>
+            ★
+          </button>
+          <button
+            class="round"
+            aria-label="Settings"
+            onClick={() => (a.click(), a.open('settings'))}
+            dangerouslySetInnerHTML={{ __html: GEAR }}
+          />
+        </div>
+      )}
       <Logo />
       {ready ? (
-        <Btn class="play buy" actions={a} onClick={a.play}>
-          Play
-        </Btn>
+        <>
+          <div class="shelf">
+            <button class="round" disabled={front === 0} onClick={() => step(-1)}>
+              ◀
+            </button>
+            <div class="shelf-cards">
+              {s.maps.map((m, k) => {
+                const off = k - front;
+                const cls = `shelf-card ${off === 0 ? 'on' : ''} ${Math.abs(off) > 1 ? 'far' : ''} ${m.visited ? '' : 'locked'}`;
+                const pct = Math.round(m.completion * 100);
+                const art = Object.values(m.map.products)[0]?.model;
+                return (
+                  <div key={m.map.id} class={cls} style={{ '--off': off }} onClick={() => setAt(k)}>
+                    <div class="shelf-art">{m.visited && art ? <img src={a.icon(art)} alt="" /> : '🔒'}</div>
+                    <b>{m.map.name}</b>
+                    {m.visited ? (
+                      <>
+                        <span class="completion small">
+                          <i style={{ width: `${pct}%` }} />
+                        </span>
+                        <small>{pct}%</small>
+                      </>
+                    ) : (
+                      <small>Buy the Exit Pad in {s.maps[k - 1]?.map.name}</small>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <button class="round" disabled={front >= count - 1} onClick={() => step(1)}>
+              ▶
+            </button>
+          </div>
+          <Btn class="play buy" actions={a} disabled={!cur?.visited} onClick={() => cur && a.play(cur.map.id)}>
+            Play
+          </Btn>
+        </>
       ) : (
         <div class="loading">
           <i style={{ width: `${Math.round(s.loading * 100)}%` }} />

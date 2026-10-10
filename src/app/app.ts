@@ -50,7 +50,6 @@ import { FEEL } from '../feel';
 import { TUNING } from '../sim/tuning';
 
 const AUTOSAVE_SECONDS = 5;
-const COMING_SOON = 2;
 const HINT_DISTANCE = 2;
 const EDGE_MARGIN = 44;
 const WIPE_SECONDS = 450;
@@ -133,7 +132,7 @@ export class App {
       touch: isTouch,
       ios: isIos,
       maps: [],
-      comingSoon: COMING_SOON,
+      lastMap: this.save.currentMap,
       settings: this.settings,
       zoom: 0,
       screenHz: 60,
@@ -193,6 +192,7 @@ export class App {
       },
       () => this.writeSave(),
     );
+    this.refreshMaps();
     this.ui.loading = 1;
     this.renderUi();
     const loop = (now: number) => {
@@ -224,12 +224,18 @@ export class App {
               delete this.save.maps[map.id];
               this.openMap(map);
             },
+            openMaps: () => {
+              this.save.visited = MAPS.map((m) => m.id);
+              this.writeSave();
+              this.refreshMaps();
+              this.renderUi();
+            },
           }),
       );
     if (import.meta.env.DEV) {
       const { installEditor } = await import('../editor/editor');
       const game = this.game;
-      if (params.has('edit')) this.play();
+      if (params.has('edit')) this.play(this.save.currentMap);
       setTimeout(
         () =>
           installEditor({ game, reopen: () => this.openMap(this.currentMap()), editing: (on) => (this.editing = on) }),
@@ -258,7 +264,8 @@ export class App {
 
   // ---------- title → game
 
-  private play(): void {
+  private play(id: string): void {
+    this.save.currentMap = id;
     this.sounds.unlock(this.settings);
     this.ui.wipe = true;
     this.renderUi();
@@ -270,6 +277,12 @@ export class App {
       this.hud.visible(true);
       this.renderUi();
     }, WIPE_SECONDS);
+  }
+
+  // the title keeps its showcase Map; only the cards change
+  private reopen(): void {
+    if (this.ui.screen === 'game') this.openMap(this.currentMap());
+    else this.refreshMaps();
   }
 
   private openMap(map: MapDef): void {
@@ -515,26 +528,28 @@ export class App {
 
   private openOverlay(o: Overlay | null): void {
     this.ui.overlay = o;
-    if (o === 'maps') {
-      // a Map opens once it was visited or the Map before it has its Exit Pad bought
-      const exitBought = (id: string) =>
-        id === this.game?.world.map.id
-          ? this.game.world.owned.has('exit')
-          : !!this.save.maps[id]?.owned.includes('exit');
-      this.ui.maps = MAPS.map((map, i) => ({
-        map,
-        visited: this.save.visited.includes(map.id) || (i > 0 && exitBought(MAPS[i - 1].id)),
-        completion:
-          map.id === this.game?.world.map.id
-            ? completion(this.game.world)
-            : completionOf(map, new Set(this.save.maps[map.id]?.owned ?? []), this.save.maps[map.id]?.levels ?? {}),
-      }));
-    }
+    if (o === 'maps') this.refreshMaps();
     if (this.game && this.ui.screen === 'game') this.game.paused = !!o || this.lostTab;
     this.ui.screenHz = Math.round(1000 / this.tickMs);
     this.redraw = true;
     this.sounds.pause(!!o);
     this.renderUi();
+  }
+
+  // a Map opens once it was visited or the Map before it has its Exit Pad bought
+  private refreshMaps(): void {
+    const live = this.ui.screen === 'game' ? this.game?.world : undefined;
+    const exitBought = (id: string) =>
+      id === live?.map.id ? live.owned.has('exit') : !!this.save.maps[id]?.owned.includes('exit');
+    this.ui.maps = MAPS.map((map, i) => ({
+      map,
+      visited: this.save.visited.includes(map.id) || (i > 0 && exitBought(MAPS[i - 1].id)),
+      completion:
+        map.id === live?.map.id
+          ? completion(live)
+          : completionOf(map, new Set(this.save.maps[map.id]?.owned ?? []), this.save.maps[map.id]?.levels ?? {}),
+    }));
+    this.ui.lastMap = this.save.currentMap;
   }
 
   private escape(): void {
@@ -547,7 +562,7 @@ export class App {
   }
 
   private actions: UiActions = {
-    play: () => this.play(),
+    play: (id) => this.play(id),
     close: () => this.openOverlay(null),
     open: (o) => this.openOverlay(o),
     closeOffice: () => {
@@ -586,13 +601,13 @@ export class App {
         return `That code didn't work: ${(e as Error).message}`;
       }
       writeSave(this.save);
-      this.openMap(this.currentMap());
+      this.reopen();
       this.openOverlay(null);
       return null;
     },
     resetProgress: () => {
       this.save = wipeSave(MAPS[0].id);
-      this.openMap(this.currentMap());
+      this.reopen();
       this.openOverlay(null);
     },
     pickMap: (id) => {

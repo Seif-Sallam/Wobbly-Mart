@@ -270,7 +270,7 @@ function counter(w: number, d: number, v: StationVisual): number {
   return new THREE.Box3().setFromObject(bar).max.y;
 }
 
-/** The Juice Bar's, Dairy Farm's and Pizza Place's code-built Producers, animated whole (they move while working). */
+/** The Juice Bar's and Dairy Farm's code-built Producers, animated whole (they move while working). */
 function juice(name: string, w: number, d: number, v: StationVisual): boolean {
   const make = JUICE_STATIONS[name] ?? DAIRY_STATIONS[name] ?? PIZZA_STATIONS[name];
   if (!make) return false;

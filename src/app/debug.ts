@@ -7,9 +7,10 @@ import { areaOf } from '../sim/walk';
 
 const BUDGET = { phone: { calls: 100, triangles: 150_000 }, desktop: { calls: 300, triangles: 500_000 } };
 
-/** App hooks the panel needs: `resetMap` wipes the current Map's save and reopens it fresh. */
+/** App hooks the panel needs: `resetMap` wipes the current Map's save and reopens it fresh; `openMaps` opens every Map. */
 export interface DebugHooks {
   resetMap: () => void;
+  openMaps: () => void;
 }
 
 export async function openDebug(game: Game, phone: boolean, hooks: DebugHooks): Promise<void> {
@@ -74,6 +75,7 @@ export async function openDebug(game: Game, phone: boolean, hooks: DebugHooks): 
       }
     },
     resetMap: () => hooks.resetMap(),
+    openMaps: () => hooks.openMaps(),
   };
   const fCheat = gui.addFolder('Cheats');
   fCheat.add(cheats, 'money100').name('+$100');
@@ -86,6 +88,7 @@ export async function openDebug(game: Game, phone: boolean, hooks: DebugHooks): 
     .onChange((v: boolean) => !v && (game.world.arrivalTimer = 0));
   fCheat.add(cheats, 'fillProducers').name('fill Animals & Machines');
   fCheat.add(cheats, 'resetMap').name('reset this Map');
+  fCheat.add(cheats, 'openMaps').name('open all Maps');
   fCheat.add(game, 'speed', 0.25, 30, 0.25).name('sim speed');
 
   const fFeel = gui.addFolder('Feel (feel.ts)').close();

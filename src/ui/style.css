@@ -859,3 +859,97 @@ body {
   flex: 1;
   min-width: 90px;
 }
+
+/* ---------- title: the Map shelf */
+.title-corner {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  display: flex;
+  gap: 10px;
+  font-size: 22px;
+}
+.shelf {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(760px, 100%);
+}
+.shelf .round {
+  z-index: 2;
+  flex: none;
+  font-size: 18px;
+}
+.shelf .round:disabled {
+  opacity: 0.3;
+}
+.shelf-cards {
+  --step: 190px;
+  position: relative;
+  flex: 1;
+  height: 250px;
+}
+.shelf-card {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  background: var(--cream);
+  border: 3px solid var(--ink);
+  border-radius: 20px;
+  box-shadow: 0 4px 0 var(--ink);
+  transform: translateX(calc(-50% + var(--off) * var(--step))) scale(0.82);
+  opacity: 0.7;
+  transition:
+    transform 0.25s,
+    opacity 0.25s;
+  cursor: pointer;
+}
+.shelf-card.on {
+  z-index: 1;
+  transform: translateX(-50%);
+  opacity: 1;
+}
+.shelf-card.far {
+  opacity: 0;
+  pointer-events: none;
+}
+.shelf-card.locked {
+  border-style: dashed;
+  filter: grayscale(0.8);
+}
+.shelf-card b {
+  font-size: 20px;
+}
+.shelf-card small {
+  text-align: center;
+}
+.shelf-card .completion {
+  width: 100%;
+}
+.shelf-art {
+  width: 100%;
+  height: 90px;
+  display: grid;
+  place-items: center;
+  font-size: 48px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--money) 35%, var(--cream));
+  border: 3px solid var(--ink);
+}
+.shelf-art img {
+  height: 80px;
+}
+@media (max-width: 600px) {
+  .shelf-cards {
+    --step: 140px;
+  }
+  .shelf-card {
+    width: 140px;
+  }
+}

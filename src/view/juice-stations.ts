@@ -15,8 +15,16 @@ export function put<T extends THREE.Mesh>(parent: THREE.Object3D, m: T, x = 0, y
   return m;
 }
 const matOf = (c: string | THREE.Material) => (typeof c === 'string' ? paletteMaterial(c) : c);
-export const box = (p: THREE.Object3D, w: number, h: number, d: number, c: string | THREE.Material, x = 0, y = 0, z = 0) =>
-  put(p, new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matOf(c)), x, y + h / 2, z);
+export const box = (
+  p: THREE.Object3D,
+  w: number,
+  h: number,
+  d: number,
+  c: string | THREE.Material,
+  x = 0,
+  y = 0,
+  z = 0,
+) => put(p, new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matOf(c)), x, y + h / 2, z);
 export const cyl = (
   p: THREE.Object3D,
   r: number,
@@ -30,8 +38,16 @@ export const cyl = (
 ) => put(p, new THREE.Mesh(new THREE.CylinderGeometry(r, rb, h, seg), matOf(c)), x, y + h / 2, z);
 export const sph = (p: THREE.Object3D, r: number, c: string | THREE.Material, x = 0, y = 0, z = 0, detail = 1) =>
   put(p, new THREE.Mesh(new THREE.IcosahedronGeometry(r, detail), matOf(c)), x, y, z);
-export const cone = (p: THREE.Object3D, r: number, h: number, c: string | THREE.Material, x = 0, y = 0, z = 0, seg = 12) =>
-  put(p, new THREE.Mesh(new THREE.ConeGeometry(r, h, seg), matOf(c)), x, y + h / 2, z);
+export const cone = (
+  p: THREE.Object3D,
+  r: number,
+  h: number,
+  c: string | THREE.Material,
+  x = 0,
+  y = 0,
+  z = 0,
+  seg = 12,
+) => put(p, new THREE.Mesh(new THREE.ConeGeometry(r, h, seg), matOf(c)), x, y + h / 2, z);
 export const torus = (p: THREE.Object3D, r: number, t: number, c: string | THREE.Material, x = 0, y = 0, z = 0) => {
   const m = put(p, new THREE.Mesh(new THREE.TorusGeometry(r, t, 8, 24), matOf(c)), x, y, z);
   m.rotation.x = Math.PI / 2;

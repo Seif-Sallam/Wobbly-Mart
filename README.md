@@ -4,6 +4,8 @@ A browser arcade-idle store game: grow crops, feed animals, run machines, stock 
 
 ## Run
 
+You can play the current deployment through this link: [Wobbly-Mart](https://seif-sallam.github.io/Wobbly-Mart/)
+
 ```bash
 npm ci
 npm run dev          # http://localhost:5173 — add ?debug for the debug panel

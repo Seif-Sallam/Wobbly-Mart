@@ -157,6 +157,19 @@ _Avoid_: finish pad
 A map's progress as a percentage of everything purchasable — every **Pad** and every **Upgrade** level, equally weighted (**Moves** don't count). 100% means everything is unlocked.
 _Avoid_: stars, rating, prestige
 
+**Objective**:
+A fixed goal on a **Map** (sell 50 eggs, catch 3 Thieves…), done once and kept; shows its progress, counted from **Stats**. Earns **Score** only.
+
+**Challenge**:
+A short, timed, optional task that pops up during play, one at a time (check out 5 Customers in 60 s, fill one named **Shelf**…). Never offered when impossible right now; paused while **Closed**. Winning earns **Score** and a little **Money**; failing costs nothing.
+
+**Score**:
+Points per **Map** for **Objectives**, won **Challenges**, handled **Events** and each quarter of **Completion**; never goes down. The game's total is the sum over Maps. The **Tutorial Map** has none.
+_Avoid_: rating, stars
+
+**Stats**:
+Running counts per **Map** and for the whole game: **Items** made, sold, trashed and fallen; **Messes** made and cleaned; **Money** earned and fined; **Customers** served and lost; **Event** outcomes; **Challenges** won and failed; play time.
+
 **Closed**:
 A state the **Player** switches the store into, to restock or wait things out: no new **Customers** come in, those inside finish their shopping, and **Robbery** and the **Health Inspector** pause. **Deliveries** stop too unless **Delivery-only** is on, and never come more often than when open.
 

@@ -286,6 +286,9 @@ export interface Nav {
 }
 
 export interface World {
+  /** PROTOTYPE (#77): shown by tip-proto.ts. */
+  tipProtoState?: { gentle: boolean; safe: number; rate: number };
+  tipProtoStats?: { drops: number; messes: number };
   map: MapDef;
   t: number;
   rng: number;

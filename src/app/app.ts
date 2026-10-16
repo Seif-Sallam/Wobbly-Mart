@@ -214,6 +214,9 @@ export class App {
     requestAnimationFrame(loop);
     Object.assign(window, { app: this, game: this.game });
     const params = new URLSearchParams(location.search);
+    // PROTOTYPE (#77)
+    if (params.has('tip'))
+      void import('./tip-proto').then((m) => this.game && m.openTipProto(this.game, params.get('tip') ?? 'a'));
     if (params.has('debug'))
       void import('./debug').then(
         (m) =>

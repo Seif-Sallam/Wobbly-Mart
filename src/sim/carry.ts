@@ -126,12 +126,20 @@ export function tipDrops(
   o: { cap: number; safe: number; share: number; jolt: number },
 ): void {
   const T = TUNING.tip;
+  // PROTOTYPE (#77)
+  const P = TUNING.tipProto;
+  const isPlayer = 'agent' in who && who.agent === 'player';
+  const gentle = P.on && (!P.onlyArea1 || !w.owned.has('area_2')) && (isPlayer || P.stockersToo);
+  const safe = o.safe + (gentle ? P.safeBonus : 0);
+  const share = gentle && o.share < 1 ? o.share * P.walkScale : o.share;
   c.dropCooldown = Math.max(0, c.dropCooldown - DT);
   const n = c.stack.length;
-  if (o.share === 0 || n <= o.safe || c.dropCooldown > 0) return;
-  const k = (n - o.safe) / Math.max(1, o.cap - o.safe);
-  const jolt = 1 + T.joltBoost * Math.min(1, o.jolt);
-  if (nextRandom(w) >= T.maxRate * o.share * jolt * k ** T.curve * DT) return;
+  const k = (n - safe) / Math.max(1, o.cap - safe);
+  const jolt = 1 + T.joltBoost * (gentle ? P.joltScale : 1) * Math.min(1, o.jolt);
+  const rate = share === 0 || n <= safe ? 0 : T.maxRate * (gentle ? P.rateScale : 1) * share * jolt * k ** T.curve;
+  if (isPlayer) w.tipProtoState = { gentle, safe, rate };
+  if (rate === 0 || c.dropCooldown > 0) return;
+  if (nextRandom(w) >= rate * DT) return;
   const dir = Math.hypot(c.vx, c.vz) || 1;
   const side = (nextRandom(w) - 0.5) * T.dropSide;
   // lands where someone can stand, so its Mess can be mopped
@@ -144,9 +152,11 @@ export function tipDrops(
   c.stack.pop();
   c.dropCooldown = T.cooldown;
   const id = w.nextId++;
-  const breakChance = w.map.products[product]?.breakChance ?? 0;
+  const breakChance = (w.map.products[product]?.breakChance ?? 0) * (gentle ? P.breakScale : 1);
+  if (isPlayer) w.tipProtoStats = { drops: (w.tipProtoStats?.drops ?? 0) + 1, messes: w.tipProtoStats?.messes ?? 0 };
   if (breakChance > 0 && nextRandom(w) < breakChance) {
     addMess(w, id, x, z, [product], -1);
+    if (isPlayer && w.tipProtoStats) w.tipProtoStats.messes++;
     return;
   }
   w.events.push({ type: 'transfer', product, from: who, to: { loose: id } });

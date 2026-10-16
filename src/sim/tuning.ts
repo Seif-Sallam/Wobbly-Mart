@@ -87,6 +87,18 @@ export const TUNING = {
     dropSide: 0.8,
   },
   looseTakeRadius: 0.8,
+  /** PROTOTYPE (#77, wipe me): gentler Tipping until the Map's area_2 is owned. Set by `?tip=` in tip-proto.ts. */
+  tipProto: {
+    on: false,
+    /** false: apply on every Area too (for testing on a save past Area 1). */
+    onlyArea1: true,
+    stockersToo: true,
+    safeBonus: 0,
+    rateScale: 1,
+    walkScale: 1,
+    joltScale: 1,
+    breakScale: 1,
+  },
   /** Stocker job tiers are tierGap apart, so fill and distance (× distanceWeight per m) only order within one. */
   urgency: { tierGap: 10, distanceWeight: 0.01 },
   /** Seconds a Stocker holds a whole Stack of leftovers before putting them back on a Tray or in the Trash. */

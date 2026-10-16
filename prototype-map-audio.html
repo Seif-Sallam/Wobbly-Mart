@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PROTOTYPE — Map music and sounds</title>
+    <style>
+      :root {
+        --ink: #3a2416;
+        --paper: #fff1d0;
+        --card: #fffaf0;
+        --pick: #2f9e4f;
+        --mute: #8a7560;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font:
+          14px system-ui,
+          sans-serif;
+      }
+      header {
+        padding: 12px 16px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        border-bottom: 3px solid var(--ink);
+      }
+      header h1 {
+        font-size: 18px;
+        margin: 0 12px 0 0;
+      }
+      header label {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      button {
+        font: inherit;
+        border: 2px solid var(--ink);
+        background: var(--card);
+        color: var(--ink);
+        border-radius: 8px;
+        padding: 3px 9px;
+        cursor: pointer;
+      }
+      button.on {
+        background: var(--pick);
+        color: #fff;
+        border-color: var(--pick);
+      }
+      main {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+        gap: 14px;
+        padding: 14px 16px;
+      }
+      section {
+        background: var(--card);
+        border: 3px solid var(--ink);
+        border-radius: 14px;
+        padding: 10px 12px;
+      }
+      section h2 {
+        margin: 0 0 6px;
+        font-size: 17px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      h3 {
+        margin: 12px 0 4px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--mute);
+      }
+      .track {
+        display: grid;
+        grid-template-columns: auto 1fr auto auto;
+        gap: 6px;
+        align-items: center;
+        padding: 5px 0;
+        border-top: 1px dashed #d9c7a6;
+      }
+      .track.picked .name {
+        color: var(--pick);
+        font-weight: 700;
+      }
+      .meta {
+        font-size: 11px;
+        color: var(--mute);
+      }
+      .meta a {
+        color: inherit;
+      }
+      .prod {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 4px 8px;
+        align-items: center;
+        padding: 6px 0;
+        border-top: 1px dashed #d9c7a6;
+      }
+      .prod .ctl {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        font-size: 12px;
+      }
+      .prod input[type='range'] {
+        width: 90px;
+      }
+      .crops {
+        font-size: 12px;
+        color: var(--mute);
+      }
+      #dump {
+        white-space: pre-wrap;
+        font:
+          11px ui-monospace,
+          monospace;
+        background: var(--card);
+        border: 2px solid var(--ink);
+        margin: 0 16px 16px;
+        padding: 8px;
+        display: none;
+        user-select: text;
+      }
+      .lil-gui.root {
+        position: fixed;
+        right: 8px;
+        bottom: 8px;
+        top: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>🎧 Map music &amp; sounds</h1>
+      <button id="stop">■ Stop all</button>
+      <span class="meta">Title screen music:</span>
+      <label><input type="radio" name="title" value="own" checked /> keeps Bouncy Hamster</label>
+      <label><input type="radio" name="title" value="front-map" /> plays the front Map card's track</label>
+    </header>
+    <main id="maps"></main>
+    <pre id="dump"></pre>
+    <script type="module" src="./src/audio/map-audio-prototype.ts"></script>
+  </body>
+</html>

@@ -151,10 +151,17 @@ One **Station** left somewhere other than where it started an **Edit Layout** se
 
 **Exit Pad**:
 A **Pad** beside a car, bought late in a map; once bought, the car travels to the next map. The player can return to any visited map at any time.
+_Avoid_: finish pad
 
 **Completion**:
-A map's progress as a percentage of everything purchasable — every **Pad** and every **Upgrade** level, equally weighted (**Moves** don't count). 100% means everything is unlocked. The only meta-progression measure.
+A map's progress as a percentage of everything purchasable — every **Pad** and every **Upgrade** level, equally weighted (**Moves** don't count). 100% means everything is unlocked.
 _Avoid_: stars, rating, prestige
+
+**Closed**:
+A state the **Player** switches the store into, to restock or wait things out: no new **Customers** come in, those inside finish their shopping, and **Robbery** and the **Health Inspector** pause. **Deliveries** stop too unless **Delivery-only** is on, and never come more often than when open.
+
+**Delivery-only**:
+An option while **Closed** that keeps **Deliveries** coming at their usual pace.
 
 ### Events
 
@@ -178,6 +185,14 @@ An **Event** visitor who walks a fresh route through the shop and must be escort
 **Map**:
 One complete store level: its layout, **Areas**, stations, **Pads**, **Upgrades**, starting state and customer settings. Maps are played in a fixed order.
 _Avoid_: level, stage
+
+**Tutorial Map**:
+A small **Map** outside the fixed order that teaches the mechanics one at a time, pausing between instructions. Never locked and never locks anything; keeps no save, only whether it was finished. Until it is finished the game suggests playing it first, and the **Player** may skip that.
+_Avoid_: tutorial (for the old step tutorial on the Corner Shop, which it replaces)
+
+**Lesson**:
+One mechanic taught on the **Tutorial Map**: a card that freezes the game until dismissed, then live play until its goal is met. A Lesson that goes wrong replays its setup; it is never failed.
+_Avoid_: step, chapter
 
 **Catalog**:
 The shared definitions every **Map** draws on: **Products** and **Producer** types with their **Recipes**. A **Map** may add to it or override its values.

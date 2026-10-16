@@ -214,6 +214,9 @@ export class App {
     requestAnimationFrame(loop);
     Object.assign(window, { app: this, game: this.game });
     const params = new URLSearchParams(location.search);
+    // PROTOTYPE (#76)
+    if (params.has('grab'))
+      void import('./grab-proto').then((m) => this.game && m.openGrabProto(this.game, params.get('grab') ?? 'a'));
     if (params.has('debug'))
       void import('./debug').then(
         (m) =>

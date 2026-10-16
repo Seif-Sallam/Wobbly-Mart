@@ -87,6 +87,16 @@ export const TUNING = {
     dropSide: 0.8,
   },
   looseTakeRadius: 0.8,
+  /** PROTOTYPE (#76, wipe me): how the Player takes vs gives at Animals and Machines. Set by `?grab=` in grab-proto.ts. */
+  grabProto: {
+    takeFirst: false,
+    /** none: give on arrival (today); dwell: give only after standing giveDwell s, slower than giveMaxSpeed m/s;
+     * button: give only while Give (Space or the on-screen button) is held. */
+    giveGate: 'none' as 'none' | 'dwell' | 'button',
+    giveDwell: 0.5,
+    giveMaxSpeed: 1,
+    giveHeld: false,
+  },
   /** Stocker job tiers are tierGap apart, so fill and distance (× distanceWeight per m) only order within one. */
   urgency: { tierGap: 10, distanceWeight: 0.01 },
   /** Seconds a Stocker holds a whole Stack of leftovers before putting them back on a Tray or in the Trash. */

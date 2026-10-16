@@ -286,6 +286,8 @@ export interface Nav {
 }
 
 export interface World {
+  /** PROTOTYPE (#76): shown by grab-proto.ts. */
+  grabProtoState?: { at: string | null; dwell: number; giveOk: boolean };
   map: MapDef;
   t: number;
   rng: number;

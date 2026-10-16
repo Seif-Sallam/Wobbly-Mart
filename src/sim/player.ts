@@ -145,6 +145,9 @@ export function stationAt(w: World, x: number, z: number, test: (st: Station) =>
   return best;
 }
 
+let protoDwell = 0;
+let protoAt: string | null = null;
+
 export function updatePlayer(w: World, intents: Intents): void {
   const p = w.player;
   move(w, intents);
@@ -158,15 +161,23 @@ export function updatePlayer(w: World, intents: Intents): void {
   p.trashHold = near?.kind === 'trash' ? p.trashHold + DT : 0;
   const st = near?.kind === 'trash' && p.trashHold < TUNING.trashHoldTime ? null : near;
   const allowed = (!intents.manualGrab || intents.grab) && !p.mop;
+  // PROTOTYPE (#76): gate giving to Animals and Machines; Shelves, Trash Bins and pickups stay as today
+  const G = TUNING.grabProto;
+  protoDwell = st && st.id === protoAt && Math.hypot(p.vx, p.vz) <= G.giveMaxSpeed ? protoDwell + DT : 0;
+  protoAt = st?.id ?? null;
+  const giveOk =
+    G.giveGate === 'none' || (G.giveGate === 'dwell' ? protoDwell >= G.giveDwell : intents.grab || G.giveHeld);
+  w.grabProtoState = { at: protoAt, dwell: protoDwell, giveOk };
   const moved = transferTick(
     w,
     p,
     allowed ? st : null,
     { agent: 'player' },
     {
-      drop: () => true,
+      drop: (s) => s.kind !== 'producer' || giveOk,
       pick: () => true,
       cap: stackCap(w),
+      takeFirst: G.takeFirst,
     },
   );
   if (st && moved.picked) w.tutorial.actions.add(`pick:${st.id}`);

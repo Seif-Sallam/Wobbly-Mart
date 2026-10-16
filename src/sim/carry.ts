@@ -61,6 +61,8 @@ export interface TransferRules {
   pickLimit?: number;
   /** Drop onto the Producer's Tray instead of into its inputs. */
   toTray?: boolean;
+  /** PROTOTYPE (#76): pick up first while there is something to take and room for it. */
+  takeFirst?: boolean;
 }
 
 /**
@@ -82,6 +84,8 @@ export function transferTick(
   }
   if (!st) return {};
   c.timer += DT;
+  if (rules.takeFirst && rules.pick(st) && available(w, st) && c.stack.length < (rules.pickLimit ?? rules.cap))
+    return pickTick(w, c, st, who, rules);
   for (let i = c.stack.length - 1; i >= 0; i--) {
     const product = c.stack[i];
     const fits = rules.toTray ? trayRoom(w, st, product) : accepts(w, st, product);
@@ -98,6 +102,16 @@ export function transferTick(
     }
     return { dropped: product };
   }
+  return pickTick(w, c, st, who, rules);
+}
+
+function pickTick(
+  w: World,
+  c: Carrier,
+  st: Station,
+  who: Ref,
+  rules: TransferRules,
+): { dropped?: string; picked?: string; waiting?: boolean } {
   const product = rules.pick(st) ? available(w, st) : null;
   if (!product || st.kind !== 'producer' || c.stack.length >= (rules.pickLimit ?? rules.cap)) {
     if (product && c.stack.length >= rules.cap && !c.fullWarned) {

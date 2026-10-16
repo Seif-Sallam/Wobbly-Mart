@@ -293,6 +293,7 @@ export class App {
     this.save.currentMap = map.id;
     if (!this.save.visited.includes(map.id)) this.save.visited.push(map.id);
     game.open(map, mapSave, this.save.tutorialDone);
+    this.sounds.playMusicOf(map.id);
     this.input.tap.cancel();
     game.view.scenery(0);
     game.view.cameraOverride = null;

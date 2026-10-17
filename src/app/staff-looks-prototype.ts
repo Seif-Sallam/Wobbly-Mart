@@ -6,6 +6,9 @@ import { Character } from '../view/characters';
 import { mopModel } from '../view/cleaning';
 import { paletteMaterial } from '../view/materials';
 import { icon, renderObjectThumbs, setIcon } from '../view/thumbs';
+import { itemModel } from '../view/instanced';
+import { buildStation } from '../view/stations';
+import { MAPS } from '../../maps';
 import type { RegisterStation } from '../sim/world';
 import { PALETTE, SHADES } from '../palette';
 
@@ -41,6 +44,7 @@ function tool(kind: Kind): THREE.Object3D {
   return g;
 }
 
+/** Draws a variant's three icons under `gal-<variant>-<kind>`. */
 function drawIcons(variant: string): void {
   if (variant === 'O') return;
   if (variant === 'C') {
@@ -63,7 +67,7 @@ function drawIcons(variant: string): void {
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       g.fillText(badge[k], 94, 97);
-      setIcon(`staff-${k}`, c);
+      setIcon(`gal-${variant}-${k}`, c);
     }
     return;
   }
@@ -73,7 +77,7 @@ function drawIcons(variant: string): void {
       // dt 1 settles the clip weights so the thumbnail shows the pose
       ch.update(1, 0, 0, 0, 0, variant === 'B' && k !== 'cleaner');
       if (variant === 'B') ch.root.add(tool(k));
-      return [`staff-${k}`, ch.root];
+      return [`gal-${variant}-${k}`, ch.root];
     }),
   );
 }
@@ -116,10 +120,15 @@ export function openStaffLooksPrototype(): void {
   const iconVariant = pick('staff', ICONS, 'A');
   let cashier = pick('cashier', CASHIERS, 'A');
   const P: Anim = { ...CASHIERS[cashier].params };
-  drawIcons(iconVariant);
+  for (const v of Object.keys(ICONS)) drawIcons(v);
+  for (const k of KINDS) {
+    const c = icon(`gal-${iconVariant}-${k}`);
+    if (c) setIcon(`staff-${k}`, c);
+  }
 
   const state = new WeakMap<Character, { reg: RegisterStation; t: number; last: number; serve: number }>();
-  const pose = (ch: Character) => (v: THREE.Group, dt: number) => {
+  const pose = (ch: Character, A: () => Anim) => (v: THREE.Group, dt: number) => {
+    const P = A();
     const s = state.get(ch);
     if (!s) return;
     const serving = s.reg.progress > 0;
@@ -146,7 +155,7 @@ export function openStaffLooksPrototype(): void {
       if (s) s.reg = reg;
       else {
         state.set(ch, { reg, t: 0, last: 0, serve: 0 });
-        ch.pose = pose(ch);
+        ch.pose = pose(ch, () => P);
       }
     },
   });
@@ -237,6 +246,178 @@ export function openStaffLooksPrototype(): void {
     console.log(dump.textContent);
   };
   bar.append(dumpBtn);
+
+  // ---------- gallery: every icon variant and every Cashier animation at once
+  const galCss = document.createElement('style');
+  galCss.textContent = `
+    #sl-gal{position:fixed;inset:0;z-index:80;background:${PALETTE.cream};color:${PALETTE.ink};overflow:auto;
+      padding:12px 16px 40px;font:600 13px system-ui;display:none;box-sizing:border-box}
+    #sl-gal h2{margin:10px 0 6px;font-size:16px}
+    #sl-gal .close{position:fixed;top:10px;right:14px;font:700 14px system-ui;border:0;border-radius:8px;padding:8px 14px;
+      background:${PALETTE.orange};color:#fff;z-index:81}
+    #sl-gal .icons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    #sl-gal .card{background:#fff;border-radius:12px;padding:8px;border:3px solid transparent;cursor:pointer}
+    #sl-gal .card.on{border-color:${PALETTE.orange}}
+    #sl-gal .card p{margin:0 0 6px;font-size:12px}
+    #sl-gal .row{display:flex;gap:6px;justify-content:space-around;align-items:flex-end}
+    #sl-gal .row div{text-align:center;font-size:10px;font-weight:500}
+    #sl-gal .pad{width:64px;height:64px;border-radius:14px;background:${PALETTE.pad};display:grid;place-items:center;margin:0 auto 2px}
+    #sl-gal .pad img{width:52px;height:52px}
+    #sl-gal .small img{width:28px;height:28px;display:block;margin:2px auto 0}
+    #sl-gal canvas{width:100%;height:min(46vh,340px);display:block;border-radius:12px;background:${SHADES.floor.light}}
+    #sl-gal .cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:6px}
+    #sl-gal .cols .card{font-size:12px}`;
+  document.head.append(galCss);
+  const gal = document.createElement('div');
+  gal.id = 'sl-gal';
+  gal.addEventListener('pointerdown', (e) => e.stopPropagation());
+  document.body.append(gal);
+  const close = document.createElement('button');
+  close.className = 'close';
+  close.textContent = 'Close gallery';
+  const h1 = document.createElement('h2');
+  h1.textContent = 'Staff icons: tap a card to use it in game (reloads)';
+  const iconGrid = document.createElement('div');
+  iconGrid.className = 'icons';
+  for (const v of Object.keys(ICONS)) {
+    const card = document.createElement('div');
+    card.className = `card${v === iconVariant ? ' on' : ''}`;
+    const p = document.createElement('p');
+    p.textContent = `${v} · ${ICONS[v]}`;
+    const row = document.createElement('div');
+    row.className = 'row';
+    for (const k of KINDS) {
+      const src = (icon(v === 'O' ? 'employee' : `gal-${v}-${k}`) ?? icon('employee'))?.toDataURL() ?? '';
+      const cell = document.createElement('div');
+      cell.innerHTML = `<div class="pad"><img src="${src}"></div>${k}<span class="small"><img src="${src}"></span>`;
+      row.append(cell);
+    }
+    card.append(p, row);
+    card.onclick = () => {
+      url.searchParams.set('staff', v);
+      url.searchParams.set('gallery', '1');
+      location.href = url.toString();
+    };
+    iconGrid.append(card);
+  }
+  const h2 = document.createElement('h2');
+  h2.textContent = 'Cashier at work: a checkout every 3 s. Tap a card to tune it in the panel and use it in game';
+  const canvas = document.createElement('canvas');
+  const cols = document.createElement('div');
+  cols.className = 'cols';
+  const colCards = Object.keys(CASHIERS).map((v) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.textContent = `${v} · ${CASHIERS[v].name}`;
+    card.onclick = () => {
+      selectCashier(v);
+      for (const [i, c] of colCards.entries()) c.classList.toggle('on', Object.keys(CASHIERS)[i] === v);
+    };
+    cols.append(card);
+    return card;
+  });
+  gal.append(close, h1, iconGrid, h2, canvas, cols);
+
+  let stop: (() => void) | null = null;
+  const openGallery = () => {
+    gal.style.display = 'block';
+    for (const [i, c] of colCards.entries()) c.classList.toggle('on', Object.keys(CASHIERS)[i] === cashier);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.setScissorTest(true);
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(SHADES.floor.light);
+    scene.add(new THREE.HemisphereLight(SHADES.white, SHADES.thumbGround, 2.2));
+    const sun = new THREE.DirectionalLight(SHADES.white, 2.4);
+    sun.position.set(3, 6, 4);
+    scene.add(sun);
+    const product = Object.values(MAPS[0].products)[0]?.model ?? '';
+    const GAP = 6;
+    const lanes = Object.keys(CASHIERS).map((v, i) => {
+      const x = i * GAP;
+      const reg = buildStation('register', [x - 1.3, -0.5, 2.6, 1], 0);
+      scene.add(reg.root);
+      const ch = new Character('employee', { hat: SHADES.white });
+      const cz = -1.1;
+      ch.facing = Math.atan2(0, -cz);
+      scene.add(ch.root);
+      const fake = { progress: 0 } as RegisterStation;
+      state.set(ch, { reg: fake, t: 0, last: 0, serve: 0 });
+      ch.pose = pose(ch, () => (v === cashier ? P : CASHIERS[v].params));
+      const goods = [0, 1, 2].map(() => {
+        const g = itemModel(product);
+        g.scale.setScalar(0.6);
+        scene.add(g);
+        return g;
+      });
+      return { x, cz, ch, fake, reg, goods };
+    });
+    const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
+    const yaw = THREE.MathUtils.degToRad(20);
+    const pitch = THREE.MathUtils.degToRad(35);
+    let t = 0;
+    let last = performance.now();
+    let raf = 0;
+    const frame = (now: number) => {
+      raf = requestAnimationFrame(frame);
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      t += dt;
+      const W = canvas.clientWidth;
+      const H = canvas.clientHeight;
+      renderer.setSize(W, H, false);
+      const cw = W / lanes.length;
+      const half = 1.9;
+      for (const [i, l] of lanes.entries()) {
+        const cyc = (t + i * 0.25) % 3;
+        l.fake.progress = cyc < 2 ? cyc / 2 : 0;
+        l.ch.update(dt, l.x, l.cz, 0, 0, false);
+        const belt = l.reg.belt;
+        l.goods.forEach((g, n) => {
+          const k = THREE.MathUtils.clamp(l.fake.progress * 1.6 - (n / 3) * 0.6, 0, 1);
+          g.visible = !!belt && l.fake.progress > 0;
+          if (belt)
+            g.position.copy(l.reg.root.localToWorld(k < 1 ? belt[0].clone().lerp(belt[1], k) : belt[2].clone()));
+        });
+        const aspect = cw / H;
+        Object.assign(cam, { left: -half * aspect, right: half * aspect, top: half, bottom: -half });
+        cam.updateProjectionMatrix();
+        const focus = new THREE.Vector3(l.x, 0.6, -0.4);
+        cam.position
+          .copy(focus)
+          .add(
+            new THREE.Vector3(
+              Math.sin(yaw) * Math.cos(pitch),
+              Math.sin(pitch),
+              Math.cos(yaw) * Math.cos(pitch),
+            ).multiplyScalar(20),
+          );
+        cam.lookAt(focus);
+        renderer.setViewport(i * cw, 0, cw, H);
+        renderer.setScissor(i * cw + 2, 0, cw - 4, H);
+        renderer.render(scene, cam);
+      }
+    };
+    raf = requestAnimationFrame(frame);
+    stop = () => {
+      cancelAnimationFrame(raf);
+      renderer.dispose();
+      for (const l of lanes) state.delete(l.ch);
+    };
+  };
+  close.onclick = () => {
+    gal.style.display = 'none';
+    stop?.();
+    stop = null;
+    url.searchParams.delete('gallery');
+    history.replaceState(null, '', url);
+  };
+  const galBtn = document.createElement('button');
+  galBtn.textContent = 'Gallery';
+  galBtn.onclick = openGallery;
+  bar.prepend(galBtn);
+  if (url.searchParams.has('gallery')) openGallery();
 
   void import('lil-gui').then(({ default: G }) => {
     gui = new G({ title: 'PROTOTYPE · Cashier at work (live)' });

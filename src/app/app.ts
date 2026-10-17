@@ -257,7 +257,7 @@ export class App {
     }
     renderThumbs([...items], [...stations], ['employee', 'van', 'player']);
     // PROTOTYPE (prototype/staff-looks): `?staff=` draws each Staff kind its own icon, `?cashier=` animates checkout
-    if (/[?&](staff|cashier)=/.test(location.search))
+    if (/[?&](staff|cashier|gallery)=/.test(location.search))
       void import('./staff-looks-prototype').then((m) => m.openStaffLooksPrototype());
   }
 

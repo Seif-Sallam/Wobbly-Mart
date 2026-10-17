@@ -93,6 +93,8 @@ const P = {
   showFun: true,
   hideCustomerLooks: false,
   spin: 30,
+  dragDegPerPx: 0.6,
+  coast: 3,
   camDist: 4.2,
   camHeight: 1.1,
   lookY: 0.62,
@@ -295,6 +297,26 @@ export function openLookPrototype(screen: () => 'title' | 'game', game: () => Ga
   const preview = new Preview();
   let solo: Character | null = null;
   let spinAt = 0;
+  // drag the preview to turn the look; it coasts, and the idle sway stops until the next pick
+  let turn = 0;
+  let turnVel = 0;
+  let dragged = false;
+  let dragX: number | null = null;
+  const pc = preview.renderer.domElement;
+  pc.onpointerdown = (e) => {
+    dragX = e.clientX;
+    dragged = true;
+    turnVel = 0;
+    pc.setPointerCapture(e.pointerId);
+  };
+  pc.onpointermove = (e) => {
+    if (dragX === null) return;
+    const d = (e.clientX - dragX) * THREE.MathUtils.degToRad(P.dragDegPerPx);
+    dragX = e.clientX;
+    turn += d;
+    turnVel = d * 60;
+  };
+  pc.onpointerup = pc.onpointercancel = () => (dragX = null);
   const showSolo = (id: string, wave: boolean) => {
     shown = id;
     onShow(id);
@@ -303,6 +325,8 @@ export function openLookPrototype(screen: () => 'title' | 'game', game: () => Ga
     preview.scene.add(solo.root);
     if (wave) solo.emote('yes');
     spinAt = 0;
+    turn = turnVel = 0;
+    dragged = false;
   };
 
   // ---------- C: everyone on one stage
@@ -539,7 +563,11 @@ export function openLookPrototype(screen: () => 'title' | 'game', game: () => Ga
     if (!root) return;
     if (solo && (variant === 'A' || variant === 'B')) {
       spinAt += dt;
-      solo.facing = Math.sin(spinAt * THREE.MathUtils.degToRad(P.spin)) * 0.9;
+      if (dragX === null) {
+        turn += turnVel * dt;
+        turnVel *= Math.exp(-P.coast * dt);
+      }
+      solo.facing = turn + (dragged ? 0 : Math.sin(spinAt * THREE.MathUtils.degToRad(P.spin)) * 0.9);
       solo.update(dt, 0, 0, 0, 0, false);
       preview.camera.position.set(0, P.camHeight, P.camDist);
       preview.camera.lookAt(0, P.lookY, 0);
@@ -635,6 +663,8 @@ ${JSON.stringify(FITS)}`;
     gui.add(P, 'hideCustomerLooks').name('hide Customer looks').onChange(reopen);
     const cam = gui.addFolder('Preview camera');
     cam.add(P, 'spin', 0, 120, 1).name('sway °/s');
+    cam.add(P, 'dragDegPerPx', 0.1, 2, 0.05).name('drag °/px');
+    cam.add(P, 'coast', 0.5, 12, 0.5).name('coast stop /s');
     cam.add(P, 'camDist', 1.5, 8, 0.1);
     cam.add(P, 'camHeight', 0, 3, 0.05);
     cam.add(P, 'lookY', 0, 1.5, 0.02);

@@ -168,13 +168,10 @@ Points per **Map** for **Objectives**, won **Challenges**, handled **Events** an
 _Avoid_: rating, stars
 
 **Stats**:
-Running counts per **Map** and for the whole game: **Items** made, sold, trashed and fallen; **Messes** made and cleaned; **Money** earned and fined; **Customers** served and lost; **Event** outcomes; **Challenges** won and failed; play time.
+Running counts per **Map** and for the whole game: **Items** made, sold, trashed and fallen; **Messes** made and cleaned; **Money** earned and fined; **Customers** served and lost; **Event** outcomes; **Challenges** won and failed; times **Closed**; play time.
 
 **Closed**:
-A state the **Player** switches the store into, to restock or wait things out: no new **Customers** come in, those inside finish their shopping, and **Robbery** and the **Health Inspector** pause. **Deliveries** stop too unless **Delivery-only** is on, and never come more often than when open.
-
-**Delivery-only**:
-An option while **Closed** that keeps **Deliveries** coming at their usual pace.
+A state the **Player** switches the store into from the **Office**, to restock or wait things out, for at least 30 seconds and as long as they like, and again only after five open minutes: no new **Customers** appear on the **Pavement** (those already there still come in, and everyone inside finishes their shopping), and **Robbery** and the **Health Inspector** pause. **Deliveries** keep coming at their usual pace.
 
 ### Events
 

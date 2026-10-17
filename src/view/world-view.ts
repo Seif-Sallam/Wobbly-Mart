@@ -31,6 +31,15 @@ import { TUNING } from '../sim/tuning';
 
 const CUSTOMER_MODELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((k) => `customer-${k}`);
 const INSPECTOR_MODEL = 'customer-g';
+/** PROTOTYPE (character-select): the cap colour is picked from `?look=`. */
+const protoCap = (): string | undefined => {
+  try {
+    if (localStorage.getItem('proto-look-nocap')) return undefined;
+    return localStorage.getItem('proto-look-capColour') ?? 'orange';
+  } catch {
+    return 'orange';
+  }
+};
 const BILL_VALUE = 5;
 const PILE_MAX_BILLS = 24;
 const CART_SCALE = 0.7;
@@ -157,7 +166,7 @@ export class WorldView {
       multiDraw,
     );
     this.blobs = this.makeBlobs();
-    this.player = new Character('player', { hat: 'orange' });
+    this.player = new Character('player', { hat: protoCap() });
     this.root.add(this.player.root);
     this.playerMop = new HeldMop(this.player);
     this.maxTag = this.tag('MAX', PALETTE.orange);
@@ -192,6 +201,16 @@ export class WorldView {
   }
 
   /** Layout editor: walls, floors and Props changed under the same map id. */
+  /** PROTOTYPE (character-select): rebuilds the Player after a new look or cap choice. */
+  protoSwapPlayer(): void {
+    const facing = this.player.facing;
+    this.root.remove(this.player.root);
+    this.player = new Character('player', { hat: protoCap() });
+    this.player.facing = facing;
+    this.root.add(this.player.root);
+    this.playerMop = new HeldMop(this.player);
+  }
+
   rebuildLevel(): void {
     this.swapLevel();
     this.ownedKey = '';

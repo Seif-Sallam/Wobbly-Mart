@@ -11,6 +11,8 @@ export interface AssetDef {
   tint?: string;
   /** Extra yaw (deg) so the model's front faces +z at rotation 0. */
   yaw?: number;
+  /** Characters: the Player's cap fit as [up, forward, size, tilt°] from the model's top. */
+  cap?: [number, number, number, number];
 }
 
 import { SHADES } from '../src/palette';

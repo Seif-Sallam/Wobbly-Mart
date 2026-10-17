@@ -160,6 +160,8 @@ export class App {
   }
 
   async start(): Promise<void> {
+    const lookProto = new URLSearchParams(location.search).has('look') ? await import('./character-prototype') : null;
+    lookProto?.registerLooks();
     await Promise.all([
       loadAssets((done, total) => {
         this.ui.loading = (done / total) * 0.95;
@@ -214,6 +216,10 @@ export class App {
     requestAnimationFrame(loop);
     Object.assign(window, { app: this, game: this.game });
     const params = new URLSearchParams(location.search);
+    lookProto?.openLookPrototype(
+      () => this.ui.screen,
+      () => this.game,
+    );
     if (params.has('debug'))
       void import('./debug').then(
         (m) =>

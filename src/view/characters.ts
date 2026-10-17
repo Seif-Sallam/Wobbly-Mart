@@ -1,6 +1,7 @@
 // Animated Mini Characters: turn toward their motion, bob while walking, hold arms out when carrying.
 import * as THREE from 'three';
 import { clipsOf, model } from './assets';
+import { ASSETS } from '../../catalog/assets';
 import { FEEL } from '../feel';
 import { paletteMaterial } from './materials';
 
@@ -43,9 +44,16 @@ export class Character {
     if (opts.hat) {
       const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.12, 12), paletteMaterial(opts.hat));
       const brim = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.03, 0.2), paletteMaterial(opts.hat));
-      cap.position.y = this.top + 0.05;
-      brim.position.set(0, this.top, 0.17);
-      this.wear([cap, brim], true);
+      cap.position.y = 0.05;
+      brim.position.set(0, 0, 0.17);
+      // [up, forward, size, tilt in degrees], for looks whose hair or own hat lifts the top
+      const [dy, dz, size, tilt] = ASSETS[name]?.cap ?? [0, 0, 1, 0];
+      const hat = new THREE.Group();
+      hat.add(cap, brim);
+      hat.position.set(0, this.top + dy, dz);
+      hat.scale.setScalar(size);
+      hat.rotation.x = THREE.MathUtils.degToRad(tilt);
+      this.wear([hat], true);
       this.cap = [cap, brim];
     }
     this.mixer = new THREE.AnimationMixer(this.visual);

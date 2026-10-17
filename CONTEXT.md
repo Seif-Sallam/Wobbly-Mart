@@ -157,11 +157,11 @@ A **Pad** beside a car, bought late in a map; once bought, the car travels to th
 _Avoid_: finish pad
 
 **Completion**:
-A map's progress as a percentage of everything purchasable — every **Pad** and every **Upgrade** level, equally weighted (**Moves** don't count). 100% means everything is unlocked.
+A map's progress as a percentage of every **Pad**, every **Upgrade** level and every **Objective**, equally weighted (**Moves** don't count). 100% means everything is unlocked and every Objective is done.
 _Avoid_: stars, rating, prestige
 
 **Objective**:
-A fixed goal on a **Map** (sell 50 eggs, catch 3 Thieves…), done once and kept; shows its progress, counted from **Stats**. Earns **Score** only.
+A fixed goal on a **Map** (sell 100 Eggs, earn $5,000…), done once and kept; shows its progress, counted from **Stats**. Always something normal play reaches on its own. Earns **Score** and counts toward **Completion**, so a Map can't reach 100% without its Objectives.
 
 **Challenge**:
 A short, timed, optional task that pops up during play, one at a time (check out 5 Customers in 60 s, fill one named **Shelf**…). Never offered when impossible right now; paused while **Closed**. Winning earns **Score** and a little **Money**; failing costs nothing.

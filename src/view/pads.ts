@@ -58,7 +58,9 @@ export class PadVisual {
   update(dt: number, remaining: number, cost: number, standing: boolean): void {
     this.pop = Math.min(1, this.pop + dt * 3);
     const s = this.pop < 1 ? 1 + Math.sin(this.pop * Math.PI) * 0.25 : 1;
-    this.group.scale.setScalar(s * Math.min(1, this.pop * 4));
+    this.group.scale.setScalar(
+      s * Math.min(1, this.pop * 4) * ((globalThis as { protoPadScale?: number }).protoPadScale ?? 1),
+    );
     if (this.ghost) {
       this.ghost.visible = standing;
       if (standing) this.ghost.position.y = 0.05 + Math.sin(performance.now() / 150) * 0.05;

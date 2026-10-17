@@ -66,6 +66,7 @@ export class Game {
         step(this.world, {
           move: this.input.move(this.world),
           grab: this.input.grab,
+          grabOnly: this.input.grabOnly,
           sprint: this.input.sprint,
           manualGrab: this.manualGrab,
           ...this.commands,

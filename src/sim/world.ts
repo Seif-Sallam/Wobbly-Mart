@@ -272,6 +272,8 @@ export interface Intents {
   /** Manual Grab Mode: transfers only while held. */
   grab: boolean;
   manualGrab?: boolean;
+  /** PROTOTYPE: a Take or Give button limits a held grab to one direction. */
+  grabOnly?: 'take' | 'give';
   sprint?: boolean;
   buyUpgrade?: string;
   skipTutorial?: boolean;

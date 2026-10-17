@@ -25,8 +25,13 @@ export class Input {
   readonly tap = new TapWalk();
   enabled = true;
   private pinch = 0;
+  private manager: ReturnType<typeof nipplejs.create> | null = null;
+  /** PROTOTYPE: on-screen action buttons held down. */
+  readonly held = { take: false, give: false };
+  /** PROTOTYPE: false = a short press on the joystick zone is never a Tap Walk. */
+  tapsOnZone = true;
 
-  constructor(zone: HTMLElement) {
+  constructor(private readonly zone: HTMLElement) {
     addEventListener('keydown', (e) => {
       if ((e.target as HTMLElement).closest?.('input, textarea')) return;
       if (e.code === 'Escape') {
@@ -45,7 +50,25 @@ export class Input {
     addEventListener('blur', () => this.keys.clear());
     this.pinchZoom();
     this.taps(zone);
-    const manager = nipplejs.create({ zone, mode: 'dynamic', color: PALETTE.ink, size: 110 });
+    this.joystick(110, null);
+  }
+
+  /** PROTOTYPE: rebuilds the joystick; `rest` pins it there (px from bottom-left), null = it appears under the finger. */
+  joystick(size: number, rest: { left: number; bottom: number } | null, off = false): void {
+    this.manager?.destroy();
+    this.manager = null;
+    this.joy = { x: 0, y: 0, active: false, force: 0 };
+    this.zone.style.display = off ? 'none' : '';
+    if (off) return;
+    const manager = nipplejs.create({
+      zone: this.zone,
+      color: PALETTE.ink,
+      size,
+      ...(rest
+        ? { mode: 'static' as const, position: { left: `${rest.left}px`, bottom: `${rest.bottom}px` } }
+        : { mode: 'dynamic' as const }),
+    });
+    this.manager = manager;
     manager.on('move', (e) => {
       this.firstKind ??= 'touch';
       this.joy.active = true;
@@ -67,7 +90,7 @@ export class Input {
     let lastTap = -Infinity;
     const onGame = (e: PointerEvent) => {
       const el = e.target as HTMLElement;
-      return el instanceof HTMLCanvasElement || zone.contains(el);
+      return el instanceof HTMLCanvasElement || (this.tapsOnZone && zone.contains(el));
     };
     addEventListener(
       'pointerdown',
@@ -101,6 +124,11 @@ export class Input {
       'touchstart',
       (e) => {
         if (e.touches.length !== 2) return;
+        // PROTOTYPE: two thumbs on the joystick and a button is not a pinch
+        const free = [...e.touches].every(
+          (t) => t.target instanceof HTMLCanvasElement || (this.tapsOnZone && this.zone.contains(t.target as Node)),
+        );
+        if (!free) return;
         this.pinch = spread(e.touches);
         this.enabled = false;
       },
@@ -162,7 +190,12 @@ export class Input {
   }
 
   get grab(): boolean {
-    return this.keys.has('Space');
+    return this.keys.has('Space') || this.held.take || this.held.give;
+  }
+
+  get grabOnly(): 'take' | 'give' | undefined {
+    if (this.held.take === this.held.give) return undefined;
+    return this.held.take ? 'take' : 'give';
   }
 
   get touch(): boolean {

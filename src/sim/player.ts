@@ -164,8 +164,8 @@ export function updatePlayer(w: World, intents: Intents): void {
     allowed ? st : null,
     { agent: 'player' },
     {
-      drop: () => true,
-      pick: () => true,
+      drop: () => intents.grabOnly !== 'take',
+      pick: () => intents.grabOnly !== 'give',
       cap: stackCap(w),
     },
   );

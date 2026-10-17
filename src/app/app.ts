@@ -214,6 +214,7 @@ export class App {
     requestAnimationFrame(loop);
     Object.assign(window, { app: this, game: this.game });
     const params = new URLSearchParams(location.search);
+    if (params.has('land')) void import('./landscape-prototype').then((m) => m.openLandscapePrototype());
     if (params.has('debug'))
       void import('./debug').then(
         (m) =>

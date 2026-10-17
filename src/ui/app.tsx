@@ -285,7 +285,7 @@ function FrameRate({ s, a }: { s: UiState; a: UiActions }) {
 function Settings({ s, a }: { s: UiState; a: UiActions }) {
   const [copied, setCopied] = useState('');
   return (
-    <div class="panel">
+    <div class="panel settings">
       <h2>Settings</h2>
       {/* + (closer) on the left, − (farther) on the right */}
       <SliderRow
@@ -308,6 +308,16 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
       />
       <Toggle label="Music" on={s.settings.music} set={(v) => a.setSetting('music', v)} actions={a} />
       <Toggle label="Sounds" on={s.settings.sounds} set={(v) => a.setSetting('sounds', v)} actions={a} />
+      {/* PROTOTYPE: shown everywhere so a desktop preview can try it; touch-only for real */}
+      <Toggle
+        label="Joystick"
+        on={s.settings.joystick !== 'off'}
+        text={{ fixed: 'Fixed', free: 'Free', off: 'Off' }[s.settings.joystick]}
+        set={() =>
+          a.setSetting('joystick', ({ fixed: 'free', free: 'off', off: 'fixed' } as const)[s.settings.joystick])
+        }
+        actions={a}
+      />
       {!s.touch && (
         <Toggle
           label="Manual grab (hold Space)"

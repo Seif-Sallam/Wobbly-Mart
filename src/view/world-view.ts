@@ -132,6 +132,7 @@ export class WorldView {
   /** When set, the camera looks here instead of following the Player (title screen). */
   cameraOverride: THREE.Vector3 | null = null;
   private camFocus = new THREE.Vector3();
+  private protoLead = new THREE.Vector3();
 
   constructor(
     private readonly stage: Stage,
@@ -1256,8 +1257,20 @@ export class WorldView {
       return;
     }
     const p = this.player.root.position;
-    const goal = new THREE.Vector3(p.x + w.player.vx * FEEL.lookAhead, 0, p.z + w.player.vz * FEEL.lookAhead);
-    this.camFocus.lerp(goal, 1 - Math.exp(-FEEL.followSharpness * dt));
+    // PROTOTYPE (prototype/sprint-camera): `?cam=` swaps the follow for a lead that is capped, eased, and per sprint
+    const pc = (globalThis as { protoCam?: ProtoCam }).protoCam;
+    if (pc) {
+      const run = w.player.sprinting;
+      const want = new THREE.Vector3(w.player.vx, 0, w.player.vz).multiplyScalar(run ? pc.sprintLead : pc.lead);
+      if (want.length() > pc.leadMax) want.setLength(pc.leadMax);
+      this.protoLead.lerp(want, 1 - Math.exp(-pc.leadEase * dt));
+      const goal = new THREE.Vector3(p.x, 0, p.z).add(this.protoLead);
+      this.camFocus.lerp(goal, 1 - Math.exp(-(run ? pc.sprintSharp : pc.sharp) * dt));
+      pc.offset = Math.hypot(this.camFocus.x - p.x, this.camFocus.z - p.z);
+    } else {
+      const goal = new THREE.Vector3(p.x + w.player.vx * FEEL.lookAhead, 0, p.z + w.player.vz * FEEL.lookAhead);
+      this.camFocus.lerp(goal, 1 - Math.exp(-FEEL.followSharpness * dt));
+    }
     const focus = this.camFocus.clone();
     if (w.pan) {
       const rects = w.map.layout.areas[w.pan.area] ?? [];
@@ -1337,3 +1350,15 @@ const w_isInput = (w: World, type: string, product: string): boolean => {
   const t = w.map.producers[type];
   return t.inputs.includes(product) && t.output !== product;
 };
+
+/** PROTOTYPE: sharpness (1/s) and lead (s of velocity, capped at leadMax m, eased at leadEase 1/s), walking and sprinting. */
+export interface ProtoCam {
+  sharp: number;
+  sprintSharp: number;
+  lead: number;
+  sprintLead: number;
+  leadMax: number;
+  leadEase: number;
+  /** Out: camera focus to Player distance (m). */
+  offset: number;
+}

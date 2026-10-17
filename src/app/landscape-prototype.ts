@@ -19,6 +19,8 @@ interface Params {
   uiLand: number;
   uiPortrait: number;
   joySize: number;
+  /** Portrait joystick size (today 110). */
+  joyPortrait: number;
   /** Joystick rest centre, px from the bottom-left safe corner. */
   joyLeft: number;
   joyBottom: number;
@@ -47,6 +49,7 @@ const C1: Params = {
   uiLand: 0.68,
   uiPortrait: 0.85,
   joySize: 115,
+  joyPortrait: 110,
   joyLeft: 110,
   joyBottom: 130,
   joyZoneLand: 0.45,
@@ -288,12 +291,12 @@ export async function openLandscapePrototype(): Promise<void> {
     const mode = app.settings.joystick;
     const fixed = land && mode === 'fixed';
     root.classList.toggle('follow', land && mode === 'free');
-    const key = `${mode}|${P.joySize}|${P.joyLeft}|${P.joyBottom}|${l}|${b}|${notch}|${land}`;
+    const key = `${mode}|${P.joySize}|${P.joyPortrait}|${P.joyLeft}|${P.joyBottom}|${l}|${b}|${notch}|${land}`;
     if (key === joyKey) return;
     joyKey = key;
     input.tapsOnZone = !land;
     input.joystick(
-      land ? P.joySize : 110,
+      land ? P.joySize : P.joyPortrait,
       fixed ? { left: Math.max(l, notch) + P.joyLeft, bottom: b + P.joyBottom } : null,
       mode === 'off',
     );
@@ -421,5 +424,7 @@ export async function openLandscapePrototype(): Promise<void> {
   }, 300);
 
   select(variant);
+  // the sprint-camera prototype tunes the joystick through these
+  Object.assign(globalThis, { protoLand: { P, apply, gui } });
   requestAnimationFrame(tick);
 }

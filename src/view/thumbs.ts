@@ -9,6 +9,15 @@ const icons = new Map<string, HTMLCanvasElement>();
 
 /** Renders the given models (Item or Station model names). Call once after assets load. */
 export function renderThumbs(items: string[], stations: string[], characters: string[]): void {
+  renderObjectThumbs([
+    ...items.map((n): [string, THREE.Object3D] => [n, itemModel(n)]),
+    ...stations.map((n): [string, THREE.Object3D] => [n, buildStation(n, [0, 0, 2, 2], 0).root]),
+    ...characters.map((n): [string, THREE.Object3D] => [n, itemModel(n)]),
+  ]);
+}
+
+/** Draws each object once into its own icon under its key. */
+export function renderObjectThumbs(list: [string, THREE.Object3D][]): void {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
   renderer.setSize(SIZE, SIZE, false);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -33,14 +42,18 @@ export function renderThumbs(items: string[], stations: string[], characters: st
     icons.set(key, c);
     scene.remove(obj);
   };
-  for (const name of items) shoot(name, itemModel(name));
-  for (const name of stations) shoot(name, buildStation(name, [0, 0, 2, 2], 0).root);
-  for (const name of characters) shoot(name, itemModel(name));
+  for (const [key, obj] of list) shoot(key, obj);
   renderer.dispose();
   renderer.forceContextLoss();
 }
 
 export const icon = (name: string): HTMLCanvasElement | undefined => icons.get(name);
+
+/** PROTOTYPE (prototype/staff-looks): a Staff kind's own icon when the prototype drew one, else the shared employee. */
+export const staffIcon = (kind: string): string => (icons.has(`staff-${kind}`) ? `staff-${kind}` : 'employee');
+
+/** PROTOTYPE: stores a ready-made icon (a composited badge). */
+export const setIcon = (key: string, c: HTMLCanvasElement): void => void icons.set(key, c);
 
 export const iconUrl = (name: string): string => icons.get(name)?.toDataURL() ?? '';
 

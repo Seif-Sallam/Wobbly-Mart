@@ -1,6 +1,6 @@
 // Mirrors the sim into the scene every frame; turns sim events into motion (flying Items, springs, puffs, numbers).
 import * as THREE from 'three';
-import type { Mover, Ref, SimEvent, Station, World } from '../sim/world';
+import type { Mover, Ref, RegisterStation, SimEvent, Station, World } from '../sim/world';
 import type { Box, Point } from '../sim/map';
 import { shelfCap, stationModel } from '../sim/map';
 import { boxCentre, distToBox } from '../sim/geometry';
@@ -10,6 +10,7 @@ import { Stage } from './stage';
 import { Level } from './level';
 import { Juice } from './juice';
 import { Character } from './characters';
+import { staffIcon } from './thumbs';
 import { CleaningLook, HeldMop } from './cleaning';
 import { LayoutGhost } from './layout-ghost';
 import { PadVisual } from './pads';
@@ -341,7 +342,11 @@ export class WorldView {
     }
     const iconName =
       name ??
-      (['cashier', 'stocker', 'cleaner'].includes(def.kind) ? 'employee' : def.kind === 'exit' ? 'van' : 'area');
+      (['cashier', 'stocker', 'cleaner'].includes(def.kind)
+        ? staffIcon(def.kind)
+        : def.kind === 'exit'
+          ? 'van'
+          : 'area');
     const [x, z] = boxCentre(place.box);
     pad = new PadVisual(x, z, iconName, ghost);
     this.pads.set(id, pad);
@@ -990,6 +995,9 @@ export class WorldView {
       }
       const reg = w.stations.get(c.register);
       if (reg) look.ch.facing = Math.atan2(reg.box[0] + reg.box[2] / 2 - c.x, reg.box[1] + reg.box[3] / 2 - c.z);
+      // PROTOTYPE (prototype/staff-looks): `?cashier=` animates checking out
+      if (reg?.kind === 'register')
+        (globalThis as { protoCashier?: (ch: Character, reg: RegisterStation) => void }).protoCashier?.(look.ch, reg);
       look.ch.update(dt, c.x, c.z, 0, 0, false);
     }
     // blob shadows

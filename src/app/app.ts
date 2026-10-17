@@ -26,7 +26,7 @@ import { boxCentre } from '../sim/geometry';
 import { MAPS, mapById } from '../../maps';
 import { Stage } from '../view/stage';
 import { loadAssets } from '../view/assets';
-import { emojiUrl, iconUrl, renderThumbs } from '../view/thumbs';
+import { emojiUrl, iconUrl, renderThumbs, staffIcon } from '../view/thumbs';
 import { moodOf } from '../view/receipt';
 import { Input } from '../input/input';
 import { Game } from './game';
@@ -256,6 +256,9 @@ export class App {
       for (const p of Object.values(m.producers)) stations.add(p.model);
     }
     renderThumbs([...items], [...stations], ['employee', 'van', 'player']);
+    // PROTOTYPE (prototype/staff-looks): `?staff=` draws each Staff kind its own icon, `?cashier=` animates checkout
+    if (/[?&](staff|cashier)=/.test(location.search))
+      void import('./staff-looks-prototype').then((m) => m.openStaffLooksPrototype());
   }
 
   private currentMap(): MapDef {
@@ -412,7 +415,7 @@ export class App {
       const name = def
         ? stationModel(w.map, def)
         : stationModel(w.map, w.map.freeStations[id]?.unlocks ?? { kind: 'office' });
-      return iconUrl(name ?? (def?.kind === 'exit' ? 'van' : 'employee'));
+      return iconUrl(name ?? (def?.kind === 'exit' ? 'van' : def ? staffIcon(def.kind) : 'employee'));
     };
     const step = tutorialStep(w);
     const closed = step === this.tutorNexted || seen(tutorKey(w.map.id, step));
@@ -625,7 +628,7 @@ export class App {
       this.ui.card = null;
       this.renderUi();
     },
-    icon: (name) => iconUrl(name),
+    icon: (name) => iconUrl(name.startsWith('staff-') ? staffIcon(name.slice(6)) : name),
     click: () => this.sounds.sfx('click'),
   };
 

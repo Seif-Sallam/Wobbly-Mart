@@ -76,7 +76,7 @@ const ROLE_NAME: Record<StockerRole, string> = { auto: 'Auto', goods: 'Goods', m
 
 function upgradeIcon(world: World, target: string): string {
   if (target === 'player') return 'player';
-  if (target === 'cashier' || target === 'stocker') return 'employee';
+  if (target === 'cashier' || target === 'stocker') return `staff-${target}`;
   return world.map.producers[target]?.model ?? target;
 }
 
@@ -162,7 +162,7 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
             <h3>Stockers</h3>
             {world.stockers.map((s, i) => (
               <div class="assign" key={s.id}>
-                <img src={actions.icon('employee')} alt="" />
+                <img src={actions.icon('staff-stocker')} alt="" />
                 <b>#{i + 1}</b>
                 <div class="chips">
                   {STOCKER_ROLES.map((role) => (

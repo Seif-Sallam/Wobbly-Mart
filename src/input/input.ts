@@ -32,6 +32,8 @@ export class Input {
   tapsOnZone = true;
   /** PROTOTYPE: push (share of the ring) that already gives full walk speed. */
   fullPush = 1;
+  /** PROTOTYPE: a finger held on the right side in landscape = Space. */
+  rightHold = false;
 
   constructor(private readonly zone: HTMLElement) {
     addEventListener('keydown', (e) => {
@@ -192,7 +194,7 @@ export class Input {
   }
 
   get grab(): boolean {
-    return this.keys.has('Space') || this.held.take || this.held.give;
+    return this.keys.has('Space') || this.held.take || this.held.give || this.rightHold;
   }
 
   get grabOnly(): 'take' | 'give' | undefined {

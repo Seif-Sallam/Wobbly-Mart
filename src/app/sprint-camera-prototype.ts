@@ -63,7 +63,7 @@ interface LandGuts {
 interface AppGuts {
   stage: Stage;
   game: { world: World } | null;
-  input: { fullPush: number };
+  input: { fullPush: number; rightHold: boolean };
   zoom(): number;
 }
 
@@ -90,7 +90,9 @@ export async function openSprintCameraPrototype(): Promise<void> {
     #sc-label{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 50px);z-index:50;
       background:#3a2416aa;color:#fff1d0;padding:2px 6px;border-radius:6px;font:600 10px system-ui;pointer-events:none}
     html:not(.pl) #sc-label{top:calc(env(safe-area-inset-top) + 110px)}
-    #proto-bar .sc-gap{width:6px}`;
+    #proto-bar .sc-gap{width:6px}
+    html.sc-hold body::after{content:"";position:fixed;top:0;bottom:0;right:0;width:calc((1 - var(--jz)) * 100%);
+      background:radial-gradient(circle at 70% 60%, #f26b1d33, transparent 60%);pointer-events:none;z-index:40}`;
   document.head.append(style);
   const label = document.createElement('div');
   label.id = 'sc-label';
@@ -107,6 +109,28 @@ export async function openSprintCameraPrototype(): Promise<void> {
     land.apply();
     land.gui.controllersRecursive().forEach((c) => c.updateDisplay());
   };
+  // Manual grab in landscape: a finger held right of the joystick zone is Space; the right side tints while held
+  let holdId: number | null = null;
+  addEventListener(
+    'pointerdown',
+    (e) => {
+      const zone = Number(land.P.joyZoneLand);
+      if (holdId !== null || !root.classList.contains('pl') || !(e.target instanceof HTMLCanvasElement)) return;
+      if (e.clientX < innerWidth * zone) return;
+      holdId = e.pointerId;
+      app.input.rightHold = true;
+      root.classList.add('sc-hold');
+    },
+    true,
+  );
+  const release = (e: PointerEvent) => {
+    if (e.pointerId !== holdId) return;
+    holdId = null;
+    app.input.rightHold = false;
+    root.classList.remove('sc-hold');
+  };
+  addEventListener('pointerup', release, true);
+  addEventListener('pointercancel', release, true);
   const buttons: HTMLButtonElement[] = [];
   const mark = () => {
     for (const b of buttons) b.classList.toggle('on', b.dataset.v === cam || b.dataset.v === joy);

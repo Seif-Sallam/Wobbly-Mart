@@ -400,7 +400,7 @@ export async function openLandscapePrototype(): Promise<void> {
   const tick = () => {
     rebuildJoystick();
     const g = app.game;
-    if (g) g.manualGrab = (phone && P.action !== 'auto') || (!coarse && app.settings.manualGrab);
+    if (g) g.manualGrab = (phone && P.action !== 'auto') || ((land || !coarse) && app.settings.manualGrab);
     root.classList.toggle('on-title', app.ui.screen !== 'game');
     const gated = app.ui.screen === 'game' && canFull() && !document.fullscreenElement;
     root.classList.toggle('gated', gated);

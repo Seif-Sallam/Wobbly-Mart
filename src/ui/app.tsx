@@ -318,14 +318,14 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
         }
         actions={a}
       />
-      {!s.touch && (
+      {
         <Toggle
-          label="Manual grab (hold Space)"
+          label={s.touch ? 'Manual grab (hold right side, landscape)' : 'Manual grab (hold Space)'}
           on={s.settings.manualGrab}
           set={(v) => a.setSetting('manualGrab', v)}
           actions={a}
         />
-      )}
+      }
       <FrameRate s={s} a={a} />
       <Toggle
         label="Battery saver"

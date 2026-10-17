@@ -112,6 +112,9 @@ Money left at the **Register**; only becomes spendable when the **Player** walks
 The game's single currency.
 _Avoid_: coins, cash (except in **Cash Pile**), gems, coupons
 
+**Debt**:
+**Money** below $0. Only a **Bad Review** fine can cause it. While in Debt nothing can be bought (**Pads**, **Upgrades**, Moves); checkouts pay it back, with no interest and no floor.
+
 ### Growth
 
 **Pad**:
@@ -188,7 +191,10 @@ An **Event** where a **Thief**, looking like a **Customer** without a **Shopping
 When a **Thief** grabs, the camera sweeps to them and the game freezes for two seconds before the grab plays out. Like an **Area Pan**, but short.
 
 **Health Inspector**:
-An **Event** visitor who walks a fresh route through the shop and must be escorted by the **Player**; the store's dirt (**Messes**, **Loose Items**) decides a bonus or a fine, and leaving them alone too long earns a bad review.
+An **Event** visitor who walks a fresh route through the shop and must be escorted by the **Player**; the store's dirt (**Messes**, **Loose Items**) decides a bonus or a fine, and leaving them alone too long earns a **Bad Review**.
+
+**Bad Review**:
+The **Health Inspector** storming out because the **Player** left them alone too long; it ends the visit with a fine. The first one's fine stops at $0; a second or later one in a row on the same **Map** carries a double review fine that can push **Money** into **Debt**. Escorting a whole visit ends the streak.
 
 ### Maps
 

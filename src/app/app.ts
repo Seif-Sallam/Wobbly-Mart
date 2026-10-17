@@ -83,6 +83,8 @@ export class App {
   private tutorNexted = -1;
   private lostTab = false;
   private titleTime = 0;
+  /** PROTOTYPE (delivery-hud): `?dhud=` draws its own Delivery cards. */
+  protoDhud = false;
   private uiTimer = 0;
   private claimTab: () => void;
   private editing = false;
@@ -215,6 +217,7 @@ export class App {
     Object.assign(window, { app: this, game: this.game });
     const params = new URLSearchParams(location.search);
     if (params.has('land')) void import('./landscape-prototype').then((m) => m.openLandscapePrototype());
+    if (params.has('dhud')) void import('./delivery-prototype').then((m) => m.openDeliveryPrototype());
     if (params.has('debug'))
       void import('./debug').then(
         (m) =>
@@ -453,7 +456,8 @@ export class App {
       const got = d.order.reduce((n, l) => n + l.got, 0);
       const want = d.order.reduce((n, l) => n + l.want, 0);
       const left = 1 - d.t / d.time;
-      cards.push({ icon: iconUrl('van'), text: `${got}/${want}`, left, red: d.time - d.t <= TUNING.events.honkAt });
+      if (!this.protoDhud)
+        cards.push({ icon: iconUrl('van'), text: `${got}/${want}`, left, red: d.time - d.t <= TUNING.events.honkAt });
     }
     const th = w.thief;
     if (th && !th.caught && (th.state === 'grab' || th.state === 'run')) {

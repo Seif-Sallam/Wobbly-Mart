@@ -14,6 +14,8 @@ export class TapWalk {
   target: Target | null = null;
   /** Double-tapped: Sprint for this walk. */
   sprint = false;
+  /** PROTOTYPE (delivery-hud): waypoints to follow first, so the walk keeps clear of other Stations. */
+  route: Point[] | null = null;
 
   /** Picks what a tap on floor point `p` means and starts walking there; a spot nobody can walk to does nothing. */
   start(w: World, p: Point, sprint: boolean): void {
@@ -24,6 +26,7 @@ export class TapWalk {
 
   cancel(): void {
     this.target = null;
+    this.route = null;
   }
 
   /** A finished walk's one-off point field isn't kept. */
@@ -42,7 +45,10 @@ export class TapWalk {
         : Math.max(0, distToBox(pl.x, pl.z, w.stations.get(t.station)?.box ?? [0, 0, 0, 0]) - stationStop());
     if (left < ('point' in t ? FEEL.tapArriveStop : FEEL.tapStationSettle)) return this.stop(w);
     // the walk grid counts a Station as reached a little early: finish the approach toward its nearest edge
-    const heading = headingFor(w, 'walker', pl, t) ?? ('station' in t ? nearestEdge(w, t.station, pl) : null);
+    while (this.route?.length && Math.hypot(this.route[0][0] - pl.x, this.route[0][1] - pl.z) < 0.15) this.route.shift();
+    const heading = this.route?.length
+      ? this.route[0]
+      : (headingFor(w, 'walker', pl, t) ?? ('station' in t ? nearestEdge(w, t.station, pl) : null));
     if (!heading) return this.stop(w);
     // last stretch: ease off and head for the exact tapped point, not the walk grid's cell centre
     const to = 'point' in t && left < FEEL.tapArriveSlow ? t.point : heading;
@@ -56,6 +62,7 @@ export class TapWalk {
   private stop(w: World): { x: number; z: number } {
     this.forget(w);
     this.target = null;
+    this.route = null;
     return { x: 0, z: 0 };
   }
 }

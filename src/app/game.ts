@@ -55,7 +55,8 @@ export class Game {
   frame(now: number, fps: number): void {
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
-    this.stage.watchFrame(dt, fps);
+    // paused frames are drawn only on change, so their long gaps are not slow frames
+    if (!this.paused) this.stage.watchFrame(dt, fps);
     const events: SimEvent[] = [];
     if (!this.paused) {
       this.acc += dt * this.speed;

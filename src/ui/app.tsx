@@ -65,6 +65,7 @@ export interface UiActions {
   pasteSave: (code: string) => string | null;
   resetProgress: () => void;
   pickMap: (id: string) => void;
+  toTitle: () => void;
   dismissCard: () => void;
   icon: (name: string) => string;
   click: () => void;
@@ -697,6 +698,9 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
               </Btn>
               <Btn class="big" actions={a} onClick={() => a.open('settings')}>
                 Settings
+              </Btn>
+              <Btn class="big" actions={a} onClick={a.toTitle}>
+                Title
               </Btn>
             </div>
           )}

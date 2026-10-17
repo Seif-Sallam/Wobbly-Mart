@@ -172,18 +172,7 @@ export class App {
     this.renderThumbs();
     const map = MAPS[Math.floor(Math.random() * MAPS.length)];
     this.game = new Game(this.stage, this.input, map, showcaseSave(map), true);
-    this.game.paused = true;
-    this.game.view.cameraOverride = new THREE.Vector3();
-    this.game.view.scenery(SCENERY_PEOPLE);
-    const { world } = this.game;
-    for (const st of world.stations.values()) {
-      if (st.kind === 'shelf') st.items = shelfCap(world.map, st.product);
-      if (st.kind !== 'producer') continue;
-      const type = world.map.producers[st.type];
-      st.plants.fill(0);
-      st.tray = type.trayCap ?? 0;
-      for (const p of type.inputs) st.input[p] = type.inputCap ?? 0;
-    }
+    this.showcase();
     this.game.onFrame = (events, dt) => this.onFrame(events, dt);
     this.layout = new EditLayout(
       this.game,
@@ -217,6 +206,7 @@ export class App {
     Object.assign(window, { app: this, game: this.game });
     const params = new URLSearchParams(location.search);
     if (params.has('land')) void import('./landscape-prototype').then((m) => m.openLandscapePrototype());
+    if (params.has('score')) void import('./score-prototype').then((m) => m.openScorePrototype());
     if (params.has('dhud')) void import('./delivery-prototype').then((m) => m.openDeliveryPrototype());
     if (params.has('debug'))
       void import('./debug').then(
@@ -280,6 +270,47 @@ export class App {
       this.ui.screen = 'game';
       this.ui.wipe = false;
       this.hud.visible(true);
+      this.renderUi();
+    }, WIPE_SECONDS);
+  }
+
+  /** The title's look: the open Map fully stocked, paused, under the panning camera. */
+  private showcase(): void {
+    const game = this.game;
+    if (!game) return;
+    game.paused = true;
+    game.view.cameraOverride = new THREE.Vector3();
+    game.view.scenery(SCENERY_PEOPLE);
+    const { world } = game;
+    for (const st of world.stations.values()) {
+      if (st.kind === 'shelf') st.items = shelfCap(world.map, st.product);
+      if (st.kind !== 'producer') continue;
+      const type = world.map.producers[st.type];
+      st.plants.fill(0);
+      st.tray = type.trayCap ?? 0;
+      for (const p of type.inputs) st.input[p] = type.inputCap ?? 0;
+    }
+  }
+
+  // ---------- game → title
+
+  private toTitle(): void {
+    const game = this.game;
+    if (!game) return;
+    this.writeSave();
+    this.ui.overlay = null;
+    this.ui.office = false;
+    this.ui.wipe = true;
+    this.renderUi();
+    setTimeout(() => {
+      const map = game.world.map;
+      game.open(map, showcaseSave(map), true);
+      this.input.tap.cancel();
+      this.showcase();
+      this.ui.screen = 'title';
+      this.ui.wipe = false;
+      this.hud.visible(false);
+      this.refreshMaps();
       this.renderUi();
     }, WIPE_SECONDS);
   }
@@ -616,6 +647,7 @@ export class App {
       this.reopen();
       this.openOverlay(null);
     },
+    toTitle: () => this.toTitle(),
     pickMap: (id) => {
       const map = mapById(id);
       if (!map) return;

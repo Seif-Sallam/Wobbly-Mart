@@ -91,8 +91,9 @@ export async function openSprintCameraPrototype(): Promise<void> {
       background:#3a2416aa;color:#fff1d0;padding:2px 6px;border-radius:6px;font:600 10px system-ui;pointer-events:none}
     html:not(.pl) #sc-label{top:calc(env(safe-area-inset-top) + 110px)}
     #proto-bar .sc-gap{width:6px}
-    html.sc-hold body::after{content:"";position:fixed;top:0;bottom:0;right:0;width:calc((1 - var(--jz)) * 100%);
-      background:radial-gradient(circle at 70% 60%, #f26b1d33, transparent 60%);pointer-events:none;z-index:40}`;
+    #sc-dot{position:fixed;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:2px solid #fff1d0;
+      opacity:0;transform:scale(.6);transition:opacity .12s,transform .12s;pointer-events:none;z-index:40}
+    html.sc-hold #sc-dot{opacity:.35;transform:scale(1)}`;
   document.head.append(style);
   const label = document.createElement('div');
   label.id = 'sc-label';
@@ -111,6 +112,9 @@ export async function openSprintCameraPrototype(): Promise<void> {
   };
   // Manual grab in landscape: a finger held right of the joystick zone is Space; the right side tints while held
   let holdId: number | null = null;
+  const dot = document.createElement('div');
+  dot.id = 'sc-dot';
+  document.body.append(dot);
   addEventListener(
     'pointerdown',
     (e) => {
@@ -118,6 +122,8 @@ export async function openSprintCameraPrototype(): Promise<void> {
       if (holdId !== null || !root.classList.contains('pl') || !(e.target instanceof HTMLCanvasElement)) return;
       if (e.clientX < innerWidth * zone) return;
       holdId = e.pointerId;
+      dot.style.left = `${e.clientX}px`;
+      dot.style.top = `${e.clientY}px`;
       app.input.rightHold = true;
       root.classList.add('sc-hold');
     },

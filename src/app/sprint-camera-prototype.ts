@@ -37,19 +37,21 @@ interface Joy {
   sprintForce: number;
   /** Draw the sprint threshold as a dashed ring that lights up while sprinting. */
   showRing: boolean;
+  /** Push (share of the ring) that already gives full walk speed; today 1. */
+  fullPush: number;
 }
 const JOYS: Record<string, { name: string; params: Joy }> = {
   J1: {
     name: 'Landscape ticket: 110 / 115 px, sprint 1.2×',
-    params: { joyPortrait: 110, joySize: 115, sprintForce: 1.2, showRing: false },
+    params: { joyPortrait: 110, joySize: 115, sprintForce: 1.2, showRing: false, fullPush: 1 },
   },
   J2: {
     name: 'Big: 150 / 140 px, sprint 1.4×',
-    params: { joyPortrait: 150, joySize: 140, sprintForce: 1.4, showRing: false },
+    params: { joyPortrait: 150, joySize: 140, sprintForce: 1.4, showRing: false, fullPush: 1 },
   },
   J3: {
-    name: 'Sprint ring drawn: 130 / 125 px, sprint 1.5×',
-    params: { joyPortrait: 130, joySize: 125, sprintForce: 1.5, showRing: true },
+    name: 'Sprint ring drawn: 110 / 115 px, sprint 1.5×, full walk at 0.6 push',
+    params: { joyPortrait: 110, joySize: 115, sprintForce: 1.5, showRing: true, fullPush: 0.6 },
   },
 };
 
@@ -61,6 +63,7 @@ interface LandGuts {
 interface AppGuts {
   stage: Stage;
   game: { world: World } | null;
+  input: { fullPush: number };
   zoom(): number;
 }
 
@@ -71,8 +74,8 @@ export async function openSprintCameraPrototype(): Promise<void> {
   const url = new URL(location.href);
   const pick = (k: string, all: object, d: string) =>
     (url.searchParams.get(k) ?? '') in all ? (url.searchParams.get(k) as string) : d;
-  let cam = pick('cam', CAMS, 'A');
-  let joy = pick('joy', JOYS, 'J1');
+  let cam = pick('cam', CAMS, 'C');
+  let joy = pick('joy', JOYS, 'J3');
   const C: Cam = { ...CAMS[cam].params };
   const J: Joy = { ...JOYS[joy].params };
   Object.assign(globalThis, { protoCam: C });
@@ -93,8 +96,11 @@ export async function openSprintCameraPrototype(): Promise<void> {
   label.id = 'sc-label';
   document.body.append(label);
   const bar = document.getElementById('proto-bar') as HTMLElement;
+  // the landscape presets are settled (C3); drop their buttons
+  for (const b of bar.querySelectorAll<HTMLElement>('button[data-v^="C"]')) if (b.dataset.v !== 'C') b.remove();
 
   const applyJoy = () => {
+    app.input.fullPush = J.fullPush;
     Object.assign(land.P, { joyPortrait: J.joyPortrait, joySize: J.joySize, sprintForce: J.sprintForce });
     root.classList.toggle('sc-ring', J.showRing);
     root.style.setProperty('--sf', String(J.sprintForce));
@@ -169,6 +175,7 @@ export async function openSprintCameraPrototype(): Promise<void> {
   fj.add(J, 'joyPortrait', 90, 200, 5).name('size portrait px').onChange(applyJoy);
   fj.add(J, 'joySize', 90, 200, 5).name('size landscape px').onChange(applyJoy);
   fj.add(J, 'sprintForce', 1, 2, 0.05).name('sprint past ring ×').onChange(applyJoy);
+  fj.add(J, 'fullPush', 0.3, 1, 0.05).name('full walk at push ×').onChange(applyJoy);
   fj.add(J, 'showRing').name('draw sprint ring').onChange(applyJoy);
 
   // per frame: sprint class for the ring, sprint zoom around whatever zoom the player picked

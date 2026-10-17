@@ -30,6 +30,8 @@ export class Input {
   readonly held = { take: false, give: false };
   /** PROTOTYPE: false = a short press on the joystick zone is never a Tap Walk. */
   tapsOnZone = true;
+  /** PROTOTYPE: push (share of the ring) that already gives full walk speed. */
+  fullPush = 1;
 
   constructor(private readonly zone: HTMLElement) {
     addEventListener('keydown', (e) => {
@@ -74,7 +76,7 @@ export class Input {
       this.joy.active = true;
       // half push = half speed
       this.joy.force = e.data.force;
-      const k = Math.min(1, e.data.force);
+      const k = Math.min(1, e.data.force / this.fullPush);
       this.joy.x = e.data.vector.x * k;
       this.joy.y = e.data.vector.y * k;
     });

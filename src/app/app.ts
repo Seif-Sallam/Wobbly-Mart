@@ -214,6 +214,7 @@ export class App {
     requestAnimationFrame(loop);
     Object.assign(window, { app: this, game: this.game });
     const params = new URLSearchParams(location.search);
+    if (params.get('map') === 'tutorial') void import('./tutorial-switch').then((m) => m.installTutorialSwitch());
     if (params.has('debug'))
       void import('./debug').then(
         (m) =>
@@ -545,7 +546,8 @@ export class App {
       id === live?.map.id ? live.owned.has('exit') : !!this.save.maps[id]?.owned.includes('exit');
     this.ui.maps = MAPS.map((map, i) => ({
       map,
-      visited: this.save.visited.includes(map.id) || (i > 0 && exitBought(MAPS[i - 1].id)),
+      // PROTOTYPE (prototype/tutorial-layout): the Tutorial Map comes first, but the Corner Shop never waits on it
+      visited: i <= 1 || this.save.visited.includes(map.id) || (i > 0 && exitBought(MAPS[i - 1].id)),
       completion:
         map.id === live?.map.id
           ? completion(live)

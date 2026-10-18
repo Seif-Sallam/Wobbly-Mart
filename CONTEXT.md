@@ -167,7 +167,7 @@ A fixed goal on a **Map** (sell 100 Eggs, earn $5,000…), done once and kept; s
 A short, timed, optional task that pops up during play, one at a time (check out 5 Customers in 60 s, fill one named **Shelf**…). Never offered when impossible right now; paused while **Closed**. Winning earns **Score** and a little **Money**; failing costs nothing.
 
 **Score**:
-Points per **Map** for **Objectives**, won **Challenges**, handled **Events** and each quarter of **Completion**; never goes down. The game's total is the sum over Maps. The **Tutorial Map** has none.
+Points per **Map** for **Objectives**, won **Challenges**, handled **Events** and each quarter of **Completion**; never goes down. The game's total is the sum over Maps. The **Tutorial Map** shows practice Score but keeps none.
 _Avoid_: rating, stars
 
 **Stats**:

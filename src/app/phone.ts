@@ -8,6 +8,13 @@ export const isTouch =
 /** Phone landscape: a touch screen wider than tall. */
 export const layout = { land: false };
 
+/** Safe-area insets in px (notch side included). */
+export function insets(): { top: number; right: number; bottom: number; left: number } {
+  const probe = document.getElementById('insets') ?? document.body.appendChild(Object.assign(document.createElement('div'), { id: 'insets' }));
+  const s = getComputedStyle(probe);
+  return { top: parseFloat(s.paddingTop), right: parseFloat(s.paddingRight), bottom: parseFloat(s.paddingBottom), left: parseFloat(s.paddingLeft) };
+}
+
 /** Runs `onChange` now and whenever the window changes shape. */
 export function watchLayout(onChange: () => void): void {
   const root = document.documentElement;

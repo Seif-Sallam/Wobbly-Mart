@@ -29,7 +29,7 @@ import { loadAssets } from '../view/assets';
 import { emojiUrl, iconUrl, renderThumbs } from '../view/thumbs';
 import { moodOf } from '../view/receipt';
 import { Input } from '../input/input';
-import { isTouch, layout, watchLayout } from './phone';
+import { insets, isTouch, layout, watchLayout } from './phone';
 import { Game } from './game';
 import { EditLayout } from './edit-layout';
 import {
@@ -58,6 +58,12 @@ const TITLE_PAN_SPEED = 0.12;
 const SCENERY_PEOPLE = 4;
 /** How quickly the measured screen tick follows changes (it varies with ProMotion and throttling). */
 const TICK_FOLLOW = 0.05;
+
+/** Phones play fullscreen. iPhone Safari has no Fullscreen API, and an installed app already is. */
+const canFullscreen = (): boolean =>
+  isTouch &&
+  !!document.documentElement.requestFullscreen &&
+  !matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
 
 const tutorKey = (map: string, step: number): string => `tutor.${map}.${step}`;
 
@@ -100,7 +106,7 @@ export class App {
 
   constructor() {
     this.stage = new Stage(document.getElementById('scene') as HTMLCanvasElement);
-    this.input = new Input(document.getElementById('joy') as HTMLElement);
+    this.input = new Input(document.getElementById('joy') as HTMLElement, document.getElementById('grab-ring') as HTMLElement);
     this.hud = new Hud(document.getElementById('hud') as HTMLElement);
     this.hud.visible(false);
     this.uiRoot = document.getElementById('ui') as HTMLElement;
@@ -113,6 +119,8 @@ export class App {
     this.input.onTap = (x, y, double) => {
       const game = this.game;
       if (!game || this.ui.screen !== 'game' || game.paused || this.editing) return;
+      // with a stick, floor taps never walk
+      if (isTouch && this.settings.joystick !== 'off') return;
       const p = this.stage.floorAt(x, y);
       if (p) this.input.tap.start(game.world, p, double);
     };
@@ -272,6 +280,7 @@ export class App {
     this.sounds.unlock(this.settings);
     this.ui.wipe = true;
     this.renderUi();
+    if (canFullscreen()) void document.documentElement.requestFullscreen().catch(() => {});
     document.querySelector('.logo')?.classList.add('wobble');
     setTimeout(() => {
       this.openMap(this.currentMap());
@@ -323,6 +332,10 @@ export class App {
     this.sounds.frame(events, w, (p) => this.onScreen(p), dt);
     this.hud.update(dt, w.money, completion(w));
     document.documentElement.classList.toggle('sprinting', w.player.sprinting);
+    document.documentElement.classList.toggle('joying', this.input.joyHeld);
+    // leaving fullscreen on a phone pauses behind a "Tap to play fullscreen" card
+    if (!this.ui.overlay && !this.editing && !this.layout?.open && canFullscreen() && !document.fullscreenElement)
+      this.openOverlay('fullscreen');
     // Office opens on reaching the desk; after X it stays shut until the Player walks away and back.
     if (!w.atOffice) this.officeDismissed = false;
     const office = w.atOffice && !this.officeDismissed;
@@ -563,7 +576,7 @@ export class App {
   }
 
   private escape(): void {
-    if (this.ui.screen !== 'game') return;
+    if (this.ui.screen !== 'game' || this.ui.overlay === 'fullscreen') return;
     if (this.layout?.open) return this.layout.escape();
     if (this.ui.overlay) this.openOverlay(this.ui.overlay === 'pause' ? null : 'pause');
     else if (this.ui.office) {
@@ -591,6 +604,10 @@ export class App {
     layoutDone: () => this.layout?.done(),
     assign: (stocker, role) => this.game?.assign(stocker, role),
     setSetting: (key, value) => this.setSetting(key, value),
+    playFullscreen: () => {
+      void document.documentElement.requestFullscreen().catch(() => {});
+      this.openOverlay(null);
+    },
     fullscreen: () => {
       if (document.fullscreenElement) void document.exitFullscreen();
       else void document.documentElement.requestFullscreen?.();
@@ -654,8 +671,18 @@ export class App {
     this.stage.zoomTo(this.viewZoom());
     if (this.game) {
       this.game.view.padScale = layout.land ? FEEL.landPadScale : 1;
-      this.game.manualGrab = !isTouch && this.settings.manualGrab;
+      this.game.manualGrab = this.settings.manualGrab && (!isTouch || layout.land);
     }
+    const root = document.documentElement;
+    root.classList.toggle('joy-off', isTouch && this.settings.joystick === 'off');
+    root.classList.toggle('joy-free', layout.land && this.settings.joystick === 'free');
+    root.style.setProperty('--joy-zone', String(FEEL.joyZone));
+    root.style.setProperty('--joy-size', `${FEEL.joyLandscape}px`);
+    root.style.setProperty('--joy-left', `${FEEL.joyRestLeft}px`);
+    root.style.setProperty('--joy-bottom', `${FEEL.joyRestBottom}px`);
+    root.style.setProperty('--grab-ring', `${FEEL.grabRing}px`);
+    this.input.holdGrab = layout.land && this.settings.manualGrab;
+    this.input.setJoystick(this.settings.joystick, layout.land, insets());
     this.redraw = true;
   }
 
@@ -674,6 +701,7 @@ export class App {
   }
 
   private renderUi(): void {
+    document.documentElement.classList.toggle('on-title', this.ui.screen !== 'game');
     renderUi(this.uiRoot, this.ui, this.actions, this.ui.screen === 'game' ? (this.game?.world ?? null) : null);
   }
 }

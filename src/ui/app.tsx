@@ -11,7 +11,7 @@ import { Logo } from './logo';
 import { GEAR } from './hud';
 import { CREDITS } from '../../catalog/credits';
 
-export type Overlay = 'pause' | 'settings' | 'maps' | 'credits' | 'controls' | 'paste' | 'home-tip';
+export type Overlay = 'pause' | 'settings' | 'maps' | 'credits' | 'controls' | 'paste' | 'home-tip' | 'fullscreen';
 
 export interface UiState {
   screen: 'title' | 'game';
@@ -61,6 +61,8 @@ export interface UiActions {
   assign: (stocker: string, role: StockerRole) => void;
   setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
   fullscreen: () => void;
+  /** Enter fullscreen and resume (the pause card). */
+  playFullscreen: () => void;
   copySave: () => Promise<boolean>;
   pasteSave: (code: string) => string | null;
   resetProgress: () => void;
@@ -308,14 +310,23 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
       />
       <Toggle label="Music" on={s.settings.music} set={(v) => a.setSetting('music', v)} actions={a} />
       <Toggle label="Sounds" on={s.settings.sounds} set={(v) => a.setSetting('sounds', v)} actions={a} />
-      {!s.touch && (
+      {s.touch && (
         <Toggle
-          label="Manual grab (hold Space)"
-          on={s.settings.manualGrab}
-          set={(v) => a.setSetting('manualGrab', v)}
+          label="Joystick"
+          on={s.settings.joystick !== 'off'}
+          text={{ fixed: 'Fixed', free: 'Free', off: 'Off' }[s.settings.joystick]}
+          set={() =>
+            a.setSetting('joystick', ({ fixed: 'free', free: 'off', off: 'fixed' } as const)[s.settings.joystick])
+          }
           actions={a}
         />
       )}
+      <Toggle
+        label={s.touch ? 'Manual grab (hold right side, landscape)' : 'Manual grab (hold Space)'}
+        on={s.settings.manualGrab}
+        set={(v) => a.setSetting('manualGrab', v)}
+        actions={a}
+      />
       <FrameRate s={s} a={a} />
       <Toggle
         label="Battery saver"
@@ -421,12 +432,17 @@ function Maps({ s, a }: { s: UiState; a: UiActions }) {
   );
 }
 
-function Controls({ a, touch }: { a: UiActions; touch: boolean }) {
+function Controls({ a, touch, stick }: { a: UiActions; touch: boolean; stick: boolean }) {
   return (
     <div class="panel">
       <h2>Controls</h2>
       {touch ? (
-        <p>Drag anywhere to walk. Walk near things to use them.</p>
+        <p>
+          {stick
+            ? 'Drag the stick to walk; push past the dashed ring to sprint.'
+            : 'Tap the floor to walk; double-tap to sprint.'}{' '}
+          Walk near things to use them.
+        </p>
       ) : (
         <ul class="controls">
           <li>
@@ -690,10 +706,15 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
               </Btn>
             </div>
           )}
+          {overlay === 'fullscreen' && (
+            <Btn class="big buy" actions={a} onClick={a.playFullscreen}>
+              ⛶ Tap to play fullscreen
+            </Btn>
+          )}
           {overlay === 'settings' && <Settings s={s} a={a} />}
           {overlay === 'maps' && <Maps s={s} a={a} />}
           {overlay === 'credits' && <Credits a={a} />}
-          {overlay === 'controls' && <Controls a={a} touch={s.touch} />}
+          {overlay === 'controls' && <Controls a={a} touch={s.touch} stick={s.settings.joystick !== 'off'} />}
           {overlay === 'paste' && <Paste a={a} />}
           {overlay === 'home-tip' && <HomeTip a={a} />}
         </div>

@@ -3,6 +3,7 @@
 import nipplejs from 'nipplejs';
 import { FEEL } from '../feel';
 import { PALETTE } from '../palette';
+import type { Settings } from '../sim/save';
 import type { World } from '../sim/world';
 import { TapWalk } from './tap-walk';
 
@@ -26,8 +27,17 @@ export class Input {
   enabled = true;
   private pinch = 0;
   private manager: ReturnType<typeof nipplejs.create> | null = null;
+  private joyKey = '';
+  /** A finger is on the stick. */
+  joyHeld = false;
+  /** Manual grab on landscape phones is on: a finger held right of the stick's zone acts as Space. */
+  holdGrab = false;
+  private holding = false;
 
-  constructor(zone: HTMLElement) {
+  constructor(
+    private readonly zone: HTMLElement,
+    ring: HTMLElement,
+  ) {
     addEventListener('keydown', (e) => {
       if ((e.target as HTMLElement).closest?.('input, textarea')) return;
       if (e.code === 'Escape') {
@@ -46,15 +56,53 @@ export class Input {
     addEventListener('blur', () => this.keys.clear());
     this.pinchZoom();
     this.taps(zone);
-    this.joystick(zone, FEEL.joyPortrait);
+    this.holdToGrab(ring);
+    this.joystick(FEEL.joyPortrait);
+  }
+
+  /** Landscape: Fixed rests bottom-left, Free appears under the thumb; portrait always follows the thumb. Rebuilds only
+   * when something changed. `inset` is the safe area (px). */
+  setJoystick(mode: Settings['joystick'], land: boolean, inset: { left: number; bottom: number }): void {
+    const key = `${mode}|${land}|${inset.left}|${inset.bottom}`;
+    if (key === this.joyKey) return;
+    this.joyKey = key;
+    const rest =
+      land && mode === 'fixed'
+        ? { left: inset.left + FEEL.joyRestLeft, bottom: inset.bottom + FEEL.joyRestBottom }
+        : undefined;
+    this.joystick(land ? FEEL.joyLandscape : FEEL.joyPortrait, rest);
+  }
+
+  /** A finger held on the game right of the stick's zone is Space, with a faint ring under it. */
+  private holdToGrab(ring: HTMLElement): void {
+    let id: number | null = null;
+    addEventListener(
+      'pointerdown',
+      (e) => {
+        if (!this.holdGrab || id !== null || !(e.target instanceof HTMLCanvasElement)) return;
+        if (e.clientX < innerWidth * FEEL.joyZone) return;
+        id = e.pointerId;
+        this.holding = true;
+        Object.assign(ring.style, { left: `${e.clientX}px`, top: `${e.clientY}px`, opacity: '0.35' });
+      },
+      true,
+    );
+    const end = (e: PointerEvent) => {
+      if (e.pointerId !== id) return;
+      id = null;
+      this.holding = false;
+      ring.style.opacity = '0';
+    };
+    addEventListener('pointerup', end, true);
+    addEventListener('pointercancel', end, true);
   }
 
   /** (Re)builds the thumb stick: it appears under the thumb, or sits at `rest` (px from the zone's bottom-left). */
-  joystick(zone: HTMLElement, size: number, rest?: { left: number; bottom: number }): void {
+  private joystick(size: number, rest?: { left: number; bottom: number }): void {
     this.manager?.destroy();
     this.joy = { x: 0, y: 0, active: false, force: 0 };
     const manager = nipplejs.create({
-      zone,
+      zone: this.zone,
       color: PALETTE.ink,
       size,
       ...(rest
@@ -71,7 +119,9 @@ export class Input {
       this.joy.x = e.data.vector.x * k;
       this.joy.y = e.data.vector.y * k;
     });
+    manager.on('start', () => (this.joyHeld = true));
     manager.on('end', () => {
+      this.joyHeld = false;
       this.joy = { x: 0, y: 0, active: false, force: 0 };
     });
   }
@@ -116,7 +166,8 @@ export class Input {
     addEventListener(
       'touchstart',
       (e) => {
-        if (e.touches.length !== 2) return;
+        // a thumb on the stick plus a second finger is never a pinch
+        if (e.touches.length !== 2 || this.joyHeld) return;
         this.pinch = spread(e.touches);
         this.enabled = false;
       },
@@ -178,7 +229,7 @@ export class Input {
   }
 
   get grab(): boolean {
-    return this.keys.has('Space');
+    return this.keys.has('Space') || this.holding;
   }
 
   get touch(): boolean {

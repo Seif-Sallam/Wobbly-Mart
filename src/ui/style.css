@@ -1099,3 +1099,56 @@ html.pl .panel.settings > .back {
 html.pl .office.side {
   padding: 56px max(14px, var(--sr)) 14px 14px;
 }
+
+/* ---------- joystick: Landscape zone, Free's resting ring, Off, and the Manual grab ring */
+html.pl #joy {
+  right: calc((1 - var(--joy-zone)) * 100%);
+}
+html.joy-off #joy,
+html.on-title #joy,
+html.on-title #joy-rest {
+  display: none;
+}
+#joy-rest {
+  position: fixed;
+  z-index: 1;
+  pointer-events: none;
+  display: none;
+  width: var(--joy-size);
+  height: var(--joy-size);
+  left: calc(var(--sl, 0px) + var(--joy-left) - var(--joy-size) / 2);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--joy-bottom) - var(--joy-size) / 2);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 25%, transparent);
+}
+#joy-rest::after {
+  content: '';
+  position: absolute;
+  inset: 25%;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 50%, transparent);
+}
+html.pl.joy-free #joy-rest {
+  display: block;
+}
+html.joying #joy-rest {
+  opacity: 0;
+}
+#grab-ring {
+  position: fixed;
+  z-index: 1;
+  width: var(--grab-ring);
+  height: var(--grab-ring);
+  margin: calc(var(--grab-ring) / -2) 0 0 calc(var(--grab-ring) / -2);
+  border: 2px solid var(--cream);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+#insets {
+  position: fixed;
+  visibility: hidden;
+  pointer-events: none;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
+}

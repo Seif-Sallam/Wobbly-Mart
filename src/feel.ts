@@ -10,6 +10,12 @@ export const FEEL = {
   joyLandscape: 115,
   sprintForce: 1.5,
   joyFullPush: 0.6,
+  /** Landscape: the stick's zone is this share of the width from the left; Fixed rests with its centre this far (px)
+   * from the left and bottom (plus safe area). A Manual grab hold shows a ring this size (px). */
+  joyZone: 0.45,
+  joyRestLeft: 110,
+  joyRestBottom: 130,
+  grabRing: 44,
   sprintPuffGap: 0.12,
   walkBob: 0.05,
   // camera

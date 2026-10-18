@@ -43,6 +43,8 @@ export interface Settings {
   frameCap: 'screen' | number;
   /** Forces the 45 fps cap, pixel ratio 1 and hard shadows. */
   batterySaver: boolean;
+  /** Touch: Fixed rests bottom-left (landscape; portrait acts like Free), Free appears under the thumb, Off = Tap Walk only. */
+  joystick: 'fixed' | 'free' | 'off';
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -53,6 +55,7 @@ export const DEFAULT_SETTINGS: Settings = {
   hudScale: 1,
   frameCap: 'screen',
   batterySaver: false,
+  joystick: 'fixed',
 };
 
 export const SAVE_VERSION = 3;

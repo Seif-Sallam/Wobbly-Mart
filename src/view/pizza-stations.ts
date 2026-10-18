@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { SHADES } from '../palette';
 import { ITEM_SIZE } from '../../catalog/assets';
+import { dynamic, moving } from './merge';
 import { box, cone, cyl, put, sph, torus, withTray, type JuiceStation } from './juice-stations';
 
 const Z = SHADES.pizza;
@@ -22,7 +23,7 @@ const group = (p: THREE.Object3D, x = 0, y = 0, z = 0) => {
 
 /** Rising puffs over a spot; returns the per-frame update. */
 function puffs(p: THREE.Object3D, x: number, y: number, z: number, rise = 0.8, n = 4) {
-  const ps = Array.from({ length: n }, () => sph(p, 0.09, smoke, x, y, z, 1));
+  const ps = Array.from({ length: n }, () => dynamic(sph(p, 0.09, smoke, x, y, z, 1)));
   return (t: number, on: boolean) =>
     ps.forEach((m, i) => {
       const k = (t * 0.6 + i / n) % 1;
@@ -34,7 +35,7 @@ function puffs(p: THREE.Object3D, x: number, y: number, z: number, rise = 0.8, n
 
 /** Licking flames: cones that flicker in height. */
 function flames(p: THREE.Object3D, spots: [number, number][], y: number, r: number) {
-  const f = spots.map(([x, z], i) => cone(p, r, 0.3, glow(i % 2 ? Z.fire : Z.fireCore), x, y, z, 6));
+  const f = spots.map(([x, z], i) => dynamic(cone(p, r, 0.3, glow(i % 2 ? Z.fire : Z.fireCore), x, y, z, 6)));
   return (t: number, on: boolean) =>
     f.forEach((m, i) => (m.scale.y = (on ? 1 : 0.4) * (0.75 + Math.sin(t * 13 + i * 2) * 0.25)));
 }
@@ -109,6 +110,8 @@ function palestineFlag(g: THREE.Object3D, x: number, y: number, z: number, pole:
     segs.push(seg);
     parent = seg;
   }
+  // innermost first, so each segment merges only its own cloth
+  for (const seg of [...segs].reverse()) moving(seg);
   return segs;
 }
 
@@ -198,8 +201,9 @@ function oliveTree(w: number, d: number): JuiceStation {
     const o = group(top, Math.cos(a) * 0.55, -0.36, Math.sin(a) * 0.55);
     for (let k = 0; k < 3; k++)
       sph(o, 0.07, m, Math.cos(k * 2.1) * 0.06, -0.05, Math.sin(k * 2.1) * 0.06, 1).scale.set(1, 1.3, 1);
-    return { o, m };
+    return { o: moving(o), m };
   });
+  moving(top);
   // where ripe olives lie to be picked: the soil under the canopy
   const plants = [0, 1, 2, 3].map((i) => {
     const a = (i / 4) * Math.PI * 2 + 0.4;
@@ -240,12 +244,13 @@ function saucePot(): JuiceStation {
   const top = 1.22;
   cyl(g, 0.44, 0.02, gloss(Z.sauce), 0, top);
   const bubbles = [0, 1, 2, 3, 4].map((i) =>
-    sph(g, 0.06, gloss(Z.sauceDark), Math.cos(i * 2) * 0.25, top, Math.sin(i * 2) * 0.25, 0),
+    dynamic(sph(g, 0.06, gloss(Z.sauceDark), Math.cos(i * 2) * 0.25, top, Math.sin(i * 2) * 0.25, 0)),
   );
   const stir = group(g, 0, top, 0);
   const arm = group(stir, 0.18, 0, 0);
   cyl(arm, 0.025, 0.75, Z.wood, 0, -0.1, 0).rotation.z = -0.35;
   sph(arm, 0.08, Z.wood, -0.05, -0.08, 0, 1).scale.set(1, 0.5, 1);
+  moving(stir);
   const puff = puffs(g, 0, top + 0.1, 0);
   return {
     group: g,
@@ -270,11 +275,13 @@ function doughMixer(): JuiceStation {
   const bowl = group(g, 0, 0.66, 0.05);
   cyl(bowl, 0.45, 0.4, gold, 0, 0, 0, 0.35, 20);
   sph(bowl, 0.3, Z.dough, 0.08, 0.34, 0, 2).scale.set(1, 0.5, 1);
+  moving(bowl);
   box(g, 0.25, 1.0, 0.3, gloss(Z.tile), 0, 0.6, -0.45);
   box(g, 0.3, 0.25, 0.75, gloss(Z.cobalt), 0, 1.5, -0.15);
   const hook = group(g, 0.1, 1.5, 0.12);
   for (let i = 0; i < 4; i++) torus(hook, 0.07, 0.022, gold, 0, -0.15 - i * 0.12);
   cyl(hook, 0.025, 0.55, gold, 0.07, -0.55);
+  moving(hook);
   return {
     group: g,
     animate: (dt, _t, wk) => {
@@ -294,6 +301,9 @@ function peel(g: THREE.Object3D, veggie: boolean, y: number, zIn: number, zOut: 
   raw.position.y = baked.position.y = 0.02;
   raw.scale.setScalar(0.9);
   baked.scale.setScalar(0.9);
+  moving(raw);
+  moving(baked);
+  moving(pl);
   return (t: number, on: boolean) => {
     const k = on ? (t * 0.35) % 1 : 0;
     pl.position.z = zOut + (zIn - zOut) * Math.sin(k * Math.PI);
@@ -338,7 +348,7 @@ function pizzaOven(veggie: boolean): JuiceStation {
   put(g, new THREE.Mesh(new THREE.TorusGeometry(half + 0.04, 0.05, 8, 20, Math.PI), band), 0, domeY + rise, face);
   for (const x of [-1, 1]) box(g, 0.1, rise, 0.1, band, x * (half + 0.04), domeY, face);
   box(g, half * 2 + 0.3, 0.06, 0.22, band, 0, domeY - 0.06, face + 0.02);
-  const ember = box(g, half * 1.6, 0.03, 0.02, glow(Z.fire), 0, domeY + 0.005, face + 0.005);
+  const ember = dynamic(box(g, half * 1.6, 0.03, 0.02, glow(Z.fire), 0, domeY + 0.005, face + 0.005));
   const fire = flames(
     g,
     [-0.12, 0, 0.12].map((x) => [x, face + 0.01]),

@@ -15,6 +15,8 @@ export class Character {
   private bob = 0;
   private hop = 0;
   private cap: THREE.Mesh[] = [];
+  /** Runs after the clips each frame, to pose bones on top of them. */
+  afterClips: ((visual: THREE.Group, dt: number) => void) | null = null;
 
   hatColour: string;
   /** Height of the model's top (m), for placing things on its head. */
@@ -95,5 +97,6 @@ export class Character {
     this.weight('emote-no', 0, dt);
     this.actions.get('walk')?.setEffectiveTimeScale(Math.max(0.6, speed / 3));
     this.mixer.update(dt);
+    this.afterClips?.(this.visual, dt);
   }
 }

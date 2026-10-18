@@ -115,6 +115,10 @@ export const FEEL = {
   layoutBob: 5.5,
   layoutGhostOpacity: 0.85,
   layoutReasonTime: 2.2,
+  // Cashier "Bag" pose while the Register works: arms forward (rad), torso turns belt to tray (rad) at rate
+  // (cycles/s), eases in/out over bagEase (s); cheer = emote('yes') per finished Customer
+  bag: { lift: 0.9, rate: 1.4, turn: 0.55, cheer: true },
+  bagEase: 0.125,
   // Delivery cars: drive in / off (s), parking bounce height (m), squash per Item, wonk (cabin tilt, rad; body height ±share)
   carDriveIn: 1.6,
   carDriveOff: 1.4,

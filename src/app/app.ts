@@ -27,6 +27,7 @@ import { MAPS, mapById } from '../../maps';
 import { Stage } from '../view/stage';
 import { loadAssets } from '../view/assets';
 import { emojiUrl, iconUrl, renderThumbs } from '../view/thumbs';
+import { renderStaffIcons } from '../view/staff-icons';
 import { moodOf } from '../view/receipt';
 import { Input } from '../input/input';
 import { Game } from './game';
@@ -255,7 +256,8 @@ export class App {
       }
       for (const p of Object.values(m.producers)) stations.add(p.model);
     }
-    renderThumbs([...items], [...stations], ['employee', 'van', 'player']);
+    renderThumbs([...items], [...stations], ['van', 'player']);
+    renderStaffIcons();
   }
 
   private currentMap(): MapDef {
@@ -412,7 +414,7 @@ export class App {
       const name = def
         ? stationModel(w.map, def)
         : stationModel(w.map, w.map.freeStations[id]?.unlocks ?? { kind: 'office' });
-      return iconUrl(name ?? (def?.kind === 'exit' ? 'van' : 'employee'));
+      return iconUrl(name ?? (def?.kind === 'exit' ? 'van' : `staff-${def?.kind}`));
     };
     const step = tutorialStep(w);
     const closed = step === this.tutorNexted || seen(tutorKey(w.map.id, step));

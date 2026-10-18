@@ -10,6 +10,7 @@ import { Stage } from './stage';
 import { Level } from './level';
 import { Juice } from './juice';
 import { Character } from './characters';
+import { CashierBag } from './cashier-bag';
 import { CleaningLook, HeldMop } from './cleaning';
 import { LayoutGhost } from './layout-ghost';
 import { PadVisual } from './pads';
@@ -101,7 +102,7 @@ export class WorldView {
   private playerStack = newStack();
   private sprintPuff = 0;
   private customers = new Map<number, CustomerLook>();
-  private staff = new Map<string, { ch: Character; stack: StackLook }>();
+  private staff = new Map<string, { ch: Character; stack: StackLook; bag?: CashierBag }>();
   private cleaners = new Map<string, { ch: Character; mop: HeldMop }>();
   private cleaning = new CleaningLook();
   private thief: { look: ThiefLook; stack: StackLook } | null = null;
@@ -325,6 +326,11 @@ export class WorldView {
     }
   }
 
+  private cashierOf(register: string): Character | undefined {
+    const c = this.w.cashiers.find((k) => k.register === register);
+    return c && this.staff.get(c.id)?.ch;
+  }
+
   private padFor(id: string): PadVisual {
     let pad = this.pads.get(id);
     if (pad) return pad;
@@ -341,7 +347,11 @@ export class WorldView {
     }
     const iconName =
       name ??
-      (['cashier', 'stocker', 'cleaner'].includes(def.kind) ? 'employee' : def.kind === 'exit' ? 'van' : 'area');
+      (['cashier', 'stocker', 'cleaner'].includes(def.kind)
+        ? `staff-${def.kind}`
+        : def.kind === 'exit'
+          ? 'van'
+          : 'area');
     const [x, z] = boxCentre(place.box);
     pad = new PadVisual(x, z, iconName, ghost);
     this.pads.set(id, pad);
@@ -533,6 +543,7 @@ export class WorldView {
         this.juice.money(e.register, e.amount, new THREE.Vector3(x, 1.8, z));
         this.juice.coin(new THREE.Vector3(x, 1.2, z));
         this.customers.get(e.customer)?.ch.emote('yes');
+        if (FEEL.bag.cheer) this.cashierOf(e.register)?.emote('yes');
         break;
       }
       case 'cashCollect': {
@@ -983,13 +994,15 @@ export class WorldView {
     for (const c of w.cashiers) {
       let look = this.staff.get(c.id);
       if (!look) {
-        look = { ch: new Character('employee', { hat: SHADES.white }), stack: newStack() };
+        look = { ch: new Character('employee', { hat: SHADES.white }), stack: newStack(), bag: new CashierBag() };
+        look.ch.afterClips = look.bag?.apply ?? null;
         look.ch.facing = Math.PI;
         this.staff.set(c.id, look);
         this.root.add(look.ch.root);
       }
       const reg = w.stations.get(c.register);
       if (reg) look.ch.facing = Math.atan2(reg.box[0] + reg.box[2] / 2 - c.x, reg.box[1] + reg.box[3] / 2 - c.z);
+      if (look.bag) look.bag.serving = reg?.kind === 'register' && reg.progress > 0;
       look.ch.update(dt, c.x, c.z, 0, 0, false);
     }
     // blob shadows

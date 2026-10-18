@@ -73,6 +73,17 @@ function addCustomer(w: World, list: ListEntry[], home: Point, patienceLimit: nu
   w.customers.push(c);
 }
 
+/** Caps premium Items (pizzas) on a list: `max` in total at `maxChance`, else 1; extra premium lines are dropped. */
+function premiumUnits(w: World, list: ListEntry[]): void {
+  const premium = list.filter((l) => w.map.products[l.product].premium);
+  if (!premium.length) return;
+  const units = nextRandom(w) < TUNING.premium.maxChance ? TUNING.premium.max : 1;
+  premium.forEach((l, i) => {
+    l.want = i === 0 ? Math.max(1, units - (premium.length - 1)) : 1;
+    if (i >= units) list.splice(list.indexOf(l), 1);
+  });
+}
+
 function spawn(w: World): void {
   const forSale = productsForSale(w);
   const n = weighted(w, TUNING.listProducts.slice(0, forSale.length)) + 1;
@@ -85,6 +96,7 @@ function spawn(w: World): void {
       want,
       got: 0,
     }));
+  premiumUnits(w, list);
   const spots = w.map.layout.streetSpots;
   const home = spots[Math.floor(nextRandom(w) * spots.length)];
   const patienceLimit =

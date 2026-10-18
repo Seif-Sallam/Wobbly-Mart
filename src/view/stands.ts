@@ -8,6 +8,7 @@ import { PALETTE, SHADES } from '../palette';
 import { FEEL } from '../feel';
 import { dynamic } from './merge';
 import { slab } from './shapes';
+import { buildPizzaShelf, PIZZA_SHELF_PRODUCTS, type PizzaShelfProduct } from './pizza-shelves';
 import type { StationVisual } from './stations';
 
 /** Item height and gap between neighbours on a stand, in base Item sizes. */
@@ -126,6 +127,7 @@ function slotsFor(product: ProductId, tiers: Tier[], w: number, cap: number): TH
 }
 
 export function buildStand(product: ProductId, w: number, d: number, v: StationVisual): void {
+  if (PIZZA_SHELF_PRODUCTS.includes(product)) return buildPizzaShelf(product as PizzaShelfProduct, w, d, v);
   const tiers = stand(product, w, d, v);
   // Product-coloured sign on a post at the back
   slab(v.body, 0.06, 1.75, 0.06, 'woodDark', 0, 0, -d / 2 - 0.05);

@@ -38,6 +38,8 @@ export const TUNING = {
   capCashierFactor: 1.3,
   /** Shopping List weights: Product count 1–4, then units 1–4 by Product count. */
   listProducts: [30, 35, 25, 10],
+  /** Premium Items (pizzas): at most `max` per Customer across all of them; that many only at `maxChance`, else 1. */
+  premium: { max: 2, maxChance: 0.3 },
   listUnits: [
     [5, 15, 25, 55],
     [10, 25, 55, 10],
@@ -90,7 +92,9 @@ export const TUNING = {
   },
   looseTakeRadius: 0.8,
   /** Stocker job tiers are tierGap apart, so fill and distance (× distanceWeight per m) only order within one. */
-  urgency: { tierGap: 10, distanceWeight: 0.01 },
+  /** Stocker job scores (lower first): tiers `tierGap` apart; within a tier, each input a Producer needs beyond the
+   *  first pulls it `extraInput` sooner, so multi-ingredient machines get fed first. */
+  urgency: { tierGap: 10, distanceWeight: 0.01, extraInput: 0.25 },
   /** Seconds a Stocker holds a whole Stack of leftovers before putting them back on a Tray or in the Trash. */
   leftoverTime: 10,
   stockerRethink: 0.5,

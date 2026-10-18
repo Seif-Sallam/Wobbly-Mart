@@ -74,7 +74,8 @@ function urgency(w: World, st: Station, product: string): number {
   const type = w.map.producers[st.type];
   const d = demand(w, type.output);
   if (d === Infinity) return Infinity;
-  return d === 0 ? TIER.bottleneck * gap + (st.input[product] ?? 0) / INPUT_CAP : TIER.input * gap + d / 3; // d < 3
+  const recipe = (type.inputs.length - 1) * TUNING.urgency.extraInput;
+  return (d === 0 ? TIER.bottleneck * gap + (st.input[product] ?? 0) / INPUT_CAP : TIER.input * gap + d / 3) - recipe; // d < 3
 }
 
 function freeSpace(w: World, st: Station, product: string): number {

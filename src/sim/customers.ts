@@ -3,7 +3,7 @@ import type { Customer, ListEntry, RegisterStation, ShelfStation, World } from '
 import { DT } from './world';
 import { checkoutTime, customerCap, productsForSale } from './economy';
 import { distToBox, footprint, frontPoint } from './geometry';
-import { nextRandom, shuffle, weighted } from './rng';
+import { nextRandom, weighted, weightedShuffle } from './rng';
 import { walkAgent } from './walk';
 import { TUNING } from './tuning';
 import { addMess, inMess } from './cleaning';
@@ -88,7 +88,7 @@ function spawn(w: World): void {
   const forSale = productsForSale(w);
   const n = weighted(w, TUNING.listProducts.slice(0, forSale.length)) + 1;
   const want = weighted(w, TUNING.listUnits[n - 1]) + 1;
-  const list = shuffle(w, forSale)
+  const list = weightedShuffle(w, forSale, (p) => (w.map.products[p].premium ? TUNING.premium.weight : 1))
     .slice(0, n)
     .map((product) => ({
       product,

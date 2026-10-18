@@ -1103,6 +1103,16 @@ describe('Closed and Debt', () => {
 });
 
 describe('Edit Layout', () => {
+  test('a saved Move that a map update made overlap another fixture goes back to the map spot', () => {
+    const office = cornerShop.layout.places.office;
+    const stale: Placement = { box: [office.box[0], office.box[1], 3, 1], rot: 0 };
+    const kept: Placement = { box: [4.5, 9, 3, 1], rot: 0 };
+    const save = { ...snapshot(createWorld(cornerShop, null, 7)), owned: ['egg_shelf', 'tomato_shelf'] };
+    const w = createWorld(cornerShop, { ...save, layout: { egg_shelf: stale, tomato_shelf: kept } }, 7);
+    expect(w.stations.get('egg_shelf')?.box).toEqual(cornerShop.layout.places.egg_shelf.box);
+    expect(w.stations.get('tomato_shelf')?.box).toEqual(kept.box);
+  });
+
   test('Moves: where fixtures may go, the Register carries its Cashier, Moves cost money, the layout saves', () => {
     const w = createWorld(cornerShop, null, 7);
     for (const id of Object.keys(cornerShop.pads)) own(w, id, false);

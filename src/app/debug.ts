@@ -5,6 +5,7 @@ import { FEEL } from '../feel';
 import { TUNING } from '../sim/tuning';
 import { own } from '../sim/economy';
 import { areaOf } from '../sim/walk';
+import { shelfCap } from '../sim/map';
 
 const BUDGET = { phone: { calls: 100, triangles: 150_000 }, desktop: { calls: 300, triangles: 500_000 } };
 
@@ -75,6 +76,10 @@ export async function openDebug(game: Game, phone: boolean, hooks: DebugHooks): 
         st.plants.fill(0);
       }
     },
+    fillShelves: () => {
+      const w = game.world;
+      for (const st of w.stations.values()) if (st.kind === 'shelf') st.items = shelfCap(w.map, st.product);
+    },
     resetMap: () => hooks.resetMap(),
     openMaps: () => hooks.openMaps(),
   };
@@ -88,6 +93,7 @@ export async function openDebug(game: Game, phone: boolean, hooks: DebugHooks): 
     .name('no new Customers')
     .onChange((v: boolean) => !v && (game.world.arrivalTimer = 0));
   fCheat.add(cheats, 'fillProducers').name('fill Animals & Machines');
+  fCheat.add(cheats, 'fillShelves').name('fill all Shelves');
   fCheat.add(cheats, 'resetMap').name('reset this Map');
   fCheat.add(cheats, 'openMaps').name('open all Maps');
   fCheat.add(game, 'speed', 0.25, 30, 0.25).name('sim speed');

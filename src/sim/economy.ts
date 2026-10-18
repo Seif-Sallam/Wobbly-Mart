@@ -1,11 +1,11 @@
 // Ownership, prices, Upgrades, Completion — everything about what is bought.
-import type { MapDef, Point, StationDef } from './map';
+import type { MapDef, Placement, Point, StationDef } from './map';
 import type { Intents, Station, World } from './world';
 import { newCarrier, STOCKER_ROLES } from './world';
 import type { MapSave } from './save';
 import { objectiveId } from '../../catalog/objectives';
 import { restoreStats } from './stats';
-import { boxCentre, footprint, frontPoint } from './geometry';
+import { boxCentre, boxesOverlap, footprint, frontPoint } from './geometry';
 import { TUNING } from './tuning';
 import { FEEL } from '../feel';
 
@@ -108,13 +108,29 @@ export function refreshFreeStations(w: World): void {
   }
 }
 
+/** Saved Edit Layout moves that still fit: a map update may have put walls or other fixtures on an old spot.
+ *  A dropped move puts the fixture back at the map's own place (a Cashier follows its Register). */
+function keptMoves(map: MapDef, moves: Record<string, Placement>): Record<string, Placement> {
+  const L = map.layout;
+  const known = Object.entries(moves).filter(([id]) => id in map.pads && L.places[id]);
+  const spotOf = (id: string): Placement | undefined => moves[id] ?? L.places[id];
+  const fits = (id: string, p: Placement): boolean =>
+    !Object.keys(L.places).some((o) => o !== id && !!spotOf(o) && boxesOverlap(p.box, (spotOf(o) as Placement).box)) &&
+    !Object.values(L.walls).some((wall) => boxesOverlap(p.box, wall.box));
+  const kept = Object.fromEntries(known.filter(([id, p]) => fits(id, p)));
+  for (const id of Object.keys(kept)) {
+    const def = map.pads[id].unlocks;
+    if (def.kind === 'cashier' && moves[def.register] && !kept[def.register]) delete kept[id];
+  }
+  return kept;
+}
+
 /** Restores what a save keeps; drops unknown ids, clamps values. */
 export function applySave(w: World, save: MapSave): void {
   w.money = Number(save.money) || 0; // below 0 = Debt
   w.badReviewStreak = Math.max(0, Math.floor(Number(save.badReviewStreak) || 0));
   // moved places first, so Stations are created where they were left
-  for (const [id, p] of Object.entries(save.layout ?? {}))
-    if (id in w.map.pads && w.map.layout.places[id]) w.placed[id] = w.map.layout.places[id] = p;
+  for (const [id, p] of Object.entries(keptMoves(w.map, save.layout ?? {}))) w.placed[id] = w.map.layout.places[id] = p;
   w.movesUsed = Math.max(0, Math.floor(Number(save.movesUsed) || 0));
   const known = (id: string) => id in w.map.pads || Object.keys(w.map.layout.areas).includes(id);
   // Pads first in map order so Staff find their Registers

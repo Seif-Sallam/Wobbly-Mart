@@ -51,6 +51,11 @@ export class Game {
     this.commands.skipTutorial = true;
   }
 
+  /** Got it on a Lesson card. */
+  lessonNext(): void {
+    this.commands.lessonNext = true;
+  }
+
   assign(stocker: string, role: StockerRole): void {
     this.commands.assign = { stocker, role };
   }

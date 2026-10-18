@@ -65,6 +65,8 @@ export const FEEL = {
   tapBehindRegister: 0.5,
   /** Destination ring size (m), pulse, and the tapped Station's glow margin (m). */
   tapRing: 0.6,
+  /** Lesson target ring: size (m); it pulses like the Tap Walk ring. */
+  lessonRing: 0.8,
   tapRingPulse: 0.12,
   tapGlowMargin: 0.3,
   /** Delivery route line: width (m) and length of one dash plus gap (m). */

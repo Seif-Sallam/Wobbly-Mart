@@ -135,6 +135,9 @@ export class WorldView {
   /** Set by the app: tutorial / guidance target point, or null. */
   arrowTarget: THREE.Vector3 | null = null;
   officeAlert = false;
+  /** Set by the app: the Lesson target's spot on the floor, or null. */
+  ringTarget: THREE.Vector3 | null = null;
+  private lessonRing: THREE.Mesh;
   /** When set, the camera looks here instead of following the Player (title screen). */
   cameraOverride: THREE.Vector3 | null = null;
   private camFocus = new THREE.Vector3();
@@ -183,6 +186,10 @@ export class WorldView {
     });
     this.walkRing = new THREE.Mesh(new THREE.RingGeometry(0.75, 1, 40).rotateX(-Math.PI / 2), ringMat);
     this.walkRing.renderOrder = 2;
+    this.lessonRing = new THREE.Mesh(this.walkRing.geometry, ringMat);
+    this.lessonRing.renderOrder = 2;
+    this.lessonRing.visible = false;
+    this.root.add(this.lessonRing);
     const glowMat = new THREE.MeshBasicMaterial({ color: PALETTE.pad, transparent: true, depthWrite: false });
     this.walkGlow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), glowMat);
     this.walkGlow.renderOrder = 1;
@@ -1304,6 +1311,11 @@ export class WorldView {
       this.walkGlow.position.set(bx + bw / 2, WALK_MARK_Y - 0.01, bz + bd / 2);
       this.walkGlow.scale.set(bw + 2 * FEEL.tapGlowMargin, 1, bd + 2 * FEEL.tapGlowMargin);
       (this.walkGlow.material as THREE.MeshBasicMaterial).opacity = 0.25 + 0.15 * Math.sin(this.time * 6);
+    }
+    this.lessonRing.visible = !!this.ringTarget;
+    if (this.ringTarget) {
+      this.lessonRing.position.set(this.ringTarget.x, WALK_MARK_Y, this.ringTarget.z);
+      this.lessonRing.scale.setScalar(FEEL.lessonRing * (1 + FEEL.tapRingPulse * Math.sin(this.time * 8)));
     }
     this.arrow.visible = !!this.arrowTarget;
     if (this.arrowTarget)

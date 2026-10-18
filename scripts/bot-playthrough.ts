@@ -76,6 +76,7 @@ export function playthrough(w: World, log = false, tiers = new Map<number, Tier>
 let failed = false;
 for (const map of MAPS) {
   const w = createWorld(map, null, 1);
+  w.lesson = null; // the bot plays the Map, not its Lessons: a Lesson card would freeze it
   const tiers = new Map<number, Tier>();
   const t = playthrough(w, true, tiers);
   const pct = completion(w) * 100;

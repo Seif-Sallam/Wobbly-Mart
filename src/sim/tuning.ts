@@ -97,6 +97,9 @@ export const TUNING = {
   /** Closed: seconds before the store may reopen, and before it may close again after reopening. */
   closed: { reopenWait: 30, closeWait: 300 },
   exitPickRadius: 1.2,
+  /** Lessons: "Nice!" shows this long (s); a point target counts as reached within `arrive` (m); a Lesson that waits on
+   * a random tip forces one after `tipAfter` s of sprinting. */
+  lesson: { niceTime: 1.6, arrive: 1, tipAfter: 2.5 },
   /**
    * Events: none in the first quietStart s of an Opening. Deliveries: the next car every deliveryGap s; one waits at a
    * time unless the Stocker counts in carStockers allow a 2nd / 3rd, and then only by extraCarChance (the extra car

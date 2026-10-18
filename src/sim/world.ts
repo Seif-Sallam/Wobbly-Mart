@@ -19,6 +19,7 @@ import { updateStaff } from './staff';
 import { updateCleaners } from './cleaning';
 import { addPickups, thiefFreeze, updateEvents } from './events';
 import { rebuildNav } from './walk';
+import { startLessons, updateLesson, dismissLessonCard, type LessonState } from './lessons';
 import { type Stats, emptyStats, updateStats } from './stats';
 import { updateObjectives } from './objectives';
 import { quartersOf, updateScore } from './score';
@@ -293,6 +294,8 @@ export type SimEvent =
   | { type: 'challengeWon'; kind: ChallengeKind; score: number; money: number }
   | { type: 'challengeFailed'; kind: ChallengeKind }
   | { type: 'tutorialDone' }
+  | { type: 'lessonDone'; lesson: number }
+  | { type: 'lessonReplay'; lesson: number }
   | { type: 'complete' };
 
 export interface Intents {
@@ -306,6 +309,8 @@ export interface Intents {
   sprint?: boolean;
   buyUpgrade?: string;
   skipTutorial?: boolean;
+  /** Got it on a Lesson card. */
+  lessonNext?: boolean;
   assign?: { stocker: string; role: StockerRole };
   /** Office: close or reopen the store (ignored during the wait). */
   setClosed?: boolean;
@@ -361,6 +366,8 @@ export interface World {
   /** Thief Pan: the game freezes while the camera glides to the Thief and holds. */
   thiefPan: { t: number; duration: number } | null;
   tutorial: { done: boolean; actions: Set<string> };
+  /** The running Lesson (Tutorial Map), or null on other Maps and once the last one is done. Not saved. */
+  lesson: LessonState | null;
   stats: Stats;
   /** Ids (objectiveId) of the Objectives done. */
   objectivesDone: Set<string>;
@@ -443,6 +450,7 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
     inspector: null,
     thiefPan: null,
     tutorial: { done: tutorialDone || map.tutorial.length === 0, actions: new Set() },
+    lesson: null,
     stats: emptyStats(),
     objectivesDone: new Set(),
     score: 0,
@@ -463,8 +471,9 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
   for (const id of map.start.owned) own(w, id, false);
   addPickups(w);
   if (save) applySave(w, save);
-  else w.pan = { area: map.start.owned[0], t: 0, duration: panDuration() };
+  else if (!map.lessons?.length) w.pan = { area: map.start.owned[0], t: 0, duration: panDuration() };
   refreshFreeStations(w);
+  startLessons(w);
   w.quarters = Math.max(w.quarters, quartersOf(completion(w)));
   w.complete = checkCompletion(w, false);
   w.events = [];
@@ -475,6 +484,10 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
 /** One fixed timestep. `w.events` holds only this step's events afterwards. */
 export function step(w: World, intents: Intents): void {
   w.events = [];
+  if (w.lesson?.phase === 'card') {
+    if (intents.lessonNext) dismissLessonCard(w);
+    return;
+  }
   if (w.thiefPan) {
     w.thiefPan.t += DT;
     const frozen = w.thiefPan.t < thiefFreeze();
@@ -499,6 +512,7 @@ export function step(w: World, intents: Intents): void {
   updateObjectives(w);
   updateScore(w);
   updateTutorial(w);
+  updateLesson(w);
   w.complete = checkCompletion(w, true);
   if (w.navDirty) rebuildNav(w);
 }

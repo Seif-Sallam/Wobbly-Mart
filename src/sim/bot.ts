@@ -12,7 +12,7 @@ import {
   visiblePads,
 } from './economy';
 import { boxCentre, distToBox } from './geometry';
-import { headingFor, type Target } from './walk';
+import { headingFor, walkable, type Target } from './walk';
 import { chooseJob, sinkForStack } from './staff';
 import { accepts, availableCount } from './carry';
 import { nextRandom } from './rng';
@@ -26,6 +26,7 @@ const THINK_EVERY = 0.25;
 const STUCK_MOVE = 0.002;
 const STUCK_AFTER = 1.5;
 const WIGGLE_FOR = 0.4;
+const AWAY_FROM_STAND = 3;
 
 function resolve(w: World, target: string | Point): Target {
   if (typeof target !== 'string') return { point: target };
@@ -115,8 +116,14 @@ export class Bot {
   }
 
   private decide(w: World): string | Point | null {
-    // It picks up the mop only by walking past it empty-handed; take it back
-    if (w.player.mop) return [...w.stations.values()].find((s) => s.kind === 'mopStand')?.id ?? null;
+    // It picks up the mop only by walking past it empty-handed; take it back (the stand takes it on arrival, so step off first if already beside it)
+    const stand = w.player.mop ? [...w.stations.values()].find((s) => s.kind === 'mopStand') : undefined;
+    if (stand) {
+      const [x, z] = boxCentre(stand.box);
+      return distToBox(w.player.x, w.player.z, stand.box) <= TUNING.reach
+        ? walkable(w, x, z - AWAY_FROM_STAND)
+        : stand.id;
+    }
     const pads = visiblePads(w).sort((a, b) => padRemaining(w, a) - padRemaining(w, b));
     const pad = pads[0];
     if (pad && padRemaining(w, pad) <= w.money + 1e-6) return pad;

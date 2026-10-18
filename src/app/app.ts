@@ -23,7 +23,7 @@ import {
 } from '../sim/economy';
 import { shelfCap, stationModel } from '../sim/map';
 import { boxCentre } from '../sim/geometry';
-import { MAPS, mapById } from '../../maps';
+import { FIRST_MAP, MAPS, isTutorialMap, mapById } from '../../maps';
 import { lookById } from '../../catalog/looks';
 import { CAP_COLOURS } from '../palette';
 import { Stage } from '../view/stage';
@@ -120,7 +120,7 @@ export class App {
     this.hud = new Hud(document.getElementById('hud') as HTMLElement);
     this.hud.visible(false);
     this.uiRoot = document.getElementById('ui') as HTMLElement;
-    const loaded = loadSave(MAPS[0].id);
+    const loaded = loadSave(FIRST_MAP.id);
     this.save = loaded.save;
     this.firstRun = !!loaded.fresh;
     this.settings = loadSettings();
@@ -153,6 +153,7 @@ export class App {
       ios: isIos,
       maps: [],
       lastMap: this.save.currentMap,
+      tutorialDone: this.save.tutorialDone,
       settings: this.settings,
       zoom: 0,
       screenHz: 60,
@@ -190,7 +191,8 @@ export class App {
       document.fonts.load('700 48px Fredoka'),
     ]);
     this.renderThumbs();
-    const map = MAPS[Math.floor(Math.random() * MAPS.length)];
+    const showcase = MAPS.filter((m) => !isTutorialMap(m));
+    const map = showcase[Math.floor(Math.random() * showcase.length)];
     this.game = new Game(this.stage, this.input, map, showcaseSave(map), true);
     this.game.paused = true;
     this.game.view.setLook(this.ui.look, this.ui.cap);
@@ -286,7 +288,7 @@ export class App {
 
   private currentMap(): MapDef {
     const picked = import.meta.env.DEV ? new URLSearchParams(location.search).get('map') : null;
-    return mapById(picked ?? this.save.currentMap) ?? MAPS[0];
+    return mapById(picked ?? this.save.currentMap) ?? FIRST_MAP;
   }
 
   // ---------- title → game
@@ -404,6 +406,7 @@ export class App {
     if (e.type === 'padBought' || e.type === 'upgradeBought') {
       if (e.type === 'padBought') persistStorage();
       this.writeSave();
+      if (e.type === 'padBought' && e.pad === 'exit' && isTutorialMap(w.map)) this.save.tutorialDone = true;
       if (e.type === 'padBought' && e.pad === 'exit') {
         setTimeout(() => this.openOverlay('maps'), 900);
         this.exitDismissed = true;
@@ -554,8 +557,10 @@ export class App {
     this.sinceSave = 0;
     const game = this.game;
     if (!game || this.lostTab || this.editing || this.ui.screen !== 'game') return;
-    this.save.maps[game.world.map.id] = snapshot(game.world);
-    this.save.tutorialStep = tutorialStep(game.world);
+    if (!isTutorialMap(game.world.map)) {
+      this.save.maps[game.world.map.id] = snapshot(game.world);
+      this.save.tutorialStep = tutorialStep(game.world);
+    }
     writeSave(this.save);
     this.claimTab();
   }
@@ -583,14 +588,21 @@ export class App {
     const live = this.ui.screen === 'game' ? this.game?.world : undefined;
     const exitBought = (id: string) =>
       id === live?.map.id ? live.owned.has('exit') : !!this.save.maps[id]?.owned.includes('exit');
-    this.ui.maps = MAPS.map((map, i) => ({
-      map,
-      visited: this.save.visited.includes(map.id) || (i > 0 && exitBought(MAPS[i - 1].id)),
-      completion:
-        map.id === live?.map.id
-          ? completion(live)
-          : completionOf(map, new Set(this.save.maps[map.id]?.owned ?? []), this.save.maps[map.id]?.levels ?? {}),
-    }));
+    this.ui.maps = MAPS.map((map, i) => {
+      const before = MAPS.slice(0, i)
+        .filter((m) => !isTutorialMap(m))
+        .pop();
+      return {
+        map,
+        tutorial: isTutorialMap(map),
+        visited: isTutorialMap(map) || !before || this.save.visited.includes(map.id) || exitBought(before.id),
+        completion:
+          map.id === live?.map.id
+            ? completion(live)
+            : completionOf(map, new Set(this.save.maps[map.id]?.owned ?? []), this.save.maps[map.id]?.levels ?? {}),
+      };
+    });
+    this.ui.tutorialDone = this.save.tutorialDone;
     this.ui.lastMap = this.save.currentMap;
   }
 
@@ -654,7 +666,7 @@ export class App {
       return null;
     },
     resetProgress: () => {
-      this.save = wipeSave(MAPS[0].id);
+      this.save = wipeSave(FIRST_MAP.id);
       this.applyLook();
       this.reopen();
       this.openOverlay(null);

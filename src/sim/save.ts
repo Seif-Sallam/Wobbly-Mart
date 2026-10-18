@@ -77,12 +77,11 @@ export interface SaveFile {
   version: number;
   currentMap: string;
   visited: string[];
+  /** The Tutorial Map was finished (it keeps no other save). */
   tutorialDone: boolean;
   /** The Player's look (an asset-table character) and cap colour: one choice for the whole game. */
   look: string;
   cap: string;
-  /** First unfinished tutorial step (-1 when done); purchase steps re-derive from the save on load. */
-  tutorialStep: number;
   maps: Record<string, MapSave>;
 }
 
@@ -93,7 +92,6 @@ export const emptySave = (firstMap: string): SaveFile => ({
   tutorialDone: false,
   look: DEFAULT_LOOK,
   cap: DEFAULT_CAP,
-  tutorialStep: 0,
   maps: {},
 });
 
@@ -159,7 +157,6 @@ export function migrate(raw: unknown): SaveFile {
     ...s,
     version: SAVE_VERSION,
     tutorialDone: !!s.tutorialDone,
-    tutorialStep: Number(s.tutorialStep) || 0,
     look: typeof s.look === 'string' ? s.look : DEFAULT_LOOK,
     cap: typeof s.cap === 'string' ? s.cap : DEFAULT_CAP,
   };

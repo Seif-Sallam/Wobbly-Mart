@@ -13,17 +13,9 @@ import {
   type SaveFile,
   type Settings,
 } from '../sim/save';
-import {
-  canBuyUpgrade,
-  completion,
-  completionOf,
-  padRemaining,
-  tutorialStep,
-  upgradeVisible,
-  visiblePads,
-} from '../sim/economy';
+import { canBuyUpgrade, completion, completionOf, padRemaining, upgradeVisible, visiblePads } from '../sim/economy';
 import { shelfCap, stationModel } from '../sim/map';
-import { lessonAim, lessonHud, lessonTarget, type LessonDevice } from '../sim/lessons';
+import { lessonAim, lessonHud, lessonHudTarget, lessonRetry, lessonTarget, type LessonDevice } from '../sim/lessons';
 import { boxCentre } from '../sim/geometry';
 import { FIRST_MAP, MAPS, isTutorialMap, mapById } from '../../maps';
 import { lookById } from '../../catalog/looks';
@@ -61,7 +53,6 @@ import { logbookView, objectiveInfo, progressOfSave, type MapProgress } from './
 import { challengeCard } from './challenge-card';
 
 const AUTOSAVE_SECONDS = 5;
-const HINT_DISTANCE = 2;
 const EDGE_MARGIN = 44;
 const WIPE_SECONDS = 450;
 const TITLE_PAN_SPEED = 0.12;
@@ -74,8 +65,6 @@ const canFullscreen = (): boolean =>
   isTouch &&
   !!document.documentElement.requestFullscreen &&
   !matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
-
-const tutorKey = (map: string, step: number): string => `tutor.${map}.${step}`;
 
 const isIos =
   /iP(hone|ad|od)/.test(navigator.userAgent) &&
@@ -97,9 +86,6 @@ export class App {
   private sinceSave = 0;
   private officeDismissed = false;
   private exitDismissed = false;
-  private hintFrom: [number, number] | null = null;
-  /** The tutorial step whose pop-up the Player closed with OK (also kept in storage, for reloads). */
-  private tutorNexted = -1;
   private lostTab = false;
   private titleTime = 0;
   private uiTimer = 0;
@@ -149,7 +135,10 @@ export class App {
       if (!game || this.ui.screen !== 'game' || game.paused || this.editing) return;
       const tap = this.input.tap;
       if (tap.car === id) tap.sprint = true;
-      else tap.startCar(game.world, id, false);
+      else {
+        tap.startCar(game.world, id, false);
+        game.report('deliveryCard');
+      }
     };
     this.input.onZoom = (k) => {
       if (this.ui.screen === 'game' && !this.editing) this.setZoom(this.zoom() * k);
@@ -185,12 +174,6 @@ export class App {
     this.hud.onGear = () => this.openOverlay('pause');
     this.hud.onTrophy = () => this.openLogbook(0);
     this.hud.onLand = () => this.sounds.sfx('ding');
-    this.hud.onTutorNext = () => {
-      if (!this.game) return;
-      this.tutorNexted = tutorialStep(this.game.world);
-      markSeen(tutorKey(this.game.world.map.id, this.tutorNexted));
-    };
-    this.hud.onTutorSkip = () => this.game?.skipTutorial();
     this.input.onEscape = () => this.escape();
     this.claimTab = claimTab(() => {
       this.lostTab = true;
@@ -214,7 +197,7 @@ export class App {
     this.renderThumbs();
     const showcase = MAPS.filter((m) => !isTutorialMap(m));
     const map = showcase[Math.floor(Math.random() * showcase.length)];
-    this.game = new Game(this.stage, this.input, map, showcaseSave(map), true);
+    this.game = new Game(this.stage, this.input, map, showcaseSave(map));
     this.game.view.setLook(this.ui.look, this.ui.cap);
     this.applyLayout();
     this.showcase();
@@ -350,7 +333,7 @@ export class App {
     this.renderUi();
     setTimeout(() => {
       const map = game.world.map;
-      game.open(map, showcaseSave(map), true);
+      game.open(map, showcaseSave(map));
       this.input.tap.cancel();
       this.warning = null;
       this.hud.reset(0, 0);
@@ -375,7 +358,7 @@ export class App {
     const mapSave: MapSave | null = this.save.maps[map.id] ?? null;
     this.save.currentMap = map.id;
     if (!this.save.visited.includes(map.id)) this.save.visited.push(map.id);
-    game.open(map, mapSave, this.save.tutorialDone);
+    game.open(map, mapSave);
     this.sounds.playMusicOf(map.id);
     this.input.tap.cancel();
     game.view.scenery(0);
@@ -386,8 +369,6 @@ export class App {
     this.officeDismissed = this.exitDismissed = false;
     this.lessonKey = '';
     this.seenPads.clear();
-    this.hintFrom = game.world.tutorial.done ? null : [game.world.player.x, game.world.player.z];
-    this.hud.showHint(this.hintFrom ? (this.input.firstKind ?? (isTouch ? 'touch' : 'keys')) : null);
     this.writeSave();
   }
 
@@ -424,13 +405,9 @@ export class App {
       office && !wide ? FEEL.officeSheet / 2 : 0,
     );
     if (!w.atExit) this.exitDismissed = false;
-    else if (w.owned.has('exit') && !this.exitDismissed && !this.ui.overlay) {
+    else if (w.owned.has('exit') && !w.lesson && !this.exitDismissed && !this.ui.overlay) {
       this.exitDismissed = true;
       this.openOverlay('maps');
-    }
-    if (this.hintFrom && Math.hypot(w.player.x - this.hintFrom[0], w.player.z - this.hintFrom[1]) > HINT_DISTANCE) {
-      this.hintFrom = null;
-      this.hud.showHint(null);
     }
     this.guidance();
     this.sinceSave += dt;
@@ -461,23 +438,23 @@ export class App {
     if (e.type === 'padBought' || e.type === 'upgradeBought') {
       if (e.type === 'padBought') persistStorage();
       this.writeSave();
-      if (e.type === 'padBought' && e.pad === 'exit' && isTutorialMap(w.map)) this.save.tutorialDone = true;
-      if (e.type === 'padBought' && e.pad === 'exit') {
+      if (e.type === 'padBought' && e.pad === 'exit' && !isTutorialMap(w.map)) {
         setTimeout(() => this.openOverlay('maps'), 900);
         this.exitDismissed = true;
       }
     }
     if (e.type === 'tutorialDone') {
+      // the closing card was dismissed: the Corner Shop is next in line on the title
       this.save.tutorialDone = true;
-      this.writeSave();
+      this.save.currentMap = FIRST_MAP.id;
+      this.toTitle();
       if (isIos && !seen('ios-tip')) {
         markSeen('ios-tip');
         this.ui.card = 'ios';
-        this.renderUi();
       }
     }
     if (e.type === 'complete') this.hud.celebrate();
-    if (e.type === 'lessonReplay') this.hud.banner(iconUrl('player'), 'Let’s try that again', 'No harm done');
+    if (e.type === 'lessonReplay') this.hud.banner(iconUrl('player'), lessonRetry(w, e.lesson), 'No harm done');
     if (e.type === 'challengeStarted') {
       this.hud.stamp('CHALLENGE!');
       this.sounds.sfx('boing');
@@ -513,7 +490,7 @@ export class App {
     return s.x >= 0 && s.y >= 0 && s.x <= innerWidth && s.y <= innerHeight;
   }
 
-  /** Bouncing tutorial arrow, Office "!", and edge arrows toward off-screen targets. */
+  /** Lesson arrow, Office "!", and edge arrows toward off-screen targets. */
   private guidance(): void {
     const game = this.game;
     if (!game) return;
@@ -527,22 +504,9 @@ export class App {
         : stationModel(w.map, w.map.freeStations[id]?.unlocks ?? { kind: 'office' });
       return iconUrl(name ?? (def?.kind === 'exit' ? 'van' : `staff-${def?.kind}`));
     };
-    const step = tutorialStep(w);
-    const closed = step === this.tutorNexted || seen(tutorKey(w.map.id, step));
-    const text = step >= 0 && !closed ? w.map.tutorial[step].text : undefined;
-    this.hud.tutorial(text ?? null, step + 1, w.map.tutorial.length);
     view.arrowTarget = null;
     view.ringTarget = null;
     this.lessonGuidance(w, targets, iconOf);
-    if (step >= 0) {
-      const s = w.map.tutorial[step];
-      const id = s.pad ?? s.station ?? '';
-      const at = view.anchorOf(id);
-      if (at) {
-        view.arrowTarget = at;
-        targets.push({ at, icon: iconOf(id) });
-      }
-    }
     // edge arrow only for an affordable Pad the Player hasn't seen yet since it was revealed
     for (const id of visiblePads(w)) {
       const at = view.anchorOf(id);
@@ -650,6 +614,7 @@ export class App {
     const view = this.game?.view;
     if (!view) return;
     this.hud.lesson(lessonHud(w, this.lessonDevice()));
+    this.hud.pointAt(lessonHudTarget(w));
     const key = w.lesson ? `${w.lesson.index}|${w.lesson.phase}` : '';
     if (key !== this.lessonKey) {
       this.lessonKey = key;
@@ -671,7 +636,6 @@ export class App {
     if (!game || this.lostTab || this.editing || this.ui.screen !== 'game') return;
     if (!isTutorialMap(game.world.map)) {
       this.save.maps[game.world.map.id] = snapshot(game.world);
-      this.save.tutorialStep = tutorialStep(game.world);
     }
     writeSave(this.save);
     this.claimTab();
@@ -686,6 +650,8 @@ export class App {
   // ---------- overlays
 
   private openOverlay(o: Overlay | null): void {
+    if (o === 'logbook') this.game?.report('logbookOpen');
+    else if (this.ui.overlay === 'logbook') this.game?.report('logbookClosed');
     this.ui.overlay = o;
     if (o === 'maps') this.refreshMaps();
     if (this.game && this.ui.screen === 'game') this.game.paused = !!o || this.lostTab;
@@ -733,7 +699,9 @@ export class App {
     const live = this.ui.screen === 'game' ? this.game?.world : undefined;
     const map = live?.map ?? mapById(this.save.currentMap) ?? FIRST_MAP;
     const progress = (m: MapDef): MapProgress => (m === live?.map ? live : progressOfSave(this.save.maps[m.id]));
-    this.ui.logbook = logbookView(map, progress(map), MAPS.filter((m) => !isTutorialMap(m)).map(progress));
+    // the Tutorial Map keeps no Score, so its Logbook is about this run only
+    const all = isTutorialMap(map) ? [progress(map)] : MAPS.filter((m) => !isTutorialMap(m)).map(progress);
+    this.ui.logbook = logbookView(map, progress(map), all);
     this.ui.logbookTab = tab;
     this.openOverlay('logbook');
   }

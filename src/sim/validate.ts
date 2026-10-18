@@ -78,10 +78,6 @@ export function validateMap(
       out.push({ id, message: `works unknown Register "${def.register}"` });
     if (def.kind === 'area' && !areas.has(def.area)) out.push({ id, message: `opens unknown Area "${def.area}"` });
   }
-  for (const [i, step] of map.tutorial.entries()) {
-    const ref = step.pad ?? step.station;
-    if (ref && !ids.has(ref)) out.push({ id: `tutorial[${i}]`, message: `points at unknown id "${ref}"` });
-  }
 
   for (const [i, lesson] of (map.lessons ?? []).entries())
     for (const [j, step] of lesson.steps.entries())

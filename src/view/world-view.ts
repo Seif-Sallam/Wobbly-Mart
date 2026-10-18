@@ -560,6 +560,14 @@ export class WorldView {
             van.position.y = Math.abs(Math.sin(k * Math.PI * 3)) * (1 - k) * 0.6;
             van.scale.set(1 + Math.sin(k * Math.PI * 6) * 0.04 * (1 - k), 1, 1);
           });
+          // finishing the Tutorial Map: the car then drives off along the road
+          if (w.map.lessons) {
+            const x0 = van.position.x;
+            this.tweens.add(FEEL.vanDriveOff, (k) => (van.position.x = x0 + k * w.map.layout.size[0]), {
+              delay: 0.6,
+              ease: (t) => t * t,
+            });
+          }
         }
         break;
       case 'produced': {

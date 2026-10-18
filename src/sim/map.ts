@@ -87,16 +87,6 @@ export interface UpgradeDef {
   requires: string[];
 }
 
-export interface TutorialStep {
-  /** Done once this id is owned … */
-  pad?: string;
-  /** … or once this action happened this session. */
-  action?: 'pick' | 'drop' | 'checkout' | 'collect' | 'upgrade';
-  station?: string;
-  /** What the pop-up tells the Player to do, and why. */
-  text?: string;
-}
-
 /** An Event the Map has: rolled once every id in `requires` is owned. */
 export interface EventDef {
   requires: string[];
@@ -130,7 +120,6 @@ export interface MapDef {
   freeStations: Record<string, FreeStationDef>;
   upgrades: Record<string, UpgradeDef>;
   start: { owned: string[]; money: number };
-  tutorial: TutorialStep[];
   /** Tutorial Map only: the Lessons, in order. While any are left, Customers and Events come only when a Lesson calls them. */
   lessons?: LessonDef[];
   /** Goals done once and kept in the save; each counts toward Completion like a Pad. */

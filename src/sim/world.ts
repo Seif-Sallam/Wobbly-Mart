@@ -8,7 +8,6 @@ import {
   own,
   refreshFreeStations,
   applyCommands,
-  updateTutorial,
   checkCompletion,
   completion,
 } from './economy';
@@ -19,7 +18,7 @@ import { updateStaff } from './staff';
 import { updateCleaners } from './cleaning';
 import { addPickups, thiefFreeze, updateEvents } from './events';
 import { rebuildNav } from './walk';
-import { startLessons, updateLesson, dismissLessonCard, type LessonState } from './lessons';
+import { startLessons, updateLesson, dismissLessonCard, type LessonState, type LessonUiFact } from './lessons';
 import { type Stats, emptyStats, updateStats } from './stats';
 import { updateObjectives } from './objectives';
 import { quartersOf, updateScore } from './score';
@@ -293,6 +292,7 @@ export type SimEvent =
   | { type: 'challengeStarted'; kind: ChallengeKind }
   | { type: 'challengeWon'; kind: ChallengeKind; score: number; money: number }
   | { type: 'challengeFailed'; kind: ChallengeKind }
+  /** The last Lesson's card was dismissed: the Tutorial Map is finished. */
   | { type: 'tutorialDone' }
   | { type: 'lessonDone'; lesson: number }
   | { type: 'lessonReplay'; lesson: number }
@@ -308,9 +308,10 @@ export interface Intents {
   grabPaused?: boolean;
   sprint?: boolean;
   buyUpgrade?: string;
-  skipTutorial?: boolean;
   /** Got it on a Lesson card. */
   lessonNext?: boolean;
+  /** A screen the app opened or closed that a Lesson waits for; the app sends them one per step, in order. */
+  ui?: LessonUiFact;
   assign?: { stocker: string; role: StockerRole };
   /** Office: close or reopen the store (ignored during the wait). */
   setClosed?: boolean;
@@ -365,7 +366,6 @@ export interface World {
   inspector: Inspector | null;
   /** Thief Pan: the game freezes while the camera glides to the Thief and holds. */
   thiefPan: { t: number; duration: number } | null;
-  tutorial: { done: boolean; actions: Set<string> };
   /** The running Lesson (Tutorial Map), or null on other Maps and once the last one is done. Not saved. */
   lesson: LessonState | null;
   stats: Stats;
@@ -401,7 +401,7 @@ export const newCarrier = (): Carrier => ({
 });
 
 /** An Opening: fresh from a save (or a new game when `save` is null). */
-export function createWorld(map: MapDef, save: MapSave | null, seed: number, tutorialDone = false): World {
+export function createWorld(map: MapDef, save: MapSave | null, seed: number): World {
   const [px, pz] = map.layout.playerStart;
   const w: World = {
     // the World's own places: Edit Layout moves fixtures without touching the map data
@@ -449,7 +449,6 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
     thief: null,
     inspector: null,
     thiefPan: null,
-    tutorial: { done: tutorialDone || map.tutorial.length === 0, actions: new Set() },
     lesson: null,
     stats: emptyStats(),
     objectivesDone: new Set(),
@@ -511,8 +510,7 @@ export function step(w: World, intents: Intents): void {
   updateStats(w);
   updateObjectives(w);
   updateScore(w);
-  updateTutorial(w);
-  updateLesson(w);
+  updateLesson(w, intents.ui);
   w.complete = checkCompletion(w, true);
   if (w.navDirty) rebuildNav(w);
 }

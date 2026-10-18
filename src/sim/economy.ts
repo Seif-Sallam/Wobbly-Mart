@@ -1,4 +1,4 @@
-// Ownership, prices, Upgrades, Completion, the tutorial — everything about what is bought.
+// Ownership, prices, Upgrades, Completion — everything about what is bought.
 import type { MapDef, Point, StationDef } from './map';
 import type { Intents, Station, World } from './world';
 import { newCarrier, STOCKER_ROLES } from './world';
@@ -186,16 +186,11 @@ export function applyCommands(w: World, intents: Intents): void {
     w.money -= nextLevelCost(w, id) ?? 0;
     w.levels[id] = (w.levels[id] ?? 0) + 1;
     w.events.push({ type: 'upgradeBought', upgrade: id });
-    w.tutorial.actions.add('upgrade:office');
   }
   if (intents.setClosed !== undefined && w.atOffice && intents.setClosed !== w.closed && w.closedWait <= 0) {
     w.closed = intents.setClosed;
     w.closedWait = w.closed ? TUNING.closed.reopenWait : TUNING.closed.closeWait;
     if (w.closed) w.stats.timesClosed++;
-  }
-  if (intents.skipTutorial && !w.tutorial.done) {
-    w.tutorial.done = true;
-    w.events.push({ type: 'tutorialDone' });
   }
   if (intents.assign) {
     const s = w.stockers.find((x) => x.id === intents.assign?.stocker);
@@ -261,25 +256,4 @@ export function checkCompletion(w: World, announce: boolean): boolean {
   const full = completion(w) >= 1;
   if (full && !w.complete && announce) w.events.push({ type: 'complete' });
   return full;
-}
-
-// ---------- tutorial
-
-export function tutorialStepDone(w: World, i: number): boolean {
-  const s = w.map.tutorial[i];
-  if (s.pad) return w.owned.has(s.pad);
-  return w.tutorial.actions.has(`${s.action}:${s.station}`);
-}
-
-/** Index of the first unfinished step, or -1 when the tutorial is over. */
-export function tutorialStep(w: World): number {
-  if (w.tutorial.done) return -1;
-  for (let i = 0; i < w.map.tutorial.length; i++) if (!tutorialStepDone(w, i)) return i;
-  return -1;
-}
-
-export function updateTutorial(w: World): void {
-  if (w.tutorial.done || tutorialStep(w) >= 0) return;
-  w.tutorial.done = true;
-  w.events.push({ type: 'tutorialDone' });
 }

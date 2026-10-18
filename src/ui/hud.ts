@@ -1,4 +1,4 @@
-// Per-frame HUD in plain DOM: Money, Completion bar, gear, edge arrows, Event banner and cards, tutorial pop-up, movement hint, 100% banner.
+// Per-frame HUD in plain DOM: Money, Completion bar, gear, edge arrows, Event banner and cards, Lesson pill, 100% banner.
 import { formatMoney } from '../format';
 import { FEEL } from '../feel';
 
@@ -43,8 +43,6 @@ export class Hud {
   private arrows: HTMLElement[] = [];
   private cardBox: HTMLElement;
   private cards: HTMLElement[] = [];
-  private hint: HTMLElement;
-  private tutor: HTMLElement;
   private lessonPill: HTMLElement;
   private shown = 0;
   private target = 0;
@@ -62,7 +60,6 @@ export class Hud {
     gold: false,
     arrows: [] as string[],
     cards: [] as string[],
-    tutor: '',
     lesson: '',
     ring: '',
     badge: '',
@@ -73,8 +70,6 @@ export class Hud {
   onTrophy: () => void = () => {};
   /** An Objective card landed in the trophy. */
   onLand: () => void = () => {};
-  onTutorNext: () => void = () => {};
-  onTutorSkip: () => void = () => {};
 
   /** Everything but the edge arrows, scaled by the HUD size setting. */
   private ui: HTMLElement;
@@ -90,9 +85,7 @@ export class Hud {
       </div>
       <div class="chal-ring gone"><div class="ring"><i></i></div><small><img alt=""><span></span></small></div>
       <div class="event-cards"></div>
-      <div class="tutor pill gone"><small></small><p></p><div><button class="btn skip">Skip tutorial</button><button class="btn buy next">OK</button></div></div>
-      <div class="lesson pill gone"><small></small><p></p></div>
-      <div class="hint"></div></div>`;
+      <div class="lesson pill gone"><small></small><p></p></div></div>`;
     this.ui = root.querySelector('.hud-ui') as HTMLElement;
     this.extra = root.querySelector('.hud-extra') as HTMLElement;
     this.ring = root.querySelector('.chal-ring') as HTMLElement;
@@ -102,8 +95,6 @@ export class Hud {
     this.money = root.querySelector('.money') as HTMLElement;
     this.bar = root.querySelector('.completion') as HTMLElement;
     this.barFill = root.querySelector('.completion i') as HTMLElement;
-    this.hint = root.querySelector('.hint') as HTMLElement;
-    this.tutor = root.querySelector('.tutor') as HTMLElement;
     this.lessonPill = root.querySelector('.lesson') as HTMLElement;
     const press = (sel: string, fn: () => void) =>
       (root.querySelector(sel) as HTMLElement).addEventListener('pointerdown', (e) => {
@@ -112,8 +103,6 @@ export class Hud {
       });
     press('.gear', () => this.onGear());
     press('.trophy', () => this.onTrophy());
-    press('.tutor .next', () => this.onTutorNext());
-    press('.tutor .skip', () => this.onTutorSkip());
   }
 
   visible(on: boolean): void {
@@ -368,18 +357,11 @@ export class Hud {
     setTimeout(() => el.remove(), FEEL.reportMs);
   }
 
-  /** The tutorial pop-up: the step's text and "n/of". `null` hides it. */
-  tutorial(text: string | null, n = 0, of = 0): void {
-    const key = text ? `${n}|${text}` : '';
-    if (key === this.drawn.tutor) return;
-    this.drawn.tutor = key;
-    this.tutor.classList.toggle('gone', !text);
-    if (!text) return;
-    (this.tutor.querySelector('small') as HTMLElement).textContent = `Tutorial ${n}/${of}`;
-    (this.tutor.querySelector('p') as HTMLElement).textContent = text;
-    this.tutor.classList.remove('pop');
-    void this.tutor.offsetWidth;
-    this.tutor.classList.add('pop');
+  /** The Lesson's pointing hand on a HUD button: the trophy or the Delivery cards. */
+  pointAt(what: 'trophy' | 'delivery' | null): void {
+    this.root.querySelector('.trophy')?.classList.toggle('lesson-point', what === 'trophy');
+    for (const el of this.cards)
+      el.classList.toggle('lesson-point', what === 'delivery' && el.classList.contains('delivery'));
   }
 
   /** The live Lesson prompt (or its "Nice!"). `null` hides it. */
@@ -395,14 +377,6 @@ export class Hud {
     this.lessonPill.classList.remove('pop');
     void this.lessonPill.offsetWidth;
     this.lessonPill.classList.add('pop');
-  }
-
-  /** Movement hint: keycaps on desktop, a dragging hand on touch. `null` hides it. */
-  showHint(kind: 'keys' | 'touch' | null): void {
-    this.hint.className = `hint ${kind ?? 'gone'}`;
-    if (kind === 'keys')
-      this.hint.innerHTML = '<div class="keys"><kbd>W</kbd><br><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></div>';
-    if (kind === 'touch') this.hint.innerHTML = '<div class="hand">👆</div>';
   }
 
   celebrate(): void {

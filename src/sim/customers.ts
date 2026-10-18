@@ -137,7 +137,6 @@ function shop(w: World, c: Customer): void {
     headFor(w, c);
     return;
   }
-  if (!w.tutorial.done) return;
   c.patience += DT * (inMess(w, c.x, c.z) ? TUNING.messPatience : 1);
   if (c.patience >= c.patienceLimit && !c.angry) {
     c.angry = true;
@@ -197,7 +196,6 @@ function checkout(w: World, reg: RegisterStation): void {
   front.register = null;
   leave(front);
   w.events.push({ type: 'paid', register: reg.id, customer: front.id, amount, products });
-  w.tutorial.actions.add(`checkout:${reg.id}`);
 }
 
 export function updateCustomers(w: World): void {

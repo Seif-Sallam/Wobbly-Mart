@@ -21,7 +21,32 @@ export class LayoutGhost {
     this.group.add(m);
     return m;
   });
+  private outline = [0, 1, 2, 3].map(() => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), plateMat(PALETTE.pad));
+    m.renderOrder = 3;
+    m.visible = false;
+    this.group.add(m);
+    return m;
+  });
   private t = 0;
+
+  /** A Lesson's suggested spot: a yellow outline around `box`, until `hide`. `null` clears it. */
+  suggest(box: Box | null): void {
+    const [x, z, w, d] = box ?? [0, 0, 0, 0];
+    const e = FEEL.layoutOutline;
+    // top, bottom, left, right edges: [centre x, centre z, width, depth]
+    const edges = [
+      [x + w / 2, z - e / 2, w + 2 * e, e],
+      [x + w / 2, z + d + e / 2, w + 2 * e, e],
+      [x - e / 2, z + d / 2, e, d],
+      [x + w + e / 2, z + d / 2, e, d],
+    ];
+    this.outline.forEach((m, i) => {
+      m.visible = !!box;
+      m.position.set(edges[i][0], 0.05, edges[i][1]);
+      m.scale.set(edges[i][2], 1, edges[i][3]);
+    });
+  }
 
   /** Shows `model` at `spot` (and the Register's Cashier spot), green when `allowed`. */
   show(model: string | null, spot: Placement, allowed: boolean, cashier: Box | null): void {
@@ -50,6 +75,7 @@ export class LayoutGhost {
     this.ghost = null;
     this.shown = '';
     for (const p of this.plates) p.visible = false;
+    this.suggest(null);
   }
 
   update(dt: number): void {

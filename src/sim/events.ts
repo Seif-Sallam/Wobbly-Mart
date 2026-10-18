@@ -77,6 +77,22 @@ function leave(w: World, st: PickupStation, d: Delivery, complete: boolean): voi
   st.delivery = null;
 }
 
+/** A Lesson parks a car that wants `want` of one Product, with time to spare. */
+export function callDelivery(w: World, product: string, want: number): void {
+  const free = pickups(w).find((s) => !s.delivery);
+  if (!free) return;
+  const T = timing(w);
+  free.delivery = {
+    order: [{ product, want, got: 0 }],
+    t: 0,
+    time: T.deliveryTime + T.deliveryPerItem * want,
+    look: nextRandom(w.eventRng),
+    honked: false,
+  };
+  w.events.push({ type: 'deliveryArrived', station: free.id });
+}
+
+/** Cars wait and leave on their own; only without a Lesson do new ones arrive. */
 function updateDeliveries(w: World): void {
   const spots = pickups(w);
   for (const st of spots) {
@@ -90,6 +106,7 @@ function updateDeliveries(w: World): void {
       w.events.push({ type: 'deliveryHonk', station: st.id });
     }
   }
+  if (w.lesson) return;
   w.carWait = (w.carWait ?? between(w, timing(w).deliveryGap)) - DT;
   if (w.carWait > 0 || w.t < timing(w).quietStart) return;
   const parked = spots.filter((s) => s.delivery).length;
@@ -107,11 +124,13 @@ function updateDeliveries(w: World): void {
 
 const VISITS = ['robbery', 'inspector'] as const;
 
-/** Robbery and the Inspector need the Player there: each on its own timer, one at a time, spaced out. */
+/** Robbery and the Inspector need the Player there: each on its own timer, one at a time, spaced out. A Lesson starts
+ * its own, so with Lessons left only the running visit moves on. */
 function updateVisits(w: World): void {
   const T = timing(w);
   if (w.thief) updateThief(w, w.thief);
   if (w.inspector) updateInspector(w, w.inspector);
+  if (w.lesson) return;
   const running = w.thief ? 'robbery' : w.inspector ? 'inspector' : null;
   if (running) w.lastVisit = w.t;
   const kinds = VISITS.filter((k) => unlocked(w, k) && k !== running);
@@ -128,7 +147,6 @@ function updateVisits(w: World): void {
 }
 
 export function updateEvents(w: World): void {
-  if (w.lesson) return;
   if (unlocked(w, 'delivery')) updateDeliveries(w);
   updateVisits(w);
 }

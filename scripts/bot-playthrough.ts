@@ -2,6 +2,7 @@
 import { MAPS } from '../maps';
 import { createWorld, step, type World } from '../src/sim/world';
 import { Bot } from '../src/sim/bot';
+import { LessonPlayer } from '../src/sim/lesson-player';
 import { completion } from '../src/sim/economy';
 import { TUNING } from '../src/sim/tuning';
 
@@ -81,11 +82,29 @@ export function playthrough(w: World, log = false, tiers = new Map<number, Tier>
   return w.t;
 }
 
+/** The Tutorial Map: follows its Lessons to the Exit Pad and the closing card. */
+function playLessons(w: World): boolean {
+  const player = new LessonPlayer();
+  let finished = false;
+  for (let i = 0; w.lesson && i < LIMIT_SECONDS * TUNING.tickRate; i++) {
+    step(w, player.intents(w));
+    finished ||= w.events.some((e) => e.type === 'tutorialDone');
+  }
+  return finished && w.owned.has('exit');
+}
+
 let failed = false;
 const only = process.argv[2];
 for (const map of MAPS.filter((m) => !only || m.id === only)) {
   const w = createWorld(map, null, 1);
-  w.lesson = null; // the bot plays the Map, not its Lessons: a Lesson card would freeze it
+  if (map.lessons) {
+    const ok = playLessons(w);
+    console.log(
+      `${map.id}: Lessons ${ok ? 'reach the Exit Pad' : 'did NOT finish'} after ${(w.t / 60).toFixed(1)} simulated minutes`,
+    );
+    failed ||= !ok;
+    continue;
+  }
   const tiers = new Map<number, Tier>();
   const t = playthrough(w, true, tiers);
   const pct = completion(w) * 100;

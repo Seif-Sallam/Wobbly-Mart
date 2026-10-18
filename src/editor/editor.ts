@@ -668,7 +668,7 @@ class Editor {
       this.status.problems = found.length ? `${found.length} — see console` : 'none';
       if (found.length) console.warn('Layout problems:\n' + found.map((p) => `${p.id}: ${p.message}`).join('\n'));
       const game = this.host.game;
-      game.open(map, builtSave(map), true);
+      game.open(map, builtSave(map));
       game.view.rebuildLevel();
       game.view.level.showParty(true);
       game.paused = !this.ui.walk;

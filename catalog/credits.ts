@@ -16,6 +16,11 @@ const kenney = (pack: string, slug: string): Credit => ({
 export const CREDITS: Credit[] = [
   kenney('Mini Market', 'mini-market'),
   kenney('Mini Characters', 'mini-characters'),
+  kenney('Mini Arcade', 'mini-arcade'),
+  kenney('Mini Skate', 'mini-skate'),
+  kenney('Mini Dungeon', 'mini-dungeon'),
+  kenney('Mini Arena', 'mini-arena'),
+  kenney('Mini Forest', 'mini-forest'),
   kenney('Cube Pets', 'cube-pets'),
   kenney('Food Kit', 'food-kit'),
   kenney('Nature Kit', 'nature-kit'),

@@ -11,9 +11,12 @@ export interface AssetDef {
   tint?: string;
   /** Extra yaw (deg) so the model's front faces +z at rotation 0. */
   yaw?: number;
+  /** Characters: the Player's cap fit as [up, forward, size, tilt°] from the model's top. */
+  cap?: [number, number, number, number];
 }
 
 import { SHADES } from '../src/palette';
+import { LOOK_ASSETS } from './looks';
 
 /** Base Item height (m); per-Product ratios below. */
 export const ITEM_SIZE = 0.544;
@@ -50,6 +53,8 @@ export const ASSETS: Record<string, AssetDef> = {
   'customer-g': { path: 'chars/character-male-d', height: 1.2 },
   'customer-h': { path: 'chars/character-male-f', height: 1.2 },
   employee: { path: 'market/character-employee', height: 1.2 },
+
+  ...LOOK_ASSETS,
 
   // items
   tomato: { path: 'food/tomato', height: ITEM },

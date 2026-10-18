@@ -9,7 +9,9 @@ import { cashPilePoint, padRemaining, stackCap, visiblePads } from '../sim/econo
 import { Stage } from './stage';
 import { Level } from './level';
 import { Juice } from './juice';
-import { Character } from './characters';
+import { Character, lookCharacter } from './characters';
+import { DEFAULT_LOOK } from '../../catalog/looks';
+import { CashierBag } from './cashier-bag';
 import { CleaningLook, HeldMop } from './cleaning';
 import { LayoutGhost } from './layout-ghost';
 import { PadVisual } from './pads';
@@ -101,7 +103,7 @@ export class WorldView {
   private playerStack = newStack();
   private sprintPuff = 0;
   private customers = new Map<number, CustomerLook>();
-  private staff = new Map<string, { ch: Character; stack: StackLook }>();
+  private staff = new Map<string, { ch: Character; stack: StackLook; bag?: CashierBag }>();
   private cleaners = new Map<string, { ch: Character; mop: HeldMop }>();
   private cleaning = new CleaningLook();
   private thief: { look: ThiefLook; stack: StackLook } | null = null;
@@ -157,7 +159,7 @@ export class WorldView {
       multiDraw,
     );
     this.blobs = this.makeBlobs();
-    this.player = new Character('player', { hat: 'orange' });
+    this.player = lookCharacter(DEFAULT_LOOK, 'orange');
     this.root.add(this.player.root);
     this.playerMop = new HeldMop(this.player);
     this.maxTag = this.tag('MAX', PALETTE.orange);
@@ -325,6 +327,21 @@ export class WorldView {
     }
   }
 
+  /** Swaps the Player's model for a Wardrobe look and cap. */
+  setLook(look: string, cap: string): void {
+    const facing = this.player.facing;
+    this.root.remove(this.player.root);
+    this.player = lookCharacter(look, cap);
+    this.player.facing = facing;
+    this.root.add(this.player.root);
+    this.playerMop = new HeldMop(this.player);
+  }
+
+  private cashierOf(register: string): Character | undefined {
+    const c = this.w.cashiers.find((k) => k.register === register);
+    return c && this.staff.get(c.id)?.ch;
+  }
+
   private padFor(id: string): PadVisual {
     let pad = this.pads.get(id);
     if (pad) return pad;
@@ -341,7 +358,11 @@ export class WorldView {
     }
     const iconName =
       name ??
-      (['cashier', 'stocker', 'cleaner'].includes(def.kind) ? 'employee' : def.kind === 'exit' ? 'van' : 'area');
+      (['cashier', 'stocker', 'cleaner'].includes(def.kind)
+        ? `staff-${def.kind}`
+        : def.kind === 'exit'
+          ? 'van'
+          : 'area');
     const [x, z] = boxCentre(place.box);
     pad = new PadVisual(x, z, iconName, ghost);
     this.pads.set(id, pad);
@@ -533,6 +554,7 @@ export class WorldView {
         this.juice.money(e.register, e.amount, new THREE.Vector3(x, 1.8, z));
         this.juice.coin(new THREE.Vector3(x, 1.2, z));
         this.customers.get(e.customer)?.ch.emote('yes');
+        if (FEEL.bag.cheer) this.cashierOf(e.register)?.emote('yes');
         break;
       }
       case 'cashCollect': {
@@ -987,13 +1009,15 @@ export class WorldView {
     for (const c of w.cashiers) {
       let look = this.staff.get(c.id);
       if (!look) {
-        look = { ch: new Character('employee', { hat: SHADES.white }), stack: newStack() };
+        look = { ch: new Character('employee', { hat: SHADES.white }), stack: newStack(), bag: new CashierBag() };
+        look.ch.afterClips = look.bag?.apply ?? null;
         look.ch.facing = Math.PI;
         this.staff.set(c.id, look);
         this.root.add(look.ch.root);
       }
       const reg = w.stations.get(c.register);
       if (reg) look.ch.facing = Math.atan2(reg.box[0] + reg.box[2] / 2 - c.x, reg.box[1] + reg.box[3] / 2 - c.z);
+      if (look.bag) look.bag.serving = reg?.kind === 'register' && reg.progress > 0;
       look.ch.update(dt, c.x, c.z, 0, 0, false);
     }
     // blob shadows

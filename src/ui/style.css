@@ -983,3 +983,134 @@ body {
     width: 140px;
   }
 }
+
+/* ---------- buttons feel alive everywhere: lift and wiggle on hover, squish on press, a picked tile pops */
+:where(#ui, #hud) :is(button, .btn, .round) {
+  transition:
+    transform 0.12s cubic-bezier(0.3, 1.6, 0.5, 1),
+    box-shadow 0.12s;
+}
+@media (hover: hover) {
+  :where(#ui, #hud) :is(button, .btn, .round):hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.05);
+  }
+  .look-cell:hover:not(:disabled) img {
+    animation: wiggle 0.5s ease-in-out;
+  }
+}
+:where(#ui, #hud) :is(button, .btn, .round):active:not(:disabled) {
+  transform: translateY(3px) scale(0.92);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.look-cell.on {
+  animation: pop 0.35s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+@keyframes wiggle {
+  25% {
+    transform: rotate(-6deg);
+  }
+  75% {
+    transform: rotate(6deg);
+  }
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.85);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ---------- Wardrobe: live preview left, Shop / Fun / Cap tiles right */
+.panel.wardrobe {
+  width: min(900px, 100%);
+  height: min(560px, 100%);
+  flex-direction: row;
+  gap: 16px;
+}
+.wardrobe-stage {
+  position: relative;
+  flex: 0 0 38%;
+  min-height: 0;
+  border-radius: 14px;
+  background: radial-gradient(var(--cream), color-mix(in srgb, var(--pad) 45%, var(--cream)));
+  border: 3px solid var(--ink);
+}
+.wardrobe-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+.wardrobe-side {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.wardrobe-name {
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+}
+.look-grid {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--t), 1fr));
+  gap: 8px;
+  align-content: start;
+  padding: 4px;
+}
+.look-grid h4 {
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
+  font-size: 18px;
+}
+.look-cell {
+  position: relative;
+  padding: 0;
+  cursor: pointer;
+  border: 3px solid transparent;
+  border-radius: 12px;
+  background: var(--cream);
+  box-shadow: 0 2px 0 var(--ink);
+}
+.look-cell img {
+  width: 100%;
+  display: block;
+}
+.look-cell.on {
+  border-color: var(--orange);
+  background: color-mix(in srgb, var(--orange) 20%, var(--cream));
+}
+.look-cell .tag {
+  position: absolute;
+  left: 3px;
+  bottom: 2px;
+  padding: 0 4px;
+  border-radius: 6px;
+  font:
+    600 10px Fredoka,
+    system-ui,
+    sans-serif;
+  color: var(--cream);
+  background: var(--ink);
+}
+@media (orientation: portrait) {
+  .panel.wardrobe {
+    flex-direction: column;
+    height: min(720px, 100%);
+  }
+  .wardrobe-stage {
+    flex-basis: 32%;
+  }
+}

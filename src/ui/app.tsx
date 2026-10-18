@@ -10,8 +10,10 @@ import { FEEL } from '../feel';
 import { Logo } from './logo';
 import { GEAR } from './hud';
 import { CREDITS } from '../../catalog/credits';
+import { LOOKS, lookById } from '../../catalog/looks';
+import { CAP_COLOURS } from '../palette';
 
-export type Overlay = 'pause' | 'settings' | 'maps' | 'credits' | 'controls' | 'paste' | 'home-tip';
+export type Overlay = 'pause' | 'settings' | 'maps' | 'credits' | 'controls' | 'paste' | 'home-tip' | 'wardrobe';
 
 export interface UiState {
   screen: 'title' | 'game';
@@ -33,6 +35,19 @@ export interface UiState {
   screenHz: number;
   /** Edit Layout is open: the bill card and buttons. */
   layout: LayoutUi | null;
+  /** The Player's saved look (Wardrobe id) and cap colour name. */
+  look: string;
+  cap: string;
+}
+
+/** The Wardrobe's 3D preview and portraits, drawn by the view. */
+export interface WardrobeBridge {
+  /** Starts the live preview and returns its canvas to mount. */
+  start: (look: string, cap: string) => HTMLCanvasElement;
+  stop: () => void;
+  show: (look: string, cap: string, wave: boolean) => void;
+  portrait: (look: string, cap: string) => string;
+  capIcon: (cap: string) => string;
 }
 
 export interface LayoutUi {
@@ -69,6 +84,8 @@ export interface UiActions {
   dismissCard: () => void;
   icon: (name: string) => string;
   click: () => void;
+  wardrobe: WardrobeBridge;
+  selectLook: (look: string, cap: string) => void;
 }
 
 const FAMILY_ORDER = ['player', 'station', 'staff'] as const;
@@ -77,7 +94,7 @@ const ROLE_NAME: Record<StockerRole, string> = { auto: 'Auto', goods: 'Goods', m
 
 function upgradeIcon(world: World, target: string): string {
   if (target === 'player') return 'player';
-  if (target === 'cashier' || target === 'stocker') return 'employee';
+  if (target === 'cashier' || target === 'stocker') return `staff-${target}`;
   return world.map.producers[target]?.model ?? target;
 }
 
@@ -176,7 +193,7 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
             <h3>Stockers</h3>
             {world.stockers.map((s, i) => (
               <div class="assign" key={s.id}>
-                <img src={actions.icon('employee')} alt="" />
+                <img src={actions.icon('staff-stocker')} alt="" />
                 <b>#{i + 1}</b>
                 <div class="chips">
                   {STOCKER_ROLES.map((role) => (
@@ -505,6 +522,68 @@ function HomeTip({ a }: { a: UiActions }) {
   );
 }
 
+// The Player's look: live preview on the left, Shop / Fun / Cap tiles on the right. Select saves look and cap together.
+function Wardrobe({ s, a }: { s: UiState; a: UiActions }) {
+  const [look, setLook] = useState(s.look);
+  const [cap, setCap] = useState(s.cap);
+  const host = useRef<HTMLDivElement>(null);
+  const w = a.wardrobe;
+  useEffect(() => {
+    host.current?.append(w.start(look, cap));
+    return w.stop;
+  }, []);
+  const pickLook = (id: string) => {
+    a.click();
+    setLook(id);
+    w.show(id, cap, true);
+  };
+  const pickCap = (c: string) => {
+    a.click();
+    setCap(c);
+    w.show(look, c, true);
+  };
+  const section = (title: string, fun: boolean) => (
+    <>
+      <h4>{title}</h4>
+      {LOOKS.filter((l) => !!l.fun === fun).map((l) => (
+        <button key={l.id} class={`look-cell ${l.id === look ? 'on' : ''}`} onClick={() => pickLook(l.id)}>
+          <img src={w.portrait(l.id, cap)} alt={l.name} />
+          {l.customer && <span class="tag">Customer</span>}
+        </button>
+      ))}
+    </>
+  );
+  return (
+    <div class="panel wardrobe" onPointerDown={(e) => e.stopPropagation()}>
+      <div class="wardrobe-stage" ref={host} />
+      <div class="wardrobe-side">
+        <div class="wardrobe-name">
+          {lookById(look).name}
+          {look === s.look && cap === s.cap ? ' ✓' : ''}
+        </div>
+        <div class="look-grid" style={{ '--t': `${FEEL.wardrobe.thumb}px` }}>
+          {section('Shop', false)}
+          {section('Fun', true)}
+          <h4>Cap</h4>
+          {Object.keys(CAP_COLOURS).map((c) => (
+            <button key={c} class={`look-cell cap-cell ${c === cap ? 'on' : ''}`} onClick={() => pickCap(c)}>
+              <img src={w.capIcon(c)} alt={c} />
+            </button>
+          ))}
+        </div>
+        <div class="row">
+          <Btn actions={a} onClick={a.close}>
+            Back
+          </Btn>
+          <Btn class="buy" actions={a} onClick={() => (a.selectLook(look, cap), a.close())}>
+            Select
+          </Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // The Maps are the title: a shelf of cards, Play under the one in front.
 function Title({ s, a }: { s: UiState; a: UiActions }) {
   const ready = s.loading >= 1;
@@ -526,6 +605,9 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
     <div class="title">
       {ready && (
         <div class="title-corner">
+          <button class="round" aria-label="Wardrobe" onClick={() => (a.click(), a.open('wardrobe'))}>
+            👕
+          </button>
           <button class="round" aria-label="Credits" onClick={() => (a.click(), a.open('credits'))}>
             ★
           </button>
@@ -710,6 +792,7 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
           {overlay === 'controls' && <Controls a={a} touch={s.touch} />}
           {overlay === 'paste' && <Paste a={a} />}
           {overlay === 'home-tip' && <HomeTip a={a} />}
+          {overlay === 'wardrobe' && <Wardrobe s={s} a={a} />}
         </div>
       )}
       <Card s={s} a={a} />

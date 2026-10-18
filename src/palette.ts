@@ -14,6 +14,21 @@ export const PALETTE = {
   orange: '#f26b1d',
 } as const;
 
+/** The Player's cap colours (Wardrobe); the save keeps the name. */
+export const CAP_COLOURS = {
+  orange: PALETTE.orange,
+  red: '#e0453a',
+  yellow: '#f2c230',
+  green: '#5bb04a',
+  blue: '#3d7be0',
+  purple: '#8b5bd6',
+  pink: '#ef7fb0',
+  black: '#3a3a3a',
+  white: '#f4f1ea',
+} as const;
+
+export type CapName = keyof typeof CAP_COLOURS;
+
 export type PaletteName = keyof typeof PALETTE;
 
 /** Supporting colours: splats, effects, tints. Kept here so every colour lives in one file. */

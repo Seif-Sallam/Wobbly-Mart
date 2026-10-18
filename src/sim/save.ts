@@ -1,5 +1,6 @@
 // What survives an Opening, and the versioned save file around it. Pure data — storage lives in src/app.
 import type { Placement } from './map';
+import { DEFAULT_LOOK } from '../../catalog/looks';
 import type { StockerRole, World } from './world';
 
 export interface MapSave {
@@ -57,6 +58,8 @@ export const DEFAULT_SETTINGS: Settings = {
   batterySaver: false,
 };
 
+const DEFAULT_CAP = 'orange';
+
 export const SAVE_VERSION = 3;
 
 export interface SaveFile {
@@ -66,6 +69,9 @@ export interface SaveFile {
   tutorialDone: boolean;
   /** First unfinished tutorial step (-1 when done); purchase steps re-derive from the save on load. */
   tutorialStep: number;
+  /** The Player's look (a Wardrobe id) and cap colour name: one choice for the whole game. */
+  look: string;
+  cap: string;
   maps: Record<string, MapSave>;
 }
 
@@ -75,6 +81,8 @@ export const emptySave = (firstMap: string): SaveFile => ({
   visited: [firstMap],
   tutorialDone: false,
   tutorialStep: 0,
+  look: DEFAULT_LOOK,
+  cap: DEFAULT_CAP,
   maps: {},
 });
 
@@ -122,7 +130,14 @@ export function migrate(raw: unknown): SaveFile {
   for (const [id, m] of Object.entries(s.maps)) {
     if (!Array.isArray(m.owned) || typeof m.money !== 'number') throw new Error(`Save for map ${id} is malformed`);
   }
-  return { ...s, version: SAVE_VERSION, tutorialDone: !!s.tutorialDone, tutorialStep: Number(s.tutorialStep) || 0 };
+  return {
+    ...s,
+    version: SAVE_VERSION,
+    tutorialDone: !!s.tutorialDone,
+    tutorialStep: Number(s.tutorialStep) || 0,
+    look: typeof s.look === 'string' ? s.look : DEFAULT_LOOK,
+    cap: typeof s.cap === 'string' ? s.cap : DEFAULT_CAP,
+  };
 }
 
 export function encodeSaveCode(save: SaveFile): string {

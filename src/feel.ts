@@ -4,8 +4,18 @@ export const FEEL = {
   accelTime: 0.31,
   stopTime: 0.3,
   turnSpeed: 10,
-  /** Touch: joystick force past its ring that sprints. */
-  sprintForce: 1.4,
+  /** Touch joystick: ring sizes (px), force past the ring that sprints (drawn as a dashed ring), and the share of the
+   * ring that already gives full walk speed. */
+  joyPortrait: 110,
+  joyLandscape: 115,
+  sprintForce: 1.5,
+  joyFullPush: 0.6,
+  /** Landscape: the stick's zone is this share of the width from the left; Fixed rests with its centre this far (px)
+   * from the left and bottom (plus safe area). A Manual grab hold shows a ring this size (px). */
+  joyZone: 0.45,
+  joyRestLeft: 110,
+  joyRestBottom: 130,
+  grabRing: 44,
   sprintPuffGap: 0.12,
   walkBob: 0.05,
   // camera
@@ -19,6 +29,19 @@ export const FEEL = {
   zoomSlider: 0.5,
   zoomStep: 0.08,
   zoomEase: 10,
+  /** Phone landscape (a touch screen wider than tall): metres across the height, the Player's shift right of centre
+   * (view widths), Pad size ×, HUD size × (on top of the HUD size setting), banners / report / cards ×. */
+  landView: 15,
+  landShift: 0.05,
+  landPadScale: 1.25,
+  landHudScale: 0.8,
+  landCardScale: 0.7,
+  /** Screens (title, menus, Settings, Office, Edit Layout) shrink on phones: ×, landscape / portrait. */
+  landScreenScale: 0.68,
+  portScreenScale: 0.85,
+  /** Office panel: share of the width (landscape phones) and of the height (portrait bottom sheet). */
+  officeSide: 0.42,
+  officeSheet: 0.46,
   /** HUD size slider: scale range and step. */
   hudScaleMin: 1,
   hudScaleMax: 1.6,
@@ -44,8 +67,11 @@ export const FEEL = {
   tapRing: 0.6,
   tapRingPulse: 0.12,
   tapGlowMargin: 0.3,
-  followSharpness: 9,
-  lookAhead: 0.44,
+  /** Camera follow (1/s), and its lead: seconds of velocity, capped at leadMax (m), eased in at leadEase (1/s). */
+  followSharpness: 14,
+  lead: 0.25,
+  leadMax: 1.5,
+  leadEase: 3,
   // stack
   itemSpacing: 0.435,
   stackForward: 0.55,

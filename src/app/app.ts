@@ -33,6 +33,7 @@ import { WardrobeView } from '../view/wardrobe';
 import { renderStaffIcons } from '../view/staff-icons';
 import { moodOf } from '../view/receipt';
 import { Input } from '../input/input';
+import { insets, isTouch, layout, watchLayout } from './phone';
 import { Game } from './game';
 import { EditLayout } from './edit-layout';
 import {
@@ -62,12 +63,17 @@ const SCENERY_PEOPLE = 4;
 /** How quickly the measured screen tick follows changes (it varies with ProMotion and throttling). */
 const TICK_FOLLOW = 0.05;
 
+/** Phones play fullscreen. iPhone Safari has no Fullscreen API, and an installed app already is. */
+const canFullscreen = (): boolean =>
+  isTouch &&
+  !!document.documentElement.requestFullscreen &&
+  !matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
+
 const tutorKey = (map: string, step: number): string => `tutor.${map}.${step}`;
 
 const isIos =
   /iP(hone|ad|od)/.test(navigator.userAgent) &&
   !('standalone' in navigator && (navigator as { standalone?: boolean }).standalone);
-const isTouch = matchMedia('(pointer: coarse)').matches;
 
 export class App {
   private stage: Stage;
@@ -107,7 +113,10 @@ export class App {
 
   constructor() {
     this.stage = new Stage(document.getElementById('scene') as HTMLCanvasElement);
-    this.input = new Input(document.getElementById('joy') as HTMLElement);
+    this.input = new Input(
+      document.getElementById('joy') as HTMLElement,
+      document.getElementById('grab-ring') as HTMLElement,
+    );
     this.hud = new Hud(document.getElementById('hud') as HTMLElement);
     this.hud.visible(false);
     this.uiRoot = document.getElementById('ui') as HTMLElement;
@@ -115,12 +124,14 @@ export class App {
     this.save = loaded.save;
     this.firstRun = !!loaded.fresh;
     this.settings = loadSettings();
-    this.stage.viewSize = this.zoom();
+    document.documentElement.style.setProperty('--sprint-ring', String(FEEL.sprintForce));
+    this.stage.viewSize = this.viewZoom();
     this.stage.batterySaver(this.settings.batterySaver);
-    this.hud.scale(this.settings.hudScale);
     this.input.onTap = (x, y, double) => {
       const game = this.game;
       if (!game || this.ui.screen !== 'game' || game.paused || this.editing) return;
+      // with a stick, floor taps never walk
+      if (isTouch && this.settings.joystick !== 'off') return;
       const p = this.stage.floorAt(x, y);
       if (p) this.input.tap.start(game.world, p, double);
     };
@@ -150,6 +161,7 @@ export class App {
       cap: this.save.cap in CAP_COLOURS ? this.save.cap : 'orange',
     };
     this.ui.zoom = this.zoom();
+    watchLayout(() => this.applyLayout());
     this.hud.onGear = () => this.openOverlay('pause');
     this.hud.onTutorNext = () => {
       if (!this.game) return;
@@ -182,6 +194,7 @@ export class App {
     this.game = new Game(this.stage, this.input, map, showcaseSave(map), true);
     this.game.paused = true;
     this.game.view.setLook(this.ui.look, this.ui.cap);
+    this.applyLayout();
     this.game.view.cameraOverride = new THREE.Vector3();
     this.game.view.scenery(SCENERY_PEOPLE);
     const { world } = this.game;
@@ -283,6 +296,7 @@ export class App {
     this.sounds.unlock(this.settings);
     this.ui.wipe = true;
     this.renderUi();
+    if (canFullscreen()) void document.documentElement.requestFullscreen().catch(() => {});
     document.querySelector('.logo')?.classList.add('wobble');
     setTimeout(() => {
       this.openMap(this.currentMap());
@@ -311,7 +325,7 @@ export class App {
     game.view.scenery(0);
     game.view.cameraOverride = null;
     game.paused = false;
-    game.manualGrab = !isTouch && this.settings.manualGrab;
+    this.applyLayout();
     this.hud.resetMoney(game.world.money);
     this.officeDismissed = this.exitDismissed = false;
     this.seenPads.clear();
@@ -333,6 +347,11 @@ export class App {
     for (const e of events) this.onEvent(e);
     this.sounds.frame(events, w, (p) => this.onScreen(p), dt);
     this.hud.update(dt, w.money, completion(w), w.closed);
+    document.documentElement.classList.toggle('sprinting', w.player.sprinting);
+    document.documentElement.classList.toggle('joying', this.input.joyHeld);
+    // leaving fullscreen on a phone pauses behind a "Tap to play fullscreen" card
+    if (!this.ui.overlay && !this.editing && !this.layout?.open && canFullscreen() && !document.fullscreenElement)
+      this.openOverlay('fullscreen');
     // Office opens on reaching the desk; after X it stays shut until the Player walks away and back.
     if (!w.atOffice) this.officeDismissed = false;
     const office = w.atOffice && !this.officeDismissed;
@@ -340,8 +359,13 @@ export class App {
       this.ui.office = office;
       this.renderUi();
     }
+    // keep the Player clear of the Office: centred in what the panel leaves, plus the landscape shift right
     const wide = innerWidth > innerHeight;
-    this.stage.nudge.set(office && wide ? -1 / 6 : 0, office && !wide ? 0.25 : 0);
+    const side = layout.land ? FEEL.officeSide : 1 / 3;
+    this.stage.nudge.set(
+      (office && wide ? -side / 2 : 0) + (layout.land ? FEEL.landShift : 0),
+      office && !wide ? FEEL.officeSheet / 2 : 0,
+    );
     if (!w.atExit) this.exitDismissed = false;
     else if (w.owned.has('exit') && !this.exitDismissed && !this.ui.overlay) {
       this.exitDismissed = true;
@@ -474,7 +498,8 @@ export class App {
       cards.push({ icon: emojiUrl(THIEF), text: 'Catch!', left: 1, red: true });
     }
     const ins = w.inspector;
-    if (ins?.state === 'warn') this.warning?.line(
+    if (ins?.state === 'warn')
+      this.warning?.line(
         `Arriving in ${Math.ceil(ins.t)} s! Mop up, then stay close.${w.badReviewStreak ? ' Ignore them again and the fine can put you in debt.' : ''}`,
       );
     else if (this.warning) {
@@ -570,7 +595,7 @@ export class App {
   }
 
   private escape(): void {
-    if (this.ui.screen !== 'game') return;
+    if (this.ui.screen !== 'game' || this.ui.overlay === 'fullscreen') return;
     if (this.layout?.open) return this.layout.escape();
     if (this.ui.overlay) this.openOverlay(this.ui.overlay === 'pause' ? null : 'pause');
     else if (this.ui.office) {
@@ -599,6 +624,10 @@ export class App {
     layoutDone: () => this.layout?.done(),
     assign: (stocker, role) => this.game?.assign(stocker, role),
     setSetting: (key, value) => this.setSetting(key, value),
+    playFullscreen: () => {
+      void document.documentElement.requestFullscreen().catch(() => {});
+      this.openOverlay(null);
+    },
     fullscreen: () => {
       if (document.fullscreenElement) void document.exitFullscreen();
       else void document.documentElement.requestFullscreen?.();
@@ -667,17 +696,40 @@ export class App {
     writeSettings(this.settings);
     this.sounds.apply(this.settings);
     this.stage.batterySaver(this.settings.batterySaver);
-    this.hud.scale(this.settings.hudScale);
     this.ui.zoom = this.zoom();
-    this.stage.zoomTo(this.ui.zoom);
-    if (this.game) this.game.manualGrab = !isTouch && this.settings.manualGrab;
-    this.redraw = true;
+    this.applyLayout();
     this.renderUi();
   }
 
-  /** Wanted zoom: the saved one, or the device default. */
+  /** Everything that follows the settings and the window's shape: HUD size, view, Pads. */
+  private applyLayout(): void {
+    this.hud.scale(this.settings.hudScale * (layout.land ? FEEL.landHudScale : 1));
+    this.stage.zoomTo(this.viewZoom());
+    if (this.game) {
+      this.game.view.padScale = layout.land ? FEEL.landPadScale : 1;
+      this.game.manualGrab = this.settings.manualGrab && (!isTouch || layout.land);
+    }
+    const root = document.documentElement;
+    root.classList.toggle('joy-off', isTouch && this.settings.joystick === 'off');
+    root.classList.toggle('joy-free', layout.land && this.settings.joystick === 'free');
+    root.style.setProperty('--joy-zone', String(FEEL.joyZone));
+    root.style.setProperty('--joy-size', `${FEEL.joyLandscape}px`);
+    root.style.setProperty('--joy-left', `${FEEL.joyRestLeft}px`);
+    root.style.setProperty('--joy-bottom', `${FEEL.joyRestBottom}px`);
+    root.style.setProperty('--grab-ring', `${FEEL.grabRing}px`);
+    this.input.holdGrab = layout.land && this.settings.manualGrab;
+    this.input.setJoystick(this.settings.joystick, layout.land, insets());
+    this.redraw = true;
+  }
+
+  /** Wanted zoom (the Settings slider): the saved one, or the device default. */
   private zoom(): number {
     return this.settings.zoom ?? (isTouch ? FEEL.zoomPhone : FEEL.zoomDesktop);
+  }
+
+  /** Metres across the short side in effect: landscape phones show landView across the height at the default. */
+  private viewZoom(): number {
+    return layout.land ? (this.zoom() * FEEL.landView) / FEEL.zoomPhone : this.zoom();
   }
 
   private setZoom(metres: number): void {
@@ -685,6 +737,7 @@ export class App {
   }
 
   private renderUi(): void {
+    document.documentElement.classList.toggle('on-title', this.ui.screen !== 'game');
     renderUi(this.uiRoot, this.ui, this.actions, this.ui.screen === 'game' ? (this.game?.world ?? null) : null);
   }
 }

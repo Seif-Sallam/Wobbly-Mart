@@ -178,6 +178,7 @@ export class App {
       this.lostTab = true;
       this.ui.card = 'other-tab';
       if (this.game) this.game.paused = true;
+      this.syncAudio();
       this.renderUi();
     });
     // browsers allow audio only after a gesture: the first one starts the title's music (its backdrop Map's track)
@@ -187,7 +188,7 @@ export class App {
     };
     addEventListener('pointerdown', firstGesture, { once: true });
     addEventListener('keydown', firstGesture, { once: true });
-    addEventListener('visibilitychange', () => (document.hidden ? this.onHidden() : this.sounds.pause(false)));
+    addEventListener('visibilitychange', () => (document.hidden ? this.onHidden() : this.syncAudio()));
     addEventListener('pagehide', () => this.writeSave());
     this.renderUi();
   }
@@ -303,6 +304,7 @@ export class App {
       this.openMap(this.currentMap());
       this.ui.screen = 'game';
       this.ui.wipe = false;
+      this.syncAudio();
       this.hud.visible(true);
       this.renderUi();
     }, WIPE_SECONDS);
@@ -336,6 +338,7 @@ export class App {
     this.ui.overlay = null;
     this.ui.office = false;
     this.ui.wipe = true;
+    this.syncAudio();
     this.renderUi();
     setTimeout(() => {
       const map = game.world.map;
@@ -656,9 +659,18 @@ export class App {
 
   private onHidden(): void {
     this.writeSave();
-    this.sounds.pause(true);
     if (this.ui.screen === 'game' && (!this.ui.overlay || this.ui.overlay === 'logbook') && !this.lostTab)
       this.openOverlay('pause');
+    this.syncAudio();
+  }
+
+  /** The one rule for audio: silent while the tab is hidden or taken over, or behind an in-game overlay that pauses the
+   *  game. The Logbook keeps the game running and Settings keeps the music (so its sliders can be heard); the title
+   *  plays on under any overlay. */
+  private syncAudio(): void {
+    const o = this.ui.overlay;
+    const behind = this.ui.screen === 'game' && !!o && o !== 'logbook' && o !== 'settings';
+    this.sounds.pause(document.hidden || this.lostTab || behind);
   }
 
   // ---------- overlays
@@ -673,8 +685,7 @@ export class App {
     if (this.game && this.ui.screen === 'game') this.game.paused = pause || this.lostTab;
     this.ui.screenHz = Math.round(1000 / this.tickMs);
     this.redraw = true;
-    // Settings keeps the music playing, so its volume sliders can be heard
-    this.sounds.pause(pause && o !== 'settings');
+    this.syncAudio();
     this.renderUi();
   }
 

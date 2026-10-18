@@ -126,6 +126,9 @@ export class WorldView {
   private time = 0;
   /** Set by the game: where a Tap Walk is heading, or null. */
   walkTarget: Target | null = null;
+  /** The walk was started from a Delivery card: draw the route line to its pickup tile. */
+  walkRoute = false;
+  private routeLine: THREE.Mesh;
   private walkRing: THREE.Mesh;
   private walkGlow: THREE.Mesh;
   /** Set by the app: tutorial / guidance target point, or null. */
@@ -182,7 +185,22 @@ export class WorldView {
     const glowMat = new THREE.MeshBasicMaterial({ color: PALETTE.pad, transparent: true, depthWrite: false });
     this.walkGlow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), glowMat);
     this.walkGlow.renderOrder = 1;
-    this.root.add(this.walkRing, this.walkGlow);
+    const dash = document.createElement('canvas');
+    dash.width = 4;
+    dash.height = 2;
+    const dc = dash.getContext('2d') as CanvasRenderingContext2D;
+    dc.fillStyle = '#fff';
+    dc.fillRect(0, 0, 4, 1);
+    const dashTex = new THREE.CanvasTexture(dash);
+    dashTex.wrapT = THREE.RepeatWrapping;
+    dashTex.magFilter = THREE.NearestFilter;
+    this.routeLine = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: PALETTE.orange, alphaMap: dashTex, transparent: true, depthWrite: false }),
+    );
+    this.routeLine.renderOrder = 1;
+    this.routeLine.visible = false;
+    this.root.add(this.walkRing, this.walkGlow, this.routeLine);
     this.reset(w);
   }
 
@@ -1267,6 +1285,18 @@ export class WorldView {
       const [x, z] = station ? boxCentre(station.box) : 'point' in t ? t.point : [0, 0];
       this.walkRing.position.set(x, WALK_MARK_Y, z);
       this.walkRing.scale.setScalar(FEEL.tapRing * (1 + FEEL.tapRingPulse * Math.sin(this.time * 8)));
+    }
+    this.routeLine.visible = this.walkRoute && !!station;
+    if (this.routeLine.visible && station) {
+      const [x, z] = boxCentre(station.box);
+      const dx = x - p.x;
+      const dz = z - p.z;
+      const len = Math.hypot(dx, dz);
+      const line = this.routeLine;
+      line.position.set(p.x + dx / 2, WALK_MARK_Y - 0.01, p.z + dz / 2);
+      line.rotation.y = Math.atan2(dx, dz);
+      line.scale.set(FEEL.routeWidth, 1, len);
+      (line.material as THREE.MeshBasicMaterial).alphaMap?.repeat.set(1, len / FEEL.routeDash);
     }
     if (station) {
       const [bx, bz, bw, bd] = station.box;

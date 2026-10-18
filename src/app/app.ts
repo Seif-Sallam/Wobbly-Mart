@@ -135,6 +135,13 @@ export class App {
       const p = this.stage.floorAt(x, y);
       if (p) this.input.tap.start(game.world, p, double);
     };
+    this.hud.onDelivery = (id) => {
+      const game = this.game;
+      if (!game || this.ui.screen !== 'game' || game.paused || this.editing) return;
+      const tap = this.input.tap;
+      if (tap.car === id) tap.sprint = true;
+      else tap.startCar(game.world, id, false);
+    };
     this.input.onZoom = (k) => {
       if (this.ui.screen === 'game' && !this.editing) this.setZoom(this.zoom() * k);
     };
@@ -490,10 +497,16 @@ export class App {
       if (!d) continue;
       const [x, z] = boxCentre(st.box);
       targets.push({ at: new THREE.Vector3(x, 0, z), icon: iconUrl('van') });
-      const got = d.order.reduce((n, l) => n + l.got, 0);
-      const want = d.order.reduce((n, l) => n + l.want, 0);
-      const left = 1 - d.t / d.time;
-      cards.push({ icon: iconUrl('van'), text: `${got}/${want}`, left, red: d.time - d.t <= TUNING.events.honkAt });
+      cards.push({
+        icon: iconUrl('van'),
+        text: '',
+        left: 1 - d.t / d.time,
+        red: d.honked,
+        delivery: {
+          id: st.id,
+          lines: d.order.map((l) => ({ icon: iconUrl(w.map.products[l.product]?.model ?? ''), got: l.got, want: l.want })),
+        },
+      });
     }
     const th = w.thief;
     if (th && !th.caught && (th.state === 'grab' || th.state === 'run')) {

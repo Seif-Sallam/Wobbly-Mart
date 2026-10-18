@@ -15,6 +15,8 @@ export interface EventCard {
   text: string;
   left: number;
   red: boolean;
+  /** A Delivery card: the pickup Station's id (tap to walk there) and an Item icon with got/want per order line. */
+  delivery?: { id: string; lines: { icon: string; got: number; want: number }[] };
 }
 
 export interface EventBanner {
@@ -47,6 +49,8 @@ export class Hud {
     tutor: '',
   };
   onGear: () => void = () => {};
+  /** A Delivery card was tapped: its pickup Station's id. */
+  onDelivery: (id: string) => void = () => {};
   onTutorNext: () => void = () => {};
   onTutorSkip: () => void = () => {};
 
@@ -177,21 +181,56 @@ export class Hud {
       const el = document.createElement('div');
       el.className = 'event-card pill';
       el.innerHTML = '<img alt=""><span></span><i><b></b></i>';
+      el.addEventListener('pointerdown', (e) => {
+        if (!el.dataset.id) return;
+        e.stopPropagation();
+        this.onDelivery(el.dataset.id);
+      });
       this.cardBox.appendChild(el);
       this.cards.push(el);
     }
     this.cards.forEach((el, i) => {
       const c = list[i];
-      const key = c ? `${c.icon}|${c.text}|${Math.round(c.left * 100)}|${c.red}` : '';
+      const lines = c?.delivery?.lines.map((l) => `${l.got}/${l.want}`).join();
+      const key = c ? `${c.icon}|${c.text}|${Math.round(c.left * 100)}|${c.red}|${c.delivery?.id}|${lines}` : '';
       if (key === this.drawn.cards[i]) return;
       this.drawn.cards[i] = key;
       el.style.display = c ? '' : 'none';
       if (!c) return;
       const img = el.querySelector('img') as HTMLImageElement;
       if (img.dataset.src !== c.icon) img.src = img.dataset.src = c.icon;
-      (el.querySelector('span') as HTMLElement).textContent = c.text;
+      if (!c.delivery) (el.querySelector('span') as HTMLElement).textContent = c.text;
       (el.querySelector('b') as HTMLElement).style.width = `${Math.round(c.left * 100)}%`;
       el.classList.toggle('red', c.red);
+      el.classList.toggle('delivery', !!c.delivery);
+      if (c.delivery) el.dataset.id = c.delivery.id;
+      else delete el.dataset.id;
+      this.drawLines(el, c.delivery?.lines ?? []);
+    });
+  }
+
+  /** A Delivery card's order lines: Item icon with got/want under it; ✓ and dimmed once full, a pop when an Item lands. */
+  private drawLines(card: HTMLElement, lines: { icon: string; got: number; want: number }[]): void {
+    const box = card.querySelector('span') as HTMLElement;
+    if (lines.length && box.firstChild && !box.firstElementChild) box.textContent = '';
+    while (box.children.length > lines.length) box.lastElementChild?.remove();
+    while (box.children.length < lines.length) {
+      const l = document.createElement('em');
+      l.innerHTML = '<img alt=""><small></small>';
+      box.appendChild(l);
+    }
+    lines.forEach((line, i) => {
+      const el = box.children[i] as HTMLElement;
+      const img = el.querySelector('img') as HTMLImageElement;
+      if (img.dataset.src !== line.icon) img.src = img.dataset.src = line.icon;
+      (el.querySelector('small') as HTMLElement).textContent = `${line.got}/${line.want}`;
+      el.classList.toggle('full', line.got >= line.want);
+      if (Number(el.dataset.got ?? line.got) < line.got) {
+        el.classList.remove('pop');
+        void el.offsetWidth;
+        el.classList.add('pop');
+      }
+      el.dataset.got = String(line.got);
     });
   }
 

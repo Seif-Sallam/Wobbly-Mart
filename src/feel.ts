@@ -54,7 +54,7 @@ export const FEEL = {
   // from its edge (settled within tapStationSettle); a Register walk ends tapBehindRegister (m) past its back edge.
   tapMs: 250,
   tapPx: 12,
-  doubleTapMs: 300,
+  doubleTapMs: 320,
   tapPickSlop: 0.6,
   tapCancelPush: 0.15,
   tapArriveSlow: 1.2,
@@ -67,6 +67,9 @@ export const FEEL = {
   tapRing: 0.6,
   tapRingPulse: 0.12,
   tapGlowMargin: 0.3,
+  /** Delivery route line: width (m) and length of one dash plus gap (m). */
+  routeWidth: 0.14,
+  routeDash: 0.5,
   /** Camera follow (1/s), and its lead: seconds of velocity, capped at leadMax (m), eased in at leadEase (1/s). */
   followSharpness: 14,
   lead: 0.25,

@@ -61,6 +61,8 @@ export class Sounds {
   private sinceDrop = 0;
   private sinceTick = 0;
   private paused = false;
+  /** The music's one playback: resumed, never started twice (a second play() while it loads would layer a copy). */
+  private musicId: number | null = null;
 
   /** Called from the Play tap: browsers only allow audio after a gesture. */
   unlock(settings: Settings): void {
@@ -78,6 +80,7 @@ export class Sounds {
     if (!this.sfxHowl || track === this.musicMap) return;
     this.musicMap = track;
     this.music?.unload();
+    this.musicId = null;
     const base = import.meta.env.BASE_URL;
     this.music = new Howl({
       src: [`${base}audio/music-${track}.mp3`],
@@ -97,7 +100,8 @@ export class Sounds {
     if (!this.music) return;
     this.music.volume(this.musicLevel());
     if (settings.musicVolume > 0 && !this.paused) {
-      if (!this.music.playing()) this.music.play();
+      if (this.musicId === null) this.musicId = this.music.play();
+      else if (!this.music.playing(this.musicId)) this.music.play(this.musicId);
     } else this.music.pause();
   }
 

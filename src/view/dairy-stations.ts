@@ -2,15 +2,22 @@
 import * as THREE from 'three';
 import { SHADES } from '../palette';
 import { ITEM_SIZE } from '../../catalog/assets';
+import { glassMaterial, glossMaterial } from './materials';
+import { dynamic, moving } from './merge';
 import { box, cone, cyl, inputSpots, put, sph, torus, withTray, type JuiceStation } from './juice-stations';
 
 const D = SHADES.dairy;
 
 const steel = new THREE.MeshStandardMaterial({ color: D.steel, roughness: 0.3, metalness: 0.25 });
 const steelDark = new THREE.MeshStandardMaterial({ color: D.steelDark, roughness: 0.3, metalness: 0.25 });
-const glass = (o = 0.45) =>
-  new THREE.MeshStandardMaterial({ color: D.glass, transparent: true, opacity: o, roughness: 0.1 });
-const gloss = (c: string) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.3 });
+const glass = (opacity = 0.45) => glassMaterial(D.glass, opacity);
+const foil = new THREE.MeshStandardMaterial({ color: D.foil, roughness: 0.35, metalness: 0.4 });
+const steelBowl = new THREE.MeshStandardMaterial({
+  color: D.steel,
+  roughness: 0.3,
+  metalness: 0.25,
+  side: THREE.DoubleSide,
+});
 const steam = new THREE.MeshStandardMaterial({ color: D.steam, transparent: true, opacity: 0.7, roughness: 0.9 });
 const TRAY = { base: D.tile, top: steel };
 
@@ -23,7 +30,7 @@ const group = (p: THREE.Object3D, x = 0, y = 0, z = 0) => {
 
 /** Rising steam puffs over a spot; returns the per-frame update. */
 function puffs(p: THREE.Object3D, x: number, y: number, z: number, n = 4) {
-  const ps = Array.from({ length: n }, () => sph(p, 0.09, steam, x, y, z, 1));
+  const ps = Array.from({ length: n }, () => dynamic(sph(p, 0.09, steam, x, y, z, 1)));
   return (t: number, on: boolean) =>
     ps.forEach((m, i) => {
       const k = (t * 0.6 + i / n) % 1;
@@ -46,7 +53,7 @@ function goat(p: THREE.Object3D, size: number) {
     [0.12, 0.25],
   ])
     box(root, 0.09, 0.38, 0.09, D.goat, x, 0, z);
-  const tail = box(root, 0.06, 0.14, 0.05, D.goat, 0, 0.68, -0.36);
+  const tail = dynamic(box(root, 0.06, 0.14, 0.05, D.goat, 0, 0.68, -0.36));
   const head = group(root, 0, 0.72, 0.36);
   box(head, 0.24, 0.26, 0.3, D.goat, 0, -0.05, 0.08);
   box(head, 0.14, 0.1, 0.1, D.nose, 0, -0.05, 0.25);
@@ -56,7 +63,8 @@ function goat(p: THREE.Object3D, size: number) {
     sph(head, 0.025, D.ink, x * 1.3, 0.04, 0.2, 0);
   }
   cone(head, 0.04, 0.12, D.goatDark, 0, -0.3, 0.18, 6).rotation.x = Math.PI;
-  const bell = sph(root, 0.06, gloss(D.bell), 0, 0.5, 0.42, 1);
+  moving(head);
+  const bell = dynamic(sph(root, 0.06, glossMaterial(D.bell), 0, 0.5, 0.42, 1));
   return { root, head, tail, bell };
 }
 
@@ -112,9 +120,11 @@ function butterChurn(): JuiceStation {
   for (const x of [-0.3, 0.3]) torus(drum, 0.41, 0.02, steelDark, x).rotation.set(0, Math.PI / 2, 0);
   cyl(drum, 0.15, 0.03, glass(0.6), 0, 0, 0.4).rotation.x = Math.PI / 2;
   sph(drum, 0.12, D.cream, 0, 0, 0.36, 1).scale.set(1, 1, 0.3);
+  moving(drum);
   const wheel = group(g, 0.5, top, 0);
   torus(wheel, 0.26, 0.03, D.blue).rotation.set(0, Math.PI / 2, 0);
   for (let i = 0; i < 4; i++) box(wheel, 0.02, 0.52, 0.02, D.blue, 0, -0.26, 0).rotation.x = (i * Math.PI) / 4;
+  moving(wheel);
   return {
     group: g,
     animate: (dt, _t, wk) => {
@@ -137,10 +147,11 @@ function cheesePress(goatish: boolean): JuiceStation {
   const ram = group(g, 0, top + 1.1, 0);
   cyl(ram, 0.06, 0.6, steel, 0, -0.6);
   cyl(ram, 0.26, 0.05, band, 0, -0.65);
+  moving(ram);
   cyl(g, 0.28, 0.28, steel, 0, top, 0);
   cyl(g, 0.24, 0.02, goatish ? D.goatCheese : D.cheese, 0, top + 0.28, 0);
   cyl(g, 0.12, 0.4, glass(), 0.5, top, 0.25);
-  const whey = cyl(g, 0.1, 0.01, D.cream, 0.5, top + 0.02, 0.25);
+  const whey = dynamic(cyl(g, 0.1, 0.01, D.cream, 0.5, top + 0.02, 0.25));
   box(g, 0.5, 0.25, 0.02, band, 0, top - 0.5, 0.51);
   if (goatish) {
     cyl(g, 0.245, 0.02, D.ash, 0, top + 0.3, 0);
@@ -150,7 +161,7 @@ function cheesePress(goatish: boolean): JuiceStation {
     for (const x of [-0.06, 0.06]) cone(sign, 0.025, 0.12, D.horn, x, 0.2, 0, 5);
     box(sign, 0.44, 0.03, 0.05, D.teal, 0, -0.01);
   }
-  const drip = sph(g, 0.035, glass(0.8), 0.2, top + 0.25, 0.2, 0);
+  const drip = dynamic(sph(g, 0.035, glass(0.8), 0.2, top + 0.25, 0.2, 0));
   return {
     group: g,
     animate: (dt, t, wk) => {
@@ -180,23 +191,25 @@ function iceCreamMaker(): JuiceStation {
   }
   const sign = group(g, 0, top + 1.06, -0.22);
   cone(sign, 0.09, 0.22, D.waffle, 0, 0.22, 0, 10).rotation.x = Math.PI;
-  sph(sign, 0.1, gloss(D.pink), 0, 0.34, 0, 2);
+  sph(sign, 0.1, glossMaterial(D.pink), 0, 0.34, 0, 2);
   box(g, 0.6, 0.18, 0.2, steel, 0, top + 0.6, 0.17);
   const levers: THREE.Group[] = [];
   for (const x of [-0.18, 0, 0.18]) {
     cone(g, 0.035, 0.08, steelDark, x, top + 0.52, 0.22, 8).rotation.x = Math.PI;
     const lv = group(g, x, top + 0.78, 0.25);
     box(lv, 0.03, 0.18, 0.03, D.ink);
-    sph(lv, 0.045, gloss(D.pink), 0, 0.2, 0, 1);
+    sph(lv, 0.045, glossMaterial(D.pink), 0, 0.2, 0, 1);
     levers.push(lv);
   }
+  moving(levers[1]);
   box(g, 0.6, 0.03, 0.22, steelDark, 0, top + 0.02, 0.2);
   const cup = group(g, 0, top + 0.05, 0.22);
   cone(cup, 0.07, 0.22, D.waffle, 0, 0, 0, 10).rotation.x = Math.PI;
   const swirl = [0, 1, 2, 3, 4].map((i) =>
-    torus(cup, 0.065 - i * 0.011, 0.032, gloss(i % 2 ? D.vanilla : D.pink), 0, 0.25 + i * 0.045),
+    dynamic(torus(cup, 0.065 - i * 0.011, 0.032, glossMaterial(i % 2 ? D.vanilla : D.pink), 0, 0.25 + i * 0.045)),
   );
-  const tip = cone(cup, 0.025, 0.06, gloss(D.pink), 0, 0.46, 0, 8);
+  const tip = dynamic(cone(cup, 0.025, 0.06, glossMaterial(D.pink), 0, 0.46, 0, 8));
+  moving(cup);
   let fill = 0;
   return {
     group: g,
@@ -219,7 +232,7 @@ function puddingPot(): JuiceStation {
   const kettle = group(g, 0, top + 0.75, 0);
   const bowl = new THREE.Mesh(
     new THREE.SphereGeometry(0.42, 18, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
-    new THREE.MeshStandardMaterial({ color: D.steel, roughness: 0.3, metalness: 0.25, side: THREE.DoubleSide }),
+    steelBowl,
   );
   put(kettle, bowl, 0, 0.1);
   cyl(kettle, 0.39, 0.02, D.pudding, 0, -0.02);
@@ -227,6 +240,8 @@ function puddingPot(): JuiceStation {
   const whisk = group(kettle);
   cyl(whisk, 0.02, 0.5, D.ink);
   for (let i = 0; i < 3; i++) torus(whisk, 0.07, 0.008, steel, 0, 0.02).rotation.set(0, (i * Math.PI) / 3, 0);
+  moving(whisk);
+  moving(kettle);
   const puff = puffs(g, 0, top + 1.0, 0);
   return {
     group: g,
@@ -262,7 +277,7 @@ const ITEMS: Record<string, (g: THREE.Group) => void> = {
   // a long flat brick, half wrapped in foil
   butter: (g) => {
     box(g, 0.42, 0.12, 0.2, D.butter);
-    box(g, 0.2, 0.125, 0.205, new THREE.MeshStandardMaterial({ color: D.foil, roughness: 0.35, metalness: 0.4 }), 0.11);
+    box(g, 0.2, 0.125, 0.205, foil, 0.11);
   },
   // a round wheel with a darker rind
   cheese: (g) => {
@@ -275,14 +290,14 @@ const ITEMS: Record<string, (g: THREE.Group) => void> = {
   // a tub with a scoop and a cherry
   'ice-cream': (g) => {
     cyl(g, 0.14, 0.15, D.pink, 0, 0, 0, 0.11, 16);
-    sph(g, 0.13, gloss(D.vanilla), 0, 0.16, 0, 2).scale.set(1, 0.7, 1);
-    sph(g, 0.03, gloss(D.cherry), 0, 0.26, 0, 1);
+    sph(g, 0.13, glossMaterial(D.vanilla), 0, 0.16, 0, 2).scale.set(1, 0.7, 1);
+    sph(g, 0.03, glossMaterial(D.cherry), 0, 0.26, 0, 1);
   },
   // a white ramekin with pudding and a caramel pool
   pudding: (g) => {
     cyl(g, 0.13, 0.17, D.tile, 0, 0, 0, 0.1, 18);
-    cyl(g, 0.12, 0.01, gloss(D.pudding), 0, 0.165, 0, 0.12, 18);
-    cyl(g, 0.07, 0.012, gloss(D.caramel), 0, 0.17, 0, 0.07, 14);
+    cyl(g, 0.12, 0.01, glossMaterial(D.pudding), 0, 0.165, 0, 0.12, 18);
+    cyl(g, 0.07, 0.012, glossMaterial(D.caramel), 0, 0.17, 0, 0.07, 14);
   },
 };
 

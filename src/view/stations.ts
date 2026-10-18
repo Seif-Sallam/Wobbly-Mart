@@ -270,12 +270,12 @@ function counter(w: number, d: number, v: StationVisual): number {
   return new THREE.Box3().setFromObject(bar).max.y;
 }
 
-/** The Juice Bar's and Dairy Farm's code-built Producers, animated whole (they move while working). */
+/** The code-built Producers: their moving parts are marked dynamic, everything else merges. */
 function juice(name: string, w: number, d: number, v: StationVisual): boolean {
   const make = JUICE_STATIONS[name] ?? DAIRY_STATIONS[name] ?? PIZZA_STATIONS[name];
   if (!make) return false;
   const built = make(w, d);
-  v.body.add(dynamic(built.group));
+  v.body.add(built.group);
   v.root.updateMatrixWorld(true);
   for (const p of built.plants ?? []) v.plants.push(v.body.worldToLocal(p.getWorldPosition(new THREE.Vector3())));
   v.plantModel = null;

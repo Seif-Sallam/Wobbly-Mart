@@ -9,6 +9,12 @@ export function dynamic<T extends THREE.Object3D>(o: T): T {
   return o;
 }
 
+/** A part that moves as one piece: its own static meshes merge into one per material, and it stays out of later merges. */
+export function moving<T extends THREE.Object3D>(o: T): T {
+  mergeStatic(o);
+  return dynamic(o);
+}
+
 function isDynamic(o: THREE.Object3D, root: THREE.Object3D): boolean {
   for (let n: THREE.Object3D | null = o; n && n !== root; n = n.parent) if (n.userData.dynamic) return true;
   return false;

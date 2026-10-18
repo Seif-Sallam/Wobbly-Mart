@@ -41,7 +41,12 @@ function reachability(tiers: Map<number, Tier>): string[] {
   return lines;
 }
 
+/** Longest stretch, in seconds, that Money stayed below $0. */
+let longestDebt = 0;
+
 export function playthrough(w: World, log = false, tiers = new Map<number, Tier>()): number {
+  let debtSince: number | null = null;
+  longestDebt = 0;
   const bot = new Bot();
   let lastPct = -1;
   while (completion(w) < 1 && w.t < LIMIT_SECONDS) {
@@ -62,6 +67,9 @@ export function playthrough(w: World, log = false, tiers = new Map<number, Tier>
         }
       }
     }
+    if (w.money < 0) debtSince ??= w.t;
+    else debtSince = null;
+    if (debtSince !== null) longestDebt = Math.max(longestDebt, w.t - debtSince);
     const pct = Math.floor(completion(w) * 10);
     if (log && pct !== lastPct) {
       lastPct = pct;
@@ -74,13 +82,15 @@ export function playthrough(w: World, log = false, tiers = new Map<number, Tier>
 }
 
 let failed = false;
-for (const map of MAPS) {
+const only = process.argv[2];
+for (const map of MAPS.filter((m) => !only || m.id === only)) {
   const w = createWorld(map, null, 1);
   w.lesson = null; // the bot plays the Map, not its Lessons: a Lesson card would freeze it
   const tiers = new Map<number, Tier>();
   const t = playthrough(w, true, tiers);
   const pct = completion(w) * 100;
   console.log(`${map.id}: ${pct.toFixed(0)}% after ${(t / 60).toFixed(1)} simulated minutes`);
+  console.log(`  Longest stretch below $0: ${(longestDebt / 60).toFixed(1)} min`);
   console.log(`  Score ${w.score}, Objectives ${w.objectivesDone.size}/${map.objectives.length}`);
   for (const line of reachability(tiers)) console.log(line);
   if (pct < 100) {

@@ -23,7 +23,7 @@ import {
 } from '../sim/economy';
 import { shelfCap, stationModel } from '../sim/map';
 import { boxCentre } from '../sim/geometry';
-import { MAPS, mapById } from '../../maps';
+import { FIRST_MAP, MAPS, isTutorialMap, mapById } from '../../maps';
 import { Stage } from '../view/stage';
 import { loadAssets } from '../view/assets';
 import { emojiUrl, iconUrl, renderThumbs } from '../view/thumbs';
@@ -104,7 +104,7 @@ export class App {
     this.hud = new Hud(document.getElementById('hud') as HTMLElement);
     this.hud.visible(false);
     this.uiRoot = document.getElementById('ui') as HTMLElement;
-    const loaded = loadSave(MAPS[0].id);
+    const loaded = loadSave(FIRST_MAP.id);
     this.save = loaded.save;
     this.settings = loadSettings();
     this.stage.viewSize = this.zoom();
@@ -134,6 +134,7 @@ export class App {
       ios: isIos,
       maps: [],
       lastMap: this.save.currentMap,
+      tutorialDone: this.save.tutorialDone,
       settings: this.settings,
       zoom: 0,
       screenHz: 60,
@@ -168,7 +169,8 @@ export class App {
       document.fonts.load('700 48px Fredoka'),
     ]);
     this.renderThumbs();
-    const map = MAPS[Math.floor(Math.random() * MAPS.length)];
+    const showcase = MAPS.filter((m) => !isTutorialMap(m));
+    const map = showcase[Math.floor(Math.random() * showcase.length)];
     this.game = new Game(this.stage, this.input, map, showcaseSave(map), true);
     this.game.paused = true;
     this.game.view.cameraOverride = new THREE.Vector3();
@@ -367,6 +369,7 @@ export class App {
     if (e.type === 'padBought' || e.type === 'upgradeBought') {
       if (e.type === 'padBought') persistStorage();
       this.writeSave();
+      if (e.type === 'padBought' && e.pad === 'exit' && isTutorialMap(w.map)) this.save.tutorialDone = true;
       if (e.type === 'padBought' && e.pad === 'exit') {
         setTimeout(() => this.openOverlay('maps'), 900);
         this.exitDismissed = true;
@@ -461,7 +464,8 @@ export class App {
       cards.push({ icon: emojiUrl(THIEF), text: 'Catch!', left: 1, red: true });
     }
     const ins = w.inspector;
-    if (ins?.state === 'warn') this.warning?.line(
+    if (ins?.state === 'warn')
+      this.warning?.line(
         `Arriving in ${Math.ceil(ins.t)} s! Mop up, then stay close.${w.badReviewStreak ? ' Ignore them again and the fine can put you in debt.' : ''}`,
       );
     else if (this.warning) {
@@ -516,8 +520,10 @@ export class App {
     this.sinceSave = 0;
     const game = this.game;
     if (!game || this.lostTab || this.editing || this.ui.screen !== 'game') return;
-    this.save.maps[game.world.map.id] = snapshot(game.world);
-    this.save.tutorialStep = tutorialStep(game.world);
+    if (!isTutorialMap(game.world.map)) {
+      this.save.maps[game.world.map.id] = snapshot(game.world);
+      this.save.tutorialStep = tutorialStep(game.world);
+    }
     writeSave(this.save);
     this.claimTab();
   }
@@ -545,14 +551,21 @@ export class App {
     const live = this.ui.screen === 'game' ? this.game?.world : undefined;
     const exitBought = (id: string) =>
       id === live?.map.id ? live.owned.has('exit') : !!this.save.maps[id]?.owned.includes('exit');
-    this.ui.maps = MAPS.map((map, i) => ({
-      map,
-      visited: this.save.visited.includes(map.id) || (i > 0 && exitBought(MAPS[i - 1].id)),
-      completion:
-        map.id === live?.map.id
-          ? completion(live)
-          : completionOf(map, new Set(this.save.maps[map.id]?.owned ?? []), this.save.maps[map.id]?.levels ?? {}),
-    }));
+    this.ui.maps = MAPS.map((map, i) => {
+      const before = MAPS.slice(0, i)
+        .filter((m) => !isTutorialMap(m))
+        .pop();
+      return {
+        map,
+        tutorial: isTutorialMap(map),
+        visited: isTutorialMap(map) || !before || this.save.visited.includes(map.id) || exitBought(before.id),
+        completion:
+          map.id === live?.map.id
+            ? completion(live)
+            : completionOf(map, new Set(this.save.maps[map.id]?.owned ?? []), this.save.maps[map.id]?.levels ?? {}),
+      };
+    });
+    this.ui.tutorialDone = this.save.tutorialDone;
     this.ui.lastMap = this.save.currentMap;
   }
 
@@ -611,7 +624,7 @@ export class App {
       return null;
     },
     resetProgress: () => {
-      this.save = wipeSave(MAPS[0].id);
+      this.save = wipeSave(FIRST_MAP.id);
       this.reopen();
       this.openOverlay(null);
     },

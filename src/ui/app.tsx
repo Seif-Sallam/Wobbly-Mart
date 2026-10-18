@@ -23,7 +23,8 @@ export interface UiState {
   wipe: boolean;
   touch: boolean;
   ios: boolean;
-  maps: { map: MapDef; completion: number; visited: boolean }[];
+  maps: { map: MapDef; completion: number; visited: boolean; tutorial: boolean }[];
+  tutorialDone: boolean;
   /** The Map Play last opened: the title shelf starts on it. */
   lastMap: string;
   settings: Settings;
@@ -115,11 +116,7 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
       <div class="office-scroll">
         <section>
           <h3>Store</h3>
-          <Btn
-            actions={actions}
-            disabled={world.closedWait > 0}
-            onClick={() => actions.setClosed(!world.closed)}
-          >
+          <Btn actions={actions} disabled={world.closedWait > 0} onClick={() => actions.setClosed(!world.closed)}>
             {world.closed ? 'Open' : 'Close'}
             {world.closedWait > 0 ? ` again in ${clock(world.closedWait)}` : ' store'}
           </Btn>
@@ -553,8 +550,15 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
                 return (
                   <div key={m.map.id} class={cls} style={{ '--off': off }} onClick={() => setAt(k)}>
                     <div class="shelf-art">{m.visited && art ? <img src={a.icon(art)} alt="" /> : '🔒'}</div>
+                    {m.tutorial && (
+                      <span class={`ribbon ${s.tutorialDone ? 'done' : 'start'}`}>
+                        {s.tutorialDone ? '✓ Done' : 'Start here!'}
+                      </span>
+                    )}
                     <b>{m.map.name}</b>
-                    {m.visited ? (
+                    {m.tutorial ? (
+                      <small>Learn the ropes in 14 short Lessons</small>
+                    ) : m.visited ? (
                       <>
                         <span class="completion small">
                           <i style={{ width: `${pct}%` }} />
@@ -573,7 +577,7 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
             </button>
           </div>
           <Btn class="play buy" actions={a} disabled={!cur?.visited} onClick={() => cur && a.play(cur.map.id)}>
-            Play
+            {cur?.tutorial && s.tutorialDone ? 'Play again' : 'Play'}
           </Btn>
         </>
       ) : (

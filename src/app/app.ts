@@ -282,6 +282,9 @@ export class App {
       for (const p of Object.values(m.producers)) stations.add(p.model);
     }
     renderThumbs([...items], [...stations], ['van', 'player']);
+    // PROTOTYPE (prototype/pizza-shelves): `?gallery=1` shows every preset, `?pshelf=a|b|c|d` runs one in game
+    if (/[?&](pshelf|gallery)=/.test(location.search))
+      void import('./pizza-shelves-gallery').then((m) => m.openPizzaShelvesPrototype());
     renderStaffIcons();
   }
 

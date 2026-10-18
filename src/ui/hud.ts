@@ -44,18 +44,21 @@ export class Hud {
 
   /** Everything but the edge arrows, scaled by the HUD size setting. */
   private ui: HTMLElement;
+  /** Left of the gear: room for more corner buttons (in landscape the whole top row is the corner cluster). */
+  readonly extra: HTMLElement;
 
   constructor(private readonly root: HTMLElement) {
     root.innerHTML = `<div class="hud-ui">
       <div class="hud-top">
         <div class="completion"><i></i></div>
         <div class="money pill">${BILL}<span>$0</span></div>
-        <button class="gear round" aria-label="Pause">${GEAR}</button>
+        <div class="hud-right"><div class="hud-extra"></div><button class="gear round" aria-label="Pause">${GEAR}</button></div>
       </div>
       <div class="event-cards"></div>
       <div class="tutor pill gone"><small></small><p></p><div><button class="btn skip">Skip tutorial</button><button class="btn buy next">OK</button></div></div>
       <div class="hint"></div></div>`;
     this.ui = root.querySelector('.hud-ui') as HTMLElement;
+    this.extra = root.querySelector('.hud-extra') as HTMLElement;
     this.cardBox = root.querySelector('.event-cards') as HTMLElement;
     this.money = root.querySelector('.money') as HTMLElement;
     this.bar = root.querySelector('.completion') as HTMLElement;

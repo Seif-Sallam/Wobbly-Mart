@@ -29,6 +29,7 @@ import { loadAssets } from '../view/assets';
 import { emojiUrl, iconUrl, renderThumbs } from '../view/thumbs';
 import { moodOf } from '../view/receipt';
 import { Input } from '../input/input';
+import { isTouch, layout, watchLayout } from './phone';
 import { Game } from './game';
 import { EditLayout } from './edit-layout';
 import {
@@ -63,7 +64,6 @@ const tutorKey = (map: string, step: number): string => `tutor.${map}.${step}`;
 const isIos =
   /iP(hone|ad|od)/.test(navigator.userAgent) &&
   !('standalone' in navigator && (navigator as { standalone?: boolean }).standalone);
-const isTouch = matchMedia('(pointer: coarse)').matches;
 
 export class App {
   private stage: Stage;
@@ -108,9 +108,8 @@ export class App {
     this.save = loaded.save;
     this.settings = loadSettings();
     document.documentElement.style.setProperty('--sprint-ring', String(FEEL.sprintForce));
-    this.stage.viewSize = this.zoom();
+    this.stage.viewSize = this.viewZoom();
     this.stage.batterySaver(this.settings.batterySaver);
-    this.hud.scale(this.settings.hudScale);
     this.input.onTap = (x, y, double) => {
       const game = this.game;
       if (!game || this.ui.screen !== 'game' || game.paused || this.editing) return;
@@ -141,6 +140,7 @@ export class App {
       layout: null,
     };
     this.ui.zoom = this.zoom();
+    watchLayout(() => this.applyLayout());
     this.hud.onGear = () => this.openOverlay('pause');
     this.hud.onTutorNext = () => {
       if (!this.game) return;
@@ -172,6 +172,7 @@ export class App {
     const map = MAPS[Math.floor(Math.random() * MAPS.length)];
     this.game = new Game(this.stage, this.input, map, showcaseSave(map), true);
     this.game.paused = true;
+    this.applyLayout();
     this.game.view.cameraOverride = new THREE.Vector3();
     this.game.view.scenery(SCENERY_PEOPLE);
     const { world } = this.game;
@@ -299,7 +300,7 @@ export class App {
     game.view.scenery(0);
     game.view.cameraOverride = null;
     game.paused = false;
-    game.manualGrab = !isTouch && this.settings.manualGrab;
+    this.applyLayout();
     this.hud.resetMoney(game.world.money);
     this.officeDismissed = this.exitDismissed = false;
     this.seenPads.clear();
@@ -329,8 +330,13 @@ export class App {
       this.ui.office = office;
       this.renderUi();
     }
+    // keep the Player clear of the Office: centred in what the panel leaves, plus the landscape shift right
     const wide = innerWidth > innerHeight;
-    this.stage.nudge.set(office && wide ? -1 / 6 : 0, office && !wide ? 0.25 : 0);
+    const side = layout.land ? FEEL.officeSide : 1 / 3;
+    this.stage.nudge.set(
+      (office && wide ? -side / 2 : 0) + (layout.land ? FEEL.landShift : 0),
+      office && !wide ? FEEL.officeSheet / 2 : 0,
+    );
     if (!w.atExit) this.exitDismissed = false;
     else if (w.owned.has('exit') && !this.exitDismissed && !this.ui.overlay) {
       this.exitDismissed = true;
@@ -637,17 +643,30 @@ export class App {
     writeSettings(this.settings);
     this.sounds.apply(this.settings);
     this.stage.batterySaver(this.settings.batterySaver);
-    this.hud.scale(this.settings.hudScale);
     this.ui.zoom = this.zoom();
-    this.stage.zoomTo(this.ui.zoom);
-    if (this.game) this.game.manualGrab = !isTouch && this.settings.manualGrab;
-    this.redraw = true;
+    this.applyLayout();
     this.renderUi();
   }
 
-  /** Wanted zoom: the saved one, or the device default. */
+  /** Everything that follows the settings and the window's shape: HUD size, view, Pads. */
+  private applyLayout(): void {
+    this.hud.scale(this.settings.hudScale * (layout.land ? FEEL.landHudScale : 1));
+    this.stage.zoomTo(this.viewZoom());
+    if (this.game) {
+      this.game.view.padScale = layout.land ? FEEL.landPadScale : 1;
+      this.game.manualGrab = !isTouch && this.settings.manualGrab;
+    }
+    this.redraw = true;
+  }
+
+  /** Wanted zoom (the Settings slider): the saved one, or the device default. */
   private zoom(): number {
     return this.settings.zoom ?? (isTouch ? FEEL.zoomPhone : FEEL.zoomDesktop);
+  }
+
+  /** Metres across the short side in effect: landscape phones show landView across the height at the default. */
+  private viewZoom(): number {
+    return layout.land ? (this.zoom() * FEEL.landView) / FEEL.zoomPhone : this.zoom();
   }
 
   private setZoom(metres: number): void {

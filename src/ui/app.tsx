@@ -285,7 +285,7 @@ function FrameRate({ s, a }: { s: UiState; a: UiActions }) {
 function Settings({ s, a }: { s: UiState; a: UiActions }) {
   const [copied, setCopied] = useState('');
   return (
-    <div class="panel">
+    <div class="panel settings">
       <h2>Settings</h2>
       {/* + (closer) on the left, − (farther) on the right */}
       <SliderRow

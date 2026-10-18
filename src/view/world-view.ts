@@ -133,6 +133,8 @@ export class WorldView {
   cameraOverride: THREE.Vector3 | null = null;
   private camFocus = new THREE.Vector3();
   private camLead = new THREE.Vector3();
+  /** Pad size × (phone landscape draws them bigger). */
+  padScale = 1;
 
   constructor(
     private readonly stage: Stage,
@@ -902,7 +904,7 @@ export class WorldView {
       const pad = this.padFor(id);
       const [x, z] = boxCentre(w.map.layout.places[id].box);
       const standing = Math.abs(w.player.x - x) < TUNING.padHalfSize && Math.abs(w.player.z - z) < TUNING.padHalfSize;
-      pad.update(dt, padRemaining(w, id), w.map.pads[id].cost, standing);
+      pad.update(dt, padRemaining(w, id), w.map.pads[id].cost, standing, this.padScale);
     }
   }
 

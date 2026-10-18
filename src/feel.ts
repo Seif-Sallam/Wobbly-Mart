@@ -23,6 +23,19 @@ export const FEEL = {
   zoomSlider: 0.5,
   zoomStep: 0.08,
   zoomEase: 10,
+  /** Phone landscape (a touch screen wider than tall): metres across the height, the Player's shift right of centre
+   * (view widths), Pad size ×, HUD size × (on top of the HUD size setting), banners / report / cards ×. */
+  landView: 15,
+  landShift: 0.05,
+  landPadScale: 1.25,
+  landHudScale: 0.8,
+  landCardScale: 0.7,
+  /** Screens (title, menus, Settings, Office, Edit Layout) shrink on phones: ×, landscape / portrait. */
+  landScreenScale: 0.68,
+  portScreenScale: 0.85,
+  /** Office panel: share of the width (landscape phones) and of the height (portrait bottom sheet). */
+  officeSide: 0.42,
+  officeSheet: 0.46,
   /** HUD size slider: scale range and step. */
   hudScaleMin: 1,
   hudScaleMax: 1.6,

@@ -92,6 +92,8 @@ export const TUNING = {
   /** Seconds a Stocker holds a whole Stack of leftovers before putting them back on a Tray or in the Trash. */
   leftoverTime: 10,
   stockerRethink: 0.5,
+  /** Closed: seconds before the store may reopen, and before it may close again after reopening. */
+  closed: { reopenWait: 30, closeWait: 300 },
   exitPickRadius: 1.2,
   /**
    * Events: none in the first quietStart s of an Opening. Deliveries: the next car every deliveryGap s; one waits at a
@@ -127,7 +129,7 @@ export const TUNING = {
     robbery: { items: 5, grabTime: 2, freeze: 2, speed: 2.5, catchRadius: 0.8 },
     /** Inspector: warning s, stops (count range, s each), escort radius m, s alone before a bad review, a stop's ✗ when
      * a Mess or Loose Item is within dirtRadius m; steps around Messes until skirtUntil m from a stop; storms out at
-     * stormSpeed m/s after a bad review. */
+     * stormSpeed m/s after a bad review; the review fine is × repeatFactor from the 2nd Bad Review in a row. */
     inspector: {
       warning: 15,
       stops: [4, 6] as const,
@@ -137,6 +139,7 @@ export const TUNING = {
       dirtRadius: 4,
       skirtUntil: 1.5,
       stormSpeed: 4.5,
+      repeatFactor: 2,
     },
   },
   // base values Upgrades raise

@@ -883,7 +883,11 @@ export class WorldView {
       ...w.customers.map((c): Point => [c.x, c.z]),
       ...[...w.stockers, ...w.cleaners].map((s): Point => [s.x, s.z]),
     ];
-    this.level.update(dt, near);
+    const guests: Point[] = [
+      ...w.customers.map((c): Point => [c.x, c.z]),
+      ...[w.thief, w.inspector].flatMap((v): Point[] => (v ? [[v.x, v.z]] : [])),
+    ];
+    this.level.update(dt, near, w.closed, guests);
     this.updateMarkers();
     this.updateCamera(dt);
   }

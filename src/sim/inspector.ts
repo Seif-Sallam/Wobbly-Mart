@@ -64,15 +64,22 @@ function walk(w: World, ins: Inspector, target: Target, speed: number): boolean 
 const dirtNear = (w: World, [x, z]: Point): boolean =>
   [...w.messes, ...w.loose].some((d) => Math.hypot(d.x - x, d.z - z) <= I.dirtRadius);
 
-/** Spotless: a random reward; else a fine per Mess and Loose Item, plus the review fine (never below $0). */
+/** Spotless: a random reward; else a fine per Mess and Loose Item, plus the review fine. The 1st Bad Review in a row
+ * stops at $0; later ones cost double and can push Money into Debt. */
 function score(w: World, ins: Inspector): void {
   const a = w.map.events.inspector ? byArea(w, w.map.events.inspector.byArea) : null;
   const messes = w.messes.length;
   const loose = w.loose.length;
-  const fine = a ? (messes + loose) * a.perDirt + (ins.review ? a.review : 0) : 0;
-  const amount = fine === 0 && a ? randomInt(w.eventRng, a.reward[0], a.reward[1]) : -Math.min(w.money, fine);
+  const repeat = w.badReviewStreak >= 1;
+  const review = a && ins.review ? a.review * (repeat ? I.repeatFactor : 1) : 0;
+  const fine = a ? (messes + loose) * a.perDirt + review : 0;
+  const amount =
+    fine === 0 && a
+      ? randomInt(w.eventRng, a.reward[0], a.reward[1])
+      : -(repeat ? fine : Math.min(Math.max(0, w.money), fine));
   w.money += amount;
-  w.events.push({ type: 'inspection', review: ins.review, messes, loose, amount });
+  w.badReviewStreak = ins.review ? w.badReviewStreak + 1 : 0;
+  w.events.push({ type: 'inspection', review: ins.review, messes, loose, amount, streak: w.badReviewStreak });
   ins.state = 'leave';
   ins.clean = null;
 }

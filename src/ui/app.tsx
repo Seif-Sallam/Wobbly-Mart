@@ -52,6 +52,7 @@ export interface UiActions {
   close: () => void;
   open: (o: Overlay) => void;
   closeOffice: () => void;
+  setClosed: (closed: boolean) => void;
   buyUpgrade: (id: string) => void;
   editLayout: () => void;
   layoutTurn: () => void;
@@ -102,6 +103,8 @@ function Btn(props: {
   );
 }
 
+const clock = (s: number): string => `${Math.floor(s / 60)}:${String(Math.ceil(s) % 60).padStart(2, '0')}`;
+
 function Office({ world, actions, wide }: { world: World; actions: UiActions; wide: boolean }) {
   const ups = Object.entries(world.map.upgrades).filter(([id]) => upgradeVisible(world, id));
   return (
@@ -110,6 +113,17 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
         ✕
       </button>
       <div class="office-scroll">
+        <section>
+          <h3>Store</h3>
+          <Btn
+            actions={actions}
+            disabled={world.closedWait > 0}
+            onClick={() => actions.setClosed(!world.closed)}
+          >
+            {world.closed ? 'Open' : 'Close'}
+            {world.closedWait > 0 ? ` again in ${clock(world.closedWait)}` : ' store'}
+          </Btn>
+        </section>
         <section>
           <h3>Layout</h3>
           <Btn actions={actions} onClick={actions.editLayout}>

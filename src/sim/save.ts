@@ -11,6 +11,8 @@ export interface MapSave {
   /** Edit Layout: places moved away from the map's, and Moves bought. */
   layout?: Record<string, Placement>;
   movesUsed?: number;
+  /** Bad Reviews in a row; missing = 0. */
+  badReviewStreak?: number;
 }
 
 /** Lowest frame cap offered, and the one Battery saver uses (fps). */
@@ -89,6 +91,7 @@ export function snapshot(w: World): MapSave {
     roles: Object.fromEntries(w.stockers.map((s) => [s.id, s.role])),
     layout: { ...w.placed },
     movesUsed: w.movesUsed,
+    badReviewStreak: w.badReviewStreak,
   };
 }
 

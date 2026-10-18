@@ -43,6 +43,10 @@ export class Game {
     this.commands.buyUpgrade = id;
   }
 
+  setClosed(closed: boolean): void {
+    this.commands.setClosed = closed;
+  }
+
   skipTutorial(): void {
     this.commands.skipTutorial = true;
   }

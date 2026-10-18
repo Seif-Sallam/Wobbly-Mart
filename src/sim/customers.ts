@@ -192,7 +192,7 @@ function checkout(w: World, reg: RegisterStation): void {
 export function updateCustomers(w: World): void {
   w.arrivalTimer -= DT;
   const stocked = [...w.stations.values()].some((s) => s.kind === 'shelf' && s.items > 0);
-  if (stocked && w.arrivalTimer <= 0 && w.customers.length < customerCap(w)) {
+  if (stocked && !w.closed && w.arrivalTimer <= 0 && w.customers.length < customerCap(w)) {
     spawn(w);
     w.arrivalTimer = TUNING.arrivalInterval;
   }

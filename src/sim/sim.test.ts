@@ -636,6 +636,22 @@ describe('Deliveries', () => {
     const line = late.delivery?.order[0] ?? { product: '', want: 0 };
     w.player.stack = [line.product];
     standAt(late);
+
+    // Auto Grab paused (a walk to the car): the tile unloads nothing, but a Pad under the Player still pays
+    const paused = (seconds: number) => {
+      for (let i = 0; i < seconds * 60; i++) step(w, { ...idle(), grabPaused: true });
+    };
+    paused(2);
+    expect(w.player.stack).toEqual([line.product]);
+    expect(late.delivery?.order[0].got).toBe(0);
+    const pad = visiblePads(w)[0];
+    const bank = w.money;
+    w.money = 1;
+    Object.assign(w.player, { x: w.map.layout.places[pad].box[0] + 0.5, z: w.map.layout.places[pad].box[1] + 0.5 });
+    paused(1);
+    expect(w.paid[pad]).toBeGreaterThan(0);
+    w.money = bank;
+    standAt(late);
     expect(until(200, (e) => e.type === 'deliveryHonk' && e.station === late.id)).toBeDefined();
     const left = until(20, (e) => e.type === 'deliveryDone' && e.station === late.id);
     expect(left?.type === 'deliveryDone' && left.amount).toBe(w.map.products[line.product].price);

@@ -71,6 +71,7 @@ export class Game {
         step(this.world, {
           move: this.input.move(this.world),
           grab: this.input.grab,
+          grabPaused: this.input.tap.grabPaused(this.world),
           sprint: this.input.sprint,
           manualGrab: this.manualGrab,
           ...this.commands,
@@ -83,6 +84,7 @@ export class Game {
       if (steps === MAX_STEPS_PER_FRAME) this.acc = 0;
     }
     this.view.walkTarget = this.input.tap.target;
+    this.view.walkRoute = !!this.input.tap.car;
     this.view.update(dt, this.acc / DT, events);
     this.onFrame(events, dt);
     this.stage.render(dt);

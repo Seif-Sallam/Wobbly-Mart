@@ -273,6 +273,8 @@ export interface Intents {
   /** Manual Grab Mode: transfers only while held. */
   grab: boolean;
   manualGrab?: boolean;
+  /** Auto Grab off: nothing is unloaded or picked up (walking over a Pad still pays). */
+  grabPaused?: boolean;
   sprint?: boolean;
   buyUpgrade?: string;
   skipTutorial?: boolean;

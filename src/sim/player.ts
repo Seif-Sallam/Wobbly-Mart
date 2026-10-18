@@ -149,7 +149,7 @@ export function updatePlayer(w: World, intents: Intents): void {
   const p = w.player;
   move(w, intents);
   tipping(w);
-  if (!p.mop) takeLoose(w, p, { agent: 'player' }, stackCap(w));
+  if (!p.mop && !intents.grabPaused) takeLoose(w, p, { agent: 'player' }, stackCap(w));
   payPads(w);
   collectCash(w);
   mopStand(w);
@@ -157,7 +157,7 @@ export function updatePlayer(w: World, intents: Intents): void {
   const near = stationAt(w, p.x, p.z, (s) => INTERACTIVE.has(s.kind));
   p.trashHold = near?.kind === 'trash' ? p.trashHold + DT : 0;
   const st = near?.kind === 'trash' && p.trashHold < TUNING.trashHoldTime ? null : near;
-  const allowed = (!intents.manualGrab || intents.grab) && !p.mop;
+  const allowed = (!intents.manualGrab || intents.grab) && !p.mop && !intents.grabPaused;
   const moved = transferTick(
     w,
     p,

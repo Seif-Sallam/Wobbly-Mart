@@ -188,6 +188,7 @@ function checkout(w: World, reg: RegisterStation): void {
   reg.progress += DT / time;
   if (reg.progress < 1) return;
   reg.progress = 0;
+  const products = front.cart;
   const amount = front.cart.reduce((sum, p) => sum + w.map.products[p].price, 0);
   reg.cash += amount;
   reg.queue.shift();
@@ -195,7 +196,7 @@ function checkout(w: World, reg: RegisterStation): void {
   front.happy = true;
   front.register = null;
   leave(front);
-  w.events.push({ type: 'paid', register: reg.id, customer: front.id, amount });
+  w.events.push({ type: 'paid', register: reg.id, customer: front.id, amount, products });
   w.tutorial.actions.add(`checkout:${reg.id}`);
 }
 
@@ -215,7 +216,7 @@ export function updateCustomers(w: World): void {
   for (const reg of registers(w)) checkout(w, reg);
   w.customers = w.customers.filter((c) => {
     const gone = c.state === 'gone';
-    if (gone) w.events.push({ type: 'customerLeft', customer: c.id });
+    if (gone) w.events.push({ type: 'customerLeft', customer: c.id, happy: c.happy });
     return !gone;
   });
 }

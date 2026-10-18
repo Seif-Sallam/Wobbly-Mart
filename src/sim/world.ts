@@ -10,6 +10,7 @@ import {
   applyCommands,
   updateTutorial,
   checkCompletion,
+  completion,
 } from './economy';
 import { updatePlayer } from './player';
 import { updateProducers } from './producers';
@@ -19,6 +20,10 @@ import { updateCleaners } from './cleaning';
 import { addPickups, thiefFreeze, updateEvents } from './events';
 import { rebuildNav } from './walk';
 import { startLessons, updateLesson, dismissLessonCard, type LessonState } from './lessons';
+import { type Stats, emptyStats, updateStats } from './stats';
+import { updateObjectives } from './objectives';
+import { quartersOf, updateScore } from './score';
+import { updateChallenges } from './challenges';
 
 export interface Mover {
   x: number;
@@ -65,6 +70,8 @@ export interface Stocker extends Mover, Carrier {
   role: StockerRole;
   job: Job | null;
   rethink: number;
+  /** A wander spot, while no job waits. */
+  spot: Point | null;
   /** Seconds the whole Stack has been leftovers nothing needs, or null. */
   leftover: number | null;
 }
@@ -223,6 +230,21 @@ export interface Inspector extends Mover {
   review: boolean;
 }
 
+export type ChallengeKind = keyof typeof TUNING.challenges.kinds;
+
+/** The running Challenge: `progress` counts toward `goal` (0 for kinds that aren't counts); `t` runs up to `time`. */
+export interface Challenge {
+  kind: ChallengeKind;
+  /** What the kind names: a Shelf, a Product or a Car Spot's pickup. */
+  target: string | null;
+  goal: number;
+  progress: number;
+  t: number;
+  time: number;
+  /** Money a win pays. */
+  bonus: number;
+}
+
 export interface Drain {
   register: string;
   amount: number;
@@ -248,16 +270,17 @@ export type SimEvent =
   | { type: 'areaBought'; area: string }
   | { type: 'upgradeBought'; upgrade: string }
   | { type: 'produced'; station: string }
-  | { type: 'paid'; register: string; customer: number; amount: number }
+  | { type: 'paid'; register: string; customer: number; amount: number; products: string[] }
   | { type: 'cashCollect'; register: string; amount: number; duration: number }
   | { type: 'angry'; customer: number }
   | { type: 'mess'; mess: number; customer: number }
   | { type: 'messCleared'; mess: number }
   | { type: 'mop'; taken: boolean }
-  | { type: 'customerLeft'; customer: number }
+  | { type: 'customerLeft'; customer: number; happy: boolean }
   | { type: 'deliveryArrived'; station: string }
   | { type: 'deliveryHonk'; station: string }
-  | { type: 'deliveryDone'; station: string; amount: number; tip: number; complete: boolean }
+  /** `left`: seconds the car still had. */
+  | { type: 'deliveryDone'; station: string; amount: number; tip: number; complete: boolean; left: number }
   | { type: 'thiefGrab' }
   /** `amount`: the bounty, or what got away; `cash`: Cash Pile money returned or lost. */
   | { type: 'robberyDone'; caught: boolean; amount: number; cash: number }
@@ -265,6 +288,11 @@ export type SimEvent =
   | { type: 'inspectorMark'; clean: boolean }
   /** `streak`: Bad Reviews in a row after this visit. */
   | { type: 'inspection'; review: boolean; messes: number; loose: number; amount: number; streak: number }
+  | { type: 'objectiveDone'; objective: string }
+  | { type: 'quarterScored'; quarter: number }
+  | { type: 'challengeStarted'; kind: ChallengeKind }
+  | { type: 'challengeWon'; kind: ChallengeKind; score: number; money: number }
+  | { type: 'challengeFailed'; kind: ChallengeKind }
   | { type: 'tutorialDone' }
   | { type: 'lessonDone'; lesson: number }
   | { type: 'lessonReplay'; lesson: number }
@@ -306,8 +334,6 @@ export interface World {
   closed: boolean;
   /** Seconds until `closed` may flip again. Not saved. */
   closedWait: number;
-  /** Times the store was Closed on this Map, this Opening. */
-  timesClosed: number;
   /** Bad Reviews in a row on this Map; saved. */
   badReviewStreak: number;
   owned: Set<string>;
@@ -342,6 +368,18 @@ export interface World {
   tutorial: { done: boolean; actions: Set<string> };
   /** The running Lesson (Tutorial Map), or null on other Maps and once the last one is done. Not saved. */
   lesson: LessonState | null;
+  stats: Stats;
+  /** Ids (objectiveId) of the Objectives done. */
+  objectivesDone: Set<string>;
+  /** Never goes down. */
+  score: number;
+  /** Quarters of Completion already scored (0–4). */
+  quarters: number;
+  challenge: Challenge | null;
+  /** Seconds until the next Challenge is offered; null until the quiet start is over. */
+  challengeWait: number | null;
+  /** Challenges roll on their own stream, so they never shift Events, Customers or Staff. */
+  challengeRng: { rng: number };
   complete: boolean;
   atOffice: boolean;
   atExit: boolean;
@@ -351,6 +389,7 @@ export interface World {
 
 export const DT = 1 / TUNING.tickRate;
 const EVENT_SEED = 0x5eed;
+const CHALLENGE_SEED = 0xc4a1;
 
 export const newCarrier = (): Carrier => ({
   stack: [],
@@ -370,10 +409,10 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
     t: 0,
     rng: seed,
     eventRng: { rng: seed ^ EVENT_SEED },
+    challengeRng: { rng: seed ^ CHALLENGE_SEED },
     money: map.start.money,
     closed: false,
     closedWait: 0,
-    timesClosed: 0,
     badReviewStreak: 0,
     owned: new Set(),
     paid: {},
@@ -412,6 +451,12 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
     thiefPan: null,
     tutorial: { done: tutorialDone || map.tutorial.length === 0, actions: new Set() },
     lesson: null,
+    stats: emptyStats(),
+    objectivesDone: new Set(),
+    score: 0,
+    quarters: 0,
+    challenge: null,
+    challengeWait: null,
     complete: false,
     atOffice: false,
     atExit: false,
@@ -429,6 +474,7 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
   else if (!map.lessons?.length) w.pan = { area: map.start.owned[0], t: 0, duration: panDuration() };
   refreshFreeStations(w);
   startLessons(w);
+  w.quarters = Math.max(w.quarters, quartersOf(completion(w)));
   w.complete = checkCompletion(w, false);
   w.events = [];
   rebuildNav(w);
@@ -461,6 +507,10 @@ export function step(w: World, intents: Intents): void {
   updateStaff(w);
   updateCleaners(w);
   updateEvents(w);
+  updateChallenges(w);
+  updateStats(w);
+  updateObjectives(w);
+  updateScore(w);
   updateTutorial(w);
   updateLesson(w);
   w.complete = checkCompletion(w, true);

@@ -6,6 +6,7 @@ import { layout } from './layout';
 import { events, freeStations, movePrices, pads, start } from './unlocks';
 import { upgrades } from './upgrades';
 import { lessons } from './lessons';
+import { objectives } from './objectives';
 
 export const tutorialMap: MapDef = {
   id: 'tutorial',
@@ -24,6 +25,8 @@ export const tutorialMap: MapDef = {
   start,
   tutorial: [],
   lessons,
+  objectives,
+  challenges: false,
   movePrices,
   events,
 };

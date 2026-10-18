@@ -15,12 +15,14 @@ export interface ProducerType<P extends string = string> {
   /** Crop: seconds for one plant to regrow. Animal/Machine: seconds per output. */
   workTime: number;
   plants?: number;
-  inputCap?: number;
   trayCap?: number;
   sound?: ProducerSound;
   /** Playback rate of `sound`; also shifts its pitch. */
   soundRate?: number;
 }
+
+/** Items of each input an Animal or Machine holds. */
+export const INPUT_CAP = 6;
 
 export const PRODUCERS = {
   tomato_bed: {
@@ -40,7 +42,6 @@ export const PRODUCERS = {
     inputs: ['tomato'],
     output: 'egg',
     workTime: 4,
-    inputCap: 6,
     trayCap: 6,
   },
   blender: {
@@ -51,7 +52,6 @@ export const PRODUCERS = {
     inputs: ['tomato'],
     output: 'ketchup',
     workTime: 3,
-    inputCap: 6,
     trayCap: 6,
   },
   wheat_field: {
@@ -71,7 +71,6 @@ export const PRODUCERS = {
     inputs: ['wheat'],
     output: 'milk',
     workTime: 5,
-    inputCap: 6,
     trayCap: 6,
   },
   mill: {
@@ -82,7 +81,6 @@ export const PRODUCERS = {
     inputs: ['wheat'],
     output: 'flour',
     workTime: 4,
-    inputCap: 6,
     trayCap: 6,
   },
   oven: {
@@ -93,7 +91,6 @@ export const PRODUCERS = {
     inputs: ['flour', 'egg'],
     output: 'bread',
     workTime: 6,
-    inputCap: 4,
     trayCap: 6,
   },
   // Juice Bar
@@ -123,7 +120,6 @@ export const PRODUCERS = {
     inputs: ['apple'],
     output: 'apple_juice',
     workTime: 3,
-    inputCap: 6,
     trayCap: 6,
   },
   squeezer: {
@@ -135,7 +131,6 @@ export const PRODUCERS = {
     inputs: ['orange'],
     output: 'orange_juice',
     workTime: 3.5,
-    inputCap: 6,
     trayCap: 6,
   },
   sugar_cane_field: {
@@ -155,7 +150,6 @@ export const PRODUCERS = {
     inputs: ['sugar_cane'],
     output: 'sugar',
     workTime: 4,
-    inputCap: 6,
     trayCap: 6,
   },
   candy_pot: {
@@ -167,7 +161,6 @@ export const PRODUCERS = {
     inputs: ['apple', 'sugar'],
     output: 'candy_apple',
     workTime: 5,
-    inputCap: 4,
     trayCap: 6,
   },
   strawberry_patch: {
@@ -188,7 +181,6 @@ export const PRODUCERS = {
     inputs: ['strawberry', 'milk'],
     output: 'smoothie',
     workTime: 6,
-    inputCap: 4,
     trayCap: 6,
   },
   // Dairy Farm (Creamery look, src/view/dairy-stations.ts)
@@ -200,7 +192,6 @@ export const PRODUCERS = {
     inputs: ['wheat'],
     output: 'goat_milk',
     workTime: 5.5,
-    inputCap: 6,
     trayCap: 6,
   },
   butter_churn: {
@@ -211,7 +202,6 @@ export const PRODUCERS = {
     inputs: ['milk'],
     output: 'butter',
     workTime: 4,
-    inputCap: 6,
     trayCap: 6,
   },
   cheese_press: {
@@ -223,7 +213,6 @@ export const PRODUCERS = {
     inputs: ['milk'],
     output: 'cheese',
     workTime: 5,
-    inputCap: 6,
     trayCap: 6,
   },
   goat_cheese_press: {
@@ -235,7 +224,6 @@ export const PRODUCERS = {
     inputs: ['goat_milk'],
     output: 'goat_cheese',
     workTime: 5.5,
-    inputCap: 6,
     trayCap: 6,
   },
   ice_cream_maker: {
@@ -247,7 +235,6 @@ export const PRODUCERS = {
     inputs: ['milk', 'strawberry'],
     output: 'ice_cream',
     workTime: 6,
-    inputCap: 4,
     trayCap: 6,
   },
   pudding_pot: {
@@ -259,7 +246,6 @@ export const PRODUCERS = {
     inputs: ['milk', 'egg'],
     output: 'pudding',
     workTime: 6,
-    inputCap: 4,
     trayCap: 6,
   },
   // Pizza Place (Napoli tiles look, src/view/pizza-stations.ts)
@@ -271,7 +257,6 @@ export const PRODUCERS = {
     inputs: ['tomato'],
     output: 'pizza_sauce',
     workTime: 3.5,
-    inputCap: 6,
     trayCap: 6,
   },
   dough_mixer: {
@@ -282,7 +267,6 @@ export const PRODUCERS = {
     inputs: ['flour', 'milk'],
     output: 'dough',
     workTime: 5,
-    inputCap: 4,
     trayCap: 6,
   },
   olive_tree: {
@@ -303,7 +287,6 @@ export const PRODUCERS = {
     inputs: ['dough', 'pizza_sauce', 'cheese'],
     output: 'pizza',
     workTime: 7,
-    inputCap: 4,
     trayCap: 6,
   },
   veggie_pizza_oven: {
@@ -315,7 +298,6 @@ export const PRODUCERS = {
     inputs: ['dough', 'pizza_sauce', 'olives'],
     output: 'veggie_pizza',
     workTime: 7,
-    inputCap: 4,
     trayCap: 6,
   },
 } satisfies Record<string, ProducerType<ProductId>>;

@@ -167,6 +167,7 @@ export function updatePlayer(w: World, intents: Intents): void {
       drop: () => true,
       pick: () => true,
       cap: stackCap(w),
+      takeFirst: true,
     },
   );
   if (st && moved.picked) w.tutorial.actions.add(`pick:${st.id}`);

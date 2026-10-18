@@ -28,6 +28,7 @@ import { paletteMaterial } from './materials';
 import { Tweens, ease } from '../tween';
 import { FEEL } from '../feel';
 import { PALETTE, SHADES, withAlpha, THEMES } from '../palette';
+import { INPUT_CAP } from '../../catalog/producers';
 import { PRODUCTS } from '../../catalog/products';
 import { TUNING } from '../sim/tuning';
 
@@ -1406,7 +1407,7 @@ function needsOf(w: World, st: Station): { model: string; have: number; cap: num
   if (st.kind !== 'producer') return null;
   const type = w.map.producers[st.type];
   if (!type.inputs.length) return null;
-  return type.inputs.map((p) => ({ model: model(p), have: st.input[p] ?? 0, cap: type.inputCap ?? 0 }));
+  return type.inputs.map((p) => ({ model: model(p), have: st.input[p] ?? 0, cap: INPUT_CAP }));
 }
 
 const w_isInput = (w: World, type: string, product: string): boolean => {

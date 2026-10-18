@@ -187,6 +187,17 @@ export const FEEL = {
   bannerMs: 3200,
   bannerSlideMs: 400,
   reportMs: 3000,
+  /** Score UI: CHALLENGE! stamp and toast (ms), ring timer size (px) and the seconds left it turns red at, the Objective
+   * card's hold and fly into the trophy (ms), the badge's count-up speed (share of the gap per s). */
+  score: {
+    stampMs: 1200,
+    toastMs: 2200,
+    ringSize: 64,
+    ringRedAt: 10,
+    cardHoldMs: 1300,
+    cardFlyMs: 600,
+    badgeCount: 8,
+  },
   /** Thief Pan: camera glide to the Thief and back (s); the game freezes for the glide in plus the sim's freeze. */
   thiefPanGlide: 0.35,
   /** Visitors' bubbles over the head (m), the caught Thief's tumble (s), the BAD REVIEW stamp's slam (s). */

@@ -133,7 +133,7 @@ export const lessons: LessonDef[] = [
     title: 'Animals',
     card: () => [
       'Animals need feeding. The Chicken Coop takes tomatoes and, after a few seconds, lays eggs on its Tray beside it.',
-      'Buy the Coop, walk up to put your tomatoes in, then walk up again to take the eggs from the Tray.',
+      'Buy the Coop and walk up: your tomatoes go in. When you come back, you take the eggs from the Tray first (if your Stack has room), and only then does it take more tomatoes.',
     ],
     setup: (w) => {
       w.money = 15;

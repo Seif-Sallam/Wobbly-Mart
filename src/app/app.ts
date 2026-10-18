@@ -1,4 +1,5 @@
 // The app: title → game, saves, the HUD and panels, guidance arrows. Glue between sim, view, ui and audio.
+import { INPUT_CAP } from '../../catalog/producers';
 import * as THREE from 'three';
 import type { SimEvent, World } from '../sim/world';
 import type { MapDef } from '../sim/map';
@@ -49,11 +50,15 @@ import {
   writeSave,
   writeSettings,
 } from './storage';
+import { formatMoney } from '../format';
 import { Hud, type EdgeArrow, type EventBanner, type EventCard } from '../ui/hud';
 import { renderUi, type Overlay, type UiActions, type UiState } from '../ui/app';
 import { Sounds } from '../audio/audio';
 import { FEEL } from '../feel';
 import { TUNING } from '../sim/tuning';
+import { objectiveId } from '../../catalog/objectives';
+import { logbookView, objectiveInfo, progressOfSave, type MapProgress } from './logbook';
+import { challengeCard } from './challenge-card';
 
 const AUTOSAVE_SECONDS = 5;
 const HINT_DISTANCE = 2;
@@ -163,6 +168,9 @@ export class App {
       touch: isTouch,
       ios: isIos,
       maps: [],
+      total: 0,
+      logbook: null,
+      logbookTab: 0,
       lastMap: this.save.currentMap,
       tutorialDone: this.save.tutorialDone,
       settings: this.settings,
@@ -175,6 +183,8 @@ export class App {
     this.ui.zoom = this.zoom();
     watchLayout(() => this.applyLayout());
     this.hud.onGear = () => this.openOverlay('pause');
+    this.hud.onTrophy = () => this.openLogbook(0);
+    this.hud.onLand = () => this.sounds.sfx('ding');
     this.hud.onTutorNext = () => {
       if (!this.game) return;
       this.tutorNexted = tutorialStep(this.game.world);
@@ -205,20 +215,9 @@ export class App {
     const showcase = MAPS.filter((m) => !isTutorialMap(m));
     const map = showcase[Math.floor(Math.random() * showcase.length)];
     this.game = new Game(this.stage, this.input, map, showcaseSave(map), true);
-    this.game.paused = true;
     this.game.view.setLook(this.ui.look, this.ui.cap);
     this.applyLayout();
-    this.game.view.cameraOverride = new THREE.Vector3();
-    this.game.view.scenery(SCENERY_PEOPLE);
-    const { world } = this.game;
-    for (const st of world.stations.values()) {
-      if (st.kind === 'shelf') st.items = shelfCap(world.map, st.product);
-      if (st.kind !== 'producer') continue;
-      const type = world.map.producers[st.type];
-      st.plants.fill(0);
-      st.tray = type.trayCap ?? 0;
-      for (const p of type.inputs) st.input[p] = type.inputCap ?? 0;
-    }
+    this.showcase();
     this.game.onFrame = (events, dt) => this.onFrame(events, dt);
     this.layout = new EditLayout(
       this.game,
@@ -320,6 +319,50 @@ export class App {
     }, WIPE_SECONDS);
   }
 
+  /** The title's look: the open Map fully stocked, paused, under the panning camera. */
+  private showcase(): void {
+    const game = this.game;
+    if (!game) return;
+    game.paused = true;
+    game.view.cameraOverride = new THREE.Vector3();
+    game.view.scenery(SCENERY_PEOPLE);
+    const { world } = game;
+    for (const st of world.stations.values()) {
+      if (st.kind === 'shelf') st.items = shelfCap(world.map, st.product);
+      if (st.kind !== 'producer') continue;
+      const type = world.map.producers[st.type];
+      st.plants.fill(0);
+      st.tray = type.trayCap ?? 0;
+      for (const p of type.inputs) st.input[p] = INPUT_CAP;
+    }
+  }
+
+  // ---------- game → title
+
+  /** Saves, then shows the title with the current Map as the stocked backdrop. */
+  private toTitle(): void {
+    const game = this.game;
+    if (!game) return;
+    this.writeSave();
+    this.ui.overlay = null;
+    this.ui.office = false;
+    this.ui.wipe = true;
+    this.renderUi();
+    setTimeout(() => {
+      const map = game.world.map;
+      game.open(map, showcaseSave(map), true);
+      this.input.tap.cancel();
+      this.warning = null;
+      this.hud.reset(0, 0);
+      this.showcase();
+      this.ui.screen = 'title';
+      this.ui.wipe = false;
+      this.hud.visible(false);
+      this.refreshMaps();
+      this.renderUi();
+    }, WIPE_SECONDS);
+  }
+
   // the title keeps its showcase Map; only the cards change
   private reopen(): void {
     if (this.ui.screen === 'game') this.openMap(this.currentMap());
@@ -339,7 +382,7 @@ export class App {
     game.view.cameraOverride = null;
     game.paused = false;
     this.applyLayout();
-    this.hud.resetMoney(game.world.money);
+    this.hud.reset(game.world.money, game.world.score);
     this.officeDismissed = this.exitDismissed = false;
     this.lessonKey = '';
     this.seenPads.clear();
@@ -360,7 +403,7 @@ export class App {
     const w = game.world;
     for (const e of events) this.onEvent(e);
     this.sounds.frame(events, w, (p) => this.onScreen(p), dt);
-    this.hud.update(dt, w.money, completion(w), w.closed);
+    this.hud.update(dt, w.money, completion(w), w.closed, w.score);
     document.documentElement.classList.toggle('sprinting', w.player.sprinting);
     document.documentElement.classList.toggle('joying', this.input.joyHeld);
     // leaving fullscreen on a phone pauses behind a "Tap to play fullscreen" card
@@ -435,6 +478,23 @@ export class App {
     }
     if (e.type === 'complete') this.hud.celebrate();
     if (e.type === 'lessonReplay') this.hud.banner(iconUrl('player'), 'Let’s try that again', 'No harm done');
+    if (e.type === 'challengeStarted') {
+      this.hud.stamp('CHALLENGE!');
+      this.sounds.sfx('boing');
+    }
+    if (e.type === 'challengeWon') {
+      this.hud.toast('Challenge won!', `⭐ +${e.score} · ${formatMoney(e.money)}`);
+      this.sounds.sfx('powerup');
+    }
+    if (e.type === 'challengeFailed') this.hud.toast('Time up', '', false);
+    if (e.type === 'objectiveDone') {
+      const def = w.map.objectives.find((o) => objectiveId(o) === e.objective);
+      if (def) {
+        const { icon, name } = objectiveInfo(w.map, def);
+        this.hud.objectiveDone(icon, name, TUNING.score.objective);
+        this.sounds.sfx('powerup');
+      }
+    }
     if (e.type === 'deliveryArrived')
       this.hud.banner(iconUrl('van'), 'Delivery!', 'Bring the order to the car out back');
     if (e.type === 'thiefGrab') this.hud.banner(emojiUrl(THIEF), 'Thief!', 'Sprint and catch them before the door');
@@ -550,6 +610,7 @@ export class App {
       );
     }
     this.hud.setCards(cards);
+    this.hud.setChallenge(challengeCard(w));
     const upgrade = Object.keys(w.map.upgrades).some((id) => upgradeVisible(w, id) && canBuyUpgrade(w, id));
     view.officeAlert = upgrade;
     if (upgrade) {
@@ -647,20 +708,41 @@ export class App {
         map,
         tutorial: isTutorialMap(map),
         visited: isTutorialMap(map) || !before || this.save.visited.includes(map.id) || exitBought(before.id),
+        score: map.id === live?.map.id ? live.score : (this.save.maps[map.id]?.score ?? 0),
         completion:
           map.id === live?.map.id
             ? completion(live)
-            : completionOf(map, new Set(this.save.maps[map.id]?.owned ?? []), this.save.maps[map.id]?.levels ?? {}),
+            : completionOf(
+                map,
+                new Set(this.save.maps[map.id]?.owned ?? []),
+                this.save.maps[map.id]?.levels ?? {},
+                new Set(this.save.maps[map.id]?.objectives ?? []),
+              ),
       };
     });
+    this.ui.maps.forEach((m) => {
+      if (m.tutorial || !m.visited) m.score = null;
+    });
+    this.ui.total = this.ui.maps.reduce((t, m) => t + (m.score ?? 0), 0);
     this.ui.tutorialDone = this.save.tutorialDone;
     this.ui.lastMap = this.save.currentMap;
+  }
+
+  /** The Logbook for the open Map (the title: the last one played), on a tab; the game pauses behind it. */
+  private openLogbook(tab: number): void {
+    const live = this.ui.screen === 'game' ? this.game?.world : undefined;
+    const map = live?.map ?? mapById(this.save.currentMap) ?? FIRST_MAP;
+    const progress = (m: MapDef): MapProgress => (m === live?.map ? live : progressOfSave(this.save.maps[m.id]));
+    this.ui.logbook = logbookView(map, progress(map), MAPS.filter((m) => !isTutorialMap(m)).map(progress));
+    this.ui.logbookTab = tab;
+    this.openOverlay('logbook');
   }
 
   private escape(): void {
     if (this.ui.screen !== 'game' || this.ui.overlay === 'fullscreen') return;
     if (this.layout?.open) return this.layout.escape();
-    if (this.ui.overlay) this.openOverlay(this.ui.overlay === 'pause' ? null : 'pause');
+    if (this.ui.overlay)
+      this.openOverlay(this.ui.overlay === 'pause' || this.ui.overlay === 'logbook' ? null : 'pause');
     else if (this.ui.office) {
       this.officeDismissed = true;
     } else this.openOverlay('pause');
@@ -670,6 +752,8 @@ export class App {
     play: (id) => this.play(id),
     close: () => this.openOverlay(null),
     open: (o) => this.openOverlay(o),
+    openLogbook: (tab) => this.openLogbook(tab),
+    toTitle: () => this.toTitle(),
     closeOffice: () => {
       this.officeDismissed = true;
       this.ui.office = false;
@@ -735,7 +819,7 @@ export class App {
       this.input.tap.cancel();
       this.game?.lessonNext();
     },
-    skipLessons: () => this.actions.pickMap(FIRST_MAP.id),
+    skipLessons: () => this.toTitle(),
     dismissCard: () => {
       this.ui.card = null;
       this.renderUi();

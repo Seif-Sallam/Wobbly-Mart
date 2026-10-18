@@ -19,6 +19,15 @@ export interface EventCard {
   delivery?: { id: string; lines: { icon: string; got: number; want: number }[] };
 }
 
+/** The running Challenge's ring timer: `left` is the share of time left, `text` what sits inside the ring. */
+export interface ChallengeCard {
+  icon: string;
+  name: string;
+  text: string;
+  left: number;
+  low: boolean;
+}
+
 export interface EventBanner {
   line: (text: string) => void;
   close: () => void;
@@ -39,6 +48,12 @@ export class Hud {
   private lessonPill: HTMLElement;
   private shown = 0;
   private target = 0;
+  private ring: HTMLElement;
+  private badge: HTMLElement;
+  /** The Map's Score on the badge: counts up to `score` minus the points still flying in. */
+  private badgeShown = 0;
+  private badgeGoal = 0;
+  private held = 0;
   /** Last values written to the DOM: only changes are written. */
   private drawn = {
     money: '',
@@ -49,10 +64,15 @@ export class Hud {
     cards: [] as string[],
     tutor: '',
     lesson: '',
+    ring: '',
+    badge: '',
   };
   onGear: () => void = () => {};
   /** A Delivery card was tapped: its pickup Station's id. */
   onDelivery: (id: string) => void = () => {};
+  onTrophy: () => void = () => {};
+  /** An Objective card landed in the trophy. */
+  onLand: () => void = () => {};
   onTutorNext: () => void = () => {};
   onTutorSkip: () => void = () => {};
 
@@ -66,14 +86,18 @@ export class Hud {
       <div class="hud-top">
         <div class="completion"><i></i></div>
         <div class="money pill">${BILL}<span>$0</span><em class="closed-badge gone">CLOSED</em></div>
-        <div class="hud-right"><div class="hud-extra"></div><button class="gear round" aria-label="Pause">${GEAR}</button></div>
+        <div class="hud-right"><div class="hud-extra"><button class="trophy round" aria-label="Logbook">🏆<b class="badge">⭐ 0</b></button></div><button class="gear round" aria-label="Pause">${GEAR}</button></div>
       </div>
+      <div class="chal-ring gone"><div class="ring"><i></i></div><small><img alt=""><span></span></small></div>
       <div class="event-cards"></div>
       <div class="tutor pill gone"><small></small><p></p><div><button class="btn skip">Skip tutorial</button><button class="btn buy next">OK</button></div></div>
       <div class="lesson pill gone"><small></small><p></p></div>
       <div class="hint"></div></div>`;
     this.ui = root.querySelector('.hud-ui') as HTMLElement;
     this.extra = root.querySelector('.hud-extra') as HTMLElement;
+    this.ring = root.querySelector('.chal-ring') as HTMLElement;
+    this.badge = root.querySelector('.badge') as HTMLElement;
+    this.ui.style.setProperty('--ring-size', `${FEEL.score.ringSize}px`);
     this.cardBox = root.querySelector('.event-cards') as HTMLElement;
     this.money = root.querySelector('.money') as HTMLElement;
     this.bar = root.querySelector('.completion') as HTMLElement;
@@ -87,6 +111,7 @@ export class Hud {
         fn();
       });
     press('.gear', () => this.onGear());
+    press('.trophy', () => this.onTrophy());
     press('.tutor .next', () => this.onTutorNext());
     press('.tutor .skip', () => this.onTutorSkip());
   }
@@ -99,13 +124,26 @@ export class Hud {
     this.ui.style.setProperty('--hud-scale', String(s));
   }
 
-  /** Jump straight to a value (new Opening). */
-  resetMoney(v: number): void {
-    this.shown = this.target = v;
+  /** New Opening: jump straight to the values and drop whatever was on screen. */
+  reset(money: number, score: number): void {
+    this.shown = this.target = money;
     this.drawMoney();
+    this.badgeShown = this.badgeGoal = score;
+    this.held = 0;
+    this.drawBadge();
+    this.setChallenge(null);
+    this.root
+      .querySelectorAll('.event-banner, .report-card, .score-toast, .stamp, .obj-fly')
+      .forEach((e) => e.remove());
   }
 
-  update(dt: number, money: number, completion: number, closed: boolean): void {
+  update(dt: number, money: number, completion: number, closed: boolean, score: number): void {
+    const goal = score - this.held;
+    if (goal > this.badgeGoal) this.bumpBadge();
+    this.badgeGoal = goal;
+    const gap = goal - this.badgeShown;
+    this.badgeShown = Math.abs(gap) < 0.5 ? goal : this.badgeShown + gap * Math.min(1, dt * FEEL.score.badgeCount);
+    this.drawBadge();
     if (money > this.target + 0.5) {
       this.money.classList.remove('bump');
       void this.money.offsetWidth;
@@ -120,6 +158,17 @@ export class Hud {
     const width = `${Math.round(completion * 100)}%`;
     if (width !== this.drawn.width) this.barFill.style.width = this.drawn.width = width;
     if (completion >= 1 !== this.drawn.gold) this.bar.classList.toggle('gold', (this.drawn.gold = completion >= 1));
+  }
+
+  private drawBadge(): void {
+    const text = `⭐ ${Math.round(this.badgeShown).toLocaleString('en-US')}`;
+    if (text !== this.drawn.badge) this.badge.textContent = this.drawn.badge = text;
+  }
+
+  private bumpBadge(): void {
+    this.badge.classList.remove('bump');
+    void this.badge.offsetWidth;
+    this.badge.classList.add('bump');
   }
 
   private drawMoney(): void {
@@ -236,6 +285,74 @@ export class Hud {
       }
       el.dataset.got = String(line.got);
     });
+  }
+
+  /** The ring timer under Money; `null` hides it. */
+  setChallenge(c: ChallengeCard | null): void {
+    const key = c ? `${c.icon}|${c.name}|${c.text}|${Math.round(c.left * 200)}|${c.low}` : '';
+    if (key === this.drawn.ring) return;
+    this.drawn.ring = key;
+    this.ring.classList.toggle('gone', !c);
+    if (!c) return;
+    const ring = this.ring.querySelector('.ring') as HTMLElement;
+    ring.style.setProperty('--p', c.left.toFixed(3));
+    ring.style.setProperty('--c', c.low ? 'var(--angry)' : 'var(--money)');
+    (ring.querySelector('i') as HTMLElement).textContent = c.text;
+    const img = this.ring.querySelector('img') as HTMLImageElement;
+    if (img.dataset.src !== c.icon) img.src = img.dataset.src = c.icon;
+    (this.ring.querySelector('small span') as HTMLElement).textContent = c.name;
+  }
+
+  /** A big stamp mid-screen that scales in and fades. */
+  stamp(text: string): void {
+    const el = document.createElement('div');
+    el.className = 'stamp';
+    el.textContent = text;
+    el.style.animationDuration = `${FEEL.score.stampMs}ms`;
+    this.ui.appendChild(el);
+    setTimeout(() => el.remove(), FEEL.score.stampMs);
+  }
+
+  /** A pill mid-screen with a title and a line, gone after `toastMs`. */
+  toast(title: string, line: string, good = true): void {
+    const el = document.createElement('div');
+    el.className = `score-toast pill ${good ? 'good' : 'bad'}`;
+    el.innerHTML = '<b></b><span></span>';
+    (el.querySelector('b') as HTMLElement).textContent = title;
+    (el.querySelector('span') as HTMLElement).textContent = line;
+    el.style.animationDuration = `${FEEL.score.toastMs}ms`;
+    this.ui.appendChild(el);
+    setTimeout(() => el.remove(), FEEL.score.toastMs);
+  }
+
+  /** Objective done: a card pops mid-screen, holds, then flies and shrinks into the trophy while its points count up. */
+  objectiveDone(icon: string, name: string, points: number): void {
+    this.held += points;
+    const fly = document.createElement('div');
+    fly.className = 'obj-fly';
+    fly.innerHTML = '<div class="obj-card pill"><img alt=""><b>Objective done!</b><span></span><em></em></div>';
+    (fly.querySelector('img') as HTMLImageElement).src = icon;
+    (fly.querySelector('span') as HTMLElement).textContent = name;
+    (fly.querySelector('em') as HTMLElement).textContent = `⭐ +${points}`;
+    this.root.appendChild(fly);
+    setTimeout(() => {
+      const from = fly.getBoundingClientRect();
+      const to = (this.root.querySelector('.trophy') as HTMLElement).getBoundingClientRect();
+      const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+      const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+      const flight = fly.animate(
+        [
+          { transform: 'translate(-50%, -50%)' },
+          { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.1)`, opacity: 0.7 },
+        ],
+        { duration: FEEL.score.cardFlyMs, easing: 'cubic-bezier(0.5, 0, 0.8, 0.4)', fill: 'forwards' },
+      );
+      flight.addEventListener('finish', () => {
+        fly.remove();
+        this.held = Math.max(0, this.held - points);
+        this.onLand();
+      });
+    }, FEEL.score.cardHoldMs);
   }
 
   /** The Health Inspector's report: a title and a line, green when good, red when fined. */

@@ -70,7 +70,7 @@ export function newLessons(w: World): LessonState | null {
 
 /** Wipes what a Lesson may leave behind, so every Lesson (and replay) starts clean. */
 function clearScene(w: World): void {
-  for (const c of w.customers) w.events.push({ type: 'customerLeft', customer: c.id });
+  for (const c of w.customers) w.events.push({ type: 'customerLeft', customer: c.id, happy: false });
   w.customers = [];
   for (const s of w.stations.values()) {
     if (s.kind !== 'register') continue;

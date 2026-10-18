@@ -1,5 +1,6 @@
 import { SHELF_CAPS, type Product } from '../../catalog/products';
 import type { ProducerType } from '../../catalog/producers';
+import type { ObjectiveDef } from '../../catalog/objectives';
 import type { TUNING } from './tuning';
 import type { LessonDef } from './lessons';
 
@@ -132,6 +133,10 @@ export interface MapDef {
   tutorial: TutorialStep[];
   /** Tutorial Map only: the Lessons, in order. While any are left, Customers and Events come only when a Lesson calls them. */
   lessons?: LessonDef[];
+  /** Goals done once and kept in the save; each counts toward Completion like a Pad. */
+  objectives: ObjectiveDef[];
+  /** false: no Challenge is ever offered (the Tutorial Map, where only a Lesson starts one). */
+  challenges?: false;
   /** Edit Layout: the price of each Move in order (3 per Area). */
   movePrices: number[];
   events: MapEvents;

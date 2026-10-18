@@ -1344,8 +1344,14 @@ html.pl .event-banner,
 html.pl .report-card,
 html.pl .tutor,
 html.pl .lesson,
-html.pl .lesson-card {
+html.pl .lesson-card,
+html.pl .score-toast,
+html.pl .stamp,
+html.pl .obj-card {
   zoom: var(--card-scale);
+}
+html.pl .chal-ring {
+  top: max(8px, var(--st));
 }
 html.pl .event-banner {
   left: auto;
@@ -1398,6 +1404,288 @@ html.pl .panel.settings > .back {
 }
 html.pl .office.side {
   padding: 56px max(14px, var(--sr)) 14px 14px;
+}
+
+/* ---------- Score: trophy and badge, Challenge stamp / ring / toast, Objective card */
+.trophy {
+  position: relative;
+  font-size: 24px;
+  line-height: 1;
+  font-family: inherit;
+}
+.badge {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-top: -8px;
+  transform: translateX(-50%);
+  padding: 0 7px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--pad);
+  color: var(--ink);
+  font: 700 13px Fredoka;
+  white-space: nowrap;
+}
+.badge.bump {
+  animation: badge-bump 0.3s;
+}
+@keyframes badge-bump {
+  50% {
+    transform: translateX(-50%) scale(1.3);
+  }
+}
+.chal-ring {
+  position: absolute;
+  left: 50%;
+  top: calc(max(10px, env(safe-area-inset-top)) + 64px);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+.chal-ring.gone {
+  display: none;
+}
+html:not(.pl) .hud-ui:has(.closed-badge:not(.gone)) .chal-ring {
+  top: calc(max(10px, env(safe-area-inset-top)) + 100px);
+}
+.chal-ring .ring {
+  width: var(--ring-size);
+  height: var(--ring-size);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--ink);
+  box-shadow: 0 4px 0 var(--ink);
+  background: conic-gradient(var(--c) calc(var(--p) * 1turn), var(--cream) 0);
+}
+.chal-ring .ring i {
+  width: calc(var(--ring-size) - 16px);
+  height: calc(var(--ring-size) - 16px);
+  border-radius: 50%;
+  background: var(--cream);
+  display: grid;
+  place-items: center;
+  font: 700 16px Fredoka;
+}
+.chal-ring small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px 0 4px;
+  background: var(--cream);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  font: 600 13px Fredoka;
+  white-space: nowrap;
+}
+.chal-ring small img {
+  width: 18px;
+  height: 18px;
+}
+.stamp {
+  position: absolute;
+  left: 50%;
+  top: 35%;
+  font: 700 56px Fredoka;
+  color: var(--orange);
+  -webkit-text-stroke: 3px var(--ink);
+  paint-order: stroke fill;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: stamp both;
+}
+@keyframes stamp {
+  0% {
+    transform: translateX(-50%) rotate(-8deg) scale(3);
+    opacity: 0;
+  }
+  15% {
+    transform: translateX(-50%) rotate(-8deg) scale(1);
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50%) rotate(-8deg) scale(1);
+    opacity: 0;
+  }
+}
+.score-toast {
+  position: absolute;
+  left: 50%;
+  top: 28%;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 24px;
+  font-size: 24px;
+  white-space: nowrap;
+  text-align: center;
+  animation: report both;
+}
+.score-toast span {
+  font-size: 16px;
+}
+.score-toast.good b {
+  color: var(--money);
+}
+.score-toast.bad b {
+  color: var(--angry);
+}
+.obj-fly {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+}
+.obj-card {
+  flex-direction: column;
+  gap: 0;
+  padding: 10px 28px;
+  font-size: 22px;
+  text-align: center;
+  animation: obj-pop 0.35s both;
+}
+.obj-card img {
+  width: 52px;
+  height: 52px;
+}
+.obj-card b {
+  color: var(--money);
+}
+.obj-card span {
+  font-size: 18px;
+  font-weight: 600;
+}
+.obj-card em {
+  font-style: normal;
+  font-size: 20px;
+}
+@keyframes obj-pop {
+  0% {
+    transform: scale(0.2);
+  }
+  70% {
+    transform: scale(1.12);
+  }
+}
+
+/* ---------- Logbook */
+.panel.logbook {
+  width: min(1000px, 100%);
+  height: 100%;
+  max-height: 100%;
+}
+.logbook-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.logbook-head h2 {
+  margin: 0;
+  font-size: 26px;
+}
+.logbook-head b {
+  font-size: 24px;
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.tabs .btn {
+  flex: 1;
+  border: 0;
+  box-shadow: none;
+  background: none;
+  font-size: 16px;
+  padding: 5px 10px;
+  border-radius: 999px;
+}
+.tabs .btn.on {
+  background: var(--cream);
+  box-shadow: 0 2px 0 var(--ink);
+}
+.logbook-body {
+  flex: 1;
+  overflow: auto;
+  touch-action: pan-y;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+.obj-tile,
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--pad) 18%, var(--cream));
+  border: 2px solid color-mix(in srgb, var(--ink) 25%, transparent);
+  text-align: center;
+  font: 600 14px Fredoka;
+}
+.obj-tile .obj-ring {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--orange) calc(var(--p) * 1turn), color-mix(in srgb, var(--ink) 15%, transparent) 0);
+}
+.obj-tile .obj-ring img {
+  width: 40px;
+  height: 40px;
+  padding: 3px;
+  border-radius: 50%;
+  background: var(--cream);
+}
+.obj-tile.done {
+  background: color-mix(in srgb, var(--money) 22%, var(--cream));
+}
+.obj-tile.done .obj-ring {
+  background: var(--money);
+}
+.obj-tile.done b {
+  color: var(--money);
+}
+.stat-card {
+  align-items: stretch;
+  text-align: left;
+  padding: 6px 12px;
+}
+.stat-card h4 {
+  margin: 0 0 2px;
+  font-size: 16px;
+}
+.stat-card p {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+}
+.plaque {
+  font-size: 22px;
+  padding: 2px 16px;
+  margin: -14px 0 -8px;
+  pointer-events: none;
+}
+.ribbon.score {
+  background: var(--pad);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  font-size: 15px;
 }
 
 /* ---------- joystick: Landscape zone, Free's resting ring, Off, and the Manual grab ring */

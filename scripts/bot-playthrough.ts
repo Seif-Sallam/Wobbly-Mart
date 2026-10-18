@@ -3,14 +3,65 @@ import { MAPS } from '../maps';
 import { createWorld, step, type World } from '../src/sim/world';
 import { Bot } from '../src/sim/bot';
 import { completion } from '../src/sim/economy';
+import { TUNING } from '../src/sim/tuning';
 
 const LIMIT_SECONDS = 4 * 3600;
 
-export function playthrough(w: World, log = false): number {
+/** What the bot did while a given number of Areas was bought: seconds, checkouts, Items made and sold per Product. */
+interface Tier {
+  seconds: number;
+  checkouts: number;
+  made: Record<string, number>;
+  sold: Record<string, number>;
+}
+
+const areasBought = (w: World): number => Object.keys(w.map.layout.areas).filter((a) => w.owned.has(a)).length;
+
+/** Each Challenge count must be reachable at the bot's measured rate with this margin. */
+const MARGIN = 1.5;
+
+function reachability(tiers: Map<number, Tier>): string[] {
+  const C = TUNING.challenges.kinds;
+  const lines: string[] = [];
+  for (const [areas, t] of [...tiers].sort((a, b) => a[0] - b[0])) {
+    const i = Math.min(areas, 3) - 1;
+    if (t.seconds < 60) continue;
+    const per = (n: number, secs: number) => (n / t.seconds) * secs;
+    const slowest = (r: Record<string, number>, secs: number) => Math.min(...Object.values(r).map((n) => per(n, secs)));
+    const rows: [string, number, number][] = [
+      ['checkout', per(t.checkouts, C.checkout.time), C.checkout.goal[i]],
+      ['make', slowest(t.made, C.make.time), C.make.goal[i]],
+      ['sell', slowest(t.sold, C.sell.time), C.sell.goal[i]],
+    ];
+    for (const [kind, got, want] of rows)
+      lines.push(
+        `  area ${areas} ${kind}: bot ${got.toFixed(1)} vs ${want} x${MARGIN} ${got >= want * MARGIN ? 'ok' : 'SHORT'}`,
+      );
+  }
+  return lines;
+}
+
+export function playthrough(w: World, log = false, tiers = new Map<number, Tier>()): number {
   const bot = new Bot();
   let lastPct = -1;
   while (completion(w) < 1 && w.t < LIMIT_SECONDS) {
+    const areas = areasBought(w);
+    const tier = tiers.get(areas) ?? { seconds: 0, checkouts: 0, made: {}, sold: {} };
+    tiers.set(areas, tier);
     step(w, bot.intents(w));
+    tier.seconds += 1 / TUNING.tickRate;
+    for (const e of w.events) {
+      if (e.type === 'paid') {
+        tier.checkouts++;
+        for (const p of e.products) tier.sold[p] = (tier.sold[p] ?? 0) + 1;
+      } else if (e.type === 'produced') {
+        const st = w.stations.get(e.station);
+        if (st?.kind === 'producer') {
+          const out = w.map.producers[st.type].output;
+          tier.made[out] = (tier.made[out] ?? 0) + 1;
+        }
+      }
+    }
     const pct = Math.floor(completion(w) * 10);
     if (log && pct !== lastPct) {
       lastPct = pct;
@@ -26,9 +77,12 @@ let failed = false;
 for (const map of MAPS) {
   const w = createWorld(map, null, 1);
   w.lesson = null; // the bot plays the Map, not its Lessons: a Lesson card would freeze it
-  const t = playthrough(w, true);
+  const tiers = new Map<number, Tier>();
+  const t = playthrough(w, true, tiers);
   const pct = completion(w) * 100;
   console.log(`${map.id}: ${pct.toFixed(0)}% after ${(t / 60).toFixed(1)} simulated minutes`);
+  console.log(`  Score ${w.score}, Objectives ${w.objectivesDone.size}/${map.objectives.length}`);
+  for (const line of reachability(tiers)) console.log(line);
   if (pct < 100) {
     failed = true;
     console.error(`${map.id}: 100% Completion was not reached within ${LIMIT_SECONDS / 3600} h`);

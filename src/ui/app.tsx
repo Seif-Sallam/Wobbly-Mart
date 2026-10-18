@@ -9,13 +9,14 @@ import { lessonCard } from '../sim/lessons';
 import { formatMoney } from '../format';
 import { FEEL } from '../feel';
 import { Logo } from './logo';
+import { Logbook, type LogbookView } from './logbook';
 import { GEAR } from './hud';
 import { CREDITS } from '../../catalog/credits';
 import { LOOKS, lookById } from '../../catalog/looks';
 import { CAP_COLOURS } from '../palette';
 
 export type Overlay =
-  'pause' | 'settings' | 'maps' | 'credits' | 'controls' | 'paste' | 'home-tip' | 'wardrobe' | 'fullscreen';
+  'pause' | 'settings' | 'maps' | 'credits' | 'controls' | 'paste' | 'home-tip' | 'wardrobe' | 'fullscreen' | 'logbook';
 
 export interface UiState {
   screen: 'title' | 'game';
@@ -27,7 +28,13 @@ export interface UiState {
   wipe: boolean;
   touch: boolean;
   ios: boolean;
-  maps: { map: MapDef; completion: number; visited: boolean; tutorial: boolean }[];
+  /** `score`: the Map's Score, null on locked cards and the Tutorial Map. */
+  maps: { map: MapDef; completion: number; visited: boolean; tutorial: boolean; score: number | null }[];
+  /** Score added up over every Map. */
+  total: number;
+  logbook: LogbookView | null;
+  /** The tab the Logbook opens on: 0 Objectives, 1 This Map, 2 Whole game. */
+  logbookTab: number;
   tutorialDone: boolean;
   /** The Map Play last opened: the title shelf starts on it. */
   lastMap: string;
@@ -69,6 +76,8 @@ export interface UiActions {
   play: (mapId: string) => void;
   close: () => void;
   open: (o: Overlay) => void;
+  openLogbook: (tab: number) => void;
+  toTitle: () => void;
   closeOffice: () => void;
   setClosed: (closed: boolean) => void;
   buyUpgrade: (id: string) => void;
@@ -627,6 +636,9 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
           <button class="round" aria-label="Wardrobe" onClick={() => (a.click(), a.open('wardrobe'))}>
             👕
           </button>
+          <button class="round" aria-label="Logbook" onClick={() => (a.click(), a.openLogbook(2))}>
+            🏆
+          </button>
           <button class="round" aria-label="Credits" onClick={() => (a.click(), a.open('credits'))}>
             ★
           </button>
@@ -639,6 +651,7 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
         </div>
       )}
       <Logo />
+      {ready && <div class="plaque pill">🏆 {s.total.toLocaleString('en-US')}</div>}
       {ready ? (
         <>
           <div class="shelf">
@@ -654,6 +667,7 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
                 return (
                   <div key={m.map.id} class={cls} style={{ '--off': off }} onClick={() => setAt(k)}>
                     <div class="shelf-art">{m.visited && art ? <img src={a.icon(art)} alt="" /> : '🔒'}</div>
+                    {m.score !== null && <span class="ribbon score">⭐ {m.score.toLocaleString('en-US')}</span>}
                     {m.tutorial && (
                       <span class={`ribbon ${s.tutorialDone ? 'done' : 'start'}`}>
                         {s.tutorialDone ? '✓ Done' : 'Start here!'}
@@ -835,6 +849,9 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
                   Skip tutorial
                 </Btn>
               )}
+              <Btn class="big" actions={a} onClick={a.toTitle}>
+                Title
+              </Btn>
             </div>
           )}
           {overlay === 'fullscreen' && (
@@ -849,6 +866,9 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
           {overlay === 'paste' && <Paste a={a} />}
           {overlay === 'home-tip' && <HomeTip a={a} />}
           {overlay === 'wardrobe' && <Wardrobe s={s} a={a} />}
+          {overlay === 'logbook' && s.logbook && (
+            <Logbook view={s.logbook} tab={s.logbookTab} close={a.close} click={a.click} />
+          )}
         </div>
       )}
       <Card s={s} a={a} />

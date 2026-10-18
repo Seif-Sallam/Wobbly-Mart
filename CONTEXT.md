@@ -21,13 +21,13 @@ One unit of a **Product** in the world — on a stack, a shelf, or a station.
 A kind of thing the store deals in (tomato, egg, ketchup). Raw or processed.
 
 **Grab Mode**:
-How **Items** move between the **Stack** and stations. _Auto_ (default, the only mode on mobile): proximity transfers automatically. _Manual_ (desktop setting): items transfer one at a time only while a key is held.
+How **Items** move between the **Stack** and stations. _Auto_ (default): proximity transfers automatically. _Manual_ (opt-in setting): items transfer one at a time only while a key is held (Space on desktop) or, on a landscape phone, while a finger is held right of the joystick zone. In portrait on a phone the setting does nothing.
 
 **Trash Bin**:
 A station where the **Player** dumps unwanted **Items** from their **Stack** by standing on it for 1.5 s; they are destroyed, no refund. Walking past never trashes anything. Each **Area** has one, against a wall the camera can see (never the south wall); bins never move. **Stockers** use one only as a last resort.
 
 **Tap Walk**:
-Tapping or clicking the floor, a **Pad** or a **Station** sends the **Player** walking there on their own; at a **Station** they stop within reach so proximity does the action, and at a **Register** they go behind it. A double tap sprints. Any joystick or key input cancels it.
+Tapping or clicking the floor, a **Pad** or a **Station** sends the **Player** walking there on their own; at a **Station** they stop within reach so proximity does the action, and at a **Register** they go behind it. A double tap sprints. Any joystick or key input cancels it. On a phone it exists only when the Joystick setting is Off.
 
 **Sprint**:
 Holding run makes the **Player** move 1.5× faster. A tipping **Stack** sheds its top **Item** much more often while sprinting.
@@ -203,7 +203,7 @@ One complete store level: its layout, **Areas**, stations, **Pads**, **Upgrades*
 _Avoid_: level, stage
 
 **Tutorial Map**:
-A small **Map** outside the fixed order that teaches the mechanics one at a time, pausing between instructions. Never locked and never locks anything; keeps no save, only whether it was finished. Until it is finished the game suggests playing it first, and the **Player** may skip that.
+A small **Map** outside the fixed order that teaches the mechanics one at a time, pausing between instructions. Never locked and never locks anything; keeps its progress while unfinished, so it resumes at the Lesson it was left on, and starts over once finished. Until it is finished the game suggests playing it first, and the **Player** may skip that.
 _Avoid_: tutorial (for the old step tutorial on the Corner Shop, which it replaces)
 
 **Lesson**:

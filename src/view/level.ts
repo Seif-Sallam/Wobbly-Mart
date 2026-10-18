@@ -5,11 +5,13 @@ import { boxCentre, footprint, inBox } from '../sim/geometry';
 import { centred, model } from './assets';
 import { paletteMaterial } from './materials';
 import { FEEL } from '../feel';
-import { SHADES, THEMES, type ShopTheme } from '../palette';
+import { PALETTE, SHADES, THEMES, type ShopTheme } from '../palette';
 import { dynamic, mergeStatic } from './merge';
+import { CanvasTex, outlinedText, roundRect } from './text';
 
 const WALL_HEIGHT = { tall: 2.4, low: 0.6, partition: 1.2, window: 1 };
 const DOOR_HEIGHT = 2.2;
+const BOARD_HEIGHT = 1.5;
 
 function slab(token: string, b: Box, y: number, thick = 0.02): THREE.Mesh {
   const m = new THREE.Mesh(new THREE.BoxGeometry(b[2], thick, b[3]), paletteMaterial(token));
@@ -32,6 +34,7 @@ interface Door {
   panels: THREE.Mesh[];
   open: number;
   axis: 'x' | 'z';
+  customer: boolean;
 }
 
 interface AreaLook {
@@ -46,6 +49,8 @@ export class Level {
   private doors: Door[] = [];
   private areas = new Map<string, AreaLook>();
   private floor = new THREE.Mesh();
+  private boards: THREE.Mesh[] = [];
+  private boardTex = new CanvasTex(256, 96);
   private props: { obj: THREE.Object3D; area?: string; party: boolean }[] = [];
 
   constructor(
@@ -208,7 +213,7 @@ export class Level {
   private buildDoor(kind: string, box: Box): void {
     const axis = box[2] >= box[3] ? 'x' : 'z';
     const len = axis === 'x' ? box[2] : box[3];
-    const door: Door = { box, area: this.areaOf(box), panels: [], open: 0, axis };
+    const door: Door = { box, area: this.areaOf(box), panels: [], open: 0, axis, customer: kind === 'customer' };
     if (kind !== 'office') {
       const mat =
         kind === 'customer'
@@ -228,7 +233,30 @@ export class Level {
       lintel.position.set(cx, DOOR_HEIGHT + 0.1, cz);
       this.group.add(lintel);
     }
+    if (kind === 'customer') this.buildBoard(box, axis);
     this.doors.push(door);
+  }
+
+  /** The CLOSED board hung in a Customer door; shown while the store is Closed. */
+  private buildBoard(box: Box, axis: 'x' | 'z'): void {
+    if (!this.boards.length)
+      this.boardTex.draw((g, w, h) => {
+        g.fillStyle = SHADES.angry;
+        roundRect(g, 6, 6, w - 12, h - 12, 22);
+        g.fill();
+        g.lineWidth = 8;
+        g.strokeStyle = PALETTE.ink;
+        g.stroke();
+        outlinedText(g, 'CLOSED', w / 2, h / 2 + 3, 54, PALETTE.cream);
+      });
+    const mat = new THREE.MeshBasicMaterial({ map: this.boardTex.texture, side: THREE.DoubleSide, toneMapped: false });
+    const board = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.525), mat);
+    const [cx, cz] = boxCentre(box);
+    board.position.set(cx, BOARD_HEIGHT, cz);
+    if (axis === 'z') board.rotation.y = Math.PI / 2;
+    board.visible = false;
+    this.group.add(dynamic(board));
+    this.boards.push(board);
   }
 
   /** Locked Areas: dirt, rope, darker floor; bought ones pave in. */
@@ -268,9 +296,12 @@ export class Level {
     for (const p of this.partyProps) p.visible = on;
   }
 
-  /** Door slides and Area paving, each frame. `near` = characters' positions. */
-  update(dt: number, near: Point[]): void {
+  /** Door slides and Area paving, each frame. `everyone` = characters' positions; while `closed`, Customer doors open only
+   * for `guests` (Customers and visitors) and the CLOSED boards show. */
+  update(dt: number, everyone: Point[], closed: boolean, guests: Point[]): void {
+    for (const b of this.boards) b.visible = closed;
     for (const d of this.doors) {
+      const near = closed && d.customer ? guests : everyone;
       const [cx, cz] = boxCentre(d.box);
       const shut = d.area !== null && !this.owned.has(d.area);
       const want = !shut && near.some(([x, z]) => Math.hypot(x - cx, z - cz) < FEEL.doorOpenRadius) ? 1 : 0;

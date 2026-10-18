@@ -30,11 +30,13 @@ export interface Loaded {
   save: SaveFile;
   /** Set when an old save couldn't be read: it was kept under a backup key. */
   problem?: string;
+  /** Nothing was saved yet: a first run. */
+  fresh?: boolean;
 }
 
 export function loadSave(firstMap: string): Loaded {
   const raw = read(KEY);
-  if (!raw) return { save: emptySave(firstMap) };
+  if (!raw) return { save: emptySave(firstMap), fresh: true };
   try {
     return { save: migrate(JSON.parse(raw)) };
   } catch (e) {

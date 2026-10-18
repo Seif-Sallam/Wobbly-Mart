@@ -6,7 +6,16 @@ import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { dedup, prune, quantize } from '@gltf-transform/functions';
 
-const FILES = ['chars', 'pets', 'market/character-employee.glb'];
+const FILES = [
+  'chars',
+  'chars-arcade',
+  'chars-skate',
+  'chars-dungeon',
+  'chars-arena',
+  'chars-forest',
+  'pets',
+  'market/character-employee.glb',
+];
 const KEEP_CLIPS = new Set(['idle', 'walk', 'holding-both', 'emote-yes', 'emote-no', 'eat', 'static']);
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 

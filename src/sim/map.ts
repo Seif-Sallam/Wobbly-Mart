@@ -1,6 +1,8 @@
 import { SHELF_CAPS, type Product } from '../../catalog/products';
 import type { ProducerType } from '../../catalog/producers';
+import type { ObjectiveDef } from '../../catalog/objectives';
 import type { TUNING } from './tuning';
+import type { LessonDef } from './lessons';
 
 /** [x, z, w, d] in metres: top-left corner (x east, z south) and size. */
 export type Box = [number, number, number, number];
@@ -85,16 +87,6 @@ export interface UpgradeDef {
   requires: string[];
 }
 
-export interface TutorialStep {
-  /** Done once this id is owned … */
-  pad?: string;
-  /** … or once this action happened this session. */
-  action?: 'pick' | 'drop' | 'checkout' | 'collect' | 'upgrade';
-  station?: string;
-  /** What the pop-up tells the Player to do, and why. */
-  text?: string;
-}
-
 /** An Event the Map has: rolled once every id in `requires` is owned. */
 export interface EventDef {
   requires: string[];
@@ -128,7 +120,14 @@ export interface MapDef {
   freeStations: Record<string, FreeStationDef>;
   upgrades: Record<string, UpgradeDef>;
   start: { owned: string[]; money: number };
-  tutorial: TutorialStep[];
+  /** Tutorial Map only: the Lessons, in order. While any are left, Customers and Events come only when a Lesson calls them. */
+  lessons?: LessonDef[];
+  /** Goals done once and kept in the save; each counts toward Completion like a Pad. */
+  objectives: ObjectiveDef[];
+  /** false: no Challenge is ever offered (the Tutorial Map, where only a Lesson starts one). */
+  challenges?: false;
+  /** The Map whose music track this one plays (default: its own). */
+  music?: string;
   /** Edit Layout: the price of each Move in order (3 per Area). */
   movePrices: number[];
   events: MapEvents;

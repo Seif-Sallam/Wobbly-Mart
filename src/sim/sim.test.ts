@@ -1,12 +1,25 @@
 import { describe, expect, test } from 'vitest';
 import { cornerShop } from '../../maps/corner-shop';
 import { createWorld, DT, step, type Intents } from './world';
-import { completion, customerCap, own, padVisible, refreshFreeStations, visiblePads } from './economy';
+import {
+  completion,
+  completionOf,
+  customerCap,
+  stackCap,
+  own,
+  padVisible,
+  refreshFreeStations,
+  visiblePads,
+} from './economy';
 import { moveIntent } from './bot';
-import { snapshot } from './save';
+import { decodeSaveCode, encodeSaveCode, migrate, snapshot, DEFAULT_CAP } from './save';
+import { DEFAULT_LOOK } from '../../catalog/looks';
+import { emptyStats, sumStats } from './stats';
+import { objectiveId } from '../../catalog/objectives';
 import type { Customer, PickupStation, ProducerStation, ShelfStation, SimEvent, World } from './world';
 import { distToBox } from './geometry';
 import { TUNING } from './tuning';
+import { INPUT_CAP } from '../../catalog/producers';
 import { addMess, messSlowdown } from './cleaning';
 import { canPayMoves, cutOff, moveBill, movesLeft, nextRot, payMoves, place, spotProblem, turned } from './layout';
 import { rebuildNav } from './walk';
@@ -118,11 +131,8 @@ describe('Map 1 opening loop', () => {
     run(w, 1.2);
     expect(w.money).toBeCloseTo(cash);
 
-    // Completion counts bought Pads and Upgrade levels: 3 of 83
-    expect(completion(w)).toBe(3 / 83);
-
-    // The tutorial follows along without blocking anything
-    expect(w.tutorial.done).toBe(false);
+    // Completion counts bought Pads, Upgrade levels and Objectives: 3 of 93
+    expect(completion(w)).toBe(3 / 93);
 
     // Buying the Blender while standing right of its Pad's centre, by the locked Area's edge, doesn't trap the Player
     while (!padVisible(w, 'blender')) own(w, visiblePads(w)[0], false);
@@ -131,12 +141,6 @@ describe('Map 1 opening loop', () => {
     run(w, 3);
     expect(w.owned.has('blender')).toBe(true);
     walk(w, 'tomato_shelf');
-
-    // Skipping the tutorial ends it for good
-    expect(w.tutorial.done).toBe(false);
-    step(w, { ...idle(), skipTutorial: true });
-    expect(w.tutorial.done).toBe(true);
-    expect(w.events.some((e) => e.type === 'tutorialDone')).toBe(true);
   });
 
   test('a save keeps purchases and money, and a reload is a fresh Opening', () => {
@@ -193,7 +197,7 @@ function nextCustomer(w: World): Customer {
 
 describe('Map 1 fully built', () => {
   test('two Shelves, patience, Messes and the Mop, the Trash hold, Stack tipping, Stocker roles and priorities, everything at once', () => {
-    const w = createWorld(cornerShop, null, 5, true);
+    const w = createWorld(cornerShop, null, 5);
     w.map.events = {}; // Deliveries have their own test
     for (const id of Object.keys(cornerShop.pads)) own(w, id, false);
     refreshFreeStations(w);
@@ -421,7 +425,7 @@ describe('Map 1 fully built', () => {
       for (const st of w.stations.values()) {
         if (st.kind !== 'producer') continue;
         const type = w.map.producers[st.type];
-        for (const p of type.inputs) st.input[p] = type.inputCap ?? 0;
+        for (const p of type.inputs) st.input[p] = INPUT_CAP;
         if (type.inputs.length) st.tray = type.trayCap ?? 0; // a full output stops Machines eating their inputs
       }
     };
@@ -497,7 +501,7 @@ describe('Map 1 fully built', () => {
     expect(w.loose.length).toBe(0);
     expect(maxHeld).toBeLessThan(12);
 
-    // walking tips a Stocker's Stack like the Player's: above the safe count of 3 it drops now and then, never below
+    // walking tips a Stocker's Stack like the Player's: above the safe count of 5 it drops now and then, never below
     const shuttleStocker = (seconds: number): number => {
       let drops = 0;
       let leg = 0;
@@ -512,17 +516,17 @@ describe('Map 1 fully built', () => {
     w.messes = [];
     w.loose = [];
     Object.assign(auto, { job: null, stack: Array(6).fill('bread'), leftover: null });
-    expect(shuttleStocker(300)).toBeGreaterThan(0);
-    expect(auto.stack.length).toBeGreaterThanOrEqual(3);
+    expect(shuttleStocker(1500)).toBeGreaterThan(0);
+    expect(auto.stack.length).toBeGreaterThanOrEqual(5);
     expect(w.loose.length + w.messes.length).toBe(6 - auto.stack.length);
-    auto.stack = Array(3).fill('bread');
+    auto.stack = Array(5).fill('bread');
     expect(shuttleStocker(120)).toBe(0);
 
     // a Stocker walking over a Loose Item takes it like the Player does, any Product, while its Stack has room
     w.loose = [{ id: w.nextId++, x: auto.x, z: auto.z, product: 'egg' }];
     step(w, idle());
     expect(w.loose.length).toBe(0);
-    expect(auto.stack).toEqual(['bread', 'bread', 'bread', 'egg']);
+    expect(auto.stack).toEqual([...Array(5).fill('bread'), 'egg']);
     auto.stack = Array(6).fill('bread');
     w.loose = [{ id: w.nextId++, x: auto.x, z: auto.z, product: 'egg' }];
     step(w, idle());
@@ -554,6 +558,73 @@ describe('Map 1 fully built', () => {
     expect(took).toBeGreaterThan(3);
     expect(took).toBeLessThan(5);
 
+    // 7b. At a Producer the Player takes the whole Tray first, then drops its inputs; a full Stack drops first
+    const farm = producerAt(w, 'chicken_coop');
+    Object.assign(farm, { input: { tomato: 0 }, tray: 0, work: 0 });
+    w.player.stack = [];
+    walk(w, 'chicken_coop');
+    run(w, 1);
+    const order: string[] = [];
+    const trace = (seconds: number) => {
+      for (let i = 0; i < seconds * 60; i++) {
+        step(w, idle());
+        for (const e of w.events)
+          if (
+            e.type === 'transfer' &&
+            ('station' in e.from ? e.from.station : 'station' in e.to && e.to.station) === farm.id
+          )
+            order.push('station' in e.from ? 'take' : 'give');
+      }
+    };
+    Object.assign(farm, { tray: 3 });
+    w.player.stack = ['tomato', 'tomato'];
+    trace(6);
+    expect(order.slice(0, 5)).toEqual(['take', 'take', 'take', 'give', 'give']); // the Coop lays one more meanwhile
+    expect(w.player.stack.every((p) => p === 'egg')).toBe(true);
+    expect(w.player.stack.length).toBeGreaterThanOrEqual(3);
+    order.length = 0;
+    Object.assign(farm, { input: { tomato: 0 }, tray: 3 });
+    w.player.stack = Array(stackCap(w)).fill('tomato');
+    trace(8);
+    expect(order[0]).toBe('give'); // no room to take until one drops
+    expect(order.filter((o) => o === 'take').length).toBeGreaterThanOrEqual(3);
+    expect(farm.tray).toBe(0);
+
+    // 7c. An idle Stocker strolls near the Stations it serves at the Cleaner's pace, and drops it when a job appears
+    const [roamer] = staff;
+    w.stockers = [roamer];
+    Object.assign(roamer, { role: 'auto', job: null, stack: [], leftover: null, spot: null });
+    fillInputs();
+    for (const p of products) stock(w, p, 'full');
+    const box = [...w.stations.values()].filter((st) => st.kind === 'shelf' || st.kind === 'producer');
+    let strolled = 0;
+    let fastest = 0;
+    const spots = new Set<string>();
+    let farthest = 0;
+    for (let i = 0; i < 60 * 60; i++) {
+      const [x, z] = [roamer.x, roamer.z];
+      step(w, idle());
+      strolled += Math.hypot(roamer.x - x, roamer.z - z);
+      fastest = Math.max(fastest, Math.hypot(roamer.vx, roamer.vz));
+      if (roamer.spot) spots.add(roamer.spot.join());
+      if (roamer.spot)
+        farthest = Math.max(
+          farthest,
+          Math.min(...box.map((st) => distToBox(...(roamer.spot as [number, number]), st.box))),
+        );
+    }
+    expect(roamer.job).toBeNull();
+    expect(strolled).toBeGreaterThan(20);
+    expect(spots.size).toBeGreaterThan(1);
+    expect(fastest).toBeLessThanOrEqual(TUNING.cleaner.wanderSpeed + 0.01);
+    expect(farthest).toBeLessThanOrEqual(TUNING.stocker.idle.radius);
+    stock(w, 'egg', 0);
+    run(w, 1);
+    expect(roamer.job).not.toBeNull();
+    expect(roamer.spot).toBeNull();
+    run(w, 60);
+    expect(shelvesOf(w, 'egg').some((sh) => sh.items > 0)).toBe(true);
+
     // 8. Everything at once for 20 min, the Player idle: Staff fill car orders, every Event plays out, the Cleaner keeps up
     w.map.events = cornerShop.events;
     w.stockers = staff;
@@ -579,7 +650,7 @@ describe('Map 1 fully built', () => {
 
 describe('Deliveries', () => {
   test('cars come after the quiet start, take only wanted Items, pay 1.5× plus a tip or plain price on timeout; Stockers fill them', () => {
-    const w = createWorld(cornerShop, null, 7, true);
+    const w = createWorld(cornerShop, null, 7);
     for (const id of ['register', 'tomato_shelf', 'tomato_bed', 'egg_shelf', 'chicken_coop']) own(w, id, false);
     refreshFreeStations(w);
     const cars = () => [...w.stations.values()].filter((s): s is PickupStation => s.kind === 'pickup');
@@ -636,6 +707,22 @@ describe('Deliveries', () => {
     const line = late.delivery?.order[0] ?? { product: '', want: 0 };
     w.player.stack = [line.product];
     standAt(late);
+
+    // Auto Grab paused (a walk to the car): the tile unloads nothing, but a Pad under the Player still pays
+    const paused = (seconds: number) => {
+      for (let i = 0; i < seconds * 60; i++) step(w, { ...idle(), grabPaused: true });
+    };
+    paused(2);
+    expect(w.player.stack).toEqual([line.product]);
+    expect(late.delivery?.order[0].got).toBe(0);
+    const pad = visiblePads(w)[0];
+    const bank = w.money;
+    w.money = 1;
+    Object.assign(w.player, { x: w.map.layout.places[pad].box[0] + 0.5, z: w.map.layout.places[pad].box[1] + 0.5 });
+    paused(1);
+    expect(w.paid[pad]).toBeGreaterThan(0);
+    w.money = bank;
+    standAt(late);
     expect(until(200, (e) => e.type === 'deliveryHonk' && e.station === late.id)).toBeDefined();
     const left = until(20, (e) => e.type === 'deliveryDone' && e.station === late.id);
     expect(left?.type === 'deliveryDone' && left.amount).toBe(w.map.products[line.product].price);
@@ -684,7 +771,7 @@ const inspectorOf = (w: World): NonNullable<World['inspector']> => w.inspector a
 
 describe('Robbery and the Health Inspector', () => {
   test('a Thief grabs and freezes the game, is caught or escapes; the Inspector warns, is escorted or left alone, then scores', () => {
-    const w = createWorld(cornerShop, null, 11, true);
+    const w = createWorld(cornerShop, null, 11);
     for (const id of ['register', 'tomato_shelf', 'tomato_bed', 'egg_shelf', 'chicken_coop', 'area_2'])
       own(w, id, false);
     refreshFreeStations(w);
@@ -811,6 +898,7 @@ describe('Robbery and the Health Inspector', () => {
     // 7. Left alone 15 s: BAD REVIEW, the dirt fine plus $150, even when spotless
     visitNow();
     const before = w.money;
+    const scoreBefore = w.score;
     const bad = until(
       60,
       (e) => e.type === 'inspection',
@@ -823,6 +911,11 @@ describe('Robbery and the Health Inspector', () => {
     );
     expect(bad?.type === 'inspection' && bad.review && bad.amount).toBe(-150);
     expect(w.money).toBe(before - 150);
+    // fines never touch Score; Stats keep the spotless visit, the two fined ones and the Bad Review
+    expect(w.score).toBeGreaterThanOrEqual(scoreBefore);
+    expect([w.stats.spotless, w.stats.inspectionsFined, w.stats.badReviews, w.stats.moneyFined]).toEqual([
+      1, 2, 1, 210,
+    ]);
     step(w, idle());
     const stormer = w.inspector as NonNullable<World['inspector']>;
     expect(Math.hypot(stormer.vx, stormer.vz)).toBeCloseTo(TUNING.events.inspector.stormSpeed); // storms out
@@ -883,9 +976,145 @@ describe('Robbery and the Health Inspector', () => {
   });
 });
 
+describe('Closed and Debt', () => {
+  test('Closed stops new Customers and visit timers but not Deliveries, with waits; repeat Bad Reviews run Money into Debt and an escorted visit resets the streak', () => {
+    const w = createWorld(cornerShop, null, 5);
+    for (const id of ['register', 'tomato_shelf', 'tomato_bed', 'egg_shelf', 'chicken_coop', 'area_2', 'office'])
+      own(w, id, false);
+    refreshFreeStations(w);
+    const { events } = cornerShop;
+    const tomato = w.stations.get('tomato_shelf') as ShelfStation;
+    const egg = w.stations.get('egg_shelf') as ShelfStation;
+    const stocked = () => {
+      tomato.items = 9;
+      egg.items = 3;
+    };
+    const atOffice = () => Object.assign(w.player, { x: 7.25, z: 22, vx: 0, vz: 0 });
+    const far = () => Object.assign(w.player, { x: 8, z: 40, vx: 0, vz: 0 });
+    const tick = (setClosed?: boolean) => {
+      stocked();
+      step(w, { ...idle(), setClosed });
+    };
+
+    // 1. Open: Customers arrive. Close store: nobody new comes, those inside finish; the Office can't reopen for 30 s
+    atOffice();
+    for (let i = 0; i < 60 * 10; i++) tick();
+    expect(w.customers.length).toBeGreaterThan(0);
+    const before = new Set(w.customers.map((c) => c.id));
+    w.visitWait = { robbery: 5, inspector: 5 };
+    w.map.events = {
+      delivery: events.delivery,
+      robbery: { requires: [], byArea: events.robbery?.byArea ?? {} },
+    };
+    w.t = 200;
+    w.carWait = 0.5;
+    tick(true);
+    expect([w.closed, w.stats.timesClosed, w.closedWait]).toEqual([true, 1, 30]);
+    let arrived = false;
+    let strangers = 0;
+    const closedStretch = (seconds: number, setClosed?: (t: number) => boolean | undefined) => {
+      for (let i = 0; i < seconds * 60; i++) {
+        stocked();
+        step(w, { ...idle(), setClosed: setClosed?.(i / 60) });
+        arrived ||= w.events.some((e) => e.type === 'deliveryArrived');
+        strangers += w.customers.filter((c) => !before.has(c.id)).length;
+      }
+    };
+    closedStretch(29, () => false); // asking to reopen early does nothing
+    expect(w.closed).toBe(true);
+    expect(strangers).toBe(0);
+    expect(arrived).toBe(true); // Deliveries keep their pace
+    expect(w.visitWait).toEqual({ robbery: 5, inspector: 5 }); // visit timers paused
+    expect(w.thief).toBeNull();
+    w.map.events = {};
+    closedStretch(2); // the 30 s wait is over: reopening works
+    expect(w.closedWait).toBe(0);
+    tick(false);
+    expect([w.closed, w.closedWait]).toEqual([false, 300]);
+    tick(true); // 5 open minutes before it can close again
+    expect(w.closed).toBe(false);
+    w.customers = [];
+    for (let i = 0; i < 60 * 12; i++) tick();
+    expect(w.customers.some((c) => !before.has(c.id))).toBe(true);
+    w.closedWait = 0;
+    tick(true);
+    expect([w.closed, w.stats.timesClosed]).toEqual([true, 2]);
+    w.closedWait = 0;
+    tick(false);
+    expect(w.closed).toBe(false);
+
+    // 2. Two Bad Reviews in a row: the first stops at $0, the second is double and runs into Debt; Pads stop draining
+    for (const id of ['ketchup_shelf', 'blender', 'wheat_shelf', 'milk_fridge']) own(w, id, false);
+    w.map.events = { inspector: events.inspector };
+    const visitNow = () => Object.assign(w, { visitWait: { robbery: 0, inspector: 0 }, lastVisit: -Infinity });
+    const inspect = (each: () => void) => {
+      visitNow();
+      for (let i = 0; i < 60 * 150; i++) {
+        each();
+        step(w, idle());
+        const e = w.events.find((x) => x.type === 'inspection');
+        if (e?.type === 'inspection') return e;
+      }
+      throw new Error('No inspection happened');
+    };
+    const alone = () => {
+      stocked();
+      far();
+      w.messes = [];
+      w.loose = [];
+    };
+    const finish = () => {
+      for (let i = 0; i < 60 * 60 && w.inspector; i++) step(w, idle());
+    };
+    w.money = 100;
+    const first = inspect(alone);
+    expect([first.review, first.amount, first.streak, w.money, w.badReviewStreak]).toEqual([true, -100, 1, 0, 1]);
+    finish();
+    w.money = 100;
+    const second = inspect(alone);
+    expect([second.amount, second.streak, w.money]).toEqual([-300, 2, -200]);
+    expect(snapshot(w).badReviewStreak).toBe(2);
+    expect(createWorld(cornerShop, snapshot(w), 5)).toMatchObject({ money: -200, badReviewStreak: 2 });
+    finish();
+    const pad = visiblePads(w)[0];
+    walk(w, padCentre(w, pad));
+    run(w, 3);
+    expect(w.owned.has(pad)).toBe(false);
+    expect(w.paid[pad] ?? 0).toBe(0);
+    expect(w.money).toBe(-200);
+
+    // 3. One escorted visit to the end resets the streak: the next Bad Review is a first one again
+    w.money = 1000;
+    visitNow();
+    step(w, idle());
+    const ins = inspectorOf(w);
+    const good = inspect(() => {
+      stocked();
+      w.messes = [];
+      w.loose = [];
+      Object.assign(w.player, { x: ins.x + 1, z: ins.z, vx: 0, vz: 0 });
+    });
+    expect([good.review, good.streak, w.badReviewStreak]).toEqual([false, 0, 0]);
+    finish();
+    w.money = 100;
+    const again = inspect(alone);
+    expect([again.amount, again.streak, w.money]).toEqual([-100, 1, 0]);
+  });
+});
+
 describe('Edit Layout', () => {
+  test('a saved Move that a map update made overlap another fixture goes back to the map spot', () => {
+    const office = cornerShop.layout.places.office;
+    const stale: Placement = { box: [office.box[0], office.box[1], 3, 1], rot: 0 };
+    const kept: Placement = { box: [4.5, 9, 3, 1], rot: 0 };
+    const save = { ...snapshot(createWorld(cornerShop, null, 7)), owned: ['egg_shelf', 'tomato_shelf'] };
+    const w = createWorld(cornerShop, { ...save, layout: { egg_shelf: stale, tomato_shelf: kept } }, 7);
+    expect(w.stations.get('egg_shelf')?.box).toEqual(cornerShop.layout.places.egg_shelf.box);
+    expect(w.stations.get('tomato_shelf')?.box).toEqual(kept.box);
+  });
+
   test('Moves: where fixtures may go, the Register carries its Cashier, Moves cost money, the layout saves', () => {
-    const w = createWorld(cornerShop, null, 7, true);
+    const w = createWorld(cornerShop, null, 7);
     for (const id of Object.keys(cornerShop.pads)) own(w, id, false);
     refreshFreeStations(w);
     rebuildNav(w);
@@ -964,14 +1193,148 @@ describe('Edit Layout', () => {
     expect(canPayMoves(w, 2)).toBe(false);
 
     // the save keeps the moved place and the Moves used; an older save without them loads the map's layout
-    const again = createWorld(cornerShop, snapshot(w), 8, true);
+    const again = createWorld(cornerShop, snapshot(w), 8);
     expect(again.stations.get('egg_shelf')?.box).toEqual(to?.box);
     expect(again.movesUsed).toBe(1);
     const old = snapshot(w);
     delete old.layout;
     delete old.movesUsed;
-    const fresh = createWorld(cornerShop, old, 9, true);
+    const fresh = createWorld(cornerShop, old, 9);
     expect(fresh.stations.get('egg_shelf')?.box).toEqual(home.box);
     expect(fresh.movesUsed).toBe(0);
+  });
+});
+
+describe('Stats, Objectives, Score and Challenges', () => {
+  test('Objectives count toward Completion and tick from Stats for 100 Score; a v3 save migrates with zeroed Stats', () => {
+    // Completion: 83 Pads and Upgrade levels plus the Map's 10 Objectives, equally weighted
+    const everything = new Set([...Object.keys(cornerShop.pads), ...Object.keys(cornerShop.layout.areas)]);
+    const maxed = Object.fromEntries(Object.entries(cornerShop.upgrades).map(([id, u]) => [id, u.levels.length]));
+    const allObjectives = new Set(cornerShop.objectives.map(objectiveId));
+    expect(allObjectives.size).toBe(10);
+    expect(completionOf(cornerShop, everything, maxed, new Set())).toBe(83 / 93);
+    expect(completionOf(cornerShop, everything, maxed, allObjectives)).toBe(1);
+
+    // 100 Tomatoes sold: the last one is a real checkout; the Objective ticks once and pays 100 Score
+    const w = createWorld(cornerShop, null, 21);
+    for (const id of ['register', 'tomato_shelf', 'tomato_bed']) own(w, id, false);
+    refreshFreeStations(w);
+    w.stats.sold.tomato = 99;
+    walk(w, 'register');
+    const tomato = w.stations.get('tomato_shelf') as ShelfStation;
+    let done = 0;
+    for (let i = 0; i < 60 * 120 && !done; i++) {
+      tomato.items = 9;
+      step(w, idle());
+      done += w.events.filter((e) => e.type === 'objectiveDone').length;
+    }
+    expect(done).toBe(1);
+    expect(w.objectivesDone.has('sell:tomato:100')).toBe(true);
+    expect(w.score).toBe(TUNING.score.objective);
+    expect(w.stats.served).toBeGreaterThan(0);
+    expect(w.stats.moneyEarned).toBeGreaterThan(0);
+    expect(completion(w)).toBe(4 / 93);
+    run(w, 30);
+    expect(w.score).toBe(TUNING.score.objective);
+
+    // the save keeps Stats, Objectives and Score; the whole game is the sum over Maps
+    const again = createWorld(cornerShop, snapshot(w), 22);
+    expect(again.stats.sold.tomato).toBe(w.stats.sold.tomato);
+    expect([...again.objectivesDone]).toEqual(['sell:tomato:100']);
+    expect(again.score).toBe(w.score);
+    expect(sumStats([w.stats, w.stats]).sold.tomato).toBe(2 * w.stats.sold.tomato);
+
+    // a v3 save migrates to v4: zeroed Stats, no Score, the default look; owning area_3 ticks its Objective at once
+    const v3 = {
+      version: 3,
+      currentMap: 'corner-shop',
+      visited: ['corner-shop'],
+      tutorialDone: true,
+      tutorialStep: -1,
+      maps: { 'corner-shop': { money: 120, owned: ['area_1', 'register', 'area_3'], paid: {}, levels: {}, roles: {} } },
+    };
+    const v4 = decodeSaveCode(encodeSaveCode(v3 as never));
+    expect(v4.version).toBe(4);
+    expect([v4.look, v4.cap, v4.tutorialDone]).toEqual([DEFAULT_LOOK, DEFAULT_CAP, true]);
+    const old = v4.maps['corner-shop'];
+    expect(old.stats).toEqual(emptyStats());
+    expect([old.score, old.objectives, old.quarters, old.badReviewStreak]).toEqual([0, [], 0, 0]);
+    expect(migrate(v4)).toEqual(v4);
+    const loaded = createWorld(cornerShop, old, 23);
+    expect(loaded.stats).toEqual(emptyStats());
+    expect(loaded.score).toBe(0);
+    step(loaded, idle());
+    expect(loaded.objectivesDone.has('own:area_3')).toBe(true);
+    expect(loaded.score).toBe(TUNING.score.objective);
+  });
+
+  test('a Challenge is offered after the quiet start, progresses, pauses while Closed, and a win pays Score and Money', () => {
+    // find a seed whose first offer is "check out N Customers"
+    const start = (seed: number) => {
+      const w = createWorld(cornerShop, null, seed);
+      for (const id of ['register', 'tomato_shelf', 'tomato_bed']) own(w, id, false);
+      refreshFreeStations(w);
+      return w;
+    };
+    const offerNow = (w: World) => {
+      w.t = TUNING.events.quietStart;
+      w.challengeWait = 0;
+      step(w, idle());
+    };
+    let w = start(1);
+    for (let seed = 1; seed < 100 && w.challenge?.kind !== 'checkout'; seed++) {
+      w = start(seed);
+      offerNow(w);
+    }
+    const c = w.challenge;
+    expect(c?.kind).toBe('checkout');
+    expect(w.events.some((e) => e.type === 'challengeStarted')).toBe(true);
+    expect([c?.goal, c?.time, c?.bonus]).toEqual([4, 90, 60]);
+
+    // a closed store pauses its timer
+    w.closed = true;
+    run(w, 10);
+    expect(c?.t).toBeLessThan(0.1);
+    w.closed = false;
+
+    // the Player checks Customers out; the fourth wins
+    walk(w, 'register');
+    const tomato = w.stations.get('tomato_shelf') as ShelfStation;
+    const score = w.score;
+    let won: SimEvent | undefined;
+    let moneyStep = 0;
+    for (let i = 0; i < 60 * 90 && !won; i++) {
+      tomato.items = 9;
+      const money = w.money;
+      step(w, idle());
+      won = w.events.find((e) => e.type === 'challengeWon');
+      moneyStep = w.money - money;
+    }
+    expect(won).toMatchObject({ kind: 'checkout', score: 50, money: 60 });
+    expect(moneyStep).toBe(60);
+    expect(w.score).toBe(score + TUNING.score.challenge);
+    expect(w.stats.challengesWon).toBe(1);
+    expect(w.challenge).toBeNull();
+
+    // the next one waits 3–5 min; unanswered it fails for nothing, and none is offered while Closed
+    const gap = w.challengeWait ?? 0;
+    expect(gap).toBeGreaterThanOrEqual(TUNING.challenges.gap[0]);
+    expect(gap).toBeLessThanOrEqual(TUNING.challenges.gap[1]);
+    w.closed = true;
+    w.challengeWait = 0;
+    step(w, idle());
+    expect(w.challenge).toBeNull();
+    w.closed = false;
+    w.customers = [];
+    w.arrivalTimer = Infinity;
+    step(w, idle());
+    expect(w.challenge).not.toBeNull();
+    const money = w.money;
+    const kept = w.score;
+    for (let i = 0; i < 60 * 130 && w.challenge; i++) step(w, idle());
+    expect(w.challenge).toBeNull();
+    expect(w.score).toBeGreaterThanOrEqual(kept);
+    expect(w.stats.challengesWon + w.stats.challengesFailed).toBe(2);
+    expect(w.money).toBeGreaterThanOrEqual(money);
   });
 });

@@ -4,8 +4,18 @@ export const FEEL = {
   accelTime: 0.31,
   stopTime: 0.3,
   turnSpeed: 10,
-  /** Touch: joystick force past its ring that sprints. */
-  sprintForce: 1.4,
+  /** Touch joystick: ring sizes (px), force past the ring that sprints (drawn as a dashed ring), and the share of the
+   * ring that already gives full walk speed. */
+  joyPortrait: 110,
+  joyLandscape: 115,
+  sprintForce: 1.5,
+  joyFullPush: 0.6,
+  /** Landscape: the stick's zone is this share of the width from the left; Fixed rests with its centre this far (px)
+   * from the left and bottom (plus safe area). A Manual grab hold shows a ring this size (px). */
+  joyZone: 0.45,
+  joyRestLeft: 110,
+  joyRestBottom: 130,
+  grabRing: 44,
   sprintPuffGap: 0.12,
   walkBob: 0.05,
   // camera
@@ -19,10 +29,24 @@ export const FEEL = {
   zoomSlider: 0.5,
   zoomStep: 0.08,
   zoomEase: 10,
+  /** Phone landscape (a touch screen wider than tall): metres across the height, the Player's shift right of centre
+   * (view widths), Pad size ×, HUD size × (on top of the HUD size setting), banners / report / cards ×. */
+  landView: 15,
+  landShift: 0.05,
+  landPadScale: 1.25,
+  landHudScale: 0.8,
+  landCardScale: 0.7,
+  /** Screens (title, menus, Settings, Office, Edit Layout) shrink on phones: ×, landscape / portrait. */
+  landScreenScale: 0.68,
+  portScreenScale: 0.85,
+  /** Office panel: share of the width (landscape phones) and of the height (portrait bottom sheet). */
+  officeSide: 0.42,
+  officeSheet: 0.46,
   /** HUD size slider: scale range and step. */
   hudScaleMin: 1,
   hudScaleMax: 1.6,
   hudScaleSlider: 0.05,
+  volumeSlider: 0.05,
   /** Joystick stays off this long after a pinch (s). */
   pinchQuiet: 0.15,
   // Tap Walk: a press under tapMs that moved under tapPx is a tap; double-tap within doubleTapMs sprints. Fixtures
@@ -31,7 +55,7 @@ export const FEEL = {
   // from its edge (settled within tapStationSettle); a Register walk ends tapBehindRegister (m) past its back edge.
   tapMs: 250,
   tapPx: 12,
-  doubleTapMs: 300,
+  doubleTapMs: 320,
   tapPickSlop: 0.6,
   tapCancelPush: 0.15,
   tapArriveSlow: 1.2,
@@ -42,10 +66,18 @@ export const FEEL = {
   tapBehindRegister: 0.5,
   /** Destination ring size (m), pulse, and the tapped Station's glow margin (m). */
   tapRing: 0.6,
+  /** Lesson target ring: size (m); it pulses like the Tap Walk ring. */
+  lessonRing: 0.8,
   tapRingPulse: 0.12,
   tapGlowMargin: 0.3,
-  followSharpness: 9,
-  lookAhead: 0.44,
+  /** Delivery route line: width (m) and length of one dash plus gap (m). */
+  routeWidth: 0.14,
+  routeDash: 0.5,
+  /** Camera follow (1/s), and its lead: seconds of velocity, capped at leadMax (m), eased in at leadEase (1/s). */
+  followSharpness: 14,
+  lead: 0.25,
+  leadMax: 1.5,
+  leadEase: 3,
   // stack
   itemSpacing: 0.435,
   stackForward: 0.55,
@@ -115,6 +147,26 @@ export const FEEL = {
   layoutBob: 5.5,
   layoutGhostOpacity: 0.85,
   layoutReasonTime: 2.2,
+  layoutOutline: 0.12,
+  /** The Exit Pad's car leaving the Tutorial Map (s). */
+  vanDriveOff: 1.6,
+  // Cashier "Bag" pose while the Register works: arms forward (rad), torso turns belt to tray (rad) at rate
+  // (cycles/s), eases in/out over bagEase (s); cheer = emote('yes') per finished Customer
+  bag: { lift: 0.9, rate: 1.4, turn: 0.55, cheer: true },
+  bagEase: 0.125,
+  // Wardrobe preview: camera distance / height / look-at height (m), fov; idle sway (deg/s, swing in rad); drag turns
+  // dragDeg per px and coasts, slowing at coast per second; tile size (px)
+  wardrobe: {
+    camDist: 4.2,
+    camHeight: 1.1,
+    lookY: 0.62,
+    fov: 30,
+    sway: 30,
+    swing: 0.9,
+    dragDeg: 0.6,
+    coast: 3,
+    thumb: 76,
+  },
   // Delivery cars: drive in / off (s), parking bounce height (m), squash per Item, wonk (cabin tilt, rad; body height ±share)
   carDriveIn: 1.6,
   carDriveOff: 1.4,
@@ -139,6 +191,19 @@ export const FEEL = {
   bannerMs: 3200,
   bannerSlideMs: 400,
   reportMs: 3000,
+  /** Score UI: CHALLENGE! stamp and toast (ms), ring timer size (px) and the seconds left it turns red at, the Objective
+   * card's hold and fly into the trophy (ms), the badge's count-up speed (share of the gap per s). */
+  score: {
+    /** Seconds between Logbook refreshes while the game runs behind it. */
+    logbookRefresh: 0.5,
+    stampMs: 1200,
+    toastMs: 2200,
+    ringSize: 64,
+    ringRedAt: 10,
+    cardHoldMs: 1300,
+    cardFlyMs: 600,
+    badgeCount: 8,
+  },
   /** Thief Pan: camera glide to the Thief and back (s); the game freezes for the glide in plus the sim's freeze. */
   thiefPanGlide: 0.35,
   /** Visitors' bubbles over the head (m), the caught Thief's tumble (s), the BAD REVIEW stamp's slam (s). */

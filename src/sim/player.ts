@@ -105,7 +105,6 @@ function collectCash(w: World): void {
     const duration = FEEL.cashDrainMin + ((FEEL.cashDrainMax - FEEL.cashDrainMin) * bills) / FEEL.cashBillsMax;
     w.drains.push({ register: st.id, amount: st.cash, given: 0, t: 0, duration });
     w.events.push({ type: 'cashCollect', register: st.id, amount: st.cash, duration });
-    w.tutorial.actions.add(`collect:${st.id}`);
     st.cash = 0;
   }
   for (const d of w.drains) {
@@ -149,7 +148,7 @@ export function updatePlayer(w: World, intents: Intents): void {
   const p = w.player;
   move(w, intents);
   tipping(w);
-  if (!p.mop) takeLoose(w, p, { agent: 'player' }, stackCap(w));
+  if (!p.mop && !intents.grabPaused) takeLoose(w, p, { agent: 'player' }, stackCap(w));
   payPads(w);
   collectCash(w);
   mopStand(w);
@@ -157,8 +156,8 @@ export function updatePlayer(w: World, intents: Intents): void {
   const near = stationAt(w, p.x, p.z, (s) => INTERACTIVE.has(s.kind));
   p.trashHold = near?.kind === 'trash' ? p.trashHold + DT : 0;
   const st = near?.kind === 'trash' && p.trashHold < TUNING.trashHoldTime ? null : near;
-  const allowed = (!intents.manualGrab || intents.grab) && !p.mop;
-  const moved = transferTick(
+  const allowed = (!intents.manualGrab || intents.grab) && !p.mop && !intents.grabPaused;
+  transferTick(
     w,
     p,
     allowed ? st : null,
@@ -167,10 +166,9 @@ export function updatePlayer(w: World, intents: Intents): void {
       drop: () => true,
       pick: () => true,
       cap: stackCap(w),
+      takeFirst: true,
     },
   );
-  if (st && moved.picked) w.tutorial.actions.add(`pick:${st.id}`);
-  if (st && moved.dropped) w.tutorial.actions.add(`drop:${st.id}`);
   const office = w.stations.get('office');
   w.atOffice = !!office && distToBox(p.x, p.z, office.box) <= TUNING.reach + TUNING.officeReachExtra;
   const exit = w.stations.get('exit');

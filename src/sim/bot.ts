@@ -1,6 +1,6 @@
 // A greedy bot that plays a map through the same Intents as a human; CI uses it to prove 100% is reachable.
 import type { Point } from './map';
-import type { Intents, Job, World } from './world';
+import type { Inspector, Intents, Job, Mess, World } from './world';
 import { DT } from './world';
 import {
   cashPilePoint,
@@ -12,7 +12,7 @@ import {
   visiblePads,
 } from './economy';
 import { boxCentre, distToBox } from './geometry';
-import { headingFor, type Target } from './walk';
+import { headingFor, walkable, type Target } from './walk';
 import { chooseJob, sinkForStack } from './staff';
 import { accepts, availableCount } from './carry';
 import { nextRandom } from './rng';
@@ -26,6 +26,10 @@ const THINK_EVERY = 0.25;
 const STUCK_MOVE = 0.002;
 const STUCK_AFTER = 1.5;
 const WIGGLE_FOR = 0.4;
+const AWAY_FROM_STAND = 3;
+const ESCORT_NEAR = 3.5;
+const MOP_AT = 6;
+const PINNED_AFTER = 8;
 
 function resolve(w: World, target: string | Point): Target {
   if (typeof target !== 'string') return { point: target };
@@ -60,6 +64,9 @@ export class Bot {
   private think = 0;
   private stuckFor = 0;
   private last: Point = [0, 0];
+  private ignored: Inspector | null = null;
+  private insAt: Point = [0, 0];
+  private pinned = 0;
   private wiggle = 0;
   private wiggleDir = { x: 0, z: 0 };
 
@@ -101,6 +108,24 @@ export class Bot {
     return { ...idle, move };
   }
 
+  private away(w: World, m: Mess): number {
+    return Math.hypot(w.player.x - m.x, w.player.z - m.z);
+  }
+
+  /** Where to meet the Inspector: only when out of range, and never for a visit that stopped moving (Messes can
+   * pin them at the door; the bot mops, the visit ends in a Bad Review). */
+  private escortPoint(w: World): Point | null {
+    const ins = w.inspector;
+    if (!ins || (ins.state !== 'enter' && ins.state !== 'visit') || ins === this.ignored) return null;
+    const near = Math.hypot(w.player.x - ins.x, w.player.z - ins.z) < ESCORT_NEAR;
+    const moved = Math.hypot(ins.x - this.insAt[0], ins.z - this.insAt[1]) > 0.5;
+    if (moved || ins.clean !== null) {
+      this.insAt = [ins.x, ins.z];
+      this.pinned = 0;
+    } else if ((this.pinned += THINK_EVERY) > PINNED_AFTER) this.ignored = ins;
+    return near ? null : [ins.x, ins.z];
+  }
+
   private cheapestUpgrade(w: World): string | null {
     let best: string | null = null;
     let bestCost = Infinity;
@@ -115,8 +140,24 @@ export class Bot {
   }
 
   private decide(w: World): string | Point | null {
-    // It picks up the mop only by walking past it empty-handed; take it back
-    if (w.player.mop) return [...w.stations.values()].find((s) => s.kind === 'mopStand')?.id ?? null;
+    // It picks up the mop only by walking past it empty-handed; mop the nearest Mess, then take it back
+    // (the stand takes it on arrival, so step off first if already beside it)
+    const stand = [...w.stations.values()].find((s) => s.kind === 'mopStand');
+    if (w.player.mop) {
+      const mess = w.messes.reduce<Mess | null>((a, m) => (!a || this.away(w, m) < this.away(w, a) ? m : a), null);
+      if (mess) return [mess.x, mess.z];
+      if (stand) {
+        const [x, z] = boxCentre(stand.box);
+        return distToBox(w.player.x, w.player.z, stand.box) <= TUNING.reach
+          ? walkable(w, x, z - AWAY_FROM_STAND)
+          : stand.id;
+      }
+    }
+    // A Mess pile stalls the Inspector's walk and fines every visit; mop it down when no Cleaner is hired
+    if (stand && w.messes.length >= MOP_AT && !w.cleaners.length && !w.player.stack.length) return stand.id;
+    // A Bad Review fines double from the 2nd in a row and can bury the shop in Debt: escort every visit
+    const escort = this.escortPoint(w);
+    if (escort) return escort;
     const pads = visiblePads(w).sort((a, b) => padRemaining(w, a) - padRemaining(w, b));
     const pad = pads[0];
     if (pad && padRemaining(w, pad) <= w.money + 1e-6) return pad;

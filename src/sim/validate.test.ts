@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 import { cornerShop } from '../../maps/corner-shop';
+import { tutorialMap } from '../../maps/tutorial';
 import { ASSETS } from '../../catalog/assets';
 import type { MapDef } from './map';
 import { releasableIds, validateMap, type ReleasedIds } from './validate';
@@ -11,6 +12,7 @@ const messages = (m: MapDef, released: string[] = [], retired: string[] = []) =>
 
 test('Map 1 is valid, and the validator catches every kind of broken map', () => {
   expect(messages(cornerShop, releasableIds(cornerShop))).toEqual([]);
+  expect(messages(tutorialMap)).toEqual([]);
 
   // a retired id may be missing, but may never come back
   const { released, retired } = RELEASED['corner-shop'];

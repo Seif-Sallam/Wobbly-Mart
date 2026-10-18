@@ -10,6 +10,10 @@ export function nextRandom(state: { rng: number }): number {
 export const randomInt = (state: { rng: number }, min: number, max: number): number =>
   min + Math.floor(nextRandom(state) * (max - min + 1));
 
+/** A float in [lo, hi). */
+export const randomBetween = (state: { rng: number }, [lo, hi]: readonly [number, number]): number =>
+  lo + nextRandom(state) * (hi - lo);
+
 export function shuffle<T>(state: { rng: number }, list: T[]): T[] {
   const out = [...list];
   for (let i = out.length - 1; i > 0; i--) {

@@ -36,14 +36,17 @@ export const pads: Record<string, PadDef> = {
   register_2: { cost: 240, requires: ['veggie_pizza_oven'], unlocks: { kind: 'register', queueLength: 6 } },
   cashier_2: { cost: 300, requires: ['register_2'], unlocks: { kind: 'cashier', register: 'register_2' } },
   area_3: { cost: 960, requires: ['veggie_pizza_oven'], unlocks: { kind: 'area', area: 'area_3' } },
-  // Area 3: speed only, a second of every Producer, Register 3, Stockers 5–8
+  // Area 3: speed only, a second of every Producer (Mills and Dough Mixers up to three), Register 3, Stockers 5–8
   tomato_bed_3: { cost: 300, requires: ['area_3'], unlocks: producer('tomato_bed') },
   wheat_field_3: { cost: 340, requires: ['area_3'], unlocks: producer('wheat_field') },
   cow_3: { cost: 375, requires: ['area_3'], unlocks: producer('cow_pen') },
   sauce_pot_2: { cost: 375, requires: ['area_3'], unlocks: producer('sauce_pot') },
   cheese_press_2: { cost: 410, requires: ['area_3'], unlocks: producer('cheese_press') },
   olive_tree_2: { cost: 410, requires: ['area_3'], unlocks: producer('olive_tree') },
+  mill_2: { cost: 360, requires: ['area_3'], unlocks: producer('mill') },
+  mill_3: { cost: 440, requires: ['mill_2'], unlocks: producer('mill') },
   dough_mixer_2: { cost: 525, requires: ['cow_3', 'wheat_field_3'], unlocks: producer('dough_mixer') },
+  dough_mixer_3: { cost: 600, requires: ['dough_mixer_2', 'mill_3'], unlocks: producer('dough_mixer') },
   pizza_oven_2: { cost: 750, requires: ['cheese_press_2', 'dough_mixer_2'], unlocks: producer('pizza_oven') },
   veggie_pizza_oven_2: {
     cost: 750,
@@ -53,7 +56,7 @@ export const pads: Record<string, PadDef> = {
   register_3: { cost: 525, requires: ['area_3'], unlocks: { kind: 'register', queueLength: 6 } },
   cashier_3: { cost: 600, requires: ['register_3'], unlocks: { kind: 'cashier', register: 'register_3' } },
   exit: { cost: 1690, requires: ['pizza_oven_2', 'veggie_pizza_oven_2'], unlocks: { kind: 'exit' } },
-  // second Producers and Shelves (optional leaves), Stockers 3–8 and the Cleaner
+  // second Producers and Shelves (optional leaves), Stockers 3–10 and the Cleaner
   tomato_bed_2: { cost: 25, requires: ['sauce_pot'], unlocks: producer('tomato_bed') },
   wheat_field_2: { cost: 50, requires: ['dough_mixer'], unlocks: producer('wheat_field') },
   cow_2: { cost: 120, requires: ['cheese_press'], unlocks: producer('cow_pen') },
@@ -72,6 +75,8 @@ export const pads: Record<string, PadDef> = {
   stocker_6: { cost: 675, requires: ['dough_mixer_2'], unlocks: stocker },
   stocker_7: { cost: 825, requires: ['pizza_oven_2'], unlocks: stocker },
   stocker_8: { cost: 975, requires: ['stocker_7'], unlocks: stocker },
+  stocker_9: { cost: 1125, requires: ['stocker_8'], unlocks: stocker },
+  stocker_10: { cost: 1275, requires: ['stocker_9'], unlocks: stocker },
   cleaner: { cost: 360, requires: ['pizza_oven'], unlocks: { kind: 'cleaner' } },
 };
 

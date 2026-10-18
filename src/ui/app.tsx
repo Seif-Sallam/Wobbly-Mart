@@ -5,13 +5,19 @@ import { STOCKER_ROLES, type StockerRole, type World } from '../sim/world';
 import type { MapDef } from '../sim/map';
 import { SAVER_FRAME_CAP, frameSteps, ticksPerFrame, type Settings } from '../sim/save';
 import { canBuyUpgrade, nextLevelCost, upgradeVisible } from '../sim/economy';
+import { lessonCard } from '../sim/lessons';
 import { formatMoney } from '../format';
 import { FEEL } from '../feel';
+import { TUNING } from '../sim/tuning';
 import { Logo } from './logo';
+import { Logbook, type LogbookView } from './logbook';
 import { GEAR } from './hud';
 import { CREDITS } from '../../catalog/credits';
+import { LOOKS, lookById } from '../../catalog/looks';
+import { CAP_COLOURS } from '../palette';
 
-export type Overlay = 'pause' | 'settings' | 'maps' | 'credits' | 'controls' | 'paste' | 'home-tip';
+export type Overlay =
+  'pause' | 'settings' | 'maps' | 'credits' | 'controls' | 'paste' | 'home-tip' | 'wardrobe' | 'fullscreen' | 'logbook';
 
 export interface UiState {
   screen: 'title' | 'game';
@@ -23,7 +29,14 @@ export interface UiState {
   wipe: boolean;
   touch: boolean;
   ios: boolean;
-  maps: { map: MapDef; completion: number; visited: boolean }[];
+  /** `score`: the Map's Score, null on locked cards and the Tutorial Map. */
+  maps: { map: MapDef; completion: number; visited: boolean; tutorial: boolean; score: number | null }[];
+  /** Score added up over every Map. */
+  total: number;
+  logbook: LogbookView | null;
+  /** The tab the Logbook opens on: 0 Objectives, 1 This Map, 2 Whole game. */
+  logbookTab: number;
+  tutorialDone: boolean;
   /** The Map Play last opened: the title shelf starts on it. */
   lastMap: string;
   settings: Settings;
@@ -33,6 +46,19 @@ export interface UiState {
   screenHz: number;
   /** Edit Layout is open: the bill card and buttons. */
   layout: LayoutUi | null;
+  /** The Player's saved look (Wardrobe id) and cap colour name. */
+  look: string;
+  cap: string;
+}
+
+/** The Wardrobe's 3D preview and portraits, drawn by the view. */
+export interface WardrobeBridge {
+  /** Starts the live preview and returns its canvas to mount. */
+  start: (look: string, cap: string) => HTMLCanvasElement;
+  stop: () => void;
+  show: (look: string, cap: string, wave: boolean) => void;
+  portrait: (look: string, cap: string) => string;
+  capIcon: (cap: string) => string;
 }
 
 export interface LayoutUi {
@@ -45,13 +71,18 @@ export interface LayoutUi {
   total: number;
   next: number | null;
   canDone: boolean;
+  /** The running Lesson's ask while Edit Layout is open, or null. */
+  lesson: string | null;
 }
 
 export interface UiActions {
   play: (mapId: string) => void;
   close: () => void;
   open: (o: Overlay) => void;
+  openLogbook: (tab: number) => void;
+  toTitle: () => void;
   closeOffice: () => void;
+  setClosed: (closed: boolean) => void;
   buyUpgrade: (id: string) => void;
   editLayout: () => void;
   layoutTurn: () => void;
@@ -61,13 +92,21 @@ export interface UiActions {
   assign: (stocker: string, role: StockerRole) => void;
   setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
   fullscreen: () => void;
+  /** Enter fullscreen and resume (the pause card). */
+  playFullscreen: () => void;
   copySave: () => Promise<boolean>;
   pasteSave: (code: string) => string | null;
   resetProgress: () => void;
   pickMap: (id: string) => void;
   dismissCard: () => void;
+  /** Got it on a Lesson card. */
+  lessonNext: () => void;
+  /** Pause menu on the Tutorial Map: leave for the next Map without finishing. */
+  skipLessons: () => void;
   icon: (name: string) => string;
   click: () => void;
+  wardrobe: WardrobeBridge;
+  selectLook: (look: string, cap: string) => void;
 }
 
 const FAMILY_ORDER = ['player', 'station', 'staff'] as const;
@@ -76,7 +115,7 @@ const ROLE_NAME: Record<StockerRole, string> = { auto: 'Auto', goods: 'Goods', m
 
 function upgradeIcon(world: World, target: string): string {
   if (target === 'player') return 'player';
-  if (target === 'cashier' || target === 'stocker') return 'employee';
+  if (target === 'cashier' || target === 'stocker') return `staff-${target}`;
   return world.map.producers[target]?.model ?? target;
 }
 
@@ -102,6 +141,8 @@ function Btn(props: {
   );
 }
 
+const clock = (s: number): string => `${Math.floor(s / 60)}:${String(Math.ceil(s) % 60).padStart(2, '0')}`;
+
 function Office({ world, actions, wide }: { world: World; actions: UiActions; wide: boolean }) {
   const ups = Object.entries(world.map.upgrades).filter(([id]) => upgradeVisible(world, id));
   return (
@@ -110,6 +151,15 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
         ✕
       </button>
       <div class="office-scroll">
+        {(!world.lesson || world.lesson.index >= TUNING.lesson.closedFrom) && (
+          <section>
+            <h3>Store</h3>
+            <Btn actions={actions} disabled={world.closedWait > 0} onClick={() => actions.setClosed(!world.closed)}>
+              {world.closed ? 'Open' : 'Close'}
+              {world.closedWait > 0 ? ` again in ${clock(world.closedWait)}` : ' store'}
+            </Btn>
+          </section>
+        )}
         <section>
           <h3>Layout</h3>
           <Btn actions={actions} onClick={actions.editLayout}>
@@ -162,7 +212,7 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
             <h3>Stockers</h3>
             {world.stockers.map((s, i) => (
               <div class="assign" key={s.id}>
-                <img src={actions.icon('employee')} alt="" />
+                <img src={actions.icon('staff-stocker')} alt="" />
                 <b>#{i + 1}</b>
                 <div class="chips">
                   {STOCKER_ROLES.map((role) => (
@@ -285,7 +335,7 @@ function FrameRate({ s, a }: { s: UiState; a: UiActions }) {
 function Settings({ s, a }: { s: UiState; a: UiActions }) {
   const [copied, setCopied] = useState('');
   return (
-    <div class="panel">
+    <div class="panel settings">
       <h2>Settings</h2>
       {/* + (closer) on the left, − (farther) on the right */}
       <SliderRow
@@ -306,16 +356,41 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
         value={s.settings.hudScale}
         set={(v) => a.setSetting('hudScale', v)}
       />
-      <Toggle label="Music" on={s.settings.music} set={(v) => a.setSetting('music', v)} actions={a} />
-      <Toggle label="Sounds" on={s.settings.sounds} set={(v) => a.setSetting('sounds', v)} actions={a} />
-      {!s.touch && (
+      <SliderRow
+        label="Music"
+        ends={['🔈', '🔊']}
+        min={0}
+        max={1}
+        step={FEEL.volumeSlider}
+        value={s.settings.musicVolume}
+        set={(v) => a.setSetting('musicVolume', v)}
+      />
+      <SliderRow
+        label="Sounds"
+        ends={['🔈', '🔊']}
+        min={0}
+        max={1}
+        step={FEEL.volumeSlider}
+        value={s.settings.soundVolume}
+        set={(v) => a.setSetting('soundVolume', v)}
+      />
+      {s.touch && (
         <Toggle
-          label="Manual grab (hold Space)"
-          on={s.settings.manualGrab}
-          set={(v) => a.setSetting('manualGrab', v)}
+          label="Joystick"
+          on={s.settings.joystick !== 'off'}
+          text={{ fixed: 'Fixed', free: 'Free', off: 'Off' }[s.settings.joystick]}
+          set={() =>
+            a.setSetting('joystick', ({ fixed: 'free', free: 'off', off: 'fixed' } as const)[s.settings.joystick])
+          }
           actions={a}
         />
       )}
+      <Toggle
+        label={s.touch ? 'Manual grab (hold right side, landscape)' : 'Manual grab (hold Space)'}
+        on={s.settings.manualGrab}
+        set={(v) => a.setSetting('manualGrab', v)}
+        actions={a}
+      />
       <FrameRate s={s} a={a} />
       <Toggle
         label="Battery saver"
@@ -421,12 +496,17 @@ function Maps({ s, a }: { s: UiState; a: UiActions }) {
   );
 }
 
-function Controls({ a, touch }: { a: UiActions; touch: boolean }) {
+function Controls({ a, touch, stick }: { a: UiActions; touch: boolean; stick: boolean }) {
   return (
     <div class="panel">
       <h2>Controls</h2>
       {touch ? (
-        <p>Drag anywhere to walk. Walk near things to use them.</p>
+        <p>
+          {stick
+            ? 'Drag the stick to walk; push past the dashed ring to sprint.'
+            : 'Tap the floor to walk; double-tap to sprint.'}{' '}
+          Walk near things to use them.
+        </p>
       ) : (
         <ul class="controls">
           <li>
@@ -491,6 +571,68 @@ function HomeTip({ a }: { a: UiActions }) {
   );
 }
 
+// The Player's look: live preview on the left, Shop / Fun / Cap tiles on the right. Select saves look and cap together.
+function Wardrobe({ s, a }: { s: UiState; a: UiActions }) {
+  const [look, setLook] = useState(s.look);
+  const [cap, setCap] = useState(s.cap);
+  const host = useRef<HTMLDivElement>(null);
+  const w = a.wardrobe;
+  useEffect(() => {
+    host.current?.append(w.start(look, cap));
+    return w.stop;
+  }, []);
+  const pickLook = (id: string) => {
+    a.click();
+    setLook(id);
+    w.show(id, cap, true);
+  };
+  const pickCap = (c: string) => {
+    a.click();
+    setCap(c);
+    w.show(look, c, true);
+  };
+  const section = (title: string, fun: boolean) => (
+    <>
+      <h4>{title}</h4>
+      {LOOKS.filter((l) => !!l.fun === fun).map((l) => (
+        <button key={l.id} class={`look-cell ${l.id === look ? 'on' : ''}`} onClick={() => pickLook(l.id)}>
+          <img src={w.portrait(l.id, cap)} alt={l.name} />
+          {l.customer && <span class="tag">Customer</span>}
+        </button>
+      ))}
+    </>
+  );
+  return (
+    <div class="panel wardrobe" onPointerDown={(e) => e.stopPropagation()}>
+      <div class="wardrobe-stage" ref={host} />
+      <div class="wardrobe-side">
+        <div class="wardrobe-name">
+          {lookById(look).name}
+          {look === s.look && cap === s.cap ? ' ✓' : ''}
+        </div>
+        <div class="look-grid" style={{ '--t': `${FEEL.wardrobe.thumb}px` }}>
+          {section('Shop', false)}
+          {section('Fun', true)}
+          <h4>Cap</h4>
+          {Object.keys(CAP_COLOURS).map((c) => (
+            <button key={c} class={`look-cell cap-cell ${c === cap ? 'on' : ''}`} onClick={() => pickCap(c)}>
+              <img src={w.capIcon(c)} alt={c} />
+            </button>
+          ))}
+        </div>
+        <div class="row">
+          <Btn actions={a} onClick={a.close}>
+            Back
+          </Btn>
+          <Btn class="buy" actions={a} onClick={() => (a.selectLook(look, cap), a.close())}>
+            Select
+          </Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // The Maps are the title: a shelf of cards, Play under the one in front.
 function Title({ s, a }: { s: UiState; a: UiActions }) {
   const ready = s.loading >= 1;
@@ -512,6 +654,12 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
     <div class="title">
       {ready && (
         <div class="title-corner">
+          <button class="round" aria-label="Wardrobe" onClick={() => (a.click(), a.open('wardrobe'))}>
+            👕
+          </button>
+          <button class="round" aria-label="Logbook" onClick={() => (a.click(), a.openLogbook(2))}>
+            🏆
+          </button>
           <button class="round" aria-label="Credits" onClick={() => (a.click(), a.open('credits'))}>
             ★
           </button>
@@ -524,6 +672,7 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
         </div>
       )}
       <Logo />
+      {ready && <div class="plaque pill">🏆 {s.total.toLocaleString('en-US')}</div>}
       {ready ? (
         <>
           <div class="shelf">
@@ -539,8 +688,16 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
                 return (
                   <div key={m.map.id} class={cls} style={{ '--off': off }} onClick={() => setAt(k)}>
                     <div class="shelf-art">{m.visited && art ? <img src={a.icon(art)} alt="" /> : '🔒'}</div>
+                    {m.score !== null && <span class="ribbon score">⭐ {m.score.toLocaleString('en-US')}</span>}
+                    {m.tutorial && (
+                      <span class={`ribbon ${s.tutorialDone ? 'done' : 'start'}`}>
+                        {s.tutorialDone ? '✓ Done' : 'Start here!'}
+                      </span>
+                    )}
                     <b>{m.map.name}</b>
-                    {m.visited ? (
+                    {m.tutorial ? (
+                      <small>Learn the ropes in 14 short Lessons</small>
+                    ) : m.visited ? (
                       <>
                         <span class="completion small">
                           <i style={{ width: `${pct}%` }} />
@@ -559,7 +716,7 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
             </button>
           </div>
           <Btn class="play buy" actions={a} disabled={!cur?.visited} onClick={() => cur && a.play(cur.map.id)}>
-            Play
+            {cur?.tutorial && s.tutorialDone ? 'Play again' : 'Play'}
           </Btn>
         </>
       ) : (
@@ -619,6 +776,7 @@ function LayoutPanel({ l, a }: { l: LayoutUi; a: UiActions }) {
   );
   return (
     <div class="layout-panel" onPointerDown={stop} onPointerUp={stop}>
+      {l.lesson && <div class="layout-card lesson-ask">👉 {l.lesson}</div>}
       {l.why && <div class="layout-card why">✋ {l.why}</div>}
       <div class="layout-card">
         {l.picked ? (
@@ -658,6 +816,25 @@ function LayoutPanel({ l, a }: { l: LayoutUi; a: UiActions }) {
   );
 }
 
+/** The Lesson card: the sim is frozen behind it until Got it. */
+function LessonCard({ s, a, world }: { s: UiState; a: UiActions; world: World }) {
+  const card = lessonCard(world, { touch: s.touch, joystick: s.settings.joystick });
+  if (!card) return null;
+  return (
+    <div class="lesson-modal">
+      <div class="panel lesson-card" onPointerDown={(e) => e.stopPropagation()}>
+        <h2>{card.title}</h2>
+        {card.body.map((line) => (
+          <p key={line}>{line}</p>
+        ))}
+        <Btn class="buy" actions={a} onClick={a.lessonNext}>
+          Got it
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
 function Wipe({ on }: { on: boolean }) {
   return <div class={`wipe ${on ? 'closed' : ''}`} />;
 }
@@ -675,6 +852,7 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
       {s.screen === 'title' && <Title s={s} a={a} />}
       {s.screen === 'game' && s.office && world && !overlay && <Office world={world} actions={a} wide={wide} />}
       {s.screen === 'game' && s.layout && !overlay && <LayoutPanel l={s.layout} a={a} />}
+      {s.screen === 'game' && world?.lesson && !overlay && <LessonCard s={s} a={a} world={world} />}
       {overlay && (
         <div class="modal" onPointerDown={(e) => e.stopPropagation()}>
           {overlay === 'pause' && (
@@ -688,14 +866,31 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
               <Btn class="big" actions={a} onClick={() => a.open('settings')}>
                 Settings
               </Btn>
+              {world?.map.lessons && (
+                <Btn class="big" actions={a} onClick={a.skipLessons}>
+                  Skip tutorial
+                </Btn>
+              )}
+              <Btn class="big" actions={a} onClick={a.toTitle}>
+                Title
+              </Btn>
             </div>
+          )}
+          {overlay === 'fullscreen' && (
+            <Btn class="big buy" actions={a} onClick={a.playFullscreen}>
+              ⛶ Tap to play fullscreen
+            </Btn>
           )}
           {overlay === 'settings' && <Settings s={s} a={a} />}
           {overlay === 'maps' && <Maps s={s} a={a} />}
           {overlay === 'credits' && <Credits a={a} />}
-          {overlay === 'controls' && <Controls a={a} touch={s.touch} />}
+          {overlay === 'controls' && <Controls a={a} touch={s.touch} stick={s.settings.joystick !== 'off'} />}
           {overlay === 'paste' && <Paste a={a} />}
           {overlay === 'home-tip' && <HomeTip a={a} />}
+          {overlay === 'wardrobe' && <Wardrobe s={s} a={a} />}
+          {overlay === 'logbook' && s.logbook && (
+            <Logbook view={s.logbook} tab={s.logbookTab} close={a.close} click={a.click} />
+          )}
         </div>
       )}
       <Card s={s} a={a} />

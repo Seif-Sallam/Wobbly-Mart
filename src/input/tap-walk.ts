@@ -14,16 +14,37 @@ export class TapWalk {
   target: Target | null = null;
   /** Double-tapped: Sprint for this walk. */
   sprint = false;
+  /** The pickup Station of the Delivery car being walked to, if this walk was started from its HUD card. */
+  car: string | null = null;
 
   /** Picks what a tap on floor point `p` means and starts walking there; a spot nobody can walk to does nothing. */
   start(w: World, p: Point, sprint: boolean): void {
     this.forget(w);
     this.target = pick(w, p);
     this.sprint = sprint;
+    this.car = null;
+  }
+
+  /** A Delivery card tap: walk onto the middle of that car's pickup tile, not just to its edge. */
+  startCar(w: World, id: string, sprint: boolean): void {
+    this.forget(w);
+    const st = w.stations.get(id);
+    if (!st) return;
+    const [x, z] = boxCentre(st.box);
+    this.target = { point: walkable(w, x, z) };
+    this.sprint = sprint;
+    this.car = id;
   }
 
   cancel(): void {
     this.target = null;
+    this.car = null;
+  }
+
+  /** A Delivery walk keeps Auto Grab off until the Player is within reach of the pickup tile. */
+  grabPaused(w: World): boolean {
+    const st = this.car ? w.stations.get(this.car) : undefined;
+    return !!st && distToBox(w.player.x, w.player.z, st.box) > TUNING.reach;
   }
 
   /** A finished walk's one-off point field isn't kept. */
@@ -35,6 +56,8 @@ export class TapWalk {
   move(w: World): { x: number; z: number } {
     const t = this.target;
     if (!t || ('station' in t && !w.stations.has(t.station))) return this.stop(w);
+    const car = this.car ? w.stations.get(this.car) : undefined;
+    if (this.car && !(car?.kind === 'pickup' && car.delivery)) return this.stop(w);
     const pl = w.player;
     const left =
       'point' in t
@@ -56,6 +79,7 @@ export class TapWalk {
   private stop(w: World): { x: number; z: number } {
     this.forget(w);
     this.target = null;
+    this.car = null;
     return { x: 0, z: 0 };
   }
 }

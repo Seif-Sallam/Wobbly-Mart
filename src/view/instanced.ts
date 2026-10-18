@@ -73,15 +73,16 @@ class ModelBatch implements ModelDrawer {
     >();
     for (const [name, source] of models)
       for (const m of byMaterial(source)) {
-        const { geometry, material } = bakePalette(m.geometry.clone(), m.material as THREE.Material);
-        const key = `${material.uuid}|${Object.keys(geometry.attributes).sort().join()}|${geometry.index ? 'i' : 'n'}`;
+        // non-indexed, so indexed and non-indexed models with one material share a BatchedMesh
+        const own = m.geometry.clone();
+        const { geometry, material } = bakePalette(own.index ? own.toNonIndexed() : own, m.material as THREE.Material);
+        const key = `${material.uuid}|${Object.keys(geometry.attributes).sort().join()}`;
         if (!buckets.has(key)) buckets.set(key, { material, list: [] });
         buckets.get(key)?.list.push({ name, geometry, local: m.matrixWorld.clone() });
       }
     for (const { material, list } of buckets.values()) {
       const verts = list.reduce((n, p) => n + p.geometry.attributes.position.count, 0);
-      const indices = list.reduce((n, p) => n + (p.geometry.index?.count ?? 0), 0);
-      const mesh = new THREE.BatchedMesh(max, verts, Math.max(1, indices), material);
+      const mesh = new THREE.BatchedMesh(max, verts, 1, material);
       mesh.perObjectFrustumCulled = false;
       mesh.sortObjects = false;
       mesh.frustumCulled = false;

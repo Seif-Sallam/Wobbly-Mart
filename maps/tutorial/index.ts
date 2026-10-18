@@ -23,7 +23,6 @@ export const tutorialMap: MapDef = {
   freeStations,
   upgrades,
   start,
-  tutorial: [],
   lessons,
   objectives,
   challenges: false,

@@ -134,9 +134,6 @@ describe('Map 1 opening loop', () => {
     // Completion counts bought Pads, Upgrade levels and Objectives: 3 of 93
     expect(completion(w)).toBe(3 / 93);
 
-    // The tutorial follows along without blocking anything
-    expect(w.tutorial.done).toBe(false);
-
     // Buying the Blender while standing right of its Pad's centre, by the locked Area's edge, doesn't trap the Player
     while (!padVisible(w, 'blender')) own(w, visiblePads(w)[0], false);
     w.money = 100;
@@ -144,12 +141,6 @@ describe('Map 1 opening loop', () => {
     run(w, 3);
     expect(w.owned.has('blender')).toBe(true);
     walk(w, 'tomato_shelf');
-
-    // Skipping the tutorial ends it for good
-    expect(w.tutorial.done).toBe(false);
-    step(w, { ...idle(), skipTutorial: true });
-    expect(w.tutorial.done).toBe(true);
-    expect(w.events.some((e) => e.type === 'tutorialDone')).toBe(true);
   });
 
   test('a save keeps purchases and money, and a reload is a fresh Opening', () => {
@@ -206,7 +197,7 @@ function nextCustomer(w: World): Customer {
 
 describe('Map 1 fully built', () => {
   test('two Shelves, patience, Messes and the Mop, the Trash hold, Stack tipping, Stocker roles and priorities, everything at once', () => {
-    const w = createWorld(cornerShop, null, 5, true);
+    const w = createWorld(cornerShop, null, 5);
     w.map.events = {}; // Deliveries have their own test
     for (const id of Object.keys(cornerShop.pads)) own(w, id, false);
     refreshFreeStations(w);
@@ -659,7 +650,7 @@ describe('Map 1 fully built', () => {
 
 describe('Deliveries', () => {
   test('cars come after the quiet start, take only wanted Items, pay 1.5× plus a tip or plain price on timeout; Stockers fill them', () => {
-    const w = createWorld(cornerShop, null, 7, true);
+    const w = createWorld(cornerShop, null, 7);
     for (const id of ['register', 'tomato_shelf', 'tomato_bed', 'egg_shelf', 'chicken_coop']) own(w, id, false);
     refreshFreeStations(w);
     const cars = () => [...w.stations.values()].filter((s): s is PickupStation => s.kind === 'pickup');
@@ -780,7 +771,7 @@ const inspectorOf = (w: World): NonNullable<World['inspector']> => w.inspector a
 
 describe('Robbery and the Health Inspector', () => {
   test('a Thief grabs and freezes the game, is caught or escapes; the Inspector warns, is escorted or left alone, then scores', () => {
-    const w = createWorld(cornerShop, null, 11, true);
+    const w = createWorld(cornerShop, null, 11);
     for (const id of ['register', 'tomato_shelf', 'tomato_bed', 'egg_shelf', 'chicken_coop', 'area_2'])
       own(w, id, false);
     refreshFreeStations(w);
@@ -987,7 +978,7 @@ describe('Robbery and the Health Inspector', () => {
 
 describe('Closed and Debt', () => {
   test('Closed stops new Customers and visit timers but not Deliveries, with waits; repeat Bad Reviews run Money into Debt and an escorted visit resets the streak', () => {
-    const w = createWorld(cornerShop, null, 5, true);
+    const w = createWorld(cornerShop, null, 5);
     for (const id of ['register', 'tomato_shelf', 'tomato_bed', 'egg_shelf', 'chicken_coop', 'area_2', 'office'])
       own(w, id, false);
     refreshFreeStations(w);
@@ -1083,7 +1074,7 @@ describe('Closed and Debt', () => {
     const second = inspect(alone);
     expect([second.amount, second.streak, w.money]).toEqual([-300, 2, -200]);
     expect(snapshot(w).badReviewStreak).toBe(2);
-    expect(createWorld(cornerShop, snapshot(w), 5, true)).toMatchObject({ money: -200, badReviewStreak: 2 });
+    expect(createWorld(cornerShop, snapshot(w), 5)).toMatchObject({ money: -200, badReviewStreak: 2 });
     finish();
     const pad = visiblePads(w)[0];
     walk(w, padCentre(w, pad));
@@ -1113,7 +1104,7 @@ describe('Closed and Debt', () => {
 
 describe('Edit Layout', () => {
   test('Moves: where fixtures may go, the Register carries its Cashier, Moves cost money, the layout saves', () => {
-    const w = createWorld(cornerShop, null, 7, true);
+    const w = createWorld(cornerShop, null, 7);
     for (const id of Object.keys(cornerShop.pads)) own(w, id, false);
     refreshFreeStations(w);
     rebuildNav(w);
@@ -1192,13 +1183,13 @@ describe('Edit Layout', () => {
     expect(canPayMoves(w, 2)).toBe(false);
 
     // the save keeps the moved place and the Moves used; an older save without them loads the map's layout
-    const again = createWorld(cornerShop, snapshot(w), 8, true);
+    const again = createWorld(cornerShop, snapshot(w), 8);
     expect(again.stations.get('egg_shelf')?.box).toEqual(to?.box);
     expect(again.movesUsed).toBe(1);
     const old = snapshot(w);
     delete old.layout;
     delete old.movesUsed;
-    const fresh = createWorld(cornerShop, old, 9, true);
+    const fresh = createWorld(cornerShop, old, 9);
     expect(fresh.stations.get('egg_shelf')?.box).toEqual(home.box);
     expect(fresh.movesUsed).toBe(0);
   });
@@ -1215,7 +1206,7 @@ describe('Stats, Objectives, Score and Challenges', () => {
     expect(completionOf(cornerShop, everything, maxed, allObjectives)).toBe(1);
 
     // 100 Tomatoes sold: the last one is a real checkout; the Objective ticks once and pays 100 Score
-    const w = createWorld(cornerShop, null, 21, true);
+    const w = createWorld(cornerShop, null, 21);
     for (const id of ['register', 'tomato_shelf', 'tomato_bed']) own(w, id, false);
     refreshFreeStations(w);
     w.stats.sold.tomato = 99;
@@ -1237,7 +1228,7 @@ describe('Stats, Objectives, Score and Challenges', () => {
     expect(w.score).toBe(TUNING.score.objective);
 
     // the save keeps Stats, Objectives and Score; the whole game is the sum over Maps
-    const again = createWorld(cornerShop, snapshot(w), 22, true);
+    const again = createWorld(cornerShop, snapshot(w), 22);
     expect(again.stats.sold.tomato).toBe(w.stats.sold.tomato);
     expect([...again.objectivesDone]).toEqual(['sell:tomato:100']);
     expect(again.score).toBe(w.score);
@@ -1259,7 +1250,7 @@ describe('Stats, Objectives, Score and Challenges', () => {
     expect(old.stats).toEqual(emptyStats());
     expect([old.score, old.objectives, old.quarters, old.badReviewStreak]).toEqual([0, [], 0, 0]);
     expect(migrate(v4)).toEqual(v4);
-    const loaded = createWorld(cornerShop, old, 23, true);
+    const loaded = createWorld(cornerShop, old, 23);
     expect(loaded.stats).toEqual(emptyStats());
     expect(loaded.score).toBe(0);
     step(loaded, idle());
@@ -1270,7 +1261,7 @@ describe('Stats, Objectives, Score and Challenges', () => {
   test('a Challenge is offered after the quiet start, progresses, pauses while Closed, and a win pays Score and Money', () => {
     // find a seed whose first offer is "check out N Customers"
     const start = (seed: number) => {
-      const w = createWorld(cornerShop, null, seed, true);
+      const w = createWorld(cornerShop, null, seed);
       for (const id of ['register', 'tomato_shelf', 'tomato_bed']) own(w, id, false);
       refreshFreeStations(w);
       return w;

@@ -11,13 +11,9 @@ const YAW = (FEEL.cameraYawDeg * Math.PI) / 180;
 const RIGHT = { x: Math.cos(YAW), z: -Math.sin(YAW) };
 const UP = { x: -Math.sin(YAW), z: -Math.cos(YAW) };
 
-export type InputKind = 'keys' | 'touch';
-
 export class Input {
   private keys = new Set<string>();
   private joy = { x: 0, y: 0, active: false, force: 0 };
-  /** First input used — picks the movement hint. */
-  firstKind: InputKind | null = null;
   onEscape: () => void = () => {};
   /** Zoom shortcut: multiply the view size by this (> 1 shows more). */
   onZoom: (factor: number) => void = () => {};
@@ -48,7 +44,6 @@ export class Input {
       if (e.key === '-' || e.key === '_') this.onZoom(1 + FEEL.zoomStep);
       if (/^(Key[WASD]|Arrow|Space)/.test(e.code)) {
         e.preventDefault();
-        this.firstKind ??= 'keys';
       }
       this.keys.add(e.code);
     });
@@ -111,7 +106,6 @@ export class Input {
     });
     this.manager = manager;
     manager.on('move', (e) => {
-      this.firstKind ??= 'touch';
       this.joy.active = true;
       // the stick reaches full speed at joyFullPush of the ring; past the ring it sprints
       this.joy.force = e.data.force;

@@ -27,15 +27,14 @@ export class Game {
     readonly input: Input,
     map: MapDef,
     save: MapSave | null,
-    tutorialDone: boolean,
   ) {
-    this.world = createWorld(map, save, seed(), tutorialDone);
+    this.world = createWorld(map, save, seed());
     this.view = new WorldView(stage, this.world);
   }
 
   /** Fresh Opening of a map (reload, map switch, reset). */
-  open(map: MapDef, save: MapSave | null, tutorialDone: boolean): void {
-    this.world = createWorld(map, save, seed(), tutorialDone);
+  open(map: MapDef, save: MapSave | null): void {
+    this.world = createWorld(map, save, seed());
     this.view.reset(this.world);
   }
 
@@ -45,10 +44,6 @@ export class Game {
 
   setClosed(closed: boolean): void {
     this.commands.setClosed = closed;
-  }
-
-  skipTutorial(): void {
-    this.commands.skipTutorial = true;
   }
 
   /** Got it on a Lesson card. */

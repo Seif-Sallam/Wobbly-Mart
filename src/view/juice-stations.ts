@@ -1,12 +1,12 @@
 // The Juice Bar's code-built Producers (Orchard stand look): rustic wood, iron and copper, each lively while it works.
 import * as THREE from 'three';
 import { SHADES } from '../palette';
-import { paletteMaterial } from './materials';
+import { glassMaterial, paletteMaterial, spotMaterial } from './materials';
 import { dynamic, moving } from './merge';
 
 const J = SHADES.juice;
 
-const glassMat = new THREE.MeshStandardMaterial({ color: J.glass, transparent: true, opacity: 0.45, roughness: 0.1 });
+const glassMat = glassMaterial(J.glass, 0.45);
 const chromeMat = new THREE.MeshStandardMaterial({ color: J.chrome, roughness: 0.25, metalness: 0.6 });
 
 export function put<T extends THREE.Mesh>(parent: THREE.Object3D, m: T, x = 0, y = 0, z = 0): T {
@@ -318,16 +318,7 @@ export function inputSpots(g: THREE.Object3D, x0: number, y: number, colours: st
     [0, 1, 2].map((r) => {
       const x = x0 + k * 0.27;
       const z = (r - 1) * 0.27;
-      box(
-        g,
-        0.22,
-        0.012,
-        0.22,
-        new THREE.MeshStandardMaterial({ color: c, transparent: true, opacity: 0.55 }),
-        x,
-        y,
-        z,
-      );
+      box(g, 0.22, 0.012, 0.22, spotMaterial(c), x, y, z);
       return new THREE.Vector3(x, y + 0.012, z);
     }),
   );

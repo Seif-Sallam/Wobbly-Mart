@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { SHADES } from '../palette';
 import { ITEM_SIZE } from '../../catalog/assets';
+import { glassMaterial, glossMaterial } from './materials';
 import { dynamic, moving } from './merge';
 import { box, cone, cyl, inputSpots, put, sph, torus, withTray, type JuiceStation } from './juice-stations';
 
@@ -9,9 +10,14 @@ const D = SHADES.dairy;
 
 const steel = new THREE.MeshStandardMaterial({ color: D.steel, roughness: 0.3, metalness: 0.25 });
 const steelDark = new THREE.MeshStandardMaterial({ color: D.steelDark, roughness: 0.3, metalness: 0.25 });
-const glass = (o = 0.45) =>
-  new THREE.MeshStandardMaterial({ color: D.glass, transparent: true, opacity: o, roughness: 0.1 });
-const gloss = (c: string) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.3 });
+const glass = (opacity = 0.45) => glassMaterial(D.glass, opacity);
+const foil = new THREE.MeshStandardMaterial({ color: D.foil, roughness: 0.35, metalness: 0.4 });
+const steelBowl = new THREE.MeshStandardMaterial({
+  color: D.steel,
+  roughness: 0.3,
+  metalness: 0.25,
+  side: THREE.DoubleSide,
+});
 const steam = new THREE.MeshStandardMaterial({ color: D.steam, transparent: true, opacity: 0.7, roughness: 0.9 });
 const TRAY = { base: D.tile, top: steel };
 
@@ -58,7 +64,7 @@ function goat(p: THREE.Object3D, size: number) {
   }
   cone(head, 0.04, 0.12, D.goatDark, 0, -0.3, 0.18, 6).rotation.x = Math.PI;
   moving(head);
-  const bell = dynamic(sph(root, 0.06, gloss(D.bell), 0, 0.5, 0.42, 1));
+  const bell = dynamic(sph(root, 0.06, glossMaterial(D.bell), 0, 0.5, 0.42, 1));
   return { root, head, tail, bell };
 }
 
@@ -185,14 +191,14 @@ function iceCreamMaker(): JuiceStation {
   }
   const sign = group(g, 0, top + 1.06, -0.22);
   cone(sign, 0.09, 0.22, D.waffle, 0, 0.22, 0, 10).rotation.x = Math.PI;
-  sph(sign, 0.1, gloss(D.pink), 0, 0.34, 0, 2);
+  sph(sign, 0.1, glossMaterial(D.pink), 0, 0.34, 0, 2);
   box(g, 0.6, 0.18, 0.2, steel, 0, top + 0.6, 0.17);
   const levers: THREE.Group[] = [];
   for (const x of [-0.18, 0, 0.18]) {
     cone(g, 0.035, 0.08, steelDark, x, top + 0.52, 0.22, 8).rotation.x = Math.PI;
     const lv = group(g, x, top + 0.78, 0.25);
     box(lv, 0.03, 0.18, 0.03, D.ink);
-    sph(lv, 0.045, gloss(D.pink), 0, 0.2, 0, 1);
+    sph(lv, 0.045, glossMaterial(D.pink), 0, 0.2, 0, 1);
     levers.push(lv);
   }
   moving(levers[1]);
@@ -200,9 +206,9 @@ function iceCreamMaker(): JuiceStation {
   const cup = group(g, 0, top + 0.05, 0.22);
   cone(cup, 0.07, 0.22, D.waffle, 0, 0, 0, 10).rotation.x = Math.PI;
   const swirl = [0, 1, 2, 3, 4].map((i) =>
-    dynamic(torus(cup, 0.065 - i * 0.011, 0.032, gloss(i % 2 ? D.vanilla : D.pink), 0, 0.25 + i * 0.045)),
+    dynamic(torus(cup, 0.065 - i * 0.011, 0.032, glossMaterial(i % 2 ? D.vanilla : D.pink), 0, 0.25 + i * 0.045)),
   );
-  const tip = dynamic(cone(cup, 0.025, 0.06, gloss(D.pink), 0, 0.46, 0, 8));
+  const tip = dynamic(cone(cup, 0.025, 0.06, glossMaterial(D.pink), 0, 0.46, 0, 8));
   moving(cup);
   let fill = 0;
   return {
@@ -226,7 +232,7 @@ function puddingPot(): JuiceStation {
   const kettle = group(g, 0, top + 0.75, 0);
   const bowl = new THREE.Mesh(
     new THREE.SphereGeometry(0.42, 18, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
-    new THREE.MeshStandardMaterial({ color: D.steel, roughness: 0.3, metalness: 0.25, side: THREE.DoubleSide }),
+    steelBowl,
   );
   put(kettle, bowl, 0, 0.1);
   cyl(kettle, 0.39, 0.02, D.pudding, 0, -0.02);
@@ -271,7 +277,7 @@ const ITEMS: Record<string, (g: THREE.Group) => void> = {
   // a long flat brick, half wrapped in foil
   butter: (g) => {
     box(g, 0.42, 0.12, 0.2, D.butter);
-    box(g, 0.2, 0.125, 0.205, new THREE.MeshStandardMaterial({ color: D.foil, roughness: 0.35, metalness: 0.4 }), 0.11);
+    box(g, 0.2, 0.125, 0.205, foil, 0.11);
   },
   // a round wheel with a darker rind
   cheese: (g) => {
@@ -284,14 +290,14 @@ const ITEMS: Record<string, (g: THREE.Group) => void> = {
   // a tub with a scoop and a cherry
   'ice-cream': (g) => {
     cyl(g, 0.14, 0.15, D.pink, 0, 0, 0, 0.11, 16);
-    sph(g, 0.13, gloss(D.vanilla), 0, 0.16, 0, 2).scale.set(1, 0.7, 1);
-    sph(g, 0.03, gloss(D.cherry), 0, 0.26, 0, 1);
+    sph(g, 0.13, glossMaterial(D.vanilla), 0, 0.16, 0, 2).scale.set(1, 0.7, 1);
+    sph(g, 0.03, glossMaterial(D.cherry), 0, 0.26, 0, 1);
   },
   // a white ramekin with pudding and a caramel pool
   pudding: (g) => {
     cyl(g, 0.13, 0.17, D.tile, 0, 0, 0, 0.1, 18);
-    cyl(g, 0.12, 0.01, gloss(D.pudding), 0, 0.165, 0, 0.12, 18);
-    cyl(g, 0.07, 0.012, gloss(D.caramel), 0, 0.17, 0, 0.07, 14);
+    cyl(g, 0.12, 0.01, glossMaterial(D.pudding), 0, 0.165, 0, 0.12, 18);
+    cyl(g, 0.07, 0.012, glossMaterial(D.caramel), 0, 0.17, 0, 0.07, 14);
   },
 };
 

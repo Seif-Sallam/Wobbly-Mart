@@ -4,7 +4,7 @@ import { objectiveId } from '../../catalog/objectives';
 import type { World } from './world';
 
 /** How far an Objective is: `got` is capped at `want`. */
-export function objectiveProgress(w: World, o: ObjectiveDef): { got: number; want: number } {
+export function objectiveProgress(w: Pick<World, 'stats' | 'owned'>, o: ObjectiveDef): { got: number; want: number } {
   switch (o.kind) {
     case 'sell':
       return { got: Math.min(o.n, w.stats.sold[o.product] ?? 0), want: o.n };

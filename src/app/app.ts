@@ -319,7 +319,7 @@ export class App {
     const w = game.world;
     for (const e of events) this.onEvent(e);
     this.sounds.frame(events, w, (p) => this.onScreen(p), dt);
-    this.hud.update(dt, w.money, completion(w));
+    this.hud.update(dt, w.money, completion(w), w.closed);
     // Office opens on reaching the desk; after X it stays shut until the Player walks away and back.
     if (!w.atOffice) this.officeDismissed = false;
     const office = w.atOffice && !this.officeDismissed;
@@ -343,7 +343,7 @@ export class App {
     if (this.sinceSave > AUTOSAVE_SECONDS && !game.paused) this.writeSave();
     this.uiTimer += dt;
     const officeKey = office
-      ? `${Math.floor(w.money)}|${w.owned.size}|${JSON.stringify(w.levels)}|${w.stockers.map((s) => s.role).join()}`
+      ? `${w.closed}|${Math.ceil(w.closedWait)}|${Math.floor(w.money)}|${w.owned.size}|${JSON.stringify(w.levels)}|${w.stockers.map((s) => s.role).join()}`
       : '';
     if (officeKey !== this.officeKey && this.uiTimer > 0.15) {
       this.officeKey = officeKey;
@@ -392,7 +392,7 @@ export class App {
         '',
         TUNING.events.inspector.warning * 1000,
       );
-    if (e.type === 'inspection') this.hud.report(...inspectionReport(e));
+    if (e.type === 'inspection') this.hud.report(...inspectionReport(e, w.money < 0));
   }
 
   private onScreen(p: THREE.Vector3): boolean {
@@ -461,7 +461,9 @@ export class App {
       cards.push({ icon: emojiUrl(THIEF), text: 'Catch!', left: 1, red: true });
     }
     const ins = w.inspector;
-    if (ins?.state === 'warn') this.warning?.line(`Arriving in ${Math.ceil(ins.t)} s! Mop up, then stay close`);
+    if (ins?.state === 'warn') this.warning?.line(
+        `Arriving in ${Math.ceil(ins.t)} s! Mop up, then stay close.${w.badReviewStreak ? ' Ignore them again and the fine can put you in debt.' : ''}`,
+      );
     else if (this.warning) {
       this.warning.close();
       this.warning = null;
@@ -572,6 +574,7 @@ export class App {
       this.ui.office = false;
       this.renderUi();
     },
+    setClosed: (closed) => this.game?.setClosed(closed),
     buyUpgrade: (id) => this.game?.buyUpgrade(id),
     editLayout: () => {
       this.actions.closeOffice();
@@ -661,7 +664,7 @@ const THIEF = '🦹';
 const INSPECTOR = '🧐';
 
 /** The Inspector's report card: title, line, and whether it's good news. */
-function inspectionReport(e: Extract<SimEvent, { type: 'inspection' }>): [string, string, boolean] {
+function inspectionReport(e: Extract<SimEvent, { type: 'inspection' }>, debt: boolean): [string, string, boolean] {
   const dirt = [
     e.messes ? `${e.messes} Mess${e.messes > 1 ? 'es' : ''}` : '',
     e.loose ? `${e.loose} Loose Item${e.loose > 1 ? 's' : ''}` : '',
@@ -669,7 +672,12 @@ function inspectionReport(e: Extract<SimEvent, { type: 'inspection' }>): [string
     .filter(Boolean)
     .join(', ');
   const money = `${e.amount < 0 ? '-' : '+'}$${Math.abs(e.amount)}`;
-  if (e.review) return ['BAD REVIEW', `${dirt ? `${dirt}, ` : ''}left alone: ${money}`, false];
+  if (e.review)
+    return [
+      e.streak > 1 ? `BAD REVIEW ×${e.streak}` : 'BAD REVIEW',
+      `${dirt ? `${dirt}, ` : ''}left alone: ${money}${debt ? ' · in debt' : ''}`,
+      false,
+    ];
   if (!dirt) return ['Spotless! ★★★', money, true];
   return ['Dirty store', `${dirt}: ${money}`, false];
 }

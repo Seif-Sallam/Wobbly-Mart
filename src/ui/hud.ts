@@ -37,7 +37,7 @@ export class Hud {
   private shown = 0;
   private target = 0;
   /** Last values written to the DOM: only changes are written. */
-  private drawn = { money: '', width: '', gold: false, arrows: [] as string[], cards: [] as string[], tutor: '' };
+  private drawn = { money: '', closed: false, width: '', gold: false, arrows: [] as string[], cards: [] as string[], tutor: '' };
   onGear: () => void = () => {};
   onTutorNext: () => void = () => {};
   onTutorSkip: () => void = () => {};
@@ -49,7 +49,7 @@ export class Hud {
     root.innerHTML = `<div class="hud-ui">
       <div class="hud-top">
         <div class="completion"><i></i></div>
-        <div class="money pill">${BILL}<span>$0</span></div>
+        <div class="money pill">${BILL}<span>$0</span><em class="closed-badge gone">CLOSED</em></div>
         <button class="gear round" aria-label="Pause">${GEAR}</button>
       </div>
       <div class="event-cards"></div>
@@ -86,7 +86,7 @@ export class Hud {
     this.drawMoney();
   }
 
-  update(dt: number, money: number, completion: number): void {
+  update(dt: number, money: number, completion: number, closed: boolean): void {
     if (money > this.target + 0.5) {
       this.money.classList.remove('bump');
       void this.money.offsetWidth;
@@ -96,6 +96,8 @@ export class Hud {
     const diff = this.target - this.shown;
     this.shown = Math.abs(diff) < 0.5 ? this.target : this.shown + diff * Math.min(1, dt * 12);
     this.drawMoney();
+    if (closed !== this.drawn.closed)
+      this.money.querySelector('.closed-badge')?.classList.toggle('gone', !(this.drawn.closed = closed));
     const width = `${Math.round(completion * 100)}%`;
     if (width !== this.drawn.width) this.barFill.style.width = this.drawn.width = width;
     if (completion >= 1 !== this.drawn.gold) this.bar.classList.toggle('gold', (this.drawn.gold = completion >= 1));
@@ -103,6 +105,7 @@ export class Hud {
 
   private drawMoney(): void {
     const text = formatMoney(this.shown);
+    this.money.classList.toggle('debt', this.shown <= -1);
     if (text !== this.drawn.money)
       (this.money.querySelector('span') as HTMLElement).textContent = this.drawn.money = text;
   }

@@ -96,7 +96,8 @@ export function refreshFreeStations(w: World): void {
 
 /** Restores what a save keeps; drops unknown ids, clamps values. */
 export function applySave(w: World, save: MapSave): void {
-  w.money = Math.max(0, Number(save.money) || 0);
+  w.money = Number(save.money) || 0; // below 0 = Debt
+  w.badReviewStreak = Math.max(0, Math.floor(Number(save.badReviewStreak) || 0));
   // moved places first, so Stations are created where they were left
   for (const [id, p] of Object.entries(save.layout ?? {}))
     if (id in w.map.pads && w.map.layout.places[id]) w.placed[id] = w.map.layout.places[id] = p;
@@ -167,6 +168,11 @@ export function applyCommands(w: World, intents: Intents): void {
     w.levels[id] = (w.levels[id] ?? 0) + 1;
     w.events.push({ type: 'upgradeBought', upgrade: id });
     w.tutorial.actions.add('upgrade:office');
+  }
+  if (intents.setClosed !== undefined && w.atOffice && intents.setClosed !== w.closed && w.closedWait <= 0) {
+    w.closed = intents.setClosed;
+    w.closedWait = w.closed ? TUNING.closed.reopenWait : TUNING.closed.closeWait;
+    if (w.closed) w.timesClosed++;
   }
   if (intents.skipTutorial && !w.tutorial.done) {
     w.tutorial.done = true;

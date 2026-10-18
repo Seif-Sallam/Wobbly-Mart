@@ -262,7 +262,8 @@ export type SimEvent =
   | { type: 'robberyDone'; caught: boolean; amount: number; cash: number }
   | { type: 'inspectorWarning' }
   | { type: 'inspectorMark'; clean: boolean }
-  | { type: 'inspection'; review: boolean; messes: number; loose: number; amount: number }
+  /** `streak`: Bad Reviews in a row after this visit. */
+  | { type: 'inspection'; review: boolean; messes: number; loose: number; amount: number; streak: number }
   | { type: 'tutorialDone' }
   | { type: 'complete' };
 
@@ -276,6 +277,8 @@ export interface Intents {
   buyUpgrade?: string;
   skipTutorial?: boolean;
   assign?: { stocker: string; role: StockerRole };
+  /** Office: close or reopen the store (ignored during the wait). */
+  setClosed?: boolean;
 }
 
 export interface Nav {
@@ -292,6 +295,14 @@ export interface World {
   /** Events roll on their own stream, so they never shift Customers, tipping or Staff. */
   eventRng: { rng: number };
   money: number;
+  /** Closed: no new Pavement Customers, visit timers paused. Not saved. */
+  closed: boolean;
+  /** Seconds until `closed` may flip again. Not saved. */
+  closedWait: number;
+  /** Times the store was Closed on this Map, this Opening. */
+  timesClosed: number;
+  /** Bad Reviews in a row on this Map; saved. */
+  badReviewStreak: number;
   owned: Set<string>;
   paid: Record<string, number>;
   levels: Record<string, number>;
@@ -351,6 +362,10 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number, tut
     rng: seed,
     eventRng: { rng: seed ^ EVENT_SEED },
     money: map.start.money,
+    closed: false,
+    closedWait: 0,
+    timesClosed: 0,
+    badReviewStreak: 0,
     owned: new Set(),
     paid: {},
     levels: {},
@@ -419,6 +434,7 @@ export function step(w: World, intents: Intents): void {
     if (frozen) return;
   }
   w.t += DT;
+  w.closedWait = Math.max(0, w.closedWait - DT);
   applyCommands(w, intents);
   if (w.pan) {
     w.pan.t += DT;

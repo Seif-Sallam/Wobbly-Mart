@@ -115,8 +115,8 @@ function updateVisits(w: World): void {
   const running = w.thief ? 'robbery' : w.inspector ? 'inspector' : null;
   if (running) w.lastVisit = w.t;
   const kinds = VISITS.filter((k) => unlocked(w, k) && k !== running);
-  for (const k of kinds) w.visitWait[k] = (w.visitWait[k] ?? between(w, T[`${k}Gap`])) - DT;
-  if (running || w.t < T.quietStart || w.t - w.lastVisit < T.visitSpacing) return;
+  if (!w.closed) for (const k of kinds) w.visitWait[k] = (w.visitWait[k] ?? between(w, T[`${k}Gap`])) - DT;
+  if (running || w.closed || w.t < T.quietStart || w.t - w.lastVisit < T.visitSpacing) return;
   // a visit due inside the spacing waits; the longest overdue goes first
   const due = kinds
     .filter((k) => (w.visitWait[k] ?? 1) <= 0)

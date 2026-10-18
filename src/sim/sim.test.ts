@@ -883,6 +883,132 @@ describe('Robbery and the Health Inspector', () => {
   });
 });
 
+describe('Closed and Debt', () => {
+  test('Closed stops new Customers and visit timers but not Deliveries, with waits; repeat Bad Reviews run Money into Debt and an escorted visit resets the streak', () => {
+    const w = createWorld(cornerShop, null, 5, true);
+    for (const id of ['register', 'tomato_shelf', 'tomato_bed', 'egg_shelf', 'chicken_coop', 'area_2', 'office'])
+      own(w, id, false);
+    refreshFreeStations(w);
+    const { events } = cornerShop;
+    const tomato = w.stations.get('tomato_shelf') as ShelfStation;
+    const egg = w.stations.get('egg_shelf') as ShelfStation;
+    const stocked = () => {
+      tomato.items = 9;
+      egg.items = 3;
+    };
+    const atOffice = () => Object.assign(w.player, { x: 7.25, z: 22, vx: 0, vz: 0 });
+    const far = () => Object.assign(w.player, { x: 8, z: 40, vx: 0, vz: 0 });
+    const tick = (setClosed?: boolean) => {
+      stocked();
+      step(w, { ...idle(), setClosed });
+    };
+
+    // 1. Open: Customers arrive. Close store: nobody new comes, those inside finish; the Office can't reopen for 30 s
+    atOffice();
+    for (let i = 0; i < 60 * 10; i++) tick();
+    expect(w.customers.length).toBeGreaterThan(0);
+    const before = new Set(w.customers.map((c) => c.id));
+    w.visitWait = { robbery: 5, inspector: 5 };
+    w.map.events = {
+      delivery: events.delivery,
+      robbery: { requires: [], byArea: events.robbery?.byArea ?? {} },
+    };
+    w.t = 200;
+    w.carWait = 0.5;
+    tick(true);
+    expect([w.closed, w.timesClosed, w.closedWait]).toEqual([true, 1, 30]);
+    let arrived = false;
+    let strangers = 0;
+    const closedStretch = (seconds: number, setClosed?: (t: number) => boolean | undefined) => {
+      for (let i = 0; i < seconds * 60; i++) {
+        stocked();
+        step(w, { ...idle(), setClosed: setClosed?.(i / 60) });
+        arrived ||= w.events.some((e) => e.type === 'deliveryArrived');
+        strangers += w.customers.filter((c) => !before.has(c.id)).length;
+      }
+    };
+    closedStretch(29, () => false); // asking to reopen early does nothing
+    expect(w.closed).toBe(true);
+    expect(strangers).toBe(0);
+    expect(arrived).toBe(true); // Deliveries keep their pace
+    expect(w.visitWait).toEqual({ robbery: 5, inspector: 5 }); // visit timers paused
+    expect(w.thief).toBeNull();
+    w.map.events = {};
+    closedStretch(2); // the 30 s wait is over: reopening works
+    expect(w.closedWait).toBe(0);
+    tick(false);
+    expect([w.closed, w.closedWait]).toEqual([false, 300]);
+    tick(true); // 5 open minutes before it can close again
+    expect(w.closed).toBe(false);
+    w.customers = [];
+    for (let i = 0; i < 60 * 12; i++) tick();
+    expect(w.customers.some((c) => !before.has(c.id))).toBe(true);
+    w.closedWait = 0;
+    tick(true);
+    expect([w.closed, w.timesClosed]).toEqual([true, 2]);
+    w.closedWait = 0;
+    tick(false);
+    expect(w.closed).toBe(false);
+
+    // 2. Two Bad Reviews in a row: the first stops at $0, the second is double and runs into Debt; Pads stop draining
+    for (const id of ['ketchup_shelf', 'blender', 'wheat_shelf', 'milk_fridge']) own(w, id, false);
+    w.map.events = { inspector: events.inspector };
+    const visitNow = () => Object.assign(w, { visitWait: { robbery: 0, inspector: 0 }, lastVisit: -Infinity });
+    const inspect = (each: () => void) => {
+      visitNow();
+      for (let i = 0; i < 60 * 150; i++) {
+        each();
+        step(w, idle());
+        const e = w.events.find((x) => x.type === 'inspection');
+        if (e?.type === 'inspection') return e;
+      }
+      throw new Error('No inspection happened');
+    };
+    const alone = () => {
+      stocked();
+      far();
+      w.messes = [];
+      w.loose = [];
+    };
+    const finish = () => {
+      for (let i = 0; i < 60 * 60 && w.inspector; i++) step(w, idle());
+    };
+    w.money = 100;
+    const first = inspect(alone);
+    expect([first.review, first.amount, first.streak, w.money, w.badReviewStreak]).toEqual([true, -100, 1, 0, 1]);
+    finish();
+    w.money = 100;
+    const second = inspect(alone);
+    expect([second.amount, second.streak, w.money]).toEqual([-300, 2, -200]);
+    expect(snapshot(w).badReviewStreak).toBe(2);
+    expect(createWorld(cornerShop, snapshot(w), 5, true)).toMatchObject({ money: -200, badReviewStreak: 2 });
+    finish();
+    const pad = visiblePads(w)[0];
+    walk(w, padCentre(w, pad));
+    run(w, 3);
+    expect(w.owned.has(pad)).toBe(false);
+    expect(w.paid[pad] ?? 0).toBe(0);
+    expect(w.money).toBe(-200);
+
+    // 3. One escorted visit to the end resets the streak: the next Bad Review is a first one again
+    w.money = 1000;
+    visitNow();
+    step(w, idle());
+    const ins = inspectorOf(w);
+    const good = inspect(() => {
+      stocked();
+      w.messes = [];
+      w.loose = [];
+      Object.assign(w.player, { x: ins.x + 1, z: ins.z, vx: 0, vz: 0 });
+    });
+    expect([good.review, good.streak, w.badReviewStreak]).toEqual([false, 0, 0]);
+    finish();
+    w.money = 100;
+    const again = inspect(alone);
+    expect([again.amount, again.streak, w.money]).toEqual([-100, 1, 0]);
+  });
+});
+
 describe('Edit Layout', () => {
   test('Moves: where fixtures may go, the Register carries its Cashier, Moves cost money, the layout saves', () => {
     const w = createWorld(cornerShop, null, 7, true);

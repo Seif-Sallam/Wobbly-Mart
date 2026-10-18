@@ -182,6 +182,26 @@ body {
   height: 26px;
   transform: rotate(-8deg);
 }
+.money.debt span {
+  color: var(--angry);
+}
+.closed-badge {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 4px;
+  padding: 2px 12px;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  background: var(--angry);
+  color: var(--cream);
+  font: 700 18px Fredoka;
+  font-style: normal;
+}
+.closed-badge.gone {
+  display: none;
+}
 .money.bump {
   animation: bump 0.25s;
 }

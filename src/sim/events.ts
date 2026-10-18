@@ -3,7 +3,7 @@ import type { ByArea, EventKind, EventTiming, MapEvents } from './map';
 import type { Delivery, PickupStation, World } from './world';
 import { DT } from './world';
 import { productsForSale, requirementMet } from './economy';
-import { nextRandom, randomInt, shuffle } from './rng';
+import { nextRandom, randomBetween, randomInt, shuffle } from './rng';
 import { TUNING } from './tuning';
 import { FEEL } from '../feel';
 import { startRobbery, updateThief } from './robbery';
@@ -42,7 +42,7 @@ const unlocked = (w: World, kind: EventKind): boolean =>
 const pickups = (w: World): PickupStation[] =>
   [...w.stations.values()].filter((s): s is PickupStation => s.kind === 'pickup');
 
-const between = (w: World, [lo, hi]: readonly [number, number]): number => lo + nextRandom(w.eventRng) * (hi - lo);
+const between = (w: World, range: readonly [number, number]): number => randomBetween(w.eventRng, range);
 
 /** Cars that may wait at once: one, plus one per Stocker count reached in carStockers. */
 const carCap = (w: World): number => 1 + timing(w).carStockers.filter((n) => w.stockers.length >= n).length;
@@ -73,7 +73,7 @@ function leave(w: World, st: PickupStation, d: Delivery, complete: boolean): voi
   const amount = Math.round(complete ? value * timing(w).deliveryPay : value);
   const tip = complete ? Math.round(amount * timing(w).tipMax * Math.max(0, 1 - d.t / (d.time / 2))) : 0;
   w.money += amount + tip;
-  w.events.push({ type: 'deliveryDone', station: st.id, amount, tip, complete });
+  w.events.push({ type: 'deliveryDone', station: st.id, amount, tip, complete, left: d.time - d.t });
   st.delivery = null;
 }
 

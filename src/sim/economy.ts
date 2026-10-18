@@ -3,6 +3,8 @@ import type { MapDef, Point, StationDef } from './map';
 import type { Intents, Station, World } from './world';
 import { newCarrier, STOCKER_ROLES } from './world';
 import type { MapSave } from './save';
+import { objectiveId } from '../../catalog/objectives';
+import { restoreStats } from './stats';
 import { boxCentre, footprint, frontPoint } from './geometry';
 import { TUNING } from './tuning';
 import { FEEL } from '../feel';
@@ -120,6 +122,12 @@ export function applySave(w: World, save: MapSave): void {
     const role = save.roles?.[s.id];
     if (role && STOCKER_ROLES.includes(role)) s.role = role;
   }
+  w.stats = restoreStats(save.stats);
+  const objectives = new Set(w.map.objectives.map(objectiveId));
+  for (const id of save.objectives ?? []) if (objectives.has(id)) w.objectivesDone.add(id);
+  w.score = Math.max(0, Math.floor(Number(save.score) || 0));
+  w.quarters = Math.min(4, Math.max(0, Math.floor(Number(save.quarters) || 0)));
+  w.badReviewStreak = Math.max(0, Math.floor(Number(save.badReviewStreak) || 0));
 }
 
 // ---------- stats and Upgrades
@@ -206,11 +214,12 @@ export function cashPilePoint(w: World, register: string): Point {
 
 // ---------- Completion
 
-/** Bought Pads + Upgrade levels over everything purchasable (works on a save too). */
+/** Bought Pads + Upgrade levels + Objectives done over everything, equally weighted (works on a save too). */
 export function completionOf(
   map: MapDef,
   owned: { has: (id: string) => boolean },
   levels: Record<string, number>,
+  objectivesDone: { has: (id: string) => boolean },
 ): number {
   let done = 0;
   let total = 0;
@@ -222,10 +231,14 @@ export function completionOf(
     total += up.levels.length;
     done += Math.min(up.levels.length, levels[id] ?? 0);
   }
+  for (const o of map.objectives) {
+    total++;
+    if (objectivesDone.has(objectiveId(o))) done++;
+  }
   return total ? done / total : 1;
 }
 
-export const completion = (w: World): number => completionOf(w.map, w.owned, w.levels);
+export const completion = (w: World): number => completionOf(w.map, w.owned, w.levels, w.objectivesDone);
 
 export function checkCompletion(w: World, announce: boolean): boolean {
   const full = completion(w) >= 1;

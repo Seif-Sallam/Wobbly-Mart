@@ -1,6 +1,7 @@
 // What survives an Opening, and the versioned save file around it. Pure data — storage lives in src/app.
 import type { Placement } from './map';
 import type { StockerRole, World } from './world';
+import { emptyStats, type Stats } from './stats';
 
 export interface MapSave {
   money: number;
@@ -11,6 +12,14 @@ export interface MapSave {
   /** Edit Layout: places moved away from the map's, and Moves bought. */
   layout?: Record<string, Placement>;
   movesUsed?: number;
+  /** Progress below: always written by snapshot, absent in hand-built saves (a fresh start). */
+  stats?: Stats;
+  /** Ids (objectiveId) of the Objectives done. */
+  objectives?: string[];
+  score?: number;
+  /** Quarters of Completion already scored (0�4). */
+  quarters?: number;
+  badReviewStreak?: number;
 }
 
 /** Lowest frame cap offered, and the one Battery saver uses (fps). */
@@ -43,6 +52,8 @@ export interface Settings {
   frameCap: 'screen' | number;
   /** Forces the 45 fps cap, pixel ratio 1 and hard shadows. */
   batterySaver: boolean;
+  /** Touch controls: a stick fixed in the corner, one that appears under the thumb, or none (tap to walk). */
+  joystick: 'fixed' | 'free' | 'off';
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -53,15 +64,22 @@ export const DEFAULT_SETTINGS: Settings = {
   hudScale: 1,
   frameCap: 'screen',
   batterySaver: false,
+  joystick: 'fixed',
 };
 
-export const SAVE_VERSION = 3;
+export const DEFAULT_LOOK = 'male-a';
+export const DEFAULT_CAP = 'orange';
+
+export const SAVE_VERSION = 4;
 
 export interface SaveFile {
   version: number;
   currentMap: string;
   visited: string[];
   tutorialDone: boolean;
+  /** The Player's look (an asset-table character) and cap colour: one choice for the whole game. */
+  look: string;
+  cap: string;
   /** First unfinished tutorial step (-1 when done); purchase steps re-derive from the save on load. */
   tutorialStep: number;
   maps: Record<string, MapSave>;
@@ -72,6 +90,8 @@ export const emptySave = (firstMap: string): SaveFile => ({
   currentMap: firstMap,
   visited: [firstMap],
   tutorialDone: false,
+  look: DEFAULT_LOOK,
+  cap: DEFAULT_CAP,
   tutorialStep: 0,
   maps: {},
 });
@@ -89,6 +109,11 @@ export function snapshot(w: World): MapSave {
     roles: Object.fromEntries(w.stockers.map((s) => [s.id, s.role])),
     layout: { ...w.placed },
     movesUsed: w.movesUsed,
+    stats: structuredClone(w.stats),
+    objectives: [...w.objectivesDone],
+    score: w.score,
+    quarters: w.quarters,
+    badReviewStreak: w.badReviewStreak,
   };
 }
 
@@ -98,6 +123,18 @@ const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string
   1: (old) => ({ ...emptySave(String(old.currentMap)) }),
   // Edit Layout: maps gain an optional layout and Moves used; older ones load with the map's layout
   2: (old) => old,
+  // playtest 3: Stats, Objectives, Score and Completion quarters per Map; the Player's look and cap colour
+  3: (old) => ({
+    ...old,
+    look: DEFAULT_LOOK,
+    cap: DEFAULT_CAP,
+    maps: Object.fromEntries(
+      Object.entries((old.maps ?? {}) as Record<string, object>).map(([id, m]) => [
+        id,
+        { ...m, stats: emptyStats(), objectives: [], score: 0, quarters: 0, badReviewStreak: 0 },
+      ]),
+    ),
+  }),
 };
 
 /** Brings any older save up to date; throws with a clear message when it can't. */
@@ -119,7 +156,14 @@ export function migrate(raw: unknown): SaveFile {
   for (const [id, m] of Object.entries(s.maps)) {
     if (!Array.isArray(m.owned) || typeof m.money !== 'number') throw new Error(`Save for map ${id} is malformed`);
   }
-  return { ...s, version: SAVE_VERSION, tutorialDone: !!s.tutorialDone, tutorialStep: Number(s.tutorialStep) || 0 };
+  return {
+    ...s,
+    version: SAVE_VERSION,
+    tutorialDone: !!s.tutorialDone,
+    tutorialStep: Number(s.tutorialStep) || 0,
+    look: typeof s.look === 'string' ? s.look : DEFAULT_LOOK,
+    cap: typeof s.cap === 'string' ? s.cap : DEFAULT_CAP,
+  };
 }
 
 export function encodeSaveCode(save: SaveFile): string {

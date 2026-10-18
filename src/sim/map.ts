@@ -1,5 +1,6 @@
 import { SHELF_CAPS, type Product } from '../../catalog/products';
 import type { ProducerType } from '../../catalog/producers';
+import type { ObjectiveDef } from '../../catalog/objectives';
 import type { TUNING } from './tuning';
 
 /** [x, z, w, d] in metres: top-left corner (x east, z south) and size. */
@@ -129,6 +130,8 @@ export interface MapDef {
   upgrades: Record<string, UpgradeDef>;
   start: { owned: string[]; money: number };
   tutorial: TutorialStep[];
+  /** Goals done once and kept in the save; each counts toward Completion like a Pad. */
+  objectives: ObjectiveDef[];
   /** Edit Layout: the price of each Move in order (3 per Area). */
   movePrices: number[];
   events: MapEvents;

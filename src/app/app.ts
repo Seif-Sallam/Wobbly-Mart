@@ -549,7 +549,12 @@ export class App {
       completion:
         map.id === live?.map.id
           ? completion(live)
-          : completionOf(map, new Set(this.save.maps[map.id]?.owned ?? []), this.save.maps[map.id]?.levels ?? {}),
+          : completionOf(
+              map,
+              new Set(this.save.maps[map.id]?.owned ?? []),
+              this.save.maps[map.id]?.levels ?? {},
+              new Set(this.save.maps[map.id]?.objectives ?? []),
+            ),
     }));
     this.ui.lastMap = this.save.currentMap;
   }

@@ -139,6 +139,25 @@ export const TUNING = {
       stormSpeed: 4.5,
     },
   },
+  /** Score points per achievement; each quarter of Completion counts once, the first time it is reached. */
+  score: { objective: 100, challenge: 50, delivery: 20, thief: 30, spotless: 30, quarter: 250 },
+  /**
+   * Challenges: one at a time, offered every `gap` s (after the Events' quiet start), by Areas bought (1�3).
+   * `goal` is the count or seconds named in the kind's text; `time` the seconds allowed (the delivery kind gets the
+   * car's own time left); `bonus` the Money a win pays.
+   */
+  challenges: {
+    gap: [180, 300] as Range,
+    bonus: [60, 120, 360] as readonly number[],
+    kinds: {
+      checkout: { weight: 3, goal: [4, 8, 12] as readonly number[], time: 90 },
+      noMess: { weight: 2, goal: [60, 90, 120] as readonly number[] },
+      fillShelf: { weight: 2, time: 45 },
+      make: { weight: 2, goal: [4, 6, 8] as readonly number[], time: 60 },
+      sell: { weight: 2, goal: [4, 6, 10] as readonly number[], time: 90 },
+      delivery: { weight: 1, timeLeft: 30 },
+    },
+  },
   // base values Upgrades raise
   base: {
     playerSpeed: 5.5,

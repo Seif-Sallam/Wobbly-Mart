@@ -28,6 +28,8 @@ export const TUNING = {
   messSkirt: 0.03,
   /** Cleaner: flat walk speeds (m/s), clean time × the Player's, wander spots snapped to this grid (m), show mopping (s). */
   cleaner: { wanderSpeed: 2, rushSpeed: 4, cleanFactor: 1.5, wanderGrid: 4, showMop: [2, 4] as const },
+  /** Idle Stocker: strolls the Cleaner's way (its wanderSpeed and grid), to spots within `radius` m of a Station its role serves. */
+  stocker: { idle: { radius: 3 } },
   playerCheckoutTime: 1.5,
   customerSpeed: 2.6,
   customerTakeTime: 0.6,
@@ -79,7 +81,7 @@ export const TUNING = {
   tip: {
     maxRate: 0.3,
     curve: 1.2,
-    walkShare: 0.12,
+    walkShare: 0.03,
     walkSpeed: 0.5,
     joltBoost: 2,
     cooldown: 1,
@@ -131,7 +133,7 @@ export const TUNING = {
     inspector: {
       warning: 15,
       stops: [4, 6] as const,
-      stopTime: 5,
+      stopTime: 3,
       escort: 5,
       alone: 15,
       dirtRadius: 4,
@@ -143,7 +145,7 @@ export const TUNING = {
   base: {
     playerSpeed: 5.5,
     stack: 8,
-    safe: 3,
+    safe: 5,
     checkoutTime: 2,
     stockerSpeed: 4,
     stockerCarry: 6,

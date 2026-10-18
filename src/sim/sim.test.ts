@@ -1,12 +1,13 @@
 import { describe, expect, test } from 'vitest';
 import { cornerShop } from '../../maps/corner-shop';
 import { createWorld, DT, step, type Intents } from './world';
-import { completion, customerCap, own, padVisible, refreshFreeStations, visiblePads } from './economy';
+import { completion, customerCap, stackCap, own, padVisible, refreshFreeStations, visiblePads } from './economy';
 import { moveIntent } from './bot';
 import { snapshot } from './save';
 import type { Customer, PickupStation, ProducerStation, ShelfStation, SimEvent, World } from './world';
 import { distToBox } from './geometry';
 import { TUNING } from './tuning';
+import { INPUT_CAP } from '../../catalog/producers';
 import { addMess, messSlowdown } from './cleaning';
 import { canPayMoves, cutOff, moveBill, movesLeft, nextRot, payMoves, place, spotProblem, turned } from './layout';
 import { rebuildNav } from './walk';
@@ -421,7 +422,7 @@ describe('Map 1 fully built', () => {
       for (const st of w.stations.values()) {
         if (st.kind !== 'producer') continue;
         const type = w.map.producers[st.type];
-        for (const p of type.inputs) st.input[p] = type.inputCap ?? 0;
+        for (const p of type.inputs) st.input[p] = INPUT_CAP;
         if (type.inputs.length) st.tray = type.trayCap ?? 0; // a full output stops Machines eating their inputs
       }
     };
@@ -497,7 +498,7 @@ describe('Map 1 fully built', () => {
     expect(w.loose.length).toBe(0);
     expect(maxHeld).toBeLessThan(12);
 
-    // walking tips a Stocker's Stack like the Player's: above the safe count of 3 it drops now and then, never below
+    // walking tips a Stocker's Stack like the Player's: above the safe count of 5 it drops now and then, never below
     const shuttleStocker = (seconds: number): number => {
       let drops = 0;
       let leg = 0;
@@ -512,17 +513,17 @@ describe('Map 1 fully built', () => {
     w.messes = [];
     w.loose = [];
     Object.assign(auto, { job: null, stack: Array(6).fill('bread'), leftover: null });
-    expect(shuttleStocker(300)).toBeGreaterThan(0);
-    expect(auto.stack.length).toBeGreaterThanOrEqual(3);
+    expect(shuttleStocker(1500)).toBeGreaterThan(0);
+    expect(auto.stack.length).toBeGreaterThanOrEqual(5);
     expect(w.loose.length + w.messes.length).toBe(6 - auto.stack.length);
-    auto.stack = Array(3).fill('bread');
+    auto.stack = Array(5).fill('bread');
     expect(shuttleStocker(120)).toBe(0);
 
     // a Stocker walking over a Loose Item takes it like the Player does, any Product, while its Stack has room
     w.loose = [{ id: w.nextId++, x: auto.x, z: auto.z, product: 'egg' }];
     step(w, idle());
     expect(w.loose.length).toBe(0);
-    expect(auto.stack).toEqual(['bread', 'bread', 'bread', 'egg']);
+    expect(auto.stack).toEqual([...Array(5).fill('bread'), 'egg']);
     auto.stack = Array(6).fill('bread');
     w.loose = [{ id: w.nextId++, x: auto.x, z: auto.z, product: 'egg' }];
     step(w, idle());
@@ -553,6 +554,73 @@ describe('Map 1 fully built', () => {
     expect(w.messes.length).toBe(0);
     expect(took).toBeGreaterThan(3);
     expect(took).toBeLessThan(5);
+
+    // 7b. At a Producer the Player takes the whole Tray first, then drops its inputs; a full Stack drops first
+    const farm = producerAt(w, 'chicken_coop');
+    Object.assign(farm, { input: { tomato: 0 }, tray: 0, work: 0 });
+    w.player.stack = [];
+    walk(w, 'chicken_coop');
+    run(w, 1);
+    const order: string[] = [];
+    const trace = (seconds: number) => {
+      for (let i = 0; i < seconds * 60; i++) {
+        step(w, idle());
+        for (const e of w.events)
+          if (
+            e.type === 'transfer' &&
+            ('station' in e.from ? e.from.station : 'station' in e.to && e.to.station) === farm.id
+          )
+            order.push('station' in e.from ? 'take' : 'give');
+      }
+    };
+    Object.assign(farm, { tray: 3 });
+    w.player.stack = ['tomato', 'tomato'];
+    trace(6);
+    expect(order.slice(0, 5)).toEqual(['take', 'take', 'take', 'give', 'give']); // the Coop lays one more meanwhile
+    expect(w.player.stack.every((p) => p === 'egg')).toBe(true);
+    expect(w.player.stack.length).toBeGreaterThanOrEqual(3);
+    order.length = 0;
+    Object.assign(farm, { input: { tomato: 0 }, tray: 3 });
+    w.player.stack = Array(stackCap(w)).fill('tomato');
+    trace(8);
+    expect(order[0]).toBe('give'); // no room to take until one drops
+    expect(order.filter((o) => o === 'take').length).toBeGreaterThanOrEqual(3);
+    expect(farm.tray).toBe(0);
+
+    // 7c. An idle Stocker strolls near the Stations it serves at the Cleaner's pace, and drops it when a job appears
+    const [roamer] = staff;
+    w.stockers = [roamer];
+    Object.assign(roamer, { role: 'auto', job: null, stack: [], leftover: null, spot: null });
+    fillInputs();
+    for (const p of products) stock(w, p, 'full');
+    const box = [...w.stations.values()].filter((st) => st.kind === 'shelf' || st.kind === 'producer');
+    let strolled = 0;
+    let fastest = 0;
+    const spots = new Set<string>();
+    let farthest = 0;
+    for (let i = 0; i < 60 * 60; i++) {
+      const [x, z] = [roamer.x, roamer.z];
+      step(w, idle());
+      strolled += Math.hypot(roamer.x - x, roamer.z - z);
+      fastest = Math.max(fastest, Math.hypot(roamer.vx, roamer.vz));
+      if (roamer.spot) spots.add(roamer.spot.join());
+      if (roamer.spot)
+        farthest = Math.max(
+          farthest,
+          Math.min(...box.map((st) => distToBox(...(roamer.spot as [number, number]), st.box))),
+        );
+    }
+    expect(roamer.job).toBeNull();
+    expect(strolled).toBeGreaterThan(20);
+    expect(spots.size).toBeGreaterThan(1);
+    expect(fastest).toBeLessThanOrEqual(TUNING.cleaner.wanderSpeed + 0.01);
+    expect(farthest).toBeLessThanOrEqual(TUNING.stocker.idle.radius);
+    stock(w, 'egg', 0);
+    run(w, 1);
+    expect(roamer.job).not.toBeNull();
+    expect(roamer.spot).toBeNull();
+    run(w, 60);
+    expect(shelvesOf(w, 'egg').some((sh) => sh.items > 0)).toBe(true);
 
     // 8. Everything at once for 20 min, the Player idle: Staff fill car orders, every Event plays out, the Cleaner keeps up
     w.map.events = cornerShop.events;

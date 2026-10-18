@@ -1,4 +1,5 @@
 // The app: title → game, saves, the HUD and panels, guidance arrows. Glue between sim, view, ui and audio.
+import { INPUT_CAP } from '../../catalog/producers';
 import * as THREE from 'three';
 import type { SimEvent } from '../sim/world';
 import type { MapDef } from '../sim/map';
@@ -180,7 +181,7 @@ export class App {
       const type = world.map.producers[st.type];
       st.plants.fill(0);
       st.tray = type.trayCap ?? 0;
-      for (const p of type.inputs) st.input[p] = type.inputCap ?? 0;
+      for (const p of type.inputs) st.input[p] = INPUT_CAP;
     }
     this.game.onFrame = (events, dt) => this.onFrame(events, dt);
     this.layout = new EditLayout(

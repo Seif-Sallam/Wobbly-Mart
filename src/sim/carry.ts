@@ -132,6 +132,13 @@ export function tipDrops(
   const k = (n - o.safe) / Math.max(1, o.cap - o.safe);
   const jolt = 1 + T.joltBoost * Math.min(1, o.jolt);
   if (nextRandom(w) >= T.maxRate * o.share * jolt * k ** T.curve * DT) return;
+  shed(w, c, who, false);
+}
+
+/** Drops the top Item behind the carrier as a Loose Item (always when `loose`, else it may break into a Mess). */
+export function shed(w: World, c: Carrier & Mover, who: Ref, loose: boolean): void {
+  const T = TUNING.tip;
+  const n = c.stack.length;
   const dir = Math.hypot(c.vx, c.vz) || 1;
   const side = (nextRandom(w) - 0.5) * T.dropSide;
   // lands where someone can stand, so its Mess can be mopped
@@ -145,7 +152,7 @@ export function tipDrops(
   c.dropCooldown = T.cooldown;
   const id = w.nextId++;
   const breakChance = w.map.products[product]?.breakChance ?? 0;
-  if (breakChance > 0 && nextRandom(w) < breakChance) {
+  if (!loose && breakChance > 0 && nextRandom(w) < breakChance) {
     addMess(w, id, x, z, [product], -1);
     return;
   }

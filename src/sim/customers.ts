@@ -1,5 +1,5 @@
 import type { Point } from './map';
-import type { Customer, RegisterStation, ShelfStation, World } from './world';
+import type { Customer, ListEntry, RegisterStation, ShelfStation, World } from './world';
 import { DT } from './world';
 import { checkoutTime, customerCap, productsForSale } from './economy';
 import { distToBox, footprint, frontPoint } from './geometry';
@@ -47,20 +47,7 @@ function shelfSpot(w: World, shelf: ShelfStation): Point {
   return spots.reduce((best, p) => (used(p) < used(best) ? p : best));
 }
 
-function spawn(w: World): void {
-  const forSale = productsForSale(w);
-  const n = weighted(w, TUNING.listProducts.slice(0, forSale.length)) + 1;
-  const want = weighted(w, TUNING.listUnits[n - 1]) + 1;
-  const list = shuffle(w, forSale)
-    .slice(0, n)
-    .map((product) => ({
-      product,
-      shelf: '',
-      want,
-      got: 0,
-    }));
-  const spots = w.map.layout.streetSpots;
-  const home = spots[Math.floor(nextRandom(w) * spots.length)];
+function addCustomer(w: World, list: ListEntry[], home: Point, patienceLimit: number): void {
   const c: Customer = {
     id: w.nextId++,
     x: home[0],
@@ -77,16 +64,39 @@ function spawn(w: World): void {
     waiting: false,
     takeTimer: 0,
     patience: 0,
-    patienceLimit:
-      nextRandom(w) < TUNING.neverGiveUp
-        ? Infinity
-        : TUNING.patienceAngry[0] + nextRandom(w) * (TUNING.patienceAngry[1] - TUNING.patienceAngry[0]),
+    patienceLimit,
     angry: false,
     happy: false,
     look: nextRandom(w),
   };
   headFor(w, c);
   w.customers.push(c);
+}
+
+function spawn(w: World): void {
+  const forSale = productsForSale(w);
+  const n = weighted(w, TUNING.listProducts.slice(0, forSale.length)) + 1;
+  const want = weighted(w, TUNING.listUnits[n - 1]) + 1;
+  const list = shuffle(w, forSale)
+    .slice(0, n)
+    .map((product) => ({
+      product,
+      shelf: '',
+      want,
+      got: 0,
+    }));
+  const spots = w.map.layout.streetSpots;
+  const home = spots[Math.floor(nextRandom(w) * spots.length)];
+  const patienceLimit =
+    nextRandom(w) < TUNING.neverGiveUp
+      ? Infinity
+      : TUNING.patienceAngry[0] + nextRandom(w) * (TUNING.patienceAngry[1] - TUNING.patienceAngry[0]);
+  addCustomer(w, list, home, patienceLimit);
+}
+
+/** A Lesson calls one patient Customer who wants `want` of a Product. */
+export function callCustomer(w: World, product: string, want: number): void {
+  addCustomer(w, [{ product, shelf: '', want, got: 0 }], w.map.layout.streetSpots[0], Infinity);
 }
 
 const speedOf = (w: World, c: Customer): number =>
@@ -192,7 +202,7 @@ function checkout(w: World, reg: RegisterStation): void {
 export function updateCustomers(w: World): void {
   w.arrivalTimer -= DT;
   const stocked = [...w.stations.values()].some((s) => s.kind === 'shelf' && s.items > 0);
-  if (stocked && !w.closed && w.arrivalTimer <= 0 && w.customers.length < customerCap(w)) {
+  if (stocked && !w.lesson && !w.closed && w.arrivalTimer <= 0 && w.customers.length < customerCap(w)) {
     spawn(w);
     w.arrivalTimer = TUNING.arrivalInterval;
   }

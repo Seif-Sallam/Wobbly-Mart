@@ -82,6 +82,11 @@ export function validateMap(
     if (ref && !ids.has(ref)) out.push({ id: `tutorial[${i}]`, message: `points at unknown id "${ref}"` });
   }
 
+  for (const [i, lesson] of (map.lessons ?? []).entries())
+    for (const [j, step] of lesson.steps.entries())
+      if (typeof step.target === 'string' && !L.places[step.target])
+        out.push({ id: `lessons[${i}].steps[${j}]`, message: `points at unknown place "${step.target}"` });
+
   // unlock cycles and unreachable items
   const owned = new Set(map.start.owned);
   const levels: Record<string, number> = {};

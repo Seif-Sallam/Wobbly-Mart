@@ -1,6 +1,6 @@
 // The app: title → game, saves, the HUD and panels, guidance arrows. Glue between sim, view, ui and audio.
 import * as THREE from 'three';
-import type { SimEvent } from '../sim/world';
+import type { SimEvent, World } from '../sim/world';
 import type { MapDef } from '../sim/map';
 import {
   encodeSaveCode,
@@ -22,6 +22,7 @@ import {
   visiblePads,
 } from '../sim/economy';
 import { shelfCap, stationModel } from '../sim/map';
+import { lessonAim, lessonHud, lessonTarget, type LessonDevice } from '../sim/lessons';
 import { boxCentre } from '../sim/geometry';
 import { FIRST_MAP, MAPS, isTutorialMap, mapById } from '../../maps';
 import { lookById } from '../../catalog/looks';
@@ -107,6 +108,8 @@ export class App {
   private lastTick = 0;
   private ticks = 0;
   private officeKey = '';
+  /** Lesson index and phase last drawn: the card re-renders when it changes. */
+  private lessonKey = '';
   private layout: EditLayout | null = null;
   /** The Inspector's warning banner, counting down until they step in. */
   private warning: EventBanner | null = null;
@@ -130,6 +133,7 @@ export class App {
     this.input.onTap = (x, y, double) => {
       const game = this.game;
       if (!game || this.ui.screen !== 'game' || game.paused || this.editing) return;
+      if (game.world.lesson?.phase === 'card') return;
       // with a stick, floor taps never walk
       if (isTouch && this.settings.joystick !== 'off') return;
       const p = this.stage.floorAt(x, y);
@@ -337,6 +341,7 @@ export class App {
     this.applyLayout();
     this.hud.resetMoney(game.world.money);
     this.officeDismissed = this.exitDismissed = false;
+    this.lessonKey = '';
     this.seenPads.clear();
     this.hintFrom = game.world.tutorial.done ? null : [game.world.player.x, game.world.player.z];
     this.hud.showHint(this.hintFrom ? (this.input.firstKind ?? (isTouch ? 'touch' : 'keys')) : null);
@@ -429,6 +434,7 @@ export class App {
       }
     }
     if (e.type === 'complete') this.hud.celebrate();
+    if (e.type === 'lessonReplay') this.hud.banner(iconUrl('player'), 'Let’s try that again', 'No harm done');
     if (e.type === 'deliveryArrived')
       this.hud.banner(iconUrl('van'), 'Delivery!', 'Bring the order to the car out back');
     if (e.type === 'thiefGrab') this.hud.banner(emojiUrl(THIEF), 'Thief!', 'Sprint and catch them before the door');
@@ -466,6 +472,8 @@ export class App {
     const text = step >= 0 && !closed ? w.map.tutorial[step].text : undefined;
     this.hud.tutorial(text ?? null, step + 1, w.map.tutorial.length);
     view.arrowTarget = null;
+    view.ringTarget = null;
+    this.lessonGuidance(w, targets, iconOf);
     if (step >= 0) {
       const s = w.map.tutorial[step];
       const id = s.pad ?? s.station ?? '';
@@ -504,7 +512,11 @@ export class App {
         red: d.honked,
         delivery: {
           id: st.id,
-          lines: d.order.map((l) => ({ icon: iconUrl(w.map.products[l.product]?.model ?? ''), got: l.got, want: l.want })),
+          lines: d.order.map((l) => ({
+            icon: iconUrl(w.map.products[l.product]?.model ?? ''),
+            got: l.got,
+            want: l.want,
+          })),
         },
       });
     }
@@ -562,6 +574,32 @@ export class App {
       arrows.push({ x: cx + Math.cos(angle) * k, y: cy + Math.sin(angle) * k, angle, icon: t.icon });
     }
     this.hud.setArrows(arrows);
+  }
+
+  private lessonDevice(): LessonDevice {
+    return { touch: isTouch, joystick: this.settings.joystick };
+  }
+
+  /** The Lesson's pill, arrow and ring on its target (an edge arrow too, when it is a Station). */
+  private lessonGuidance(
+    w: World,
+    targets: { at: THREE.Vector3; icon: string }[],
+    iconOf: (id: string) => string,
+  ): void {
+    const view = this.game?.view;
+    if (!view) return;
+    this.hud.lesson(lessonHud(w, this.lessonDevice()));
+    const key = w.lesson ? `${w.lesson.index}|${w.lesson.phase}` : '';
+    if (key !== this.lessonKey) {
+      this.lessonKey = key;
+      this.renderUi();
+    }
+    const aim = lessonAim(w);
+    if (!aim) return;
+    const at = new THREE.Vector3(aim[0], 0, aim[1]);
+    view.arrowTarget = view.ringTarget = at;
+    const target = lessonTarget(w);
+    if (typeof target === 'string') targets.push({ at, icon: iconOf(target) });
   }
 
   // ---------- saves
@@ -693,6 +731,11 @@ export class App {
       }
       this.openOverlay(null);
     },
+    lessonNext: () => {
+      this.input.tap.cancel();
+      this.game?.lessonNext();
+    },
+    skipLessons: () => this.actions.pickMap(FIRST_MAP.id),
     dismissCard: () => {
       this.ui.card = null;
       this.renderUi();

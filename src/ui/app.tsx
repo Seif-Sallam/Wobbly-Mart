@@ -5,6 +5,7 @@ import { STOCKER_ROLES, type StockerRole, type World } from '../sim/world';
 import type { MapDef } from '../sim/map';
 import { SAVER_FRAME_CAP, frameSteps, ticksPerFrame, type Settings } from '../sim/save';
 import { canBuyUpgrade, nextLevelCost, upgradeVisible } from '../sim/economy';
+import { lessonCard } from '../sim/lessons';
 import { formatMoney } from '../format';
 import { FEEL } from '../feel';
 import { Logo } from './logo';
@@ -86,6 +87,10 @@ export interface UiActions {
   resetProgress: () => void;
   pickMap: (id: string) => void;
   dismissCard: () => void;
+  /** Got it on a Lesson card. */
+  lessonNext: () => void;
+  /** Pause menu on the Tutorial Map: leave for the next Map without finishing. */
+  skipLessons: () => void;
   icon: (name: string) => string;
   click: () => void;
   wardrobe: WardrobeBridge;
@@ -775,6 +780,25 @@ function LayoutPanel({ l, a }: { l: LayoutUi; a: UiActions }) {
   );
 }
 
+/** The Lesson card: the sim is frozen behind it until Got it. */
+function LessonCard({ s, a, world }: { s: UiState; a: UiActions; world: World }) {
+  const card = lessonCard(world, { touch: s.touch, joystick: s.settings.joystick });
+  if (!card) return null;
+  return (
+    <div class="lesson-modal">
+      <div class="panel lesson-card" onPointerDown={(e) => e.stopPropagation()}>
+        <h2>{card.title}</h2>
+        {card.body.map((line) => (
+          <p key={line}>{line}</p>
+        ))}
+        <Btn class="buy" actions={a} onClick={a.lessonNext}>
+          Got it
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
 function Wipe({ on }: { on: boolean }) {
   return <div class={`wipe ${on ? 'closed' : ''}`} />;
 }
@@ -792,6 +816,7 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
       {s.screen === 'title' && <Title s={s} a={a} />}
       {s.screen === 'game' && s.office && world && !overlay && <Office world={world} actions={a} wide={wide} />}
       {s.screen === 'game' && s.layout && !overlay && <LayoutPanel l={s.layout} a={a} />}
+      {s.screen === 'game' && world?.lesson && !overlay && <LessonCard s={s} a={a} world={world} />}
       {overlay && (
         <div class="modal" onPointerDown={(e) => e.stopPropagation()}>
           {overlay === 'pause' && (
@@ -805,6 +830,11 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
               <Btn class="big" actions={a} onClick={() => a.open('settings')}>
                 Settings
               </Btn>
+              {world?.map.lessons && (
+                <Btn class="big" actions={a} onClick={a.skipLessons}>
+                  Skip tutorial
+                </Btn>
+              )}
             </div>
           )}
           {overlay === 'fullscreen' && (

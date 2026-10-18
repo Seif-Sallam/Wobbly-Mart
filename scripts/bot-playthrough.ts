@@ -25,6 +25,7 @@ export function playthrough(w: World, log = false): number {
 let failed = false;
 for (const map of MAPS) {
   const w = createWorld(map, null, 1);
+  w.lesson = null; // the bot plays the Map, not its Lessons: a Lesson card would freeze it
   const t = playthrough(w, true);
   const pct = completion(w) * 100;
   console.log(`${map.id}: ${pct.toFixed(0)}% after ${(t / 60).toFixed(1)} simulated minutes`);

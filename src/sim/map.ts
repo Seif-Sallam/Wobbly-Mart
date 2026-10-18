@@ -1,6 +1,7 @@
 import { SHELF_CAPS, type Product } from '../../catalog/products';
 import type { ProducerType } from '../../catalog/producers';
 import type { TUNING } from './tuning';
+import type { LessonDef } from './lessons';
 
 /** [x, z, w, d] in metres: top-left corner (x east, z south) and size. */
 export type Box = [number, number, number, number];
@@ -129,6 +130,8 @@ export interface MapDef {
   upgrades: Record<string, UpgradeDef>;
   start: { owned: string[]; money: number };
   tutorial: TutorialStep[];
+  /** Tutorial Map only: the Lessons, in order. While any are left, Customers and Events come only when a Lesson calls them. */
+  lessons?: LessonDef[];
   /** Edit Layout: the price of each Move in order (3 per Area). */
   movePrices: number[];
   events: MapEvents;

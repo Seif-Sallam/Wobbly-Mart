@@ -1,4 +1,4 @@
-// Pads chained in Lesson order so each Station shows up when its Lesson comes; the Lesson runner hands over the Money.
+// Pads chained in Lesson order so each Station shows up when its Lesson comes; each Lesson hands over exactly the Money it needs.
 import type { FreeStationDef, MapEvents, PadDef } from '../../src/sim/map';
 import type { ProductId } from '../../catalog/products';
 import type { ProducerTypeId } from '../../catalog/producers';
@@ -30,7 +30,7 @@ export const freeStations: Record<string, FreeStationDef> = {
   mop_stand: { requires: [], unlocks: { kind: 'mopStand' } },
 };
 
-export const start = { owned: ['area_1', 'tomato_bed', 'tomato_shelf', 'register'], money: 500 };
+export const start = { owned: ['area_1', 'tomato_bed', 'tomato_shelf', 'register'], money: 0 };
 
 /** Moves are free on the Tutorial Map. */
 export const movePrices = [0, 0, 0, 0, 0, 0];

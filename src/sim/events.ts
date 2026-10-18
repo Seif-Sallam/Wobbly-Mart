@@ -128,6 +128,7 @@ function updateVisits(w: World): void {
 }
 
 export function updateEvents(w: World): void {
+  if (w.lesson) return;
   if (unlocked(w, 'delivery')) updateDeliveries(w);
   updateVisits(w);
 }

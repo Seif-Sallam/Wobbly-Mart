@@ -36,6 +36,7 @@ export class Hud {
   private cards: HTMLElement[] = [];
   private hint: HTMLElement;
   private tutor: HTMLElement;
+  private lessonPill: HTMLElement;
   private shown = 0;
   private target = 0;
   /** Last values written to the DOM: only changes are written. */
@@ -47,6 +48,7 @@ export class Hud {
     arrows: [] as string[],
     cards: [] as string[],
     tutor: '',
+    lesson: '',
   };
   onGear: () => void = () => {};
   /** A Delivery card was tapped: its pickup Station's id. */
@@ -68,6 +70,7 @@ export class Hud {
       </div>
       <div class="event-cards"></div>
       <div class="tutor pill gone"><small></small><p></p><div><button class="btn skip">Skip tutorial</button><button class="btn buy next">OK</button></div></div>
+      <div class="lesson pill gone"><small></small><p></p></div>
       <div class="hint"></div></div>`;
     this.ui = root.querySelector('.hud-ui') as HTMLElement;
     this.extra = root.querySelector('.hud-extra') as HTMLElement;
@@ -77,6 +80,7 @@ export class Hud {
     this.barFill = root.querySelector('.completion i') as HTMLElement;
     this.hint = root.querySelector('.hint') as HTMLElement;
     this.tutor = root.querySelector('.tutor') as HTMLElement;
+    this.lessonPill = root.querySelector('.lesson') as HTMLElement;
     const press = (sel: string, fn: () => void) =>
       (root.querySelector(sel) as HTMLElement).addEventListener('pointerdown', (e) => {
         e.stopPropagation();
@@ -259,6 +263,21 @@ export class Hud {
     this.tutor.classList.remove('pop');
     void this.tutor.offsetWidth;
     this.tutor.classList.add('pop');
+  }
+
+  /** The live Lesson prompt (or its "Nice!"). `null` hides it. */
+  lesson(info: { head: string; line: string; nice: boolean } | null): void {
+    const key = info ? `${info.head}|${info.line}` : '';
+    if (key === this.drawn.lesson) return;
+    this.drawn.lesson = key;
+    this.lessonPill.classList.toggle('gone', !info);
+    if (!info) return;
+    this.lessonPill.classList.toggle('nice', info.nice);
+    (this.lessonPill.querySelector('small') as HTMLElement).textContent = info.head;
+    (this.lessonPill.querySelector('p') as HTMLElement).textContent = info.line;
+    this.lessonPill.classList.remove('pop');
+    void this.lessonPill.offsetWidth;
+    this.lessonPill.classList.add('pop');
   }
 
   /** Movement hint: keycaps on desktop, a dragging hand on touch. `null` hides it. */

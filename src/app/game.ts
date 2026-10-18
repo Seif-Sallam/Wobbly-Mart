@@ -1,5 +1,6 @@
 // The running game: fixed-timestep sim, the 3D view, input and the bits of glue between them.
 import type { Intents, SimEvent, StockerRole, World } from '../sim/world';
+import { lessonFact, type LessonUiFact } from '../sim/lessons';
 import { createWorld, DT, step } from '../sim/world';
 import type { MapDef } from '../sim/map';
 import type { MapSave } from '../sim/save';
@@ -19,6 +20,9 @@ export class Game {
   private acc = 0;
   private last = performance.now();
   private commands: Partial<Intents> = {};
+  /** Screens the app opened or closed that a Lesson waits for; the sim gets one per step. */
+  /** Events a reported fact raised between steps; the next frame hands them on. */
+  private pending: SimEvent[] = [];
   /** Every frame, after the sim stepped: events of this frame. */
   onFrame: (events: SimEvent[], dt: number) => void = () => {};
 
@@ -27,24 +31,36 @@ export class Game {
     readonly input: Input,
     map: MapDef,
     save: MapSave | null,
-    tutorialDone: boolean,
   ) {
-    this.world = createWorld(map, save, seed(), tutorialDone);
+    this.world = createWorld(map, save, seed());
     this.view = new WorldView(stage, this.world);
   }
 
   /** Fresh Opening of a map (reload, map switch, reset). */
-  open(map: MapDef, save: MapSave | null, tutorialDone: boolean): void {
-    this.world = createWorld(map, save, seed(), tutorialDone);
+  open(map: MapDef, save: MapSave | null): void {
+    this.world = createWorld(map, save, seed());
+    this.pending = [];
     this.view.reset(this.world);
+  }
+
+  /** Tells the running Lesson about a screen of the app, at once (some screens pause the sim). */
+  report(fact: LessonUiFact): void {
+    const before = this.world.events.length;
+    lessonFact(this.world, fact);
+    this.pending.push(...this.world.events.slice(before));
   }
 
   buyUpgrade(id: string): void {
     this.commands.buyUpgrade = id;
   }
 
-  skipTutorial(): void {
-    this.commands.skipTutorial = true;
+  setClosed(closed: boolean): void {
+    this.commands.setClosed = closed;
+  }
+
+  /** Got it on a Lesson card. */
+  lessonNext(): void {
+    this.commands.lessonNext = true;
   }
 
   assign(stocker: string, role: StockerRole): void {
@@ -57,7 +73,8 @@ export class Game {
     this.last = now;
     // paused frames are drawn only on change, so their long gaps are not slow frames
     if (!this.paused) this.stage.watchFrame(dt, fps);
-    const events: SimEvent[] = [];
+    const events: SimEvent[] = this.pending;
+    this.pending = [];
     if (!this.paused) {
       this.acc += dt * this.speed;
       let steps = 0;
@@ -67,6 +84,7 @@ export class Game {
         step(this.world, {
           move: this.input.move(this.world),
           grab: this.input.grab,
+          grabPaused: this.input.tap.grabPaused(this.world),
           sprint: this.input.sprint,
           manualGrab: this.manualGrab,
           ...this.commands,
@@ -79,6 +97,7 @@ export class Game {
       if (steps === MAX_STEPS_PER_FRAME) this.acc = 0;
     }
     this.view.walkTarget = this.input.tap.target;
+    this.view.walkRoute = !!this.input.tap.car;
     this.view.update(dt, this.acc / DT, events);
     this.onFrame(events, dt);
     this.stage.render(dt);

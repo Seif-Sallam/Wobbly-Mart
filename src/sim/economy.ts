@@ -1,9 +1,11 @@
-// Ownership, prices, Upgrades, Completion, the tutorial — everything about what is bought.
-import type { MapDef, Point, StationDef } from './map';
+// Ownership, prices, Upgrades, Completion — everything about what is bought.
+import type { MapDef, Placement, Point, StationDef } from './map';
 import type { Intents, Station, World } from './world';
 import { newCarrier, STOCKER_ROLES } from './world';
 import type { MapSave } from './save';
-import { boxCentre, footprint, frontPoint } from './geometry';
+import { objectiveId } from '../../catalog/objectives';
+import { restoreStats } from './stats';
+import { boxCentre, boxesOverlap, footprint, frontPoint } from './geometry';
 import { TUNING } from './tuning';
 import { FEEL } from '../feel';
 
@@ -54,7 +56,19 @@ function createStation(w: World, id: string, def: StationDef): void {
     }
     case 'stocker': {
       const [x, z] = boxCentre(place.box);
-      w.stockers.push({ id, x, z, vx: 0, vz: 0, ...newCarrier(), role: 'auto', job: null, rethink: 0, leftover: null });
+      w.stockers.push({
+        id,
+        x,
+        z,
+        vx: 0,
+        vz: 0,
+        ...newCarrier(),
+        role: 'auto',
+        job: null,
+        rethink: 0,
+        spot: null,
+        leftover: null,
+      });
       break;
     }
     case 'cleaner': {
@@ -94,12 +108,29 @@ export function refreshFreeStations(w: World): void {
   }
 }
 
+/** Saved Edit Layout moves that still fit: a map update may have put walls or other fixtures on an old spot.
+ *  A dropped move puts the fixture back at the map's own place (a Cashier follows its Register). */
+function keptMoves(map: MapDef, moves: Record<string, Placement>): Record<string, Placement> {
+  const L = map.layout;
+  const known = Object.entries(moves).filter(([id]) => id in map.pads && L.places[id]);
+  const spotOf = (id: string): Placement | undefined => moves[id] ?? L.places[id];
+  const fits = (id: string, p: Placement): boolean =>
+    !Object.keys(L.places).some((o) => o !== id && !!spotOf(o) && boxesOverlap(p.box, (spotOf(o) as Placement).box)) &&
+    !Object.values(L.walls).some((wall) => boxesOverlap(p.box, wall.box));
+  const kept = Object.fromEntries(known.filter(([id, p]) => fits(id, p)));
+  for (const id of Object.keys(kept)) {
+    const def = map.pads[id].unlocks;
+    if (def.kind === 'cashier' && moves[def.register] && !kept[def.register]) delete kept[id];
+  }
+  return kept;
+}
+
 /** Restores what a save keeps; drops unknown ids, clamps values. */
 export function applySave(w: World, save: MapSave): void {
-  w.money = Math.max(0, Number(save.money) || 0);
+  w.money = Number(save.money) || 0; // below 0 = Debt
+  w.badReviewStreak = Math.max(0, Math.floor(Number(save.badReviewStreak) || 0));
   // moved places first, so Stations are created where they were left
-  for (const [id, p] of Object.entries(save.layout ?? {}))
-    if (id in w.map.pads && w.map.layout.places[id]) w.placed[id] = w.map.layout.places[id] = p;
+  for (const [id, p] of Object.entries(keptMoves(w.map, save.layout ?? {}))) w.placed[id] = w.map.layout.places[id] = p;
   w.movesUsed = Math.max(0, Math.floor(Number(save.movesUsed) || 0));
   const known = (id: string) => id in w.map.pads || Object.keys(w.map.layout.areas).includes(id);
   // Pads first in map order so Staff find their Registers
@@ -120,6 +151,11 @@ export function applySave(w: World, save: MapSave): void {
     const role = save.roles?.[s.id];
     if (role && STOCKER_ROLES.includes(role)) s.role = role;
   }
+  w.stats = restoreStats(save.stats);
+  const objectives = new Set(w.map.objectives.map(objectiveId));
+  for (const id of save.objectives ?? []) if (objectives.has(id)) w.objectivesDone.add(id);
+  w.score = Math.max(0, Math.floor(Number(save.score) || 0));
+  w.quarters = Math.min(4, Math.max(0, Math.floor(Number(save.quarters) || 0)));
 }
 
 // ---------- stats and Upgrades
@@ -166,11 +202,11 @@ export function applyCommands(w: World, intents: Intents): void {
     w.money -= nextLevelCost(w, id) ?? 0;
     w.levels[id] = (w.levels[id] ?? 0) + 1;
     w.events.push({ type: 'upgradeBought', upgrade: id });
-    w.tutorial.actions.add('upgrade:office');
   }
-  if (intents.skipTutorial && !w.tutorial.done) {
-    w.tutorial.done = true;
-    w.events.push({ type: 'tutorialDone' });
+  if (intents.setClosed !== undefined && w.atOffice && intents.setClosed !== w.closed && w.closedWait <= 0) {
+    w.closed = intents.setClosed;
+    w.closedWait = w.closed ? TUNING.closed.reopenWait : TUNING.closed.closeWait;
+    if (w.closed) w.stats.timesClosed++;
   }
   if (intents.assign) {
     const s = w.stockers.find((x) => x.id === intents.assign?.stocker);
@@ -206,11 +242,12 @@ export function cashPilePoint(w: World, register: string): Point {
 
 // ---------- Completion
 
-/** Bought Pads + Upgrade levels over everything purchasable (works on a save too). */
+/** Bought Pads + Upgrade levels + Objectives done over everything, equally weighted (works on a save too). */
 export function completionOf(
   map: MapDef,
   owned: { has: (id: string) => boolean },
   levels: Record<string, number>,
+  objectivesDone: { has: (id: string) => boolean },
 ): number {
   let done = 0;
   let total = 0;
@@ -222,34 +259,17 @@ export function completionOf(
     total += up.levels.length;
     done += Math.min(up.levels.length, levels[id] ?? 0);
   }
+  for (const o of map.objectives) {
+    total++;
+    if (objectivesDone.has(objectiveId(o))) done++;
+  }
   return total ? done / total : 1;
 }
 
-export const completion = (w: World): number => completionOf(w.map, w.owned, w.levels);
+export const completion = (w: World): number => completionOf(w.map, w.owned, w.levels, w.objectivesDone);
 
 export function checkCompletion(w: World, announce: boolean): boolean {
   const full = completion(w) >= 1;
   if (full && !w.complete && announce) w.events.push({ type: 'complete' });
   return full;
-}
-
-// ---------- tutorial
-
-export function tutorialStepDone(w: World, i: number): boolean {
-  const s = w.map.tutorial[i];
-  if (s.pad) return w.owned.has(s.pad);
-  return w.tutorial.actions.has(`${s.action}:${s.station}`);
-}
-
-/** Index of the first unfinished step, or -1 when the tutorial is over. */
-export function tutorialStep(w: World): number {
-  if (w.tutorial.done) return -1;
-  for (let i = 0; i < w.map.tutorial.length; i++) if (!tutorialStepDone(w, i)) return i;
-  return -1;
-}
-
-export function updateTutorial(w: World): void {
-  if (w.tutorial.done || tutorialStep(w) >= 0) return;
-  w.tutorial.done = true;
-  w.events.push({ type: 'tutorialDone' });
 }

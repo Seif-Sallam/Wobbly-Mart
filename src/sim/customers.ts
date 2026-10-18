@@ -1,9 +1,9 @@
 import type { Point } from './map';
-import type { Customer, RegisterStation, ShelfStation, World } from './world';
+import type { Customer, ListEntry, RegisterStation, ShelfStation, World } from './world';
 import { DT } from './world';
 import { checkoutTime, customerCap, productsForSale } from './economy';
 import { distToBox, footprint, frontPoint } from './geometry';
-import { nextRandom, shuffle, weighted } from './rng';
+import { nextRandom, weighted, weightedShuffle } from './rng';
 import { walkAgent } from './walk';
 import { TUNING } from './tuning';
 import { addMess, inMess } from './cleaning';
@@ -47,20 +47,7 @@ function shelfSpot(w: World, shelf: ShelfStation): Point {
   return spots.reduce((best, p) => (used(p) < used(best) ? p : best));
 }
 
-function spawn(w: World): void {
-  const forSale = productsForSale(w);
-  const n = weighted(w, TUNING.listProducts.slice(0, forSale.length)) + 1;
-  const want = weighted(w, TUNING.listUnits[n - 1]) + 1;
-  const list = shuffle(w, forSale)
-    .slice(0, n)
-    .map((product) => ({
-      product,
-      shelf: '',
-      want,
-      got: 0,
-    }));
-  const spots = w.map.layout.streetSpots;
-  const home = spots[Math.floor(nextRandom(w) * spots.length)];
+function addCustomer(w: World, list: ListEntry[], home: Point, patienceLimit: number): void {
   const c: Customer = {
     id: w.nextId++,
     x: home[0],
@@ -77,16 +64,51 @@ function spawn(w: World): void {
     waiting: false,
     takeTimer: 0,
     patience: 0,
-    patienceLimit:
-      nextRandom(w) < TUNING.neverGiveUp
-        ? Infinity
-        : TUNING.patienceAngry[0] + nextRandom(w) * (TUNING.patienceAngry[1] - TUNING.patienceAngry[0]),
+    patienceLimit,
     angry: false,
     happy: false,
     look: nextRandom(w),
   };
   headFor(w, c);
   w.customers.push(c);
+}
+
+/** Caps premium Items (pizzas) on a list: `max` in total at `maxChance`, else 1; extra premium lines are dropped. */
+function premiumUnits(w: World, list: ListEntry[]): void {
+  const premium = list.filter((l) => w.map.products[l.product].premium);
+  if (!premium.length) return;
+  const units = nextRandom(w) < TUNING.premium.maxChance ? TUNING.premium.max : 1;
+  premium.forEach((l, i) => {
+    l.want = i === 0 ? Math.max(1, units - (premium.length - 1)) : 1;
+    if (i >= units) list.splice(list.indexOf(l), 1);
+  });
+}
+
+function spawn(w: World): void {
+  const forSale = productsForSale(w);
+  const n = weighted(w, TUNING.listProducts.slice(0, forSale.length)) + 1;
+  const want = weighted(w, TUNING.listUnits[n - 1]) + 1;
+  const list = weightedShuffle(w, forSale, (p) => (w.map.products[p].premium ? TUNING.premium.weight : 1))
+    .slice(0, n)
+    .map((product) => ({
+      product,
+      shelf: '',
+      want,
+      got: 0,
+    }));
+  premiumUnits(w, list);
+  const spots = w.map.layout.streetSpots;
+  const home = spots[Math.floor(nextRandom(w) * spots.length)];
+  const patienceLimit =
+    nextRandom(w) < TUNING.neverGiveUp
+      ? Infinity
+      : TUNING.patienceAngry[0] + nextRandom(w) * (TUNING.patienceAngry[1] - TUNING.patienceAngry[0]);
+  addCustomer(w, list, home, patienceLimit);
+}
+
+/** A Lesson calls one patient Customer who wants `want` of a Product. */
+export function callCustomer(w: World, product: string, want: number): void {
+  addCustomer(w, [{ product, shelf: '', want, got: 0 }], w.map.layout.streetSpots[0], Infinity);
 }
 
 const speedOf = (w: World, c: Customer): number =>
@@ -127,7 +149,6 @@ function shop(w: World, c: Customer): void {
     headFor(w, c);
     return;
   }
-  if (!w.tutorial.done) return;
   c.patience += DT * (inMess(w, c.x, c.z) ? TUNING.messPatience : 1);
   if (c.patience >= c.patienceLimit && !c.angry) {
     c.angry = true;
@@ -178,6 +199,7 @@ function checkout(w: World, reg: RegisterStation): void {
   reg.progress += DT / time;
   if (reg.progress < 1) return;
   reg.progress = 0;
+  const products = front.cart;
   const amount = front.cart.reduce((sum, p) => sum + w.map.products[p].price, 0);
   reg.cash += amount;
   reg.queue.shift();
@@ -185,14 +207,13 @@ function checkout(w: World, reg: RegisterStation): void {
   front.happy = true;
   front.register = null;
   leave(front);
-  w.events.push({ type: 'paid', register: reg.id, customer: front.id, amount });
-  w.tutorial.actions.add(`checkout:${reg.id}`);
+  w.events.push({ type: 'paid', register: reg.id, customer: front.id, amount, products });
 }
 
 export function updateCustomers(w: World): void {
   w.arrivalTimer -= DT;
   const stocked = [...w.stations.values()].some((s) => s.kind === 'shelf' && s.items > 0);
-  if (stocked && w.arrivalTimer <= 0 && w.customers.length < customerCap(w)) {
+  if (stocked && !w.lesson && !w.closed && w.arrivalTimer <= 0 && w.customers.length < customerCap(w)) {
     spawn(w);
     w.arrivalTimer = TUNING.arrivalInterval;
   }
@@ -205,7 +226,7 @@ export function updateCustomers(w: World): void {
   for (const reg of registers(w)) checkout(w, reg);
   w.customers = w.customers.filter((c) => {
     const gone = c.state === 'gone';
-    if (gone) w.events.push({ type: 'customerLeft', customer: c.id });
+    if (gone) w.events.push({ type: 'customerLeft', customer: c.id, happy: c.happy });
     return !gone;
   });
 }

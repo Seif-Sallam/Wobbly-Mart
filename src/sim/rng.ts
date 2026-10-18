@@ -10,6 +10,10 @@ export function nextRandom(state: { rng: number }): number {
 export const randomInt = (state: { rng: number }, min: number, max: number): number =>
   min + Math.floor(nextRandom(state) * (max - min + 1));
 
+/** A float in [lo, hi). */
+export const randomBetween = (state: { rng: number }, [lo, hi]: readonly [number, number]): number =>
+  lo + nextRandom(state) * (hi - lo);
+
 export function shuffle<T>(state: { rng: number }, list: T[]): T[] {
   const out = [...list];
   for (let i = out.length - 1; i > 0; i--) {
@@ -17,6 +21,15 @@ export function shuffle<T>(state: { rng: number }, list: T[]): T[] {
     [out[i], out[j]] = [out[j], out[i]];
   }
   return out;
+}
+
+/** A shuffle where heavier entries tend to come first (keys rand^(1/weight)); all weights 1 = a plain shuffle. */
+export function weightedShuffle<T>(state: { rng: number }, list: T[], weight: (t: T) => number): T[] {
+  if (list.every((t) => weight(t) === 1)) return shuffle(state, list);
+  return list
+    .map((t) => ({ t, key: nextRandom(state) ** (1 / weight(t)) }))
+    .sort((a, b) => b.key - a.key)
+    .map((e) => e.t);
 }
 
 /** Index picked with chance proportional to its weight. */

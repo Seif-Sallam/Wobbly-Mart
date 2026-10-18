@@ -28,6 +28,8 @@ export const TUNING = {
   messSkirt: 0.03,
   /** Cleaner: flat walk speeds (m/s), clean time × the Player's, wander spots snapped to this grid (m), show mopping (s). */
   cleaner: { wanderSpeed: 2, rushSpeed: 4, cleanFactor: 1.5, wanderGrid: 4, showMop: [2, 4] as const },
+  /** Idle Stocker: strolls the Cleaner's way (its wanderSpeed and grid), to spots within `radius` m of a Station its role serves. */
+  stocker: { idle: { radius: 3 } },
   playerCheckoutTime: 1.5,
   customerSpeed: 2.6,
   customerTakeTime: 0.6,
@@ -36,6 +38,9 @@ export const TUNING = {
   capCashierFactor: 1.3,
   /** Shopping List weights: Product count 1–4, then units 1–4 by Product count. */
   listProducts: [30, 35, 25, 10],
+  /** Premium Items (pizzas): picked for a list `weight`× as often as others; at most `max` per Customer across all of
+   *  them, that many only at `maxChance`, else 1. */
+  premium: { weight: 1.5, max: 2, maxChance: 0.3 },
   listUnits: [
     [5, 15, 25, 55],
     [10, 25, 55, 10],
@@ -79,7 +84,7 @@ export const TUNING = {
   tip: {
     maxRate: 0.3,
     curve: 1.2,
-    walkShare: 0.12,
+    walkShare: 0.03,
     walkSpeed: 0.5,
     joltBoost: 2,
     cooldown: 1,
@@ -88,11 +93,18 @@ export const TUNING = {
   },
   looseTakeRadius: 0.8,
   /** Stocker job tiers are tierGap apart, so fill and distance (× distanceWeight per m) only order within one. */
-  urgency: { tierGap: 10, distanceWeight: 0.01 },
+  /** Stocker job scores (lower first): tiers `tierGap` apart; within a tier, each input a Producer needs beyond the
+   *  first pulls it `extraInput` sooner, so multi-ingredient machines get fed first. */
+  urgency: { tierGap: 10, distanceWeight: 0.01, extraInput: 0.25 },
   /** Seconds a Stocker holds a whole Stack of leftovers before putting them back on a Tray or in the Trash. */
   leftoverTime: 10,
   stockerRethink: 0.5,
+  /** Closed: seconds before the store may reopen, and before it may close again after reopening. */
+  closed: { reopenWait: 30, closeWait: 300 },
   exitPickRadius: 1.2,
+  /** Lessons: "Nice!" shows this long (s); a point target counts as reached within `arrive` (m); a Lesson that waits on
+   * a random tip forces one after `tipAfter` s of sprinting; the Office's Close row shows from Lesson `closedFrom`. */
+  lesson: { niceTime: 1.6, arrive: 1, tipAfter: 2.5, closedFrom: 12 },
   /**
    * Events: none in the first quietStart s of an Opening. Deliveries: the next car every deliveryGap s; one waits at a
    * time unless the Stocker counts in carStockers allow a 2nd / 3rd, and then only by extraCarChance (the extra car
@@ -127,23 +139,43 @@ export const TUNING = {
     robbery: { items: 5, grabTime: 2, freeze: 2, speed: 2.5, catchRadius: 0.8 },
     /** Inspector: warning s, stops (count range, s each), escort radius m, s alone before a bad review, a stop's ✗ when
      * a Mess or Loose Item is within dirtRadius m; steps around Messes until skirtUntil m from a stop; storms out at
-     * stormSpeed m/s after a bad review. */
+     * stormSpeed m/s after a bad review; the review fine is × repeatFactor from the 2nd Bad Review in a row. */
     inspector: {
       warning: 15,
       stops: [4, 6] as const,
-      stopTime: 5,
+      stopTime: 3,
       escort: 5,
       alone: 15,
       dirtRadius: 4,
       skirtUntil: 1.5,
       stormSpeed: 4.5,
+      repeatFactor: 2,
+    },
+  },
+  /** Score points per achievement; each quarter of Completion counts once, the first time it is reached. */
+  score: { objective: 100, challenge: 50, delivery: 20, thief: 30, spotless: 30, quarter: 250 },
+  /**
+   * Challenges: one at a time, offered every `gap` s (after the Events' quiet start), by Areas bought (1�3).
+   * `goal` is the count or seconds named in the kind's text; `time` the seconds allowed (the delivery kind gets the
+   * car's own time left); `bonus` the Money a win pays.
+   */
+  challenges: {
+    gap: [180, 300] as Range,
+    bonus: [60, 120, 360] as readonly number[],
+    kinds: {
+      checkout: { weight: 3, goal: [4, 8, 12] as readonly number[], time: 90 },
+      noMess: { weight: 2, goal: [60, 90, 120] as readonly number[] },
+      fillShelf: { weight: 2, time: 45 },
+      make: { weight: 2, goal: [4, 6, 8] as readonly number[], time: 60 },
+      sell: { weight: 2, goal: [4, 6, 10] as readonly number[], time: 90 },
+      delivery: { weight: 1, timeLeft: 30 },
     },
   },
   // base values Upgrades raise
   base: {
     playerSpeed: 5.5,
     stack: 8,
-    safe: 3,
+    safe: 5,
     checkoutTime: 2,
     stockerSpeed: 4,
     stockerCarry: 6,

@@ -5,7 +5,7 @@ import { pick } from '../../catalog/pick';
 import { layout } from './layout';
 import { events, freeStations, movePrices, pads, start } from './unlocks';
 import { upgrades } from './upgrades';
-import { tutorial } from './tutorial';
+import { objectives } from './objectives';
 
 export const cornerShop: MapDef = {
   id: 'corner-shop',
@@ -17,7 +17,7 @@ export const cornerShop: MapDef = {
   freeStations,
   upgrades,
   start,
-  tutorial,
+  objectives,
   movePrices,
   events,
 };

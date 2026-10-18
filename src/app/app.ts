@@ -1,6 +1,7 @@
 // The app: title → game, saves, the HUD and panels, guidance arrows. Glue between sim, view, ui and audio.
+import { INPUT_CAP } from '../../catalog/producers';
 import * as THREE from 'three';
-import type { SimEvent } from '../sim/world';
+import type { SimEvent, World } from '../sim/world';
 import type { MapDef } from '../sim/map';
 import {
   encodeSaveCode,
@@ -12,23 +13,21 @@ import {
   type SaveFile,
   type Settings,
 } from '../sim/save';
-import {
-  canBuyUpgrade,
-  completion,
-  completionOf,
-  padRemaining,
-  tutorialStep,
-  upgradeVisible,
-  visiblePads,
-} from '../sim/economy';
+import { canBuyUpgrade, completion, completionOf, padRemaining, upgradeVisible, visiblePads } from '../sim/economy';
 import { shelfCap, stationModel } from '../sim/map';
+import { lessonAim, lessonHud, lessonHudTarget, lessonRetry, lessonTarget, type LessonDevice } from '../sim/lessons';
 import { boxCentre } from '../sim/geometry';
-import { MAPS, mapById } from '../../maps';
+import { FIRST_MAP, MAPS, isTutorialMap, mapById } from '../../maps';
+import { lookById } from '../../catalog/looks';
+import { CAP_COLOURS } from '../palette';
 import { Stage } from '../view/stage';
 import { loadAssets } from '../view/assets';
 import { emojiUrl, iconUrl, renderThumbs } from '../view/thumbs';
+import { WardrobeView } from '../view/wardrobe';
+import { renderStaffIcons } from '../view/staff-icons';
 import { moodOf } from '../view/receipt';
 import { Input } from '../input/input';
+import { insets, isTouch, layout, watchLayout } from './phone';
 import { Game } from './game';
 import { EditLayout } from './edit-layout';
 import {
@@ -43,14 +42,17 @@ import {
   writeSave,
   writeSettings,
 } from './storage';
+import { formatMoney } from '../format';
 import { Hud, type EdgeArrow, type EventBanner, type EventCard } from '../ui/hud';
 import { renderUi, type Overlay, type UiActions, type UiState } from '../ui/app';
 import { Sounds } from '../audio/audio';
 import { FEEL } from '../feel';
 import { TUNING } from '../sim/tuning';
+import { objectiveId } from '../../catalog/objectives';
+import { logbookView, objectiveInfo, progressOfSave, type MapProgress } from './logbook';
+import { challengeCard } from './challenge-card';
 
 const AUTOSAVE_SECONDS = 5;
-const HINT_DISTANCE = 2;
 const EDGE_MARGIN = 44;
 const WIPE_SECONDS = 450;
 const TITLE_PAN_SPEED = 0.12;
@@ -58,12 +60,15 @@ const SCENERY_PEOPLE = 4;
 /** How quickly the measured screen tick follows changes (it varies with ProMotion and throttling). */
 const TICK_FOLLOW = 0.05;
 
-const tutorKey = (map: string, step: number): string => `tutor.${map}.${step}`;
+/** Phones play fullscreen. iPhone Safari has no Fullscreen API, and an installed app already is. */
+const canFullscreen = (): boolean =>
+  isTouch &&
+  !!document.documentElement.requestFullscreen &&
+  !matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
 
 const isIos =
   /iP(hone|ad|od)/.test(navigator.userAgent) &&
   !('standalone' in navigator && (navigator as { standalone?: boolean }).standalone);
-const isTouch = matchMedia('(pointer: coarse)').matches;
 
 export class App {
   private stage: Stage;
@@ -73,19 +78,20 @@ export class App {
   private save: SaveFile;
   private settings: Settings;
   private sounds = new Sounds();
+  private wardrobe = new WardrobeView();
+  /** No save existed at load: the Wardrobe opens by itself once the title is ready. */
+  private firstRun: boolean;
   private ui: UiState;
   private uiRoot: HTMLElement;
   private sinceSave = 0;
   private officeDismissed = false;
   private exitDismissed = false;
-  private hintFrom: [number, number] | null = null;
-  /** The tutorial step whose pop-up the Player closed with OK (also kept in storage, for reloads). */
-  private tutorNexted = -1;
   private lostTab = false;
   private titleTime = 0;
   private uiTimer = 0;
   private claimTab: () => void;
   private editing = false;
+  private logbookAge = 0;
   private seenPads = new Set<string>();
   /** Paused game: draw one more frame (something behind the overlay changed). */
   private redraw = true;
@@ -94,27 +100,44 @@ export class App {
   private lastTick = 0;
   private ticks = 0;
   private officeKey = '';
+  /** Lesson index and phase last drawn: the card re-renders when it changes. */
+  private lessonKey = '';
   private layout: EditLayout | null = null;
   /** The Inspector's warning banner, counting down until they step in. */
   private warning: EventBanner | null = null;
 
   constructor() {
     this.stage = new Stage(document.getElementById('scene') as HTMLCanvasElement);
-    this.input = new Input(document.getElementById('joy') as HTMLElement);
+    this.input = new Input(
+      document.getElementById('joy') as HTMLElement,
+      document.getElementById('grab-ring') as HTMLElement,
+    );
     this.hud = new Hud(document.getElementById('hud') as HTMLElement);
     this.hud.visible(false);
     this.uiRoot = document.getElementById('ui') as HTMLElement;
-    const loaded = loadSave(MAPS[0].id);
+    const loaded = loadSave(FIRST_MAP.id);
     this.save = loaded.save;
+    this.firstRun = !!loaded.fresh;
     this.settings = loadSettings();
-    this.stage.viewSize = this.zoom();
+    document.documentElement.style.setProperty('--sprint-ring', String(FEEL.sprintForce));
+    this.stage.viewSize = this.viewZoom();
     this.stage.batterySaver(this.settings.batterySaver);
-    this.hud.scale(this.settings.hudScale);
     this.input.onTap = (x, y, double) => {
       const game = this.game;
       if (!game || this.ui.screen !== 'game' || game.paused || this.editing) return;
+      if (game.world.lesson?.phase === 'card') return;
+      // with a stick, floor taps never walk
+      if (isTouch && this.settings.joystick !== 'off') return;
       const p = this.stage.floorAt(x, y);
       if (p) this.input.tap.start(game.world, p, double);
+    };
+    this.hud.onDelivery = (id) => {
+      const game = this.game;
+      if (!game || this.ui.screen !== 'game' || game.paused || this.editing) return;
+      const tap = this.input.tap;
+      if (tap.car === id) tap.sprint = true;
+      else tap.startCar(game.world, id, false);
+      game.report('deliveryCard');
     };
     this.input.onZoom = (k) => {
       if (this.ui.screen === 'game' && !this.editing) this.setZoom(this.zoom() * k);
@@ -133,28 +156,39 @@ export class App {
       touch: isTouch,
       ios: isIos,
       maps: [],
+      total: 0,
+      logbook: null,
+      logbookTab: 0,
       lastMap: this.save.currentMap,
+      tutorialDone: this.save.tutorialDone,
       settings: this.settings,
       zoom: 0,
       screenHz: 60,
       layout: null,
+      look: lookById(this.save.look).id,
+      cap: this.save.cap in CAP_COLOURS ? this.save.cap : 'orange',
     };
     this.ui.zoom = this.zoom();
+    watchLayout(() => this.applyLayout());
     this.hud.onGear = () => this.openOverlay('pause');
-    this.hud.onTutorNext = () => {
-      if (!this.game) return;
-      this.tutorNexted = tutorialStep(this.game.world);
-      markSeen(tutorKey(this.game.world.map.id, this.tutorNexted));
-    };
-    this.hud.onTutorSkip = () => this.game?.skipTutorial();
+    this.hud.onTrophy = () => this.openLogbook(0);
+    this.hud.onLand = () => this.sounds.sfx('ding');
     this.input.onEscape = () => this.escape();
     this.claimTab = claimTab(() => {
       this.lostTab = true;
       this.ui.card = 'other-tab';
       if (this.game) this.game.paused = true;
+      this.syncAudio();
       this.renderUi();
     });
-    addEventListener('visibilitychange', () => (document.hidden ? this.onHidden() : this.sounds.pause(false)));
+    // browsers allow audio only after a gesture: the first one starts the title's music (its backdrop Map's track)
+    const firstGesture = (): void => {
+      this.sounds.unlock(this.settings);
+      if (this.ui.screen === 'title' && this.game) this.sounds.playMusicOf(this.game.world.map);
+    };
+    addEventListener('pointerdown', firstGesture, { once: true });
+    addEventListener('keydown', firstGesture, { once: true });
+    addEventListener('visibilitychange', () => (document.hidden ? this.onHidden() : this.syncAudio()));
     addEventListener('pagehide', () => this.writeSave());
     this.renderUi();
   }
@@ -168,20 +202,12 @@ export class App {
       document.fonts.load('700 48px Fredoka'),
     ]);
     this.renderThumbs();
-    const map = MAPS[Math.floor(Math.random() * MAPS.length)];
-    this.game = new Game(this.stage, this.input, map, showcaseSave(map), true);
-    this.game.paused = true;
-    this.game.view.cameraOverride = new THREE.Vector3();
-    this.game.view.scenery(SCENERY_PEOPLE);
-    const { world } = this.game;
-    for (const st of world.stations.values()) {
-      if (st.kind === 'shelf') st.items = shelfCap(world.map, st.product);
-      if (st.kind !== 'producer') continue;
-      const type = world.map.producers[st.type];
-      st.plants.fill(0);
-      st.tray = type.trayCap ?? 0;
-      for (const p of type.inputs) st.input[p] = type.inputCap ?? 0;
-    }
+    const showcase = MAPS.filter((m) => !isTutorialMap(m));
+    const map = showcase[Math.floor(Math.random() * showcase.length)];
+    this.game = new Game(this.stage, this.input, map, showcaseSave(map));
+    this.game.view.setLook(this.ui.look, this.ui.cap);
+    this.applyLayout();
+    this.showcase();
     this.game.onFrame = (events, dt) => this.onFrame(events, dt);
     this.layout = new EditLayout(
       this.game,
@@ -196,6 +222,7 @@ export class App {
     this.refreshMaps();
     this.ui.loading = 1;
     this.renderUi();
+    if (this.firstRun) this.openOverlay('wardrobe');
     const loop = (now: number) => {
       requestAnimationFrame(loop);
       const game = this.game;
@@ -255,12 +282,13 @@ export class App {
       }
       for (const p of Object.values(m.producers)) stations.add(p.model);
     }
-    renderThumbs([...items], [...stations], ['employee', 'van', 'player']);
+    renderThumbs([...items], [...stations], ['van', 'player']);
+    renderStaffIcons();
   }
 
   private currentMap(): MapDef {
     const picked = import.meta.env.DEV ? new URLSearchParams(location.search).get('map') : null;
-    return mapById(picked ?? this.save.currentMap) ?? MAPS[0];
+    return mapById(picked ?? this.save.currentMap) ?? FIRST_MAP;
   }
 
   // ---------- title → game
@@ -270,12 +298,59 @@ export class App {
     this.sounds.unlock(this.settings);
     this.ui.wipe = true;
     this.renderUi();
+    if (canFullscreen()) void document.documentElement.requestFullscreen().catch(() => {});
     document.querySelector('.logo')?.classList.add('wobble');
     setTimeout(() => {
       this.openMap(this.currentMap());
       this.ui.screen = 'game';
       this.ui.wipe = false;
+      this.syncAudio();
       this.hud.visible(true);
+      this.renderUi();
+    }, WIPE_SECONDS);
+  }
+
+  /** The title's look: the open Map fully stocked, paused, under the panning camera. */
+  private showcase(): void {
+    const game = this.game;
+    if (!game) return;
+    game.paused = true;
+    game.view.cameraOverride = new THREE.Vector3();
+    game.view.scenery(SCENERY_PEOPLE);
+    const { world } = game;
+    for (const st of world.stations.values()) {
+      if (st.kind === 'shelf') st.items = shelfCap(world.map, st.product);
+      if (st.kind !== 'producer') continue;
+      const type = world.map.producers[st.type];
+      st.plants.fill(0);
+      st.tray = type.trayCap ?? 0;
+      for (const p of type.inputs) st.input[p] = INPUT_CAP;
+    }
+  }
+
+  // ---------- game → title
+
+  /** Saves, then shows the title with the current Map as the stocked backdrop. */
+  private toTitle(): void {
+    const game = this.game;
+    if (!game) return;
+    this.writeSave();
+    this.ui.overlay = null;
+    this.ui.office = false;
+    this.ui.wipe = true;
+    this.syncAudio();
+    this.renderUi();
+    setTimeout(() => {
+      const map = game.world.map;
+      game.open(map, showcaseSave(map));
+      this.input.tap.cancel();
+      this.warning = null;
+      this.hud.reset(0, 0);
+      this.showcase();
+      this.ui.screen = 'title';
+      this.ui.wipe = false;
+      this.hud.visible(false);
+      this.refreshMaps();
       this.renderUi();
     }, WIPE_SECONDS);
   }
@@ -292,17 +367,17 @@ export class App {
     const mapSave: MapSave | null = this.save.maps[map.id] ?? null;
     this.save.currentMap = map.id;
     if (!this.save.visited.includes(map.id)) this.save.visited.push(map.id);
-    game.open(map, mapSave, this.save.tutorialDone);
+    game.open(map, mapSave);
+    this.sounds.playMusicOf(map);
     this.input.tap.cancel();
     game.view.scenery(0);
     game.view.cameraOverride = null;
     game.paused = false;
-    game.manualGrab = !isTouch && this.settings.manualGrab;
-    this.hud.resetMoney(game.world.money);
+    this.applyLayout();
+    this.hud.reset(game.world.money, game.world.score);
     this.officeDismissed = this.exitDismissed = false;
+    this.lessonKey = '';
     this.seenPads.clear();
-    this.hintFrom = game.world.tutorial.done ? null : [game.world.player.x, game.world.player.z];
-    this.hud.showHint(this.hintFrom ? (this.input.firstKind ?? (isTouch ? 'touch' : 'keys')) : null);
     this.writeSave();
   }
 
@@ -315,10 +390,21 @@ export class App {
       this.titleFrame(dt);
       return;
     }
+    // the game runs behind the Logbook, so its numbers refresh a few times a second
+    if (this.ui.overlay === 'logbook' && (this.logbookAge += dt) >= FEEL.score.logbookRefresh) {
+      this.logbookAge = 0;
+      this.fillLogbook();
+      this.renderUi();
+    }
     const w = game.world;
     for (const e of events) this.onEvent(e);
     this.sounds.frame(events, w, (p) => this.onScreen(p), dt);
-    this.hud.update(dt, w.money, completion(w));
+    this.hud.update(dt, w.money, completion(w), w.closed, w.score);
+    document.documentElement.classList.toggle('sprinting', w.player.sprinting);
+    document.documentElement.classList.toggle('joying', this.input.joyHeld);
+    // leaving fullscreen on a phone pauses behind a "Tap to play fullscreen" card
+    if (!this.ui.overlay && !this.editing && !this.layout?.open && canFullscreen() && !document.fullscreenElement)
+      this.openOverlay('fullscreen');
     // Office opens on reaching the desk; after X it stays shut until the Player walks away and back.
     if (!w.atOffice) this.officeDismissed = false;
     const office = w.atOffice && !this.officeDismissed;
@@ -326,23 +412,24 @@ export class App {
       this.ui.office = office;
       this.renderUi();
     }
+    // keep the Player clear of the Office: centred in what the panel leaves, plus the landscape shift right
     const wide = innerWidth > innerHeight;
-    this.stage.nudge.set(office && wide ? -1 / 6 : 0, office && !wide ? 0.25 : 0);
+    const side = layout.land ? FEEL.officeSide : 1 / 3;
+    this.stage.nudge.set(
+      (office && wide ? -side / 2 : 0) + (layout.land ? FEEL.landShift : 0),
+      office && !wide ? FEEL.officeSheet / 2 : 0,
+    );
     if (!w.atExit) this.exitDismissed = false;
-    else if (w.owned.has('exit') && !this.exitDismissed && !this.ui.overlay) {
+    else if (w.owned.has('exit') && !w.lesson && !this.exitDismissed && !this.ui.overlay) {
       this.exitDismissed = true;
       this.openOverlay('maps');
-    }
-    if (this.hintFrom && Math.hypot(w.player.x - this.hintFrom[0], w.player.z - this.hintFrom[1]) > HINT_DISTANCE) {
-      this.hintFrom = null;
-      this.hud.showHint(null);
     }
     this.guidance();
     this.sinceSave += dt;
     if (this.sinceSave > AUTOSAVE_SECONDS && !game.paused) this.writeSave();
     this.uiTimer += dt;
     const officeKey = office
-      ? `${Math.floor(w.money)}|${w.owned.size}|${JSON.stringify(w.levels)}|${w.stockers.map((s) => s.role).join()}`
+      ? `${w.closed}|${Math.ceil(w.closedWait)}|${Math.floor(w.money)}|${w.owned.size}|${JSON.stringify(w.levels)}|${w.stockers.map((s) => s.role).join()}`
       : '';
     if (officeKey !== this.officeKey && this.uiTimer > 0.15) {
       this.officeKey = officeKey;
@@ -366,21 +453,43 @@ export class App {
     if (e.type === 'padBought' || e.type === 'upgradeBought') {
       if (e.type === 'padBought') persistStorage();
       this.writeSave();
-      if (e.type === 'padBought' && e.pad === 'exit') {
+      if (e.type === 'padBought' && e.pad === 'exit' && !isTutorialMap(w.map)) {
         setTimeout(() => this.openOverlay('maps'), 900);
         this.exitDismissed = true;
       }
     }
     if (e.type === 'tutorialDone') {
+      // the closing card was dismissed: the Corner Shop is next in line on the title
       this.save.tutorialDone = true;
-      this.writeSave();
+      this.save.currentMap = FIRST_MAP.id;
+      this.toTitle();
+      // finished: Play again starts from Lesson 0
+      delete this.save.maps[w.map.id];
+      writeSave(this.save);
       if (isIos && !seen('ios-tip')) {
         markSeen('ios-tip');
         this.ui.card = 'ios';
-        this.renderUi();
       }
     }
     if (e.type === 'complete') this.hud.celebrate();
+    if (e.type === 'lessonReplay') this.hud.banner(iconUrl('player'), lessonRetry(w, e.lesson), 'No harm done');
+    if (e.type === 'challengeStarted') {
+      this.hud.stamp('CHALLENGE!');
+      this.sounds.sfx('boing');
+    }
+    if (e.type === 'challengeWon') {
+      this.hud.toast('Challenge won!', `⭐ +${e.score} · ${formatMoney(e.money)}`);
+      this.sounds.sfx('powerup');
+    }
+    if (e.type === 'challengeFailed') this.hud.toast('Time up', '', false);
+    if (e.type === 'objectiveDone') {
+      const def = w.map.objectives.find((o) => objectiveId(o) === e.objective);
+      if (def) {
+        const { icon, name } = objectiveInfo(w.map, def);
+        this.hud.objectiveDone(icon, name, TUNING.score.objective);
+        this.sounds.sfx('powerup');
+      }
+    }
     if (e.type === 'deliveryArrived')
       this.hud.banner(iconUrl('van'), 'Delivery!', 'Bring the order to the car out back');
     if (e.type === 'thiefGrab') this.hud.banner(emojiUrl(THIEF), 'Thief!', 'Sprint and catch them before the door');
@@ -391,7 +500,7 @@ export class App {
         '',
         TUNING.events.inspector.warning * 1000,
       );
-    if (e.type === 'inspection') this.hud.report(...inspectionReport(e));
+    if (e.type === 'inspection') this.hud.report(...inspectionReport(e, w.money < 0));
   }
 
   private onScreen(p: THREE.Vector3): boolean {
@@ -399,7 +508,7 @@ export class App {
     return s.x >= 0 && s.y >= 0 && s.x <= innerWidth && s.y <= innerHeight;
   }
 
-  /** Bouncing tutorial arrow, Office "!", and edge arrows toward off-screen targets. */
+  /** Lesson arrow, Office "!", and edge arrows toward off-screen targets. */
   private guidance(): void {
     const game = this.game;
     if (!game) return;
@@ -411,22 +520,11 @@ export class App {
       const name = def
         ? stationModel(w.map, def)
         : stationModel(w.map, w.map.freeStations[id]?.unlocks ?? { kind: 'office' });
-      return iconUrl(name ?? (def?.kind === 'exit' ? 'van' : 'employee'));
+      return iconUrl(name ?? (def?.kind === 'exit' ? 'van' : `staff-${def?.kind}`));
     };
-    const step = tutorialStep(w);
-    const closed = step === this.tutorNexted || seen(tutorKey(w.map.id, step));
-    const text = step >= 0 && !closed ? w.map.tutorial[step].text : undefined;
-    this.hud.tutorial(text ?? null, step + 1, w.map.tutorial.length);
     view.arrowTarget = null;
-    if (step >= 0) {
-      const s = w.map.tutorial[step];
-      const id = s.pad ?? s.station ?? '';
-      const at = view.anchorOf(id);
-      if (at) {
-        view.arrowTarget = at;
-        targets.push({ at, icon: iconOf(id) });
-      }
-    }
+    view.ringTarget = null;
+    this.lessonGuidance(w, targets, iconOf);
     // edge arrow only for an affordable Pad the Player hasn't seen yet since it was revealed
     for (const id of visiblePads(w)) {
       const at = view.anchorOf(id);
@@ -449,10 +547,20 @@ export class App {
       if (!d) continue;
       const [x, z] = boxCentre(st.box);
       targets.push({ at: new THREE.Vector3(x, 0, z), icon: iconUrl('van') });
-      const got = d.order.reduce((n, l) => n + l.got, 0);
-      const want = d.order.reduce((n, l) => n + l.want, 0);
-      const left = 1 - d.t / d.time;
-      cards.push({ icon: iconUrl('van'), text: `${got}/${want}`, left, red: d.time - d.t <= TUNING.events.honkAt });
+      cards.push({
+        icon: iconUrl('van'),
+        text: '',
+        left: 1 - d.t / d.time,
+        red: d.honked,
+        delivery: {
+          id: st.id,
+          lines: d.order.map((l) => ({
+            icon: iconUrl(w.map.products[l.product]?.model ?? ''),
+            got: l.got,
+            want: l.want,
+          })),
+        },
+      });
     }
     const th = w.thief;
     if (th && !th.caught && (th.state === 'grab' || th.state === 'run')) {
@@ -460,7 +568,10 @@ export class App {
       cards.push({ icon: emojiUrl(THIEF), text: 'Catch!', left: 1, red: true });
     }
     const ins = w.inspector;
-    if (ins?.state === 'warn') this.warning?.line(`Arriving in ${Math.ceil(ins.t)} s! Mop up, then stay close`);
+    if (ins?.state === 'warn')
+      this.warning?.line(
+        `Arriving in ${Math.ceil(ins.t)} s! Mop up, then stay close.${w.badReviewStreak ? ' Ignore them again and the fine can put you in debt.' : ''}`,
+      );
     else if (this.warning) {
       this.warning.close();
       this.warning = null;
@@ -481,6 +592,7 @@ export class App {
       );
     }
     this.hud.setCards(cards);
+    this.hud.setChallenge(challengeCard(w));
     const upgrade = Object.keys(w.map.upgrades).some((id) => upgradeVisible(w, id) && canBuyUpgrade(w, id));
     view.officeAlert = upgrade;
     if (upgrade) {
@@ -507,6 +619,33 @@ export class App {
     this.hud.setArrows(arrows);
   }
 
+  private lessonDevice(): LessonDevice {
+    return { touch: isTouch, joystick: this.settings.joystick };
+  }
+
+  /** The Lesson's pill, arrow and ring on its target (an edge arrow too, when it is a Station). */
+  private lessonGuidance(
+    w: World,
+    targets: { at: THREE.Vector3; icon: string }[],
+    iconOf: (id: string) => string,
+  ): void {
+    const view = this.game?.view;
+    if (!view) return;
+    this.hud.lesson(lessonHud(w, this.lessonDevice()));
+    this.hud.pointAt(lessonHudTarget(w));
+    const key = w.lesson ? `${w.lesson.index}|${w.lesson.phase}` : '';
+    if (key !== this.lessonKey) {
+      this.lessonKey = key;
+      this.renderUi();
+    }
+    const aim = lessonAim(w);
+    if (!aim) return;
+    const at = new THREE.Vector3(aim[0], 0, aim[1]);
+    view.arrowTarget = view.ringTarget = at;
+    const target = lessonTarget(w);
+    if (typeof target === 'string') targets.push({ at, icon: iconOf(target) });
+  }
+
   // ---------- saves
 
   private writeSave(): void {
@@ -514,26 +653,39 @@ export class App {
     const game = this.game;
     if (!game || this.lostTab || this.editing || this.ui.screen !== 'game') return;
     this.save.maps[game.world.map.id] = snapshot(game.world);
-    this.save.tutorialStep = tutorialStep(game.world);
     writeSave(this.save);
     this.claimTab();
   }
 
   private onHidden(): void {
     this.writeSave();
-    this.sounds.pause(true);
-    if (this.ui.screen === 'game' && !this.ui.overlay && !this.lostTab) this.openOverlay('pause');
+    if (this.ui.screen === 'game' && (!this.ui.overlay || this.ui.overlay === 'logbook') && !this.lostTab)
+      this.openOverlay('pause');
+    this.syncAudio();
+  }
+
+  /** The one rule for audio: silent while the tab is hidden or taken over, or behind an in-game overlay that pauses the
+   *  game. The Logbook keeps the game running and Settings keeps the music (so its sliders can be heard); the title
+   *  plays on under any overlay. */
+  private syncAudio(): void {
+    const o = this.ui.overlay;
+    const behind = this.ui.screen === 'game' && !!o && o !== 'logbook' && o !== 'settings';
+    this.sounds.pause(document.hidden || this.lostTab || behind);
   }
 
   // ---------- overlays
 
   private openOverlay(o: Overlay | null): void {
+    if (o === 'logbook') this.game?.report('logbookOpen');
+    else if (this.ui.overlay === 'logbook') this.game?.report('logbookClosed');
     this.ui.overlay = o;
     if (o === 'maps') this.refreshMaps();
-    if (this.game && this.ui.screen === 'game') this.game.paused = !!o || this.lostTab;
+    // the Logbook alone leaves the game running
+    const pause = !!o && o !== 'logbook';
+    if (this.game && this.ui.screen === 'game') this.game.paused = pause || this.lostTab;
     this.ui.screenHz = Math.round(1000 / this.tickMs);
     this.redraw = true;
-    this.sounds.pause(!!o);
+    this.syncAudio();
     this.renderUi();
   }
 
@@ -542,21 +694,55 @@ export class App {
     const live = this.ui.screen === 'game' ? this.game?.world : undefined;
     const exitBought = (id: string) =>
       id === live?.map.id ? live.owned.has('exit') : !!this.save.maps[id]?.owned.includes('exit');
-    this.ui.maps = MAPS.map((map, i) => ({
-      map,
-      visited: this.save.visited.includes(map.id) || (i > 0 && exitBought(MAPS[i - 1].id)),
-      completion:
-        map.id === live?.map.id
-          ? completion(live)
-          : completionOf(map, new Set(this.save.maps[map.id]?.owned ?? []), this.save.maps[map.id]?.levels ?? {}),
-    }));
+    this.ui.maps = MAPS.map((map, i) => {
+      const before = MAPS.slice(0, i)
+        .filter((m) => !isTutorialMap(m))
+        .pop();
+      return {
+        map,
+        tutorial: isTutorialMap(map),
+        visited: isTutorialMap(map) || !before || this.save.visited.includes(map.id) || exitBought(before.id),
+        score: map.id === live?.map.id ? live.score : (this.save.maps[map.id]?.score ?? 0),
+        completion:
+          map.id === live?.map.id
+            ? completion(live)
+            : completionOf(
+                map,
+                new Set(this.save.maps[map.id]?.owned ?? []),
+                this.save.maps[map.id]?.levels ?? {},
+                new Set(this.save.maps[map.id]?.objectives ?? []),
+              ),
+      };
+    });
+    this.ui.maps.forEach((m) => {
+      if (m.tutorial || !m.visited) m.score = null;
+    });
+    this.ui.total = this.ui.maps.reduce((t, m) => t + (m.score ?? 0), 0);
+    this.ui.tutorialDone = this.save.tutorialDone;
     this.ui.lastMap = this.save.currentMap;
   }
 
+  /** The Logbook for the open Map (the title: the last one played), on a tab; the game keeps running behind it. */
+  private openLogbook(tab: number): void {
+    this.fillLogbook();
+    this.ui.logbookTab = tab;
+    this.openOverlay('logbook');
+  }
+
+  private fillLogbook(): void {
+    const live = this.ui.screen === 'game' ? this.game?.world : undefined;
+    const map = live?.map ?? mapById(this.save.currentMap) ?? FIRST_MAP;
+    const progress = (m: MapDef): MapProgress => (m === live?.map ? live : progressOfSave(this.save.maps[m.id]));
+    // the Tutorial Map keeps no Score, so its Logbook is about this run only
+    const all = isTutorialMap(map) ? [progress(map)] : MAPS.filter((m) => !isTutorialMap(m)).map(progress);
+    this.ui.logbook = logbookView(map, progress(map), all);
+  }
+
   private escape(): void {
-    if (this.ui.screen !== 'game') return;
+    if (this.ui.screen !== 'game' || this.ui.overlay === 'fullscreen') return;
     if (this.layout?.open) return this.layout.escape();
-    if (this.ui.overlay) this.openOverlay(this.ui.overlay === 'pause' ? null : 'pause');
+    if (this.ui.overlay)
+      this.openOverlay(this.ui.overlay === 'pause' || this.ui.overlay === 'logbook' ? null : 'pause');
     else if (this.ui.office) {
       this.officeDismissed = true;
     } else this.openOverlay('pause');
@@ -566,11 +752,14 @@ export class App {
     play: (id) => this.play(id),
     close: () => this.openOverlay(null),
     open: (o) => this.openOverlay(o),
+    openLogbook: (tab) => this.openLogbook(tab),
+    toTitle: () => this.toTitle(),
     closeOffice: () => {
       this.officeDismissed = true;
       this.ui.office = false;
       this.renderUi();
     },
+    setClosed: (closed) => this.game?.setClosed(closed),
     buyUpgrade: (id) => this.game?.buyUpgrade(id),
     editLayout: () => {
       this.actions.closeOffice();
@@ -582,6 +771,10 @@ export class App {
     layoutDone: () => this.layout?.done(),
     assign: (stocker, role) => this.game?.assign(stocker, role),
     setSetting: (key, value) => this.setSetting(key, value),
+    playFullscreen: () => {
+      void document.documentElement.requestFullscreen().catch(() => {});
+      this.openOverlay(null);
+    },
     fullscreen: () => {
       if (document.fullscreenElement) void document.exitFullscreen();
       else void document.documentElement.requestFullscreen?.();
@@ -602,12 +795,14 @@ export class App {
         return `That code didn't work: ${(e as Error).message}`;
       }
       writeSave(this.save);
+      this.applyLook();
       this.reopen();
       this.openOverlay(null);
       return null;
     },
     resetProgress: () => {
-      this.save = wipeSave(MAPS[0].id);
+      this.save = wipeSave(FIRST_MAP.id);
+      this.applyLook();
       this.reopen();
       this.openOverlay(null);
     },
@@ -620,13 +815,32 @@ export class App {
       }
       this.openOverlay(null);
     },
+    lessonNext: () => {
+      this.input.tap.cancel();
+      this.game?.lessonNext();
+    },
+    skipLessons: () => this.toTitle(),
     dismissCard: () => {
       this.ui.card = null;
       this.renderUi();
     },
     icon: (name) => iconUrl(name),
     click: () => this.sounds.sfx('click'),
+    wardrobe: this.wardrobe,
+    selectLook: (look, cap) => {
+      this.save.look = look;
+      this.save.cap = cap;
+      writeSave(this.save);
+      this.applyLook();
+    },
   };
+
+  /** Shows the saved look and cap on the Player (an unknown id or colour falls back to the defaults). */
+  private applyLook(): void {
+    this.ui.look = lookById(this.save.look).id;
+    this.ui.cap = this.save.cap in CAP_COLOURS ? this.save.cap : 'orange';
+    this.game?.view.setLook(this.ui.look, this.ui.cap);
+  }
 
   private setSetting<K extends keyof Settings>(key: K, value: Settings[K]): void {
     this.settings = { ...this.settings, [key]: value };
@@ -634,17 +848,40 @@ export class App {
     writeSettings(this.settings);
     this.sounds.apply(this.settings);
     this.stage.batterySaver(this.settings.batterySaver);
-    this.hud.scale(this.settings.hudScale);
     this.ui.zoom = this.zoom();
-    this.stage.zoomTo(this.ui.zoom);
-    if (this.game) this.game.manualGrab = !isTouch && this.settings.manualGrab;
-    this.redraw = true;
+    this.applyLayout();
     this.renderUi();
   }
 
-  /** Wanted zoom: the saved one, or the device default. */
+  /** Everything that follows the settings and the window's shape: HUD size, view, Pads. */
+  private applyLayout(): void {
+    this.hud.scale(this.settings.hudScale * (layout.land ? FEEL.landHudScale : 1));
+    this.stage.zoomTo(this.viewZoom());
+    if (this.game) {
+      this.game.view.padScale = layout.land ? FEEL.landPadScale : 1;
+      this.game.manualGrab = this.settings.manualGrab && (!isTouch || layout.land);
+    }
+    const root = document.documentElement;
+    root.classList.toggle('joy-off', isTouch && this.settings.joystick === 'off');
+    root.classList.toggle('joy-free', layout.land && this.settings.joystick === 'free');
+    root.style.setProperty('--joy-zone', String(FEEL.joyZone));
+    root.style.setProperty('--joy-size', `${FEEL.joyLandscape}px`);
+    root.style.setProperty('--joy-left', `${FEEL.joyRestLeft}px`);
+    root.style.setProperty('--joy-bottom', `${FEEL.joyRestBottom}px`);
+    root.style.setProperty('--grab-ring', `${FEEL.grabRing}px`);
+    this.input.holdGrab = layout.land && this.settings.manualGrab;
+    this.input.setJoystick(this.settings.joystick, layout.land, insets());
+    this.redraw = true;
+  }
+
+  /** Wanted zoom (the Settings slider): the saved one, or the device default. */
   private zoom(): number {
     return this.settings.zoom ?? (isTouch ? FEEL.zoomPhone : FEEL.zoomDesktop);
+  }
+
+  /** Metres across the short side in effect: landscape phones show landView across the height at the default. */
+  private viewZoom(): number {
+    return layout.land ? (this.zoom() * FEEL.landView) / FEEL.zoomPhone : this.zoom();
   }
 
   private setZoom(metres: number): void {
@@ -652,6 +889,7 @@ export class App {
   }
 
   private renderUi(): void {
+    document.documentElement.classList.toggle('on-title', this.ui.screen !== 'game');
     renderUi(this.uiRoot, this.ui, this.actions, this.ui.screen === 'game' ? (this.game?.world ?? null) : null);
   }
 }
@@ -660,7 +898,7 @@ const THIEF = '🦹';
 const INSPECTOR = '🧐';
 
 /** The Inspector's report card: title, line, and whether it's good news. */
-function inspectionReport(e: Extract<SimEvent, { type: 'inspection' }>): [string, string, boolean] {
+function inspectionReport(e: Extract<SimEvent, { type: 'inspection' }>, debt: boolean): [string, string, boolean] {
   const dirt = [
     e.messes ? `${e.messes} Mess${e.messes > 1 ? 'es' : ''}` : '',
     e.loose ? `${e.loose} Loose Item${e.loose > 1 ? 's' : ''}` : '',
@@ -668,7 +906,12 @@ function inspectionReport(e: Extract<SimEvent, { type: 'inspection' }>): [string
     .filter(Boolean)
     .join(', ');
   const money = `${e.amount < 0 ? '-' : '+'}$${Math.abs(e.amount)}`;
-  if (e.review) return ['BAD REVIEW', `${dirt ? `${dirt}, ` : ''}left alone: ${money}`, false];
+  if (e.review)
+    return [
+      e.streak > 1 ? `BAD REVIEW ×${e.streak}` : 'BAD REVIEW',
+      `${dirt ? `${dirt}, ` : ''}left alone: ${money}${debt ? ' · in debt' : ''}`,
+      false,
+    ];
   if (!dirt) return ['Spotless! ★★★', money, true];
   return ['Dirty store', `${dirt}: ${money}`, false];
 }

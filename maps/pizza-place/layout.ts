@@ -25,7 +25,7 @@ export const layout: MapLayout = {
       rot: 0,
     },
     register: {
-      box: [10, 8.5, 2.6, 1],
+      box: [10, 8.6, 2.6, 1],
       rot: 0,
     },
     trash: {
@@ -33,87 +33,87 @@ export const layout: MapLayout = {
       rot: 0,
     },
     tomato_shelf: {
-      box: [4.8, 12, 3, 1],
-      rot: 0,
+      box: [4.5, 20.5, 3, 1],
+      rot: 180,
     },
     sauce_shelf: {
-      box: [13, 12, 3, 1],
+      box: [13.75, 14.15, 3, 1],
       rot: 0,
     },
     flour_shelf: {
-      box: [17.5, 12, 3, 1],
+      box: [13.65, 18.65, 3, 1],
       rot: 0,
     },
     tomato_shelf_2: {
-      box: [4.8, 15.5, 3, 1],
+      box: [4.5, 16.9, 3, 1],
       rot: 0,
     },
     dough_shelf: {
-      box: [9.3, 15.5, 3, 1],
+      box: [18.65, 18.45, 3, 1],
       rot: 0,
     },
     sauce_shelf_2: {
-      box: [13.8, 19, 3, 1],
+      box: [7.6, 14.25, 3, 1],
       rot: 0,
     },
     flour_shelf_2: {
-      box: [13.8, 15.5, 3, 1],
+      box: [9.15, 18.6, 3, 1],
       rot: 0,
     },
     dough_shelf_2: {
-      box: [9.3, 19, 3, 1],
+      box: [18.5, 15.5, 3, 1],
       rot: 0,
     },
     office: {
-      box: [4.4, 18.5, 1, 1.5],
+      box: [4.4, 10.5, 1, 1.5],
       rot: 90,
     },
     mop_stand: {
-      box: [6.8, 21.5, 1, 1],
-      rot: 0,
+      box: [4.35, 13.7, 1, 1],
+      rot: 270,
     },
     stocker_1: {
-      box: [18.3, 18.2, 1, 1],
+      box: [20.5, 10, 1, 1],
       rot: 0,
     },
     stocker_2: {
-      box: [18.3, 20.7, 1, 1],
+      box: [15, 10, 1, 1],
       rot: 0,
     },
     area_2: {
-      box: [20.8, 21.4, 1, 1],
+      box: [18, 10, 1, 1],
       rot: 0,
     },
     tomato_bed: {
-      box: [5, 24.5, 4, 2.4],
+      box: [4.6, 29.4, 4, 2.4],
       rot: 0,
     },
     tomato_bed_2: {
-      box: [10.5, 24.5, 4, 2.4],
+      box: [4.6, 34, 4, 2.4],
       rot: 0,
     },
     sauce_pot: {
-      box: [19.7, 24.2, 2.2, 3.3],
+      box: [4.6, 24.3, 2.2, 3.3],
       rot: 0,
     },
     wheat_field: {
-      box: [5, 29.8, 3, 3],
+      box: [10.1, 29.4, 3, 3],
       rot: 0,
     },
     wheat_field_2: {
-      box: [9.5, 29.8, 3, 3],
+      box: [10.1, 34, 3, 3],
       rot: 0,
     },
     mill: {
-      box: [14, 29.8, 2.4, 3.5],
+      box: [13.2, 24.3, 2.4, 3.5],
       rot: 0,
     },
     cow_pen: {
-      box: [17.9, 29.8, 3, 4.1],
+      box: [14.6, 29.4, 3, 4.1],
       rot: 0,
     },
     dough_mixer: {
-      box: [5, 34.6, 2.2, 3.3],
+      box: [18.8, 24.3, 2.2, 3.3],
       rot: 0,
     },
     area_3: {
@@ -133,59 +133,59 @@ export const layout: MapLayout = {
       rot: 0,
     },
     pizza_shelf: {
-      box: [33.5, 12, 3, 1],
+      box: [32.55, 15.65, 3, 1],
       rot: 0,
     },
     olive_shelf: {
-      box: [43, 12, 3, 1],
+      box: [30.05, 18.8, 3, 1],
       rot: 0,
     },
     veggie_pizza_shelf: {
-      box: [47.5, 12, 3, 1],
-      rot: 0,
-    },
-    pizza_shelf_2: {
-      box: [33.5, 15.5, 3, 1],
-      rot: 0,
-    },
-    olive_shelf_2: {
-      box: [43, 15.5, 3, 1],
-      rot: 0,
-    },
-    veggie_pizza_shelf_2: {
       box: [47.5, 15.5, 3, 1],
       rot: 0,
     },
+    pizza_shelf_2: {
+      box: [37.95, 15.55, 3, 1],
+      rot: 0,
+    },
+    olive_shelf_2: {
+      box: [41.5, 19, 3, 1],
+      rot: 0,
+    },
+    veggie_pizza_shelf_2: {
+      box: [43, 15.5, 3, 1],
+      rot: 0,
+    },
     pizza_oven: {
-      box: [38, 18.4, 2.8, 3.5],
+      box: [38.8, 24.3, 2.8, 3.5],
       rot: 0,
     },
     veggie_pizza_oven: {
-      box: [42.3, 18.4, 2.8, 3.5],
+      box: [43.1, 24.3, 2.8, 3.5],
       rot: 0,
     },
     cleaner: {
-      box: [34.5, 20.8, 1, 1],
+      box: [46.35, 21, 1, 1],
       rot: 0,
     },
     stocker_3: {
-      box: [46.6, 19.5, 1, 1],
+      box: [49.35, 20.95, 1, 1],
       rot: 0,
     },
     stocker_4: {
-      box: [49.1, 19.5, 1, 1],
+      box: [49.3, 18.45, 1, 1],
       rot: 0,
     },
     cheese_press: {
-      box: [32.8, 25, 2.2, 3.3],
+      box: [33.6, 24.3, 2.2, 3.3],
       rot: 0,
     },
     cow_2: {
-      box: [39.5, 24.6, 3, 4.1],
+      box: [34.2, 29.4, 3, 4.1],
       rot: 0,
     },
     olive_tree: {
-      box: [44.5, 25, 2.5, 2.5],
+      box: [43.1, 29.4, 2.5, 2.5],
       rot: 0,
     },
     cashier_3: {
@@ -197,47 +197,47 @@ export const layout: MapLayout = {
       rot: 0,
     },
     pizza_shelf_3: {
-      box: [23.5, 12, 3, 1],
+      box: [23, 15.5, 3, 1],
       rot: 0,
     },
     veggie_pizza_shelf_3: {
-      box: [23.5, 15, 3, 1],
+      box: [27.7, 15.65, 3, 1],
       rot: 0,
     },
     olive_tree_2: {
-      box: [24, 24.6, 2.5, 2.5],
+      box: [43.1, 40.4, 2.5, 2.5],
       rot: 0,
     },
     cheese_press_2: {
-      box: [28.5, 25, 2.2, 3.3],
+      box: [33.6, 40.4, 2.2, 3.3],
       rot: 0,
     },
     tomato_bed_3: {
-      box: [5, 40.6, 4, 2.4],
+      box: [21.4, 40.4, 4, 2.4],
       rot: 0,
     },
     wheat_field_3: {
-      box: [10.5, 40.6, 3, 3],
+      box: [27, 40.4, 3, 3],
       rot: 0,
     },
     cow_3: {
-      box: [15, 40.6, 3, 4.1],
+      box: [25.8, 34.5, 3, 4.1],
       rot: 0,
     },
     dough_mixer_2: {
-      box: [19.5, 40.6, 2.2, 3.3],
+      box: [22.5, 29.4, 2.2, 3.3],
       rot: 0,
     },
     sauce_pot_2: {
-      box: [23.2, 40.6, 2.2, 3.3],
+      box: [26.2, 29.4, 2.2, 3.3],
       rot: 0,
     },
     pizza_oven_2: {
-      box: [26.9, 40.6, 2.8, 3.5],
+      box: [22.9, 24.3, 2.8, 3.5],
       rot: 0,
     },
     veggie_pizza_oven_2: {
-      box: [31.2, 40.6, 2.8, 3.5],
+      box: [29.3, 24.3, 2.8, 3.5],
       rot: 0,
     },
     trash_3: {
@@ -262,6 +262,26 @@ export const layout: MapLayout = {
     },
     exit: {
       box: [49.5, 47, 1, 1],
+      rot: 0,
+    },
+    dough_mixer_3: {
+      box: [29.9, 29.4, 2.2, 3.3],
+      rot: 0,
+    },
+    mill_2: {
+      box: [21.9, 34.5, 2.4, 3.5],
+      rot: 0,
+    },
+    mill_3: {
+      box: [30.3, 34.5, 2.4, 3.5],
+      rot: 0,
+    },
+    stocker_9: {
+      box: [34.5, 47, 1, 1],
+      rot: 0,
+    },
+    stocker_10: {
+      box: [32, 47, 1, 1],
       rot: 0,
     },
   },
@@ -302,10 +322,6 @@ export const layout: MapLayout = {
       kind: 'low',
       box: [4.3, 50.7, 47.4, 0.3],
     },
-    wall_hall1: {
-      kind: 'low',
-      box: [4.3, 22.7, 11.7, 0.3],
-    },
     wall_hall0: {
       kind: 'low',
       box: [18.3, 22.7, 3.7, 0.3],
@@ -324,7 +340,19 @@ export const layout: MapLayout = {
     },
     wall_hall5: {
       kind: 'low',
-      box: [38, 22.7, 13.7, 0.3],
+      box: [38, 22.7, 8.3, 0.3],
+    },
+    wall_hall1: {
+      kind: 'low',
+      box: [4.3, 22.7, 3.3, 0.3],
+    },
+    wall_hall1b: {
+      kind: 'low',
+      box: [9.9, 22.7, 6.1, 0.3],
+    },
+    wall_1: {
+      kind: 'low',
+      box: [48.8, 22.7, 2.8, 0.3],
     },
   },
   doors: {
@@ -352,11 +380,19 @@ export const layout: MapLayout = {
       kind: 'back',
       box: [26.5, 22.7, 2, 0.3],
     },
+    door_back_4: {
+      kind: 'back',
+      box: [7.6, 22.7, 2.3, 0.3],
+    },
+    door_back_5: {
+      kind: 'back',
+      box: [46.3, 22.7, 2.5, 0.3],
+    },
   },
   props: {
     prop_plant_office: {
       model: 'plant',
-      box: [4.5, 20.4, 0.6, 0.6],
+      box: [4.5, 9.6, 0.6, 0.6],
       rot: 0,
       solid: true,
       area: 'area_1',
@@ -369,7 +405,7 @@ export const layout: MapLayout = {
     },
     prop_tree_2: {
       model: 'tree-oak',
-      box: [30, 52.5, 2, 2],
+      box: [30.05, 52.4, 2, 2],
       rot: 0,
       solid: true,
     },
@@ -415,6 +451,34 @@ export const layout: MapLayout = {
       solid: false,
       party: true,
     },
+    prop_tree_oak_1: {
+      model: 'tree-oak',
+      box: [14.85, 47.5, 2, 2],
+      rot: 0,
+      solid: true,
+      area: 'area_3',
+    },
+    prop_flower_1: {
+      model: 'flower',
+      box: [26.9, 47.25, 1, 1],
+      rot: 0,
+      solid: false,
+      area: 'area_3',
+    },
+    prop_flower_2: {
+      model: 'flower',
+      box: [20, 44.9, 1, 1],
+      rot: 0,
+      solid: false,
+      area: 'area_3',
+    },
+    prop_flower_3: {
+      model: 'flower',
+      box: [10.75, 47.15, 1, 1],
+      rot: 0,
+      solid: false,
+      area: 'area_3',
+    },
   },
   floors: [[4, 7, 48, 16]],
   street: [
@@ -449,5 +513,5 @@ export const layout: MapLayout = {
     },
   ],
   van: [46, 55.6, 3, 1.6],
-  playerStart: [12, 18],
+  playerStart: [12.6, 16.2],
 };

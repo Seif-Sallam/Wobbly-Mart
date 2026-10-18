@@ -4,6 +4,7 @@ import { DT } from './world';
 import { workMultiplier } from './economy';
 import { TUNING } from './tuning';
 import { shelfCap } from './map';
+import { INPUT_CAP } from '../../catalog/producers';
 import { orderLine } from './events';
 import { addMess } from './cleaning';
 import { walkable } from './walk';
@@ -15,7 +16,7 @@ export function accepts(w: World, st: Station, product: string): boolean {
   if (st.kind === 'pickup') return !!orderLine(st, product);
   if (st.kind !== 'producer') return false;
   const type = w.map.producers[st.type];
-  return type.inputs.includes(product) && (st.input[product] ?? 0) < (type.inputCap ?? 0);
+  return type.inputs.includes(product) && (st.input[product] ?? 0) < INPUT_CAP;
 }
 
 /** A Producer's Tray has room for its own output, counting the batch in the works (a Stocker putting leftovers back). */
@@ -61,10 +62,12 @@ export interface TransferRules {
   pickLimit?: number;
   /** Drop onto the Producer's Tray instead of into its inputs. */
   toTray?: boolean;
+  /** At a Producer, empty its Tray onto the Stack (while there is room) before any drop-off. */
+  takeFirst?: boolean;
 }
 
 /**
- * One tick of transfers between `c` and the Station it stands at. Drop-offs come first and speed up per Item;
+ * One tick of transfers between `c` and the Station it stands at. Drop-offs come first (unless `takeFirst` and the Station is a Producer) and speed up per Item;
  * pick-ups slow down as the Stack fills. Returns what moved, or `waiting` while a drop-off is due.
  */
 export function transferTick(
@@ -82,6 +85,11 @@ export function transferTick(
   }
   if (!st) return {};
   c.timer += DT;
+  if (rules.takeFirst && st.kind === 'producer' && c.stack.length < (rules.pickLimit ?? rules.cap)) {
+    const picked = pickFrom(w, c, st, who, rules);
+    if (picked) return { picked };
+    if (available(w, st)) return {}; // the next pick is not due yet: no drop-offs in between
+  }
   for (let i = c.stack.length - 1; i >= 0; i--) {
     const product = c.stack[i];
     const fits = rules.toTray ? trayRoom(w, st, product) : accepts(w, st, product);
@@ -98,21 +106,27 @@ export function transferTick(
     }
     return { dropped: product };
   }
+  const picked = pickFrom(w, c, st, who, rules);
+  return picked ? { picked } : {};
+}
+
+/** Picks one Item off a Producer's Tray if allowed, there is Stack room and the pick pacing is up. */
+function pickFrom(w: World, c: Carrier, st: Station, who: Ref, rules: TransferRules): string | undefined {
   const product = rules.pick(st) ? available(w, st) : null;
   if (!product || st.kind !== 'producer' || c.stack.length >= (rules.pickLimit ?? rules.cap)) {
     if (product && c.stack.length >= rules.cap && !c.fullWarned) {
       c.fullWarned = true;
       if ('agent' in who && who.agent === 'player') w.events.push({ type: 'stackFull' });
     }
-    return {};
+    return undefined;
   }
   const [slow, full] = TUNING.pickInterval;
-  if (c.timer < slow + (full - slow) * (c.stack.length / rules.cap)) return {};
+  if (c.timer < slow + (full - slow) * (c.stack.length / rules.cap)) return undefined;
   take(w, st);
   c.stack.push(product);
   c.timer = 0;
   w.events.push({ type: 'transfer', product, from: { station: st.id }, to: who });
-  return { picked: product };
+  return product;
 }
 
 /**
@@ -132,6 +146,13 @@ export function tipDrops(
   const k = (n - o.safe) / Math.max(1, o.cap - o.safe);
   const jolt = 1 + T.joltBoost * Math.min(1, o.jolt);
   if (nextRandom(w) >= T.maxRate * o.share * jolt * k ** T.curve * DT) return;
+  shed(w, c, who, false);
+}
+
+/** Drops the top Item behind the carrier as a Loose Item (always when `loose`, else it may break into a Mess). */
+export function shed(w: World, c: Carrier & Mover, who: Ref, loose: boolean): void {
+  const T = TUNING.tip;
+  const n = c.stack.length;
   const dir = Math.hypot(c.vx, c.vz) || 1;
   const side = (nextRandom(w) - 0.5) * T.dropSide;
   // lands where someone can stand, so its Mess can be mopped
@@ -145,7 +166,7 @@ export function tipDrops(
   c.dropCooldown = T.cooldown;
   const id = w.nextId++;
   const breakChance = w.map.products[product]?.breakChance ?? 0;
-  if (breakChance > 0 && nextRandom(w) < breakChance) {
+  if (!loose && breakChance > 0 && nextRandom(w) < breakChance) {
     addMess(w, id, x, z, [product], -1);
     return;
   }

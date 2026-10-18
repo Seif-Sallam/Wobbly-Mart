@@ -33,6 +33,23 @@ body {
   inset: 0;
   z-index: 1;
 }
+/* the sprint threshold: a dashed ring around the stick, solid orange with a glow while sprinting */
+#joy .back::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--sprint-ring) * 100%);
+  height: calc(var(--sprint-ring) * 100%);
+  transform: translate(-50%, -50%);
+  border: 3px dashed var(--ink);
+  border-radius: 50%;
+  pointer-events: none;
+}
+html.sprinting #joy .back::after {
+  border: 4px solid var(--orange);
+  box-shadow: 0 0 12px var(--orange);
+}
 #hud {
   position: fixed;
   inset: 0;
@@ -135,6 +152,16 @@ body {
   align-items: center;
   justify-content: space-between;
 }
+.hud-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hud-extra {
+  display: flex;
+  gap: 8px;
+}
+.hud-extra > *,
 .hud-top .gear {
   pointer-events: auto;
 }
@@ -181,6 +208,26 @@ body {
   width: 38px;
   height: 26px;
   transform: rotate(-8deg);
+}
+.money.debt span {
+  color: var(--angry);
+}
+.closed-badge {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 4px;
+  padding: 2px 12px;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  background: var(--angry);
+  color: var(--cream);
+  font: 700 18px Fredoka;
+  font-style: normal;
+}
+.closed-badge.gone {
+  display: none;
 }
 .money.bump {
   animation: bump 0.25s;
@@ -325,30 +372,79 @@ body {
 .event-card.red b {
   background: var(--angry);
 }
-
-.tutor {
-  position: absolute;
-  left: 50%;
-  top: calc(max(10px, env(safe-area-inset-top)) + 64px);
-  transform: translateX(-50%);
-  width: min(300px, calc(100% - 32px));
-  flex-direction: column;
-  align-items: stretch;
-  gap: 4px;
-  padding: 6px 10px;
-  border-radius: 14px;
-  font-size: 14px;
+.event-card.delivery {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 2px 6px;
+  padding: 4px 10px 6px 6px;
+  border-radius: 20px;
+  cursor: pointer;
   pointer-events: auto;
-  transition: opacity 0.3s;
+  touch-action: manipulation;
+  user-select: none;
 }
-.tutor.gone {
-  opacity: 0;
-  pointer-events: none;
+.event-card.delivery > img {
+  grid-row: 1;
 }
-.tutor.pop {
-  animation: tutor-pop 0.35s both;
+.event-card.delivery > span {
+  display: flex;
+  gap: 8px;
 }
-@keyframes tutor-pop {
+.event-card.delivery > i {
+  grid-column: 1 / -1;
+  width: auto;
+}
+.event-card.delivery em {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-style: normal;
+}
+.event-card.delivery em small {
+  font-size: 14px;
+  line-height: 1;
+}
+.event-card.delivery em.full img,
+.event-card.delivery em.full small {
+  opacity: 0.45;
+}
+.event-card.delivery em.full::after {
+  content: '✓';
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  color: var(--money);
+  -webkit-text-stroke: 1px var(--ink);
+  font-size: 18px;
+}
+.event-card.delivery em.pop {
+  animation: card-pop 0.35s;
+}
+.event-card.delivery.red {
+  border-color: var(--angry);
+  animation: card-shake 0.4s infinite;
+}
+@keyframes card-pop {
+  0% {
+    transform: scale(0.7);
+  }
+  60% {
+    transform: scale(1.3);
+  }
+}
+@keyframes card-shake {
+  25% {
+    transform: rotate(-2deg);
+  }
+  75% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes lesson-pop {
   0% {
     transform: translateX(-50%) scale(0.8);
   }
@@ -356,37 +452,97 @@ body {
     transform: translateX(-50%) scale(1.05, 0.95);
   }
 }
-.tutor small {
+/* bottom centre: the top centre belongs to the Challenge ring */
+.lesson {
+  position: absolute;
+  left: 50%;
+  bottom: calc(max(14px, env(safe-area-inset-bottom)) + 12px);
+  transform: translateX(-50%);
+  width: min(300px, calc(100% - 32px));
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding: 6px 12px;
+  border-radius: 14px;
+  font-size: 15px;
+  text-align: center;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.lesson.gone {
+  opacity: 0;
+}
+.lesson.pop {
+  animation: lesson-pop 0.35s both;
+}
+.lesson small {
   font-size: 11px;
   opacity: 0.7;
 }
-.tutor p {
+.lesson p {
   margin: 0;
   line-height: 1.3;
 }
-.tutor div {
-  display: flex;
-  justify-content: flex-end;
+.lesson.nice p {
+  color: var(--money);
+}
+.lesson.nice small {
+  font-size: 22px;
+  opacity: 1;
+  color: var(--money);
+}
+.lesson-point {
+  position: relative;
+  animation: point-pulse 0.9s infinite;
+}
+.lesson-point::before {
+  content: '👉';
+  position: absolute;
+  right: calc(100% + 4px);
+  top: 50%;
+  font-size: 30px;
+  line-height: 1;
+  --nudge: 8px;
+  transform: translateY(-50%);
+  animation: point-nudge 0.9s infinite;
+}
+.event-card.lesson-point::before {
+  content: '👈';
+  right: auto;
+  left: calc(100% + 4px);
+  --nudge: -8px;
+}
+@keyframes point-pulse {
+  50% {
+    box-shadow:
+      0 0 0 6px var(--pad),
+      0 4px 0 var(--ink);
+  }
+}
+@keyframes point-nudge {
+  50% {
+    transform: translate(var(--nudge), -50%);
+  }
+}
+.lesson-modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  pointer-events: none;
+}
+.lesson-card {
+  pointer-events: auto;
+  width: min(420px, 100%);
+  max-height: 90vh;
+  overflow: auto;
   gap: 8px;
 }
-.tutor .btn {
-  font-size: 12px;
-  padding: 3px 9px;
-  border-radius: 10px;
+.lesson-card .btn {
+  align-self: center;
 }
 
-.hint {
-  position: absolute;
-  left: 50%;
-  bottom: 18%;
-  transform: translateX(-50%);
-  transition: opacity 0.6s;
-  text-align: center;
-}
-.hint.gone {
-  opacity: 0;
-}
-.hint kbd,
 .controls kbd {
   display: inline-block;
   min-width: 40px;
@@ -398,16 +554,6 @@ body {
   box-shadow: 0 4px 0 var(--ink);
   font: 700 20px Fredoka;
 }
-.hint .hand {
-  font-size: 56px;
-  animation: drag 1.4s infinite ease-in-out;
-}
-@keyframes drag {
-  50% {
-    transform: translate(40px, -30px);
-  }
-}
-
 .banner100 {
   position: absolute;
   left: 50%;
@@ -605,7 +751,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 50vh;
+  height: calc(var(--office-sheet) * 100%);
   border-radius: 26px 26px 0 0;
   padding: 14px 14px max(14px, env(safe-area-inset-bottom));
 }
@@ -613,7 +759,7 @@ body {
   top: 0;
   right: 0;
   bottom: 0;
-  width: max(33vw, 330px);
+  width: max(33%, 330px);
   border-radius: 26px 0 0 26px;
   padding: 70px 14px 14px;
   box-shadow: -4px 0 0 var(--ink);
@@ -728,7 +874,7 @@ body {
   pointer-events: auto;
 }
 .logo {
-  width: min(620px, 92vw);
+  width: min(620px, 92%);
   overflow: visible;
   animation: logo-in 1s both;
 }
@@ -769,7 +915,7 @@ body {
   border-radius: 26px;
 }
 .loading {
-  width: min(320px, 70vw);
+  width: min(320px, 70%);
   height: 26px;
   border: 3px solid var(--ink);
   border-radius: 999px;
@@ -825,7 +971,7 @@ body {
   flex: 1;
 }
 .slider-row input {
-  width: min(180px, 40vw);
+  width: min(180px, 40%);
   accent-color: var(--orange);
 }
 
@@ -835,7 +981,7 @@ body {
   left: 50%;
   bottom: max(14px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  width: min(560px, calc(100vw - 32px));
+  width: min(560px, calc(100% - 32px));
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -859,6 +1005,11 @@ body {
 .layout-card.why {
   background: var(--angry);
   color: var(--cream);
+}
+.layout-card.lesson-ask {
+  background: var(--orange);
+  color: var(--cream);
+  font-weight: 600;
 }
 .layout-row {
   display: flex;
@@ -925,6 +1076,26 @@ body {
   transform: translateX(-50%);
   opacity: 1;
 }
+.ribbon {
+  position: absolute;
+  top: -12px;
+  right: -10px;
+  padding: 2px 10px;
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+  background: var(--ink);
+  border-radius: 10px;
+  transform: rotate(6deg);
+}
+.ribbon.start {
+  animation: ribbon-bounce 0.9s ease-in-out infinite;
+}
+@keyframes ribbon-bounce {
+  50% {
+    transform: translateY(-6px) rotate(6deg);
+  }
+}
 .shelf-card.far {
   opacity: 0;
   pointer-events: none;
@@ -962,4 +1133,592 @@ body {
   .shelf-card {
     width: 140px;
   }
+}
+
+/* ---------- buttons feel alive everywhere: lift and wiggle on hover, squish on press, a picked tile pops */
+:where(#ui, #hud) :is(button, .btn, .round) {
+  transition:
+    transform 0.12s cubic-bezier(0.3, 1.6, 0.5, 1),
+    box-shadow 0.12s;
+}
+@media (hover: hover) {
+  :where(#ui, #hud) :is(button, .btn, .round):hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.05);
+  }
+  .look-cell:hover:not(:disabled) img {
+    animation: wiggle 0.5s ease-in-out;
+  }
+}
+:where(#ui, #hud) :is(button, .btn, .round):active:not(:disabled) {
+  transform: translateY(3px) scale(0.92);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.look-cell.on {
+  animation: pop 0.35s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+@keyframes wiggle {
+  25% {
+    transform: rotate(-6deg);
+  }
+  75% {
+    transform: rotate(6deg);
+  }
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.85);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ---------- Wardrobe: live preview left, Shop / Fun / Cap tiles right */
+.panel.wardrobe {
+  width: min(900px, 100%);
+  height: min(560px, 100%);
+  flex-direction: row;
+  gap: 16px;
+}
+.wardrobe-stage {
+  position: relative;
+  flex: 0 0 38%;
+  min-height: 0;
+  border-radius: 14px;
+  background: radial-gradient(var(--cream), color-mix(in srgb, var(--pad) 45%, var(--cream)));
+  border: 3px solid var(--ink);
+}
+.wardrobe-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+.wardrobe-side {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.wardrobe-name {
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+}
+.look-grid {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--t), 1fr));
+  gap: 8px;
+  align-content: start;
+  padding: 4px;
+}
+.look-grid h4 {
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
+  font-size: 18px;
+}
+.look-cell {
+  position: relative;
+  padding: 0;
+  cursor: pointer;
+  border: 3px solid transparent;
+  border-radius: 12px;
+  background: var(--cream);
+  box-shadow: 0 2px 0 var(--ink);
+}
+.look-cell img {
+  width: 100%;
+  display: block;
+}
+.look-cell.on {
+  border-color: var(--orange);
+  background: color-mix(in srgb, var(--orange) 20%, var(--cream));
+}
+.look-cell .tag {
+  position: absolute;
+  left: 3px;
+  bottom: 2px;
+  padding: 0 4px;
+  border-radius: 6px;
+  font:
+    600 10px Fredoka,
+    system-ui,
+    sans-serif;
+  color: var(--cream);
+  background: var(--ink);
+}
+@media (orientation: portrait) {
+  .panel.wardrobe {
+    flex-direction: column;
+    height: min(720px, 100%);
+  }
+  .wardrobe-stage {
+    flex-basis: 32%;
+  }
+}
+/* ---------- phones: html.ph = a touch screen, html.pl = wider than tall. Sizes in %, never vw / vh: Chrome scales
+   viewport units by zoom, Safari doesn't. */
+html.ph .title,
+html.ph .modal,
+html.ph .office,
+html.ph .layout-panel {
+  zoom: var(--screen-scale);
+}
+html.ph .modal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+html.ph .panel {
+  max-height: 100%;
+}
+html.pl .office.side {
+  width: calc(var(--office-side) * 100%);
+}
+
+html.pl {
+  --sl: env(safe-area-inset-left, 0px);
+  --sr: env(safe-area-inset-right, 0px);
+  --st: env(safe-area-inset-top, 0px);
+}
+/* HUD: one cluster top-right (Completion, Money, extra buttons, gear); cards top-left */
+html.pl .hud-top {
+  left: auto;
+  right: max(12px, var(--sr));
+  top: max(8px, var(--st));
+  gap: 10px;
+}
+html.pl .completion {
+  width: 100px;
+}
+html.pl .money {
+  position: static;
+  transform: none;
+}
+html.pl .money.bump {
+  animation-name: bump-flat;
+}
+@keyframes bump-flat {
+  40% {
+    transform: scale(1.15);
+  }
+}
+html.pl .event-cards {
+  top: max(10px, var(--st));
+}
+/* banners slide in from the right, below the cluster; with the report and Lesson cards they are smaller */
+html.pl .event-banner,
+html.pl .report-card,
+html.pl .lesson,
+html.pl .lesson-card,
+html.pl .score-toast,
+html.pl .stamp,
+html.pl .obj-card {
+  zoom: var(--card-scale);
+}
+html.pl .chal-ring {
+  top: max(8px, var(--st));
+}
+html.pl .event-banner {
+  left: auto;
+  right: max(12px, var(--sr));
+  top: calc(max(8px, var(--st)) + 70px);
+  animation-name: banner-side-in;
+}
+html.pl .event-banner.out {
+  animation-name: banner-side-out;
+}
+@keyframes banner-side-in {
+  0% {
+    transform: translateX(130%);
+  }
+  70% {
+    transform: translateX(0) scale(1.08, 0.92);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes banner-side-out {
+  to {
+    transform: translateX(130%);
+  }
+}
+
+/* screens */
+html.pl .title {
+  gap: 10px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+html.pl .logo {
+  width: min(400px, 55%);
+}
+html.pl .menu {
+  flex-direction: row;
+  width: auto;
+}
+html.pl .panel.settings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  width: min(780px, 100%);
+}
+html.pl .panel.settings > h2,
+html.pl .panel.settings > .back {
+  grid-column: 1 / 3;
+}
+html.pl .office.side {
+  padding: 56px max(14px, var(--sr)) 14px 14px;
+}
+
+/* ---------- Score: trophy and badge, Challenge stamp / ring / toast, Objective card */
+.trophy {
+  position: relative;
+  font-size: 24px;
+  line-height: 1;
+  font-family: inherit;
+}
+.badge {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-top: -8px;
+  transform: translateX(-50%);
+  padding: 0 7px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--pad);
+  color: var(--ink);
+  font: 700 13px Fredoka;
+  white-space: nowrap;
+}
+.badge.bump {
+  animation: badge-bump 0.3s;
+}
+@keyframes badge-bump {
+  50% {
+    transform: translateX(-50%) scale(1.3);
+  }
+}
+.chal-ring {
+  position: absolute;
+  left: 50%;
+  top: calc(max(10px, env(safe-area-inset-top)) + 64px);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+.chal-ring.gone {
+  display: none;
+}
+html:not(.pl) .hud-ui:has(.closed-badge:not(.gone)) .chal-ring {
+  top: calc(max(10px, env(safe-area-inset-top)) + 100px);
+}
+.chal-ring .ring {
+  width: var(--ring-size);
+  height: var(--ring-size);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--ink);
+  box-shadow: 0 4px 0 var(--ink);
+  background: conic-gradient(var(--c) calc(var(--p) * 1turn), var(--cream) 0);
+}
+.chal-ring .ring i {
+  width: calc(var(--ring-size) - 16px);
+  height: calc(var(--ring-size) - 16px);
+  border-radius: 50%;
+  background: var(--cream);
+  display: grid;
+  place-items: center;
+  font: 700 16px Fredoka;
+}
+.chal-ring small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px 0 4px;
+  background: var(--cream);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  font: 600 13px Fredoka;
+  white-space: nowrap;
+}
+.chal-ring small img {
+  width: 18px;
+  height: 18px;
+}
+.stamp {
+  position: absolute;
+  left: 50%;
+  top: 35%;
+  font: 700 56px Fredoka;
+  color: var(--orange);
+  -webkit-text-stroke: 3px var(--ink);
+  paint-order: stroke fill;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: stamp both;
+}
+@keyframes stamp {
+  0% {
+    transform: translateX(-50%) rotate(-8deg) scale(3);
+    opacity: 0;
+  }
+  15% {
+    transform: translateX(-50%) rotate(-8deg) scale(1);
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50%) rotate(-8deg) scale(1);
+    opacity: 0;
+  }
+}
+.score-toast {
+  position: absolute;
+  left: 50%;
+  top: 28%;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 24px;
+  font-size: 24px;
+  white-space: nowrap;
+  text-align: center;
+  animation: report both;
+}
+.score-toast span {
+  font-size: 16px;
+}
+.score-toast.good b {
+  color: var(--money);
+}
+.score-toast.bad b {
+  color: var(--angry);
+}
+.obj-fly {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+}
+.obj-card {
+  flex-direction: column;
+  gap: 0;
+  padding: 10px 28px;
+  font-size: 22px;
+  text-align: center;
+  animation: obj-pop 0.35s both;
+}
+.obj-card img {
+  width: 52px;
+  height: 52px;
+}
+.obj-card b {
+  color: var(--money);
+}
+.obj-card span {
+  font-size: 18px;
+  font-weight: 600;
+}
+.obj-card em {
+  font-style: normal;
+  font-size: 20px;
+}
+@keyframes obj-pop {
+  0% {
+    transform: scale(0.2);
+  }
+  70% {
+    transform: scale(1.12);
+  }
+}
+
+/* ---------- Logbook */
+.panel.logbook {
+  width: min(680px, 100%);
+  max-height: 82%;
+}
+.panel.logbook .logbook-body {
+  min-height: 0;
+}
+.panel.logbook .back {
+  align-self: center;
+  font-size: 15px;
+  padding: 6px 22px;
+}
+.logbook-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.logbook-head h2 {
+  margin: 0;
+  font-size: 26px;
+}
+.logbook-head b {
+  font-size: 24px;
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.tabs .btn {
+  flex: 1;
+  border: 0;
+  box-shadow: none;
+  background: none;
+  font-size: 16px;
+  padding: 5px 10px;
+  border-radius: 999px;
+}
+.tabs .btn.on {
+  background: var(--cream);
+  box-shadow: 0 2px 0 var(--ink);
+}
+.logbook-body {
+  flex: 1;
+  overflow: auto;
+  touch-action: pan-y;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+.obj-tile,
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--pad) 18%, var(--cream));
+  border: 2px solid color-mix(in srgb, var(--ink) 25%, transparent);
+  text-align: center;
+  font: 600 14px Fredoka;
+}
+.obj-tile .obj-ring {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--orange) calc(var(--p) * 1turn), color-mix(in srgb, var(--ink) 15%, transparent) 0);
+}
+.obj-tile .obj-ring img {
+  width: 40px;
+  height: 40px;
+  padding: 3px;
+  border-radius: 50%;
+  background: var(--cream);
+}
+.obj-tile.done {
+  background: color-mix(in srgb, var(--money) 22%, var(--cream));
+}
+.obj-tile.done .obj-ring {
+  background: var(--money);
+}
+.obj-tile.done b {
+  color: var(--money);
+}
+.stat-card {
+  align-items: stretch;
+  text-align: left;
+  padding: 6px 12px;
+}
+.stat-card h4 {
+  margin: 0 0 2px;
+  font-size: 16px;
+}
+.stat-card p {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+}
+.plaque {
+  font-size: 22px;
+  padding: 2px 16px;
+  margin: -14px 0 -8px;
+  pointer-events: none;
+}
+.ribbon.score {
+  background: var(--pad);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  font-size: 15px;
+}
+
+/* ---------- joystick: Landscape zone, Free's resting ring, Off, and the Manual grab ring */
+html.pl #joy {
+  right: calc((1 - var(--joy-zone)) * 100%);
+}
+html.joy-off #joy,
+html.on-title #joy,
+html.on-title #joy-rest {
+  display: none;
+}
+#joy-rest {
+  position: fixed;
+  z-index: 1;
+  pointer-events: none;
+  display: none;
+  width: var(--joy-size);
+  height: var(--joy-size);
+  left: calc(var(--sl, 0px) + var(--joy-left) - var(--joy-size) / 2);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--joy-bottom) - var(--joy-size) / 2);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 25%, transparent);
+}
+#joy-rest::after {
+  content: '';
+  position: absolute;
+  inset: 25%;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 50%, transparent);
+}
+html.pl.joy-free #joy-rest {
+  display: block;
+}
+html.joying #joy-rest {
+  opacity: 0;
+}
+#grab-ring {
+  position: fixed;
+  z-index: 1;
+  width: var(--grab-ring);
+  height: var(--grab-ring);
+  margin: calc(var(--grab-ring) / -2) 0 0 calc(var(--grab-ring) / -2);
+  border: 2px solid var(--cream);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+#insets {
+  position: fixed;
+  visibility: hidden;
+  pointer-events: none;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
 }

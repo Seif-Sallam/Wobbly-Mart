@@ -5,7 +5,7 @@ import { pick } from '../../catalog/pick';
 import { layout } from './layout';
 import { events, freeStations, movePrices, pads, start } from './unlocks';
 import { upgrades } from './upgrades';
-import { tutorial } from './tutorial';
+import { objectives } from './objectives';
 
 export const dairyFarm: MapDef = {
   id: 'dairy-farm',
@@ -43,7 +43,7 @@ export const dairyFarm: MapDef = {
   freeStations,
   upgrades,
   start,
-  tutorial,
+  objectives,
   movePrices,
   events,
 };

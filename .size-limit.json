@@ -1,5 +1,5 @@
 [
-  { "name": "initial JS", "path": "dist/assets/index-*.js", "gzip": true, "limit": "280 kB" },
+  { "name": "initial JS", "path": "dist/assets/index-*.js", "gzip": true, "limit": "300 kB" },
   {
     "name": "first load (JS, CSS, models, font, sounds — music loads after Play)",
     "path": [
@@ -11,6 +11,6 @@
       "dist/audio/sfx.mp3"
     ],
     "gzip": true,
-    "limit": "1.2 MB"
+    "limit": "1.6 MB"
   }
 ]

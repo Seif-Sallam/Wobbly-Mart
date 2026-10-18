@@ -2,6 +2,10 @@ import type { ProductId } from './products';
 
 export type ProducerKind = 'crop' | 'animal' | 'machine';
 
+/** Sprite entries an Animal voices or a Machine loops while working (Crops have none: picking up pops). */
+export type ProducerSound =
+  'hum' | 'moo' | 'cluck' | 'bleat' | 'press' | 'grind' | 'bubble' | 'bubble_mud' | 'slosh' | 'mixer';
+
 export interface ProducerType<P extends string = string> {
   kind: ProducerKind;
   name: string;
@@ -11,9 +15,14 @@ export interface ProducerType<P extends string = string> {
   /** Crop: seconds for one plant to regrow. Animal/Machine: seconds per output. */
   workTime: number;
   plants?: number;
-  inputCap?: number;
   trayCap?: number;
+  sound?: ProducerSound;
+  /** Playback rate of `sound`; also shifts its pitch. */
+  soundRate?: number;
 }
+
+/** Items of each input an Animal or Machine holds. */
+export const INPUT_CAP = 6;
 
 export const PRODUCERS = {
   tomato_bed: {
@@ -27,22 +36,22 @@ export const PRODUCERS = {
   },
   chicken_coop: {
     kind: 'animal',
+    sound: 'cluck',
     name: 'Chicken Coop',
     model: 'chicken-coop',
     inputs: ['tomato'],
     output: 'egg',
     workTime: 4,
-    inputCap: 6,
     trayCap: 6,
   },
   blender: {
     kind: 'machine',
+    sound: 'hum',
     name: 'Blender',
     model: 'blender',
     inputs: ['tomato'],
     output: 'ketchup',
     workTime: 3,
-    inputCap: 6,
     trayCap: 6,
   },
   wheat_field: {
@@ -56,32 +65,32 @@ export const PRODUCERS = {
   },
   cow_pen: {
     kind: 'animal',
+    sound: 'moo',
     name: 'Cow pen',
     model: 'cow-pen',
     inputs: ['wheat'],
     output: 'milk',
     workTime: 5,
-    inputCap: 6,
     trayCap: 6,
   },
   mill: {
     kind: 'machine',
+    sound: 'hum',
     name: 'Mill',
     model: 'mill',
     inputs: ['wheat'],
     output: 'flour',
     workTime: 4,
-    inputCap: 6,
     trayCap: 6,
   },
   oven: {
     kind: 'machine',
+    sound: 'hum',
     name: 'Oven',
     model: 'oven',
     inputs: ['flour', 'egg'],
     output: 'bread',
     workTime: 6,
-    inputCap: 4,
     trayCap: 6,
   },
   // Juice Bar
@@ -105,22 +114,23 @@ export const PRODUCERS = {
   },
   apple_press: {
     kind: 'machine',
+    sound: 'press',
     name: 'Apple press',
     model: 'apple-press',
     inputs: ['apple'],
     output: 'apple_juice',
     workTime: 3,
-    inputCap: 6,
     trayCap: 6,
   },
   squeezer: {
     kind: 'machine',
+    sound: 'slosh',
+    soundRate: 1.2,
     name: 'Squeezer',
     model: 'squeezer',
     inputs: ['orange'],
     output: 'orange_juice',
     workTime: 3.5,
-    inputCap: 6,
     trayCap: 6,
   },
   sugar_cane_field: {
@@ -134,22 +144,23 @@ export const PRODUCERS = {
   },
   sugar_mill: {
     kind: 'machine',
+    sound: 'grind',
     name: 'Sugar mill',
     model: 'sugar-mill',
     inputs: ['sugar_cane'],
     output: 'sugar',
     workTime: 4,
-    inputCap: 6,
     trayCap: 6,
   },
   candy_pot: {
     kind: 'machine',
+    sound: 'bubble',
+    soundRate: 1.25,
     name: 'Candy pot',
     model: 'candy-pot',
     inputs: ['apple', 'sugar'],
     output: 'candy_apple',
     workTime: 5,
-    inputCap: 4,
     trayCap: 6,
   },
   strawberry_patch: {
@@ -163,94 +174,99 @@ export const PRODUCERS = {
   },
   smoothie_blender: {
     kind: 'machine',
+    sound: 'mixer',
+    soundRate: 1.3,
     name: 'Smoothie blender',
     model: 'smoothie-blender',
     inputs: ['strawberry', 'milk'],
     output: 'smoothie',
     workTime: 6,
-    inputCap: 4,
     trayCap: 6,
   },
   // Dairy Farm (Creamery look, src/view/dairy-stations.ts)
   goat_pen: {
     kind: 'animal',
+    sound: 'bleat',
     name: 'Goat pen',
     model: 'goat-pen',
     inputs: ['wheat'],
     output: 'goat_milk',
     workTime: 5.5,
-    inputCap: 6,
     trayCap: 6,
   },
   butter_churn: {
     kind: 'machine',
+    sound: 'slosh',
     name: 'Butter churn',
     model: 'butter-churn',
     inputs: ['milk'],
     output: 'butter',
     workTime: 4,
-    inputCap: 6,
     trayCap: 6,
   },
   cheese_press: {
     kind: 'machine',
+    sound: 'press',
+    soundRate: 0.85,
     name: 'Cheese press',
     model: 'cheese-press',
     inputs: ['milk'],
     output: 'cheese',
     workTime: 5,
-    inputCap: 6,
     trayCap: 6,
   },
   goat_cheese_press: {
     kind: 'machine',
+    sound: 'press',
+    soundRate: 0.95,
     name: 'Goat cheese press',
     model: 'goat-cheese-press',
     inputs: ['goat_milk'],
     output: 'goat_cheese',
     workTime: 5.5,
-    inputCap: 6,
     trayCap: 6,
   },
   ice_cream_maker: {
     kind: 'machine',
+    sound: 'mixer',
+    soundRate: 0.8,
     name: 'Ice cream maker',
     model: 'ice-cream-maker',
     inputs: ['milk', 'strawberry'],
     output: 'ice_cream',
     workTime: 6,
-    inputCap: 4,
     trayCap: 6,
   },
   pudding_pot: {
     kind: 'machine',
+    sound: 'bubble_mud',
+    soundRate: 0.8,
     name: 'Pudding pot',
     model: 'pudding-pot',
     inputs: ['milk', 'egg'],
     output: 'pudding',
     workTime: 6,
-    inputCap: 4,
     trayCap: 6,
   },
   // Pizza Place (Napoli tiles look, src/view/pizza-stations.ts)
   sauce_pot: {
     kind: 'machine',
+    sound: 'bubble',
     name: 'Sauce pot',
     model: 'sauce-pot',
     inputs: ['tomato'],
     output: 'pizza_sauce',
     workTime: 3.5,
-    inputCap: 6,
     trayCap: 6,
   },
   dough_mixer: {
     kind: 'machine',
+    sound: 'mixer',
     name: 'Dough mixer',
     model: 'dough-mixer',
     inputs: ['flour', 'milk'],
     output: 'dough',
     workTime: 5,
-    inputCap: 4,
     trayCap: 6,
   },
   olive_tree: {
@@ -264,22 +280,24 @@ export const PRODUCERS = {
   },
   pizza_oven: {
     kind: 'machine',
+    sound: 'hum',
+    soundRate: 0.8,
     name: 'Pizza oven',
     model: 'pizza-oven',
     inputs: ['dough', 'pizza_sauce', 'cheese'],
     output: 'pizza',
     workTime: 7,
-    inputCap: 4,
     trayCap: 6,
   },
   veggie_pizza_oven: {
     kind: 'machine',
+    sound: 'hum',
+    soundRate: 0.9,
     name: 'Veggie pizza oven',
     model: 'veggie-pizza-oven',
     inputs: ['dough', 'pizza_sauce', 'olives'],
     output: 'veggie_pizza',
     workTime: 7,
-    inputCap: 4,
     trayCap: 6,
   },
 } satisfies Record<string, ProducerType<ProductId>>;

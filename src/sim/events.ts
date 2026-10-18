@@ -3,7 +3,7 @@ import type { ByArea, EventKind, EventTiming, MapEvents } from './map';
 import type { Delivery, PickupStation, World } from './world';
 import { DT } from './world';
 import { productsForSale, requirementMet } from './economy';
-import { nextRandom, randomInt, shuffle } from './rng';
+import { nextRandom, randomBetween, randomInt, shuffle } from './rng';
 import { TUNING } from './tuning';
 import { FEEL } from '../feel';
 import { startRobbery, updateThief } from './robbery';
@@ -42,7 +42,7 @@ const unlocked = (w: World, kind: EventKind): boolean =>
 const pickups = (w: World): PickupStation[] =>
   [...w.stations.values()].filter((s): s is PickupStation => s.kind === 'pickup');
 
-const between = (w: World, [lo, hi]: readonly [number, number]): number => lo + nextRandom(w.eventRng) * (hi - lo);
+const between = (w: World, range: readonly [number, number]): number => randomBetween(w.eventRng, range);
 
 /** Cars that may wait at once: one, plus one per Stocker count reached in carStockers. */
 const carCap = (w: World): number => 1 + timing(w).carStockers.filter((n) => w.stockers.length >= n).length;
@@ -73,10 +73,26 @@ function leave(w: World, st: PickupStation, d: Delivery, complete: boolean): voi
   const amount = Math.round(complete ? value * timing(w).deliveryPay : value);
   const tip = complete ? Math.round(amount * timing(w).tipMax * Math.max(0, 1 - d.t / (d.time / 2))) : 0;
   w.money += amount + tip;
-  w.events.push({ type: 'deliveryDone', station: st.id, amount, tip, complete });
+  w.events.push({ type: 'deliveryDone', station: st.id, amount, tip, complete, left: d.time - d.t });
   st.delivery = null;
 }
 
+/** A Lesson parks a car that wants `want` of one Product, with time to spare. */
+export function callDelivery(w: World, product: string, want: number): void {
+  const free = pickups(w).find((s) => !s.delivery);
+  if (!free) return;
+  const T = timing(w);
+  free.delivery = {
+    order: [{ product, want, got: 0 }],
+    t: 0,
+    time: T.deliveryTime + T.deliveryPerItem * want,
+    look: nextRandom(w.eventRng),
+    honked: false,
+  };
+  w.events.push({ type: 'deliveryArrived', station: free.id });
+}
+
+/** Cars wait and leave on their own; only without a Lesson do new ones arrive. */
 function updateDeliveries(w: World): void {
   const spots = pickups(w);
   for (const st of spots) {
@@ -90,6 +106,7 @@ function updateDeliveries(w: World): void {
       w.events.push({ type: 'deliveryHonk', station: st.id });
     }
   }
+  if (w.lesson) return;
   w.carWait = (w.carWait ?? between(w, timing(w).deliveryGap)) - DT;
   if (w.carWait > 0 || w.t < timing(w).quietStart) return;
   const parked = spots.filter((s) => s.delivery).length;
@@ -107,16 +124,18 @@ function updateDeliveries(w: World): void {
 
 const VISITS = ['robbery', 'inspector'] as const;
 
-/** Robbery and the Inspector need the Player there: each on its own timer, one at a time, spaced out. */
+/** Robbery and the Inspector need the Player there: each on its own timer, one at a time, spaced out. A Lesson starts
+ * its own, so with Lessons left only the running visit moves on. */
 function updateVisits(w: World): void {
   const T = timing(w);
   if (w.thief) updateThief(w, w.thief);
   if (w.inspector) updateInspector(w, w.inspector);
+  if (w.lesson) return;
   const running = w.thief ? 'robbery' : w.inspector ? 'inspector' : null;
   if (running) w.lastVisit = w.t;
   const kinds = VISITS.filter((k) => unlocked(w, k) && k !== running);
-  for (const k of kinds) w.visitWait[k] = (w.visitWait[k] ?? between(w, T[`${k}Gap`])) - DT;
-  if (running || w.t < T.quietStart || w.t - w.lastVisit < T.visitSpacing) return;
+  if (!w.closed) for (const k of kinds) w.visitWait[k] = (w.visitWait[k] ?? between(w, T[`${k}Gap`])) - DT;
+  if (running || w.closed || w.t < T.quietStart || w.t - w.lastVisit < T.visitSpacing) return;
   // a visit due inside the spacing waits; the longest overdue goes first
   const due = kinds
     .filter((k) => (w.visitWait[k] ?? 1) <= 0)

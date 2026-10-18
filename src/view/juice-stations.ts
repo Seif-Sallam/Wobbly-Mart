@@ -1,16 +1,19 @@
 // The Juice Bar's code-built Producers (Orchard stand look): rustic wood, iron and copper, each lively while it works.
 import * as THREE from 'three';
 import { SHADES } from '../palette';
-import { paletteMaterial } from './materials';
+import { glassMaterial, paletteMaterial, spotMaterial } from './materials';
+import { dynamic, moving } from './merge';
 
 const J = SHADES.juice;
 
-const glassMat = new THREE.MeshStandardMaterial({ color: J.glass, transparent: true, opacity: 0.45, roughness: 0.1 });
+const glassMat = glassMaterial(J.glass, 0.45);
 const chromeMat = new THREE.MeshStandardMaterial({ color: J.chrome, roughness: 0.25, metalness: 0.6 });
 
 export function put<T extends THREE.Mesh>(parent: THREE.Object3D, m: T, x = 0, y = 0, z = 0): T {
   m.position.set(x, y, z);
   m.castShadow = m.receiveShadow = true;
+  // non-indexed so every code-built mesh merges into the same bucket per material
+  if (m.geometry.index) m.geometry = m.geometry.toNonIndexed();
   parent.add(m);
   return m;
 }
@@ -99,6 +102,7 @@ function fruitTree(w: number, d: number, leaves: string, tall: number): JuiceSta
     const a = (i / 4) * Math.PI * 2 + 0.6;
     return spot(top, Math.cos(a) * r * 1.02, (i % 2 ? -0.15 : 0.15) * r, Math.sin(a) * r * 0.95);
   });
+  moving(top);
   return {
     group: g,
     plants,
@@ -138,7 +142,7 @@ function rosette(p: THREE.Object3D, x: number, z: number, y: number): THREE.Grou
   for (let i = 0; i < 5; i++)
     sph(g, 0.03, J.flower, 0.05 + Math.cos(i * 1.26) * 0.05, 0.18, Math.sin(i * 1.26) * 0.05, 0);
   sph(g, 0.025, J.seed, 0.05, 0.2, 0, 0);
-  return g;
+  return moving(g);
 }
 
 /** Straw-mulched raised bed: six leaf rosettes, each berry resting on top of its plant's leaves. */
@@ -194,7 +198,7 @@ function applePress(): JuiceStation {
   cyl(screw, 0.05, 1.1, J.iron, 0, -0.4);
   box(screw, 0.9, 0.05, 0.05, J.iron, 0, 0.62);
   cyl(screw, 0.4, 0.06, J.wood, 0, -0.42);
-  screw.position.y = 1.0;
+  moving(screw).position.y = 1.0;
   box(g, 0.1, 0.06, 0.3, J.copper, 0, 0.22, 0.6).rotation.x = 0.3;
   return {
     group: g,
@@ -218,6 +222,7 @@ function squeezer(w: number): JuiceStation {
   box(pivot, 0.06, 0.06, 0.9, J.iron, 0, 0, 0.35);
   sph(pivot, 0.07, J.knob, 0, 0, 0.8);
   cyl(pivot, 0.17, 0.08, chromeMat, 0, -0.2, 0.2);
+  moving(pivot);
   return { group: g, animate: (_dt, t, wk) => (pivot.rotation.x = wk ? 0.25 + Math.sin(t * 6) * 0.25 : -0.35) };
 }
 
@@ -226,9 +231,12 @@ function sugarMill(): JuiceStation {
   const g = new THREE.Group();
   box(g, 1.5, 0.3, 1.2, J.brick);
   const rollers = [-0.18, 0.18].map((x) => {
-    const r = cyl(g, 0.17, 0.8, J.iron, x, 0.3, 0);
+    const r = new THREE.Group();
+    r.position.set(x, 0.7, 0);
+    g.add(r);
+    cyl(r, 0.17, 0.8, J.iron, 0, -0.4);
     for (let i = 0; i < 6; i++) box(r, 0.02, 0.8, 0.36, J.knob, 0, -0.4, 0).rotation.y = (i / 6) * Math.PI;
-    return r;
+    return moving(r);
   });
   box(g, 0.7, 0.12, 0.4, J.iron, 0, 1.1);
   const beam = new THREE.Group();
@@ -236,6 +244,7 @@ function sugarMill(): JuiceStation {
   g.add(beam);
   box(beam, 2.2, 0.1, 0.1, J.woodDark, 0.7);
   cyl(beam, 0.06, 0.3, J.woodDark, 0, -0.1);
+  moving(beam);
   return {
     group: g,
     animate: (dt, _t, wk) => {
@@ -256,13 +265,13 @@ function candyPot(): JuiceStation {
   const potTop = 0.9;
   cyl(g, 0.5, 0.03, J.caramel, 0, potTop - 0.05);
   const bubbles = [0, 1, 2, 3, 4].map((i) =>
-    sph(g, 0.06, J.caramel, Math.cos(i * 2) * 0.25, potTop, Math.sin(i * 2) * 0.25, 0),
+    dynamic(sph(g, 0.06, J.caramel, Math.cos(i * 2) * 0.25, potTop, Math.sin(i * 2) * 0.25, 0)),
   );
   const dipper = new THREE.Group();
   sph(dipper, 0.12, J.apple, 0, 0, 0, 2);
   cyl(dipper, 0.015, 0.45, J.stick, 0, 0.05);
   dipper.position.set(0.15, potTop + 0.3, 0);
-  g.add(dipper);
+  g.add(moving(dipper));
   return {
     group: g,
     animate: (_dt, t, wk) => {
@@ -287,8 +296,9 @@ function smoothieBlender(w: number): JuiceStation {
   jug.position.y = top + 0.25;
   g.add(jug);
   cyl(jug, 0.24, 0.7, glassMat, 0, 0, 0, 0.18);
-  const fill = cyl(jug, 0.2, 0.5, J.smoothie, 0, 0.02, 0, 0.16);
+  const fill = dynamic(cyl(jug, 0.2, 0.5, J.smoothie, 0, 0.02, 0, 0.16));
   cyl(jug, 0.26, 0.06, J.knob, 0, 0.7);
+  moving(jug);
   return {
     group: g,
     animate: (_dt, t, wk) => {
@@ -308,16 +318,7 @@ export function inputSpots(g: THREE.Object3D, x0: number, y: number, colours: st
     [0, 1, 2].map((r) => {
       const x = x0 + k * 0.27;
       const z = (r - 1) * 0.27;
-      box(
-        g,
-        0.22,
-        0.012,
-        0.22,
-        new THREE.MeshStandardMaterial({ color: c, transparent: true, opacity: 0.55 }),
-        x,
-        y,
-        z,
-      );
+      box(g, 0.22, 0.012, 0.22, spotMaterial(c), x, y, z);
       return new THREE.Vector3(x, y + 0.012, z);
     }),
   );

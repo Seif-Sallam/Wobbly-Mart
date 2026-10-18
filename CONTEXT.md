@@ -21,13 +21,13 @@ One unit of a **Product** in the world — on a stack, a shelf, or a station.
 A kind of thing the store deals in (tomato, egg, ketchup). Raw or processed.
 
 **Grab Mode**:
-How **Items** move between the **Stack** and stations. _Auto_ (default, the only mode on mobile): proximity transfers automatically. _Manual_ (desktop setting): items transfer one at a time only while a key is held.
+How **Items** move between the **Stack** and stations. _Auto_ (default): proximity transfers automatically. _Manual_ (opt-in setting): items transfer one at a time only while a key is held (Space on desktop) or, on a landscape phone, while a finger is held right of the joystick zone. In portrait on a phone the setting does nothing.
 
 **Trash Bin**:
 A station where the **Player** dumps unwanted **Items** from their **Stack** by standing on it for 1.5 s; they are destroyed, no refund. Walking past never trashes anything. Each **Area** has one, against a wall the camera can see (never the south wall); bins never move. **Stockers** use one only as a last resort.
 
 **Tap Walk**:
-Tapping or clicking the floor, a **Pad** or a **Station** sends the **Player** walking there on their own; at a **Station** they stop within reach so proximity does the action, and at a **Register** they go behind it. A double tap sprints. Any joystick or key input cancels it.
+Tapping or clicking the floor, a **Pad** or a **Station** sends the **Player** walking there on their own; at a **Station** they stop within reach so proximity does the action, and at a **Register** they go behind it. A double tap sprints. Any joystick or key input cancels it. On a phone it exists only when the Joystick setting is Off.
 
 **Sprint**:
 Holding run makes the **Player** move 1.5× faster. A tipping **Stack** sheds its top **Item** much more often while sprinting.
@@ -112,6 +112,9 @@ Money left at the **Register**; only becomes spendable when the **Player** walks
 The game's single currency.
 _Avoid_: coins, cash (except in **Cash Pile**), gems, coupons
 
+**Debt**:
+**Money** below $0. Only a **Bad Review** fine can cause it. While in Debt nothing can be bought (**Pads**, **Upgrades**, Moves); checkouts pay it back, with no interest and no floor.
+
 ### Growth
 
 **Pad**:
@@ -151,10 +154,27 @@ One **Station** left somewhere other than where it started an **Edit Layout** se
 
 **Exit Pad**:
 A **Pad** beside a car, bought late in a map; once bought, the car travels to the next map. The player can return to any visited map at any time.
+_Avoid_: finish pad
 
 **Completion**:
-A map's progress as a percentage of everything purchasable — every **Pad** and every **Upgrade** level, equally weighted (**Moves** don't count). 100% means everything is unlocked. The only meta-progression measure.
+A map's progress as a percentage of every **Pad**, every **Upgrade** level and every **Objective**, equally weighted (**Moves** don't count). 100% means everything is unlocked and every Objective is done.
 _Avoid_: stars, rating, prestige
+
+**Objective**:
+A fixed goal on a **Map** (sell 100 Eggs, earn $5,000…), done once and kept; shows its progress, counted from **Stats**. Always something normal play reaches on its own. Earns **Score** and counts toward **Completion**, so a Map can't reach 100% without its Objectives.
+
+**Challenge**:
+A short, timed, optional task that pops up during play, one at a time (check out 5 Customers in 60 s, fill one named **Shelf**…). Never offered when impossible right now; paused while **Closed**. Winning earns **Score** and a little **Money**; failing costs nothing.
+
+**Score**:
+Points per **Map** for **Objectives**, won **Challenges**, handled **Events** and each quarter of **Completion**; never goes down. The game's total is the sum over Maps. The **Tutorial Map** shows practice Score but keeps none.
+_Avoid_: rating, stars
+
+**Stats**:
+Running counts per **Map** and for the whole game: **Items** made, sold, trashed and fallen; **Messes** made and cleaned; **Money** earned and fined; **Customers** served and lost; **Event** outcomes; **Challenges** won and failed; times **Closed**; play time.
+
+**Closed**:
+A state the **Player** switches the store into from the **Office**, to restock or wait things out, for at least 30 seconds and as long as they like, and again only after five open minutes: no new **Customers** appear on the **Pavement** (those already there still come in, and everyone inside finishes their shopping), and **Robbery** and the **Health Inspector** pause. **Deliveries** keep coming at their usual pace.
 
 ### Events
 
@@ -171,13 +191,24 @@ An **Event** where a **Thief**, looking like a **Customer** without a **Shopping
 When a **Thief** grabs, the camera sweeps to them and the game freezes for two seconds before the grab plays out. Like an **Area Pan**, but short.
 
 **Health Inspector**:
-An **Event** visitor who walks a fresh route through the shop and must be escorted by the **Player**; the store's dirt (**Messes**, **Loose Items**) decides a bonus or a fine, and leaving them alone too long earns a bad review.
+An **Event** visitor who walks a fresh route through the shop and must be escorted by the **Player**; the store's dirt (**Messes**, **Loose Items**) decides a bonus or a fine, and leaving them alone too long earns a **Bad Review**.
+
+**Bad Review**:
+The **Health Inspector** storming out because the **Player** left them alone too long; it ends the visit with a fine. The first one's fine stops at $0; a second or later one in a row on the same **Map** carries a double review fine that can push **Money** into **Debt**. Escorting a whole visit ends the streak.
 
 ### Maps
 
 **Map**:
 One complete store level: its layout, **Areas**, stations, **Pads**, **Upgrades**, starting state and customer settings. Maps are played in a fixed order.
 _Avoid_: level, stage
+
+**Tutorial Map**:
+A small **Map** outside the fixed order that teaches the mechanics one at a time, pausing between instructions. Never locked and never locks anything; keeps its progress while unfinished, so it resumes at the Lesson it was left on, and starts over once finished. Until it is finished the game suggests playing it first, and the **Player** may skip that.
+_Avoid_: tutorial (for the old step tutorial on the Corner Shop, which it replaces)
+
+**Lesson**:
+One mechanic taught on the **Tutorial Map**: a card that freezes the game until dismissed, then live play until its goal is met. A Lesson that goes wrong replays its setup; it is never failed.
+_Avoid_: step, chapter
 
 **Catalog**:
 The shared definitions every **Map** draws on: **Products** and **Producer** types with their **Recipes**. A **Map** may add to it or override its values.

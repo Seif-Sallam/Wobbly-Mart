@@ -9,7 +9,9 @@ import { cashPilePoint, padRemaining, stackCap, visiblePads } from '../sim/econo
 import { Stage } from './stage';
 import { Level } from './level';
 import { Juice } from './juice';
-import { Character } from './characters';
+import { Character, lookCharacter } from './characters';
+import { DEFAULT_LOOK } from '../../catalog/looks';
+import { CashierBag } from './cashier-bag';
 import { CleaningLook, HeldMop } from './cleaning';
 import { LayoutGhost } from './layout-ghost';
 import { PadVisual } from './pads';
@@ -26,6 +28,7 @@ import { paletteMaterial } from './materials';
 import { Tweens, ease } from '../tween';
 import { FEEL } from '../feel';
 import { PALETTE, SHADES, withAlpha, THEMES } from '../palette';
+import { INPUT_CAP } from '../../catalog/producers';
 import { PRODUCTS } from '../../catalog/products';
 import { TUNING } from '../sim/tuning';
 
@@ -101,7 +104,7 @@ export class WorldView {
   private playerStack = newStack();
   private sprintPuff = 0;
   private customers = new Map<number, CustomerLook>();
-  private staff = new Map<string, { ch: Character; stack: StackLook }>();
+  private staff = new Map<string, { ch: Character; stack: StackLook; bag?: CashierBag }>();
   private cleaners = new Map<string, { ch: Character; mop: HeldMop }>();
   private cleaning = new CleaningLook();
   private thief: { look: ThiefLook; stack: StackLook } | null = null;
@@ -124,14 +127,23 @@ export class WorldView {
   private time = 0;
   /** Set by the game: where a Tap Walk is heading, or null. */
   walkTarget: Target | null = null;
+  /** The walk was started from a Delivery card: draw the route line to its pickup tile. */
+  walkRoute = false;
+  private routeLine: THREE.Mesh;
   private walkRing: THREE.Mesh;
   private walkGlow: THREE.Mesh;
   /** Set by the app: tutorial / guidance target point, or null. */
   arrowTarget: THREE.Vector3 | null = null;
   officeAlert = false;
+  /** Set by the app: the Lesson target's spot on the floor, or null. */
+  ringTarget: THREE.Vector3 | null = null;
+  private lessonRing: THREE.Mesh;
   /** When set, the camera looks here instead of following the Player (title screen). */
   cameraOverride: THREE.Vector3 | null = null;
   private camFocus = new THREE.Vector3();
+  private camLead = new THREE.Vector3();
+  /** Pad size × (phone landscape draws them bigger). */
+  padScale = 1;
 
   constructor(
     private readonly stage: Stage,
@@ -157,7 +169,7 @@ export class WorldView {
       multiDraw,
     );
     this.blobs = this.makeBlobs();
-    this.player = new Character('player', { hat: 'orange' });
+    this.player = lookCharacter(DEFAULT_LOOK, 'orange');
     this.root.add(this.player.root);
     this.playerMop = new HeldMop(this.player);
     this.maxTag = this.tag('MAX', PALETTE.orange);
@@ -174,10 +186,29 @@ export class WorldView {
     });
     this.walkRing = new THREE.Mesh(new THREE.RingGeometry(0.75, 1, 40).rotateX(-Math.PI / 2), ringMat);
     this.walkRing.renderOrder = 2;
+    this.lessonRing = new THREE.Mesh(this.walkRing.geometry, ringMat);
+    this.lessonRing.renderOrder = 2;
+    this.lessonRing.visible = false;
+    this.root.add(this.lessonRing);
     const glowMat = new THREE.MeshBasicMaterial({ color: PALETTE.pad, transparent: true, depthWrite: false });
     this.walkGlow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), glowMat);
     this.walkGlow.renderOrder = 1;
-    this.root.add(this.walkRing, this.walkGlow);
+    const dash = document.createElement('canvas');
+    dash.width = 4;
+    dash.height = 2;
+    const dc = dash.getContext('2d') as CanvasRenderingContext2D;
+    dc.fillStyle = '#fff';
+    dc.fillRect(0, 0, 4, 1);
+    const dashTex = new THREE.CanvasTexture(dash);
+    dashTex.wrapT = THREE.RepeatWrapping;
+    dashTex.magFilter = THREE.NearestFilter;
+    this.routeLine = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: PALETTE.orange, alphaMap: dashTex, transparent: true, depthWrite: false }),
+    );
+    this.routeLine.renderOrder = 1;
+    this.routeLine.visible = false;
+    this.root.add(this.walkRing, this.walkGlow, this.routeLine);
     this.reset(w);
   }
 
@@ -232,6 +263,7 @@ export class WorldView {
     this.ownedKey = '';
     this.player.facing = Math.PI;
     this.camFocus.set(w.player.x, 0, w.player.z);
+    this.camLead.set(0, 0, 0);
     for (const m of w.messes) this.addSplat(m.id, m.x, m.z, m.items);
     this.syncOwned(false);
   }
@@ -325,6 +357,21 @@ export class WorldView {
     }
   }
 
+  /** Swaps the Player's model for a Wardrobe look and cap. */
+  setLook(look: string, cap: string): void {
+    const facing = this.player.facing;
+    this.root.remove(this.player.root);
+    this.player = lookCharacter(look, cap);
+    this.player.facing = facing;
+    this.root.add(this.player.root);
+    this.playerMop = new HeldMop(this.player);
+  }
+
+  private cashierOf(register: string): Character | undefined {
+    const c = this.w.cashiers.find((k) => k.register === register);
+    return c && this.staff.get(c.id)?.ch;
+  }
+
   private padFor(id: string): PadVisual {
     let pad = this.pads.get(id);
     if (pad) return pad;
@@ -341,7 +388,11 @@ export class WorldView {
     }
     const iconName =
       name ??
-      (['cashier', 'stocker', 'cleaner'].includes(def.kind) ? 'employee' : def.kind === 'exit' ? 'van' : 'area');
+      (['cashier', 'stocker', 'cleaner'].includes(def.kind)
+        ? `staff-${def.kind}`
+        : def.kind === 'exit'
+          ? 'van'
+          : 'area');
     const [x, z] = boxCentre(place.box);
     pad = new PadVisual(x, z, iconName, ghost);
     this.pads.set(id, pad);
@@ -509,6 +560,14 @@ export class WorldView {
             van.position.y = Math.abs(Math.sin(k * Math.PI * 3)) * (1 - k) * 0.6;
             van.scale.set(1 + Math.sin(k * Math.PI * 6) * 0.04 * (1 - k), 1, 1);
           });
+          // finishing the Tutorial Map: the car then drives off along the road
+          if (w.map.lessons) {
+            const x0 = van.position.x;
+            this.tweens.add(FEEL.vanDriveOff, (k) => (van.position.x = x0 + k * w.map.layout.size[0]), {
+              delay: 0.6,
+              ease: (t) => t * t,
+            });
+          }
         }
         break;
       case 'produced': {
@@ -533,6 +592,7 @@ export class WorldView {
         this.juice.money(e.register, e.amount, new THREE.Vector3(x, 1.8, z));
         this.juice.coin(new THREE.Vector3(x, 1.2, z));
         this.customers.get(e.customer)?.ch.emote('yes');
+        if (FEEL.bag.cheer) this.cashierOf(e.register)?.emote('yes');
         break;
       }
       case 'cashCollect': {
@@ -883,7 +943,11 @@ export class WorldView {
       ...w.customers.map((c): Point => [c.x, c.z]),
       ...[...w.stockers, ...w.cleaners].map((s): Point => [s.x, s.z]),
     ];
-    this.level.update(dt, near);
+    const guests: Point[] = [
+      ...w.customers.map((c): Point => [c.x, c.z]),
+      ...[w.thief, w.inspector].flatMap((v): Point[] => (v ? [[v.x, v.z]] : [])),
+    ];
+    this.level.update(dt, near, w.closed, guests);
     this.updateMarkers();
     this.updateCamera(dt);
   }
@@ -900,7 +964,7 @@ export class WorldView {
       const pad = this.padFor(id);
       const [x, z] = boxCentre(w.map.layout.places[id].box);
       const standing = Math.abs(w.player.x - x) < TUNING.padHalfSize && Math.abs(w.player.z - z) < TUNING.padHalfSize;
-      pad.update(dt, padRemaining(w, id), w.map.pads[id].cost, standing);
+      pad.update(dt, padRemaining(w, id), w.map.pads[id].cost, standing, this.padScale);
     }
   }
 
@@ -983,13 +1047,15 @@ export class WorldView {
     for (const c of w.cashiers) {
       let look = this.staff.get(c.id);
       if (!look) {
-        look = { ch: new Character('employee', { hat: SHADES.white }), stack: newStack() };
+        look = { ch: new Character('employee', { hat: SHADES.white }), stack: newStack(), bag: new CashierBag() };
+        look.ch.afterClips = look.bag?.apply ?? null;
         look.ch.facing = Math.PI;
         this.staff.set(c.id, look);
         this.root.add(look.ch.root);
       }
       const reg = w.stations.get(c.register);
       if (reg) look.ch.facing = Math.atan2(reg.box[0] + reg.box[2] / 2 - c.x, reg.box[1] + reg.box[3] / 2 - c.z);
+      if (look.bag) look.bag.serving = reg?.kind === 'register' && reg.progress > 0;
       look.ch.update(dt, c.x, c.z, 0, 0, false);
     }
     // blob shadows
@@ -1236,11 +1302,28 @@ export class WorldView {
       this.walkRing.position.set(x, WALK_MARK_Y, z);
       this.walkRing.scale.setScalar(FEEL.tapRing * (1 + FEEL.tapRingPulse * Math.sin(this.time * 8)));
     }
+    this.routeLine.visible = this.walkRoute && !!station;
+    if (this.routeLine.visible && station) {
+      const [x, z] = boxCentre(station.box);
+      const dx = x - p.x;
+      const dz = z - p.z;
+      const len = Math.hypot(dx, dz);
+      const line = this.routeLine;
+      line.position.set(p.x + dx / 2, WALK_MARK_Y - 0.01, p.z + dz / 2);
+      line.rotation.y = Math.atan2(dx, dz);
+      line.scale.set(FEEL.routeWidth, 1, len);
+      (line.material as THREE.MeshBasicMaterial).alphaMap?.repeat.set(1, len / FEEL.routeDash);
+    }
     if (station) {
       const [bx, bz, bw, bd] = station.box;
       this.walkGlow.position.set(bx + bw / 2, WALK_MARK_Y - 0.01, bz + bd / 2);
       this.walkGlow.scale.set(bw + 2 * FEEL.tapGlowMargin, 1, bd + 2 * FEEL.tapGlowMargin);
       (this.walkGlow.material as THREE.MeshBasicMaterial).opacity = 0.25 + 0.15 * Math.sin(this.time * 6);
+    }
+    this.lessonRing.visible = !!this.ringTarget;
+    if (this.ringTarget) {
+      this.lessonRing.position.set(this.ringTarget.x, WALK_MARK_Y, this.ringTarget.z);
+      this.lessonRing.scale.setScalar(FEEL.lessonRing * (1 + FEEL.tapRingPulse * Math.sin(this.time * 8)));
     }
     this.arrow.visible = !!this.arrowTarget;
     if (this.arrowTarget)
@@ -1256,7 +1339,9 @@ export class WorldView {
       return;
     }
     const p = this.player.root.position;
-    const goal = new THREE.Vector3(p.x + w.player.vx * FEEL.lookAhead, 0, p.z + w.player.vz * FEEL.lookAhead);
+    const want = new THREE.Vector3(w.player.vx, 0, w.player.vz).multiplyScalar(FEEL.lead).clampLength(0, FEEL.leadMax);
+    this.camLead.lerp(want, 1 - Math.exp(-FEEL.leadEase * dt));
+    const goal = new THREE.Vector3(p.x, 0, p.z).add(this.camLead);
     this.camFocus.lerp(goal, 1 - Math.exp(-FEEL.followSharpness * dt));
     const focus = this.camFocus.clone();
     if (w.pan) {
@@ -1330,7 +1415,7 @@ function needsOf(w: World, st: Station): { model: string; have: number; cap: num
   if (st.kind !== 'producer') return null;
   const type = w.map.producers[st.type];
   if (!type.inputs.length) return null;
-  return type.inputs.map((p) => ({ model: model(p), have: st.input[p] ?? 0, cap: type.inputCap ?? 0 }));
+  return type.inputs.map((p) => ({ model: model(p), have: st.input[p] ?? 0, cap: INPUT_CAP }));
 }
 
 const w_isInput = (w: World, type: string, product: string): boolean => {

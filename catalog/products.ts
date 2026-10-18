@@ -6,6 +6,8 @@ export interface Product {
   price: number;
   /** Chance a tipped Item breaks into a Mess instead of landing Loose. */
   breakChance: number;
+  /** A high-value Item: a Customer buys few of them in total (TUNING.premium). */
+  premium?: true;
 }
 
 export const PRODUCTS = {
@@ -35,10 +37,17 @@ export const PRODUCTS = {
   pudding: { name: 'Pudding', model: 'pudding', shelf: 'egg-stand', price: 20, breakChance: 0.6 },
   // Pizza Place: code-built Items (src/view/pizza-stations.ts)
   pizza_sauce: { name: 'Pizza sauce', model: 'pizza-sauce', shelf: 'ketchup-stand', price: 7, breakChance: 0.6 },
-  dough: { name: 'Dough', model: 'dough', shelf: 'bread-stand', price: 12, breakChance: 0.05 },
+  dough: { name: 'Dough', model: 'dough', shelf: 'dough-stand', price: 12, breakChance: 0.05 },
   olives: { name: 'Olives', model: 'olives', shelf: 'egg-stand', price: 5, breakChance: 0.3 },
-  pizza: { name: 'Pizza', model: 'pizza', shelf: 'bread-stand', price: 30, breakChance: 0.3 },
-  veggie_pizza: { name: 'Veggie pizza', model: 'veggie-pizza', shelf: 'bread-stand', price: 28, breakChance: 0.3 },
+  pizza: { name: 'Pizza', model: 'pizza', shelf: 'pizza-stand', price: 55, breakChance: 0.3, premium: true },
+  veggie_pizza: {
+    name: 'Veggie pizza',
+    model: 'veggie-pizza',
+    shelf: 'veggie_pizza-stand',
+    price: 45,
+    breakChance: 0.3,
+    premium: true,
+  },
 } satisfies Record<string, Product>;
 
 export type ProductId = keyof typeof PRODUCTS;
@@ -53,4 +62,7 @@ export const SHELF_CAPS: Record<string, number> = {
   'flour-stand': 15,
   'bread-stand': 12,
   'cheese-stand': 8,
+  'pizza-stand': 12,
+  'veggie_pizza-stand': 12,
+  'dough-stand': 12,
 };

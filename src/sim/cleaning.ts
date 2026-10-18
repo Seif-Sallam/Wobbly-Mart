@@ -53,14 +53,23 @@ export function mopAt(w: World, x: number, z: number, seconds: number): boolean 
   return true;
 }
 
+/** Removes every waiting Mess at once (a Lesson's reset). */
+export function clearMesses(w: World): void {
+  for (const m of w.messes) {
+    forgetPoint(w, [m.x, m.z]);
+    w.events.push({ type: 'messCleared', mess: m.id });
+  }
+  w.messes = [];
+}
+
 /** A random wander spot on the bought shop floors, snapped to a coarse grid so walk fields stay few. */
-function wanderSpot(w: World): [number, number] | null {
+export function wanderSpot(w: World, allowed: (x: number, z: number) => boolean = () => true): [number, number] | null {
   const g = TUNING.cleaner.wanderGrid;
   const spots: [number, number][] = [];
   for (const f of w.map.layout.floors)
     for (let x = f[0] + g / 2; x < f[0] + f[2]; x += g)
       for (let z = f[1] + g / 2; z < f[1] + f[3]; z += g)
-        if (inOwnedAreas(w, x, z) && onGrid(w, 'walker', x, z)) spots.push([x, z]);
+        if (inOwnedAreas(w, x, z) && allowed(x, z) && onGrid(w, 'walker', x, z)) spots.push([x, z]);
   return spots.length ? spots[Math.floor(nextRandom(w) * spots.length)] : null;
 }
 

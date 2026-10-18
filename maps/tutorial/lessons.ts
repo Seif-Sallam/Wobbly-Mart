@@ -254,14 +254,14 @@ export const lessons: LessonDef[] = [
     title: 'Edit Layout',
     card: () => [
       'Edit Layout lets you move Shelves, Registers and machines. Open it from the Office panel.',
-      'Tap a fixture to pick it up, drag it or tap a new spot, then press Done. Green means it fits; red says why not.',
+      'Here you move the Egg Shelf: tap it to pick it up, drag it or tap a new spot (the yellow outline is a good one), then press Done. Green means it fits; red says why not.',
       'Moves are free here. On real Maps every Move costs Money, and each Area allows only a few.',
     ],
     steps: [
       { line: 'Open Edit Layout from the Office panel', target: 'office', done: (w) => saw(w, 'ui:layoutOpen') },
       {
         line: 'Move the Egg Shelf (the outline is a good spot), then press Done',
-        target: boxCentre(EGG_SPOT.box),
+        target: 'egg_shelf',
         ghost: { station: 'egg_shelf', spot: EGG_SPOT },
         done: (w) => eggMoved(w) && saw(w, 'ui:layoutClosed'),
       },
@@ -303,13 +303,17 @@ export const lessons: LessonDef[] = [
         target: pickupPoint,
         hud: 'delivery',
         enter: (w) => callDelivery(w, 'tomato', 2),
-        done: (w) => saw(w, 'ui:deliveryCard'),
+        // walking there without the card counts too: the next step's car would be gone
+        done: (w) => saw(w, 'ui:deliveryCard') || !pickupPoint(w),
       },
       {
         line: 'Hand the order over at the car',
         target: pickupPoint,
-        enter: (w) => give(w, 'tomato', 2),
-        done: (w) => saw(w, 'deliveryDone'),
+        enter: (w) => {
+          if (pickupPoint(w)) give(w, 'tomato', 2);
+        },
+        // the car is gone: filled (an unfilled one fails the Lesson first)
+        done: (w) => !pickupPoint(w),
       },
       {
         line: 'A Thief! Catch them before they reach the door',
@@ -341,6 +345,7 @@ export const lessons: LessonDef[] = [
     title: 'Closed',
     card: () => [
       'The Office can close the store. While it is closed no new Customers come in, so you can catch up. Those inside finish shopping.',
+      'Use the quiet to restock every Shelf. Deliveries keep coming while closed, so their cars still need filling.',
       `Once closed, you can reopen after ${TUNING.closed.reopenWait} seconds. Once open, you can close again after ${TUNING.closed.closeWait / 60} minutes.`,
     ],
     setup: (w) => {

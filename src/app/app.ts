@@ -91,6 +91,7 @@ export class App {
   private uiTimer = 0;
   private claimTab: () => void;
   private editing = false;
+  private logbookAge = 0;
   private seenPads = new Set<string>();
   /** Paused game: draw one more frame (something behind the overlay changed). */
   private redraw = true;
@@ -135,10 +136,8 @@ export class App {
       if (!game || this.ui.screen !== 'game' || game.paused || this.editing) return;
       const tap = this.input.tap;
       if (tap.car === id) tap.sprint = true;
-      else {
-        tap.startCar(game.world, id, false);
-        game.report('deliveryCard');
-      }
+      else tap.startCar(game.world, id, false);
+      game.report('deliveryCard');
     };
     this.input.onZoom = (k) => {
       if (this.ui.screen === 'game' && !this.editing) this.setZoom(this.zoom() * k);
@@ -181,6 +180,13 @@ export class App {
       if (this.game) this.game.paused = true;
       this.renderUi();
     });
+    // browsers allow audio only after a gesture: the first one starts the title's music (its backdrop Map's track)
+    const firstGesture = (): void => {
+      this.sounds.unlock(this.settings);
+      if (this.ui.screen === 'title' && this.game) this.sounds.playMusicOf(this.game.world.map);
+    };
+    addEventListener('pointerdown', firstGesture, { once: true });
+    addEventListener('keydown', firstGesture, { once: true });
     addEventListener('visibilitychange', () => (document.hidden ? this.onHidden() : this.sounds.pause(false)));
     addEventListener('pagehide', () => this.writeSave());
     this.renderUi();
@@ -359,7 +365,7 @@ export class App {
     this.save.currentMap = map.id;
     if (!this.save.visited.includes(map.id)) this.save.visited.push(map.id);
     game.open(map, mapSave);
-    this.sounds.playMusicOf(map.id);
+    this.sounds.playMusicOf(map);
     this.input.tap.cancel();
     game.view.scenery(0);
     game.view.cameraOverride = null;
@@ -380,6 +386,12 @@ export class App {
     if (this.ui.screen === 'title') {
       this.titleFrame(dt);
       return;
+    }
+    // the game runs behind the Logbook, so its numbers refresh a few times a second
+    if (this.ui.overlay === 'logbook' && (this.logbookAge += dt) >= FEEL.score.logbookRefresh) {
+      this.logbookAge = 0;
+      this.fillLogbook();
+      this.renderUi();
     }
     const w = game.world;
     for (const e of events) this.onEvent(e);
@@ -448,6 +460,9 @@ export class App {
       this.save.tutorialDone = true;
       this.save.currentMap = FIRST_MAP.id;
       this.toTitle();
+      // finished: Play again starts from Lesson 0
+      delete this.save.maps[w.map.id];
+      writeSave(this.save);
       if (isIos && !seen('ios-tip')) {
         markSeen('ios-tip');
         this.ui.card = 'ios';
@@ -634,9 +649,7 @@ export class App {
     this.sinceSave = 0;
     const game = this.game;
     if (!game || this.lostTab || this.editing || this.ui.screen !== 'game') return;
-    if (!isTutorialMap(game.world.map)) {
-      this.save.maps[game.world.map.id] = snapshot(game.world);
-    }
+    this.save.maps[game.world.map.id] = snapshot(game.world);
     writeSave(this.save);
     this.claimTab();
   }
@@ -644,7 +657,8 @@ export class App {
   private onHidden(): void {
     this.writeSave();
     this.sounds.pause(true);
-    if (this.ui.screen === 'game' && !this.ui.overlay && !this.lostTab) this.openOverlay('pause');
+    if (this.ui.screen === 'game' && (!this.ui.overlay || this.ui.overlay === 'logbook') && !this.lostTab)
+      this.openOverlay('pause');
   }
 
   // ---------- overlays
@@ -654,10 +668,13 @@ export class App {
     else if (this.ui.overlay === 'logbook') this.game?.report('logbookClosed');
     this.ui.overlay = o;
     if (o === 'maps') this.refreshMaps();
-    if (this.game && this.ui.screen === 'game') this.game.paused = !!o || this.lostTab;
+    // the Logbook alone leaves the game running
+    const pause = !!o && o !== 'logbook';
+    if (this.game && this.ui.screen === 'game') this.game.paused = pause || this.lostTab;
     this.ui.screenHz = Math.round(1000 / this.tickMs);
     this.redraw = true;
-    this.sounds.pause(!!o);
+    // Settings keeps the music playing, so its volume sliders can be heard
+    this.sounds.pause(pause && o !== 'settings');
     this.renderUi();
   }
 
@@ -694,16 +711,20 @@ export class App {
     this.ui.lastMap = this.save.currentMap;
   }
 
-  /** The Logbook for the open Map (the title: the last one played), on a tab; the game pauses behind it. */
+  /** The Logbook for the open Map (the title: the last one played), on a tab; the game keeps running behind it. */
   private openLogbook(tab: number): void {
+    this.fillLogbook();
+    this.ui.logbookTab = tab;
+    this.openOverlay('logbook');
+  }
+
+  private fillLogbook(): void {
     const live = this.ui.screen === 'game' ? this.game?.world : undefined;
     const map = live?.map ?? mapById(this.save.currentMap) ?? FIRST_MAP;
     const progress = (m: MapDef): MapProgress => (m === live?.map ? live : progressOfSave(this.save.maps[m.id]));
     // the Tutorial Map keeps no Score, so its Logbook is about this run only
     const all = isTutorialMap(map) ? [progress(map)] : MAPS.filter((m) => !isTutorialMap(m)).map(progress);
     this.ui.logbook = logbookView(map, progress(map), all);
-    this.ui.logbookTab = tab;
-    this.openOverlay('logbook');
   }
 
   private escape(): void {

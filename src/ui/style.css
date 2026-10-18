@@ -452,10 +452,11 @@ html.sprinting #joy .back::after {
     transform: translateX(-50%) scale(1.05, 0.95);
   }
 }
+/* bottom centre: the top centre belongs to the Challenge ring */
 .lesson {
   position: absolute;
   left: 50%;
-  top: calc(max(10px, env(safe-area-inset-top)) + 64px);
+  bottom: calc(max(14px, env(safe-area-inset-bottom)) + 12px);
   transform: translateX(-50%);
   width: min(300px, calc(100% - 32px));
   flex-direction: column;
@@ -1005,6 +1006,11 @@ html.sprinting #joy .back::after {
   background: var(--angry);
   color: var(--cream);
 }
+.layout-card.lesson-ask {
+  background: var(--orange);
+  color: var(--cream);
+  font-weight: 600;
+}
 .layout-row {
   display: flex;
   gap: 8px;
@@ -1546,9 +1552,16 @@ html:not(.pl) .hud-ui:has(.closed-badge:not(.gone)) .chal-ring {
 
 /* ---------- Logbook */
 .panel.logbook {
-  width: min(1000px, 100%);
-  height: 100%;
-  max-height: 100%;
+  width: min(680px, 100%);
+  max-height: 82%;
+}
+.panel.logbook .logbook-body {
+  min-height: 0;
+}
+.panel.logbook .back {
+  align-self: center;
+  font-size: 15px;
+  padding: 6px 22px;
 }
 .logbook-head {
   display: flex;

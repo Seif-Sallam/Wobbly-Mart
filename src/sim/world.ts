@@ -18,7 +18,7 @@ import { updateStaff } from './staff';
 import { updateCleaners } from './cleaning';
 import { addPickups, thiefFreeze, updateEvents } from './events';
 import { rebuildNav } from './walk';
-import { startLessons, updateLesson, dismissLessonCard, type LessonState, type LessonUiFact } from './lessons';
+import { startLessons, updateLesson, dismissLessonCard, type LessonState } from './lessons';
 import { type Stats, emptyStats, updateStats } from './stats';
 import { updateObjectives } from './objectives';
 import { quartersOf, updateScore } from './score';
@@ -310,8 +310,6 @@ export interface Intents {
   buyUpgrade?: string;
   /** Got it on a Lesson card. */
   lessonNext?: boolean;
-  /** A screen the app opened or closed that a Lesson waits for; the app sends them one per step, in order. */
-  ui?: LessonUiFact;
   assign?: { stocker: string; role: StockerRole };
   /** Office: close or reopen the store (ignored during the wait). */
   setClosed?: boolean;
@@ -472,7 +470,7 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number): Wo
   if (save) applySave(w, save);
   else if (!map.lessons?.length) w.pan = { area: map.start.owned[0], t: 0, duration: panDuration() };
   refreshFreeStations(w);
-  startLessons(w);
+  startLessons(w, save?.lesson ?? 0);
   w.quarters = Math.max(w.quarters, quartersOf(completion(w)));
   w.complete = checkCompletion(w, false);
   w.events = [];
@@ -510,7 +508,7 @@ export function step(w: World, intents: Intents): void {
   updateStats(w);
   updateObjectives(w);
   updateScore(w);
-  updateLesson(w, intents.ui);
+  updateLesson(w);
   w.complete = checkCompletion(w, true);
   if (w.navDirty) rebuildNav(w);
 }

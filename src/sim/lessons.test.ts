@@ -1,10 +1,11 @@
 import { expect, test } from 'vitest';
 import { tutorialMap } from '../../maps/tutorial';
 import { createWorld, step, type SimEvent, type World } from './world';
-import { lessonAim, lessonCard, lessonGhost, lessonHud } from './lessons';
+import { lessonAim, lessonCard, lessonFact, lessonGhost, lessonHud } from './lessons';
 import { LessonPlayer } from './lesson-player';
 import { cutOff, spotProblem } from './layout';
 import { completion } from './economy';
+import { snapshot } from './save';
 import { TUNING } from './tuning';
 import type { ProducerStation, ShelfStation } from './world';
 
@@ -133,15 +134,20 @@ test('the Tutorial Map runs Lessons 0–14 from frozen cards to goals, scripted 
   expect(w.money).toBe(0);
   finish(w);
 
+  // leaving and coming back resumes on this Lesson's card, with everything bought so far
+  const resumed = createWorld(tutorialMap, snapshot(w), 7);
+  expect(resumed.lesson).toMatchObject({ index: 9, phase: 'card' });
+  expect([...resumed.owned].sort()).toEqual([...w.owned].sort());
+
   // Lesson 9: the suggested spot is legal; leaving Edit Layout without moving replays; any drop plus Done counts
   expect(w.lesson).toMatchObject({ index: 9, phase: 'card' });
   const spot = tutorialMap.lessons?.[9].steps[1].ghost?.spot;
   if (!spot) throw new Error('Lesson 9 has no suggested spot');
   expect(spotProblem(w, 'egg_shelf', spot)).toBeNull();
   step(w, { ...idle, lessonNext: true });
-  step(w, { ...idle, ui: 'layoutOpen' });
+  lessonFact(w, 'layoutOpen');
   expect(lessonGhost(w)?.station).toBe('egg_shelf');
-  step(w, { ...idle, ui: 'layoutClosed' });
+  lessonFact(w, 'layoutClosed');
   expect(w.events.map((e) => e.type)).toContain('lessonReplay');
   expect(w.lesson).toMatchObject({ index: 9, phase: 'play', step: 0 });
   expect(lessonGhost(w)).toBeNull();

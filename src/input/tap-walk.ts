@@ -25,10 +25,13 @@ export class TapWalk {
     this.car = null;
   }
 
-  /** A Delivery card tap: walk to that car's pickup tile. */
+  /** A Delivery card tap: walk onto the middle of that car's pickup tile, not just to its edge. */
   startCar(w: World, id: string, sprint: boolean): void {
     this.forget(w);
-    this.target = { station: id };
+    const st = w.stations.get(id);
+    if (!st) return;
+    const [x, z] = boxCentre(st.box);
+    this.target = { point: walkable(w, x, z) };
     this.sprint = sprint;
     this.car = id;
   }

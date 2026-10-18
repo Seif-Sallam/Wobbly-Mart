@@ -13,7 +13,7 @@ export interface LessonDevice {
   joystick: 'fixed' | 'free' | 'off';
 }
 
-/** What the app reports of its own screens, which pause the sim: one fact per step, in order (see `Intents.ui`). */
+/** What the app reports of its own screens. Some pause the sim, so a fact applies at once (see `lessonFact`). */
 export type LessonUiFact = 'layoutOpen' | 'layoutClosed' | 'deliveryCard' | 'logbookOpen' | 'logbookClosed';
 
 type ByDevice = string | ((d: LessonDevice) => string);
@@ -118,9 +118,12 @@ function enter(w: World, card: boolean): void {
   startStep(w, 0);
 }
 
-export function startLessons(w: World): void {
+/** From Lesson `at` (a saved Tutorial Map resumes where it was left), on its card. */
+export function startLessons(w: World, at: number): void {
   w.lesson = newLessons(w);
-  if (w.lesson) enter(w, true);
+  if (!w.lesson) return;
+  w.lesson.index = Math.max(0, Math.min(Math.floor(at) || 0, (w.map.lessons?.length ?? 1) - 1));
+  enter(w, true);
 }
 
 function advance(w: World): void {
@@ -159,8 +162,34 @@ function record(w: World, L: LessonState): void {
   }
 }
 
-/** Once per sim step, after everything else moved. `ui`: a fact the app reported this step. */
-export function updateLesson(w: World, ui?: LessonUiFact): void {
+/** A failed Lesson replays its setup; true when it did. */
+function replayIfFailed(w: World): boolean {
+  const L = w.lesson;
+  if (!L || !defOf(w)?.fail?.(w)) return false;
+  w.events.push({ type: 'lessonReplay', lesson: L.index });
+  enter(w, false);
+  return true;
+}
+
+function finishIfDone(w: World): void {
+  const L = w.lesson;
+  const def = defOf(w);
+  if (!L || !def || !def.steps[L.step].done(w)) return;
+  if (L.step + 1 < def.steps.length) return startStep(w, L.step + 1);
+  L.phase = 'nice';
+  L.t = 0;
+  w.events.push({ type: 'lessonDone', lesson: L.index });
+}
+
+/** A screen of the app opened or closed. Applied at once, outside a step: Edit Layout and others pause the sim. */
+export function lessonFact(w: World, fact: LessonUiFact): void {
+  if (w.lesson?.phase !== 'play') return;
+  w.lesson.saw.add(`ui:${fact}`);
+  if (!replayIfFailed(w)) finishIfDone(w);
+}
+
+/** Once per sim step, after everything else moved. */
+export function updateLesson(w: World): void {
   const L = w.lesson;
   const def = defOf(w);
   if (!L || !def || L.phase === 'card') return;
@@ -170,23 +199,14 @@ export function updateLesson(w: World, ui?: LessonUiFact): void {
     return;
   }
   record(w, L);
-  if (ui) L.saw.add(`ui:${ui}`);
-  if (def.fail?.(w)) {
-    w.events.push({ type: 'lessonReplay', lesson: L.index });
-    enter(w, false);
-    return;
-  }
+  if (replayIfFailed(w)) return;
   const step = def.steps[L.step];
   if (!L.entered) {
     L.entered = true;
     step.enter?.(w);
   }
   step.tick?.(w, L.t);
-  if (!step.done(w)) return;
-  if (L.step + 1 < def.steps.length) return startStep(w, L.step + 1);
-  L.phase = 'nice';
-  L.t = 0;
-  w.events.push({ type: 'lessonDone', lesson: L.index });
+  finishIfDone(w);
 }
 
 // ---------- what the app shows

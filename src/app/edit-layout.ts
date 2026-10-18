@@ -88,8 +88,8 @@ export class EditLayout {
     );
     this.focus.set(w.player.x, 0, w.player.z);
     this.game.view.cameraOverride = this.focus;
-    this.game.view.layoutGhost.suggest(lessonGhost(w)?.spot.box ?? null);
     this.game.report('layoutOpen');
+    this.game.view.layoutGhost.suggest(lessonGhost(w)?.spot.box ?? null);
     this.changed();
   }
 
@@ -120,6 +120,7 @@ export class EditLayout {
     const n = this.moved().length;
     const bill = moveBill(this.w, n);
     const why = this.picked?.why ?? (performance.now() < this.flashUntil ? this.flash : '');
+    const ghost = lessonGhost(this.w);
     return {
       picked: this.picked ? fixtureName(this.picked.id) : null,
       why,
@@ -128,6 +129,7 @@ export class EditLayout {
       total: bill.total,
       next: bill.next,
       canDone: canPayMoves(this.w, n),
+      lesson: ghost ? `Lesson: move the ${fixtureName(ghost.station)}, then press Done` : null,
     };
   }
 
@@ -200,6 +202,9 @@ export class EditLayout {
   }
 
   private pick(st: Station): void {
+    // a Lesson that moves one fixture lets only that one be picked up
+    const only = lessonGhost(this.w)?.station;
+    if (only && st.id !== only) return this.say(`This Lesson moves the ${fixtureName(only)}`);
     this.drop();
     this.picked = { id: st.id, spot: { box: [...st.box], rot: st.rot }, why: null };
     this.showGhost();

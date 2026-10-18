@@ -203,7 +203,7 @@ One complete store level: its layout, **Areas**, stations, **Pads**, **Upgrades*
 _Avoid_: level, stage
 
 **Tutorial Map**:
-A small **Map** outside the fixed order that teaches the mechanics one at a time, pausing between instructions. Never locked and never locks anything; keeps no save, only whether it was finished. Until it is finished the game suggests playing it first, and the **Player** may skip that.
+A small **Map** outside the fixed order that teaches the mechanics one at a time, pausing between instructions. Never locked and never locks anything; keeps its progress while unfinished, so it resumes at the Lesson it was left on, and starts over once finished. Until it is finished the game suggests playing it first, and the **Player** may skip that.
 _Avoid_: tutorial (for the old step tutorial on the Corner Shop, which it replaces)
 
 **Lesson**:

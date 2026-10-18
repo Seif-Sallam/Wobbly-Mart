@@ -22,6 +22,8 @@ export interface MapSave {
   quarters?: number;
   /** Bad Reviews in a row; missing = 0. */
   badReviewStreak?: number;
+  /** Tutorial Map: the Lesson to resume at. */
+  lesson?: number;
 }
 
 /** Lowest frame cap offered, and the one Battery saver uses (fps). */
@@ -43,8 +45,9 @@ export const validFrameCap = (cap: unknown): cap is Settings['frameCap'] =>
   cap === 'screen' || (typeof cap === 'number' && cap >= MIN_FRAME_CAP);
 
 export interface Settings {
-  music: boolean;
-  sounds: boolean;
+  /** Music and Sounds loudness, 0–1 (0 = off), on top of the mix. */
+  musicVolume: number;
+  soundVolume: number;
   manualGrab: boolean;
   /** Metres across the screen's short side; null = the device default. */
   zoom: number | null;
@@ -59,8 +62,8 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  music: true,
-  sounds: true,
+  musicVolume: 0.5,
+  soundVolume: 1,
   manualGrab: false,
   zoom: null,
   hudScale: 1,
@@ -113,6 +116,7 @@ export function snapshot(w: World): MapSave {
     score: w.score,
     quarters: w.quarters,
     badReviewStreak: w.badReviewStreak,
+    lesson: w.lesson?.index,
   };
 }
 

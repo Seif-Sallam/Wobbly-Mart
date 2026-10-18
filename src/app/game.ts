@@ -1,6 +1,6 @@
 // The running game: fixed-timestep sim, the 3D view, input and the bits of glue between them.
 import type { Intents, SimEvent, StockerRole, World } from '../sim/world';
-import type { LessonUiFact } from '../sim/lessons';
+import { lessonFact, type LessonUiFact } from '../sim/lessons';
 import { createWorld, DT, step } from '../sim/world';
 import type { MapDef } from '../sim/map';
 import type { MapSave } from '../sim/save';
@@ -21,7 +21,8 @@ export class Game {
   private last = performance.now();
   private commands: Partial<Intents> = {};
   /** Screens the app opened or closed that a Lesson waits for; the sim gets one per step. */
-  private facts: LessonUiFact[] = [];
+  /** Events a reported fact raised between steps; the next frame hands them on. */
+  private pending: SimEvent[] = [];
   /** Every frame, after the sim stepped: events of this frame. */
   onFrame: (events: SimEvent[], dt: number) => void = () => {};
 
@@ -38,13 +39,15 @@ export class Game {
   /** Fresh Opening of a map (reload, map switch, reset). */
   open(map: MapDef, save: MapSave | null): void {
     this.world = createWorld(map, save, seed());
-    this.facts = [];
+    this.pending = [];
     this.view.reset(this.world);
   }
 
-  /** Tells the running Lesson about a screen of the app (they pause the sim, so it learns in order, afterwards). */
+  /** Tells the running Lesson about a screen of the app, at once (some screens pause the sim). */
   report(fact: LessonUiFact): void {
-    if (this.world.lesson) this.facts.push(fact);
+    const before = this.world.events.length;
+    lessonFact(this.world, fact);
+    this.pending.push(...this.world.events.slice(before));
   }
 
   buyUpgrade(id: string): void {
@@ -70,7 +73,8 @@ export class Game {
     this.last = now;
     // paused frames are drawn only on change, so their long gaps are not slow frames
     if (!this.paused) this.stage.watchFrame(dt, fps);
-    const events: SimEvent[] = [];
+    const events: SimEvent[] = this.pending;
+    this.pending = [];
     if (!this.paused) {
       this.acc += dt * this.speed;
       let steps = 0;
@@ -83,7 +87,6 @@ export class Game {
           grabPaused: this.input.tap.grabPaused(this.world),
           sprint: this.input.sprint,
           manualGrab: this.manualGrab,
-          ui: this.facts.shift(),
           ...this.commands,
         });
         this.commands = {};

@@ -46,6 +46,7 @@ export const FEEL = {
   hudScaleMin: 1,
   hudScaleMax: 1.6,
   hudScaleSlider: 0.05,
+  volumeSlider: 0.05,
   /** Joystick stays off this long after a pinch (s). */
   pinchQuiet: 0.15,
   // Tap Walk: a press under tapMs that moved under tapPx is a tap; double-tap within doubleTapMs sprints. Fixtures
@@ -193,6 +194,8 @@ export const FEEL = {
   /** Score UI: CHALLENGE! stamp and toast (ms), ring timer size (px) and the seconds left it turns red at, the Objective
    * card's hold and fly into the trophy (ms), the badge's count-up speed (share of the gap per s). */
   score: {
+    /** Seconds between Logbook refreshes while the game runs behind it. */
+    logbookRefresh: 0.5,
     stampMs: 1200,
     toastMs: 2200,
     ringSize: 64,

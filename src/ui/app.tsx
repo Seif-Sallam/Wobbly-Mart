@@ -71,6 +71,8 @@ export interface LayoutUi {
   total: number;
   next: number | null;
   canDone: boolean;
+  /** The running Lesson's ask while Edit Layout is open, or null. */
+  lesson: string | null;
 }
 
 export interface UiActions {
@@ -354,8 +356,24 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
         value={s.settings.hudScale}
         set={(v) => a.setSetting('hudScale', v)}
       />
-      <Toggle label="Music" on={s.settings.music} set={(v) => a.setSetting('music', v)} actions={a} />
-      <Toggle label="Sounds" on={s.settings.sounds} set={(v) => a.setSetting('sounds', v)} actions={a} />
+      <SliderRow
+        label="Music"
+        ends={['🔈', '🔊']}
+        min={0}
+        max={1}
+        step={FEEL.volumeSlider}
+        value={s.settings.musicVolume}
+        set={(v) => a.setSetting('musicVolume', v)}
+      />
+      <SliderRow
+        label="Sounds"
+        ends={['🔈', '🔊']}
+        min={0}
+        max={1}
+        step={FEEL.volumeSlider}
+        value={s.settings.soundVolume}
+        set={(v) => a.setSetting('soundVolume', v)}
+      />
       {s.touch && (
         <Toggle
           label="Joystick"
@@ -758,6 +776,7 @@ function LayoutPanel({ l, a }: { l: LayoutUi; a: UiActions }) {
   );
   return (
     <div class="layout-panel" onPointerDown={stop} onPointerUp={stop}>
+      {l.lesson && <div class="layout-card lesson-ask">👉 {l.lesson}</div>}
       {l.why && <div class="layout-card why">✋ {l.why}</div>}
       <div class="layout-card">
         {l.picked ? (

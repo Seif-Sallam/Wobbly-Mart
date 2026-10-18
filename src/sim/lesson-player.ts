@@ -1,13 +1,11 @@
 // A player who follows the Lesson arrows, as Intents: it drives the Lesson tests and the bot's Tutorial Map run.
 // Screens the real app owns (Edit Layout, Logbook, the Delivery card) are reported the way the app reports them.
 import type { Intents, World } from './world';
-import { lessonGhost, lessonTarget, type LessonUiFact } from './lessons';
+import { lessonFact, lessonGhost, lessonTarget } from './lessons';
 import { moveIntent } from './bot';
 import { payMoves, place } from './layout';
 
 export class LessonPlayer {
-  /** Reported facts waiting to be sent, one per step. */
-  private facts: LessonUiFact[] = [];
   /** Things already done in a step, by Lesson, step and replay. */
   private done = new Set<string>();
   private replays = 0;
@@ -30,22 +28,21 @@ export class LessonPlayer {
     if (L.phase === 'play') {
       const at = `${L.index}.${L.step}`;
       if (at === '8.1' && w.atOffice) intents.buyUpgrade = 'stack_cap';
-      if (at === '9.0' && w.atOffice) once(() => this.facts.push('layoutOpen'));
+      if (at === '9.0' && w.atOffice) once(() => lessonFact(w, 'layoutOpen'));
       if (at === '9.1')
         once(() => {
           const ghost = lessonGhost(w);
           if (ghost) place(w, ghost.station, ghost.spot);
           payMoves(w, 1);
-          this.facts.push('layoutClosed');
+          lessonFact(w, 'layoutClosed');
         });
       if (at === '10.2' && w.atOffice && w.stockers[0]) intents.assign = { stocker: w.stockers[0].id, role: 'goods' };
-      if (at === '11.0' && target) once(() => this.facts.push('deliveryCard'));
+      if (at === '11.0' && target) once(() => lessonFact(w, 'deliveryCard'));
       if (at === '12.0' && w.atOffice) intents.setClosed = true;
       if (at === '12.1' && w.atOffice) intents.setClosed = false;
-      if (at === '13.1') once(() => this.facts.push('logbookOpen'));
-      if (at === '13.2') once(() => this.facts.push('logbookClosed'));
+      if (at === '13.1') once(() => lessonFact(w, 'logbookOpen'));
+      if (at === '13.2') once(() => lessonFact(w, 'logbookClosed'));
     }
-    intents.ui = this.facts.shift();
     return intents;
   }
 }

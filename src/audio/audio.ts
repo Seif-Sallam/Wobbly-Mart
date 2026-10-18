@@ -2,6 +2,7 @@
 import { Howl, Howler } from 'howler';
 import * as THREE from 'three';
 import type { SimEvent, World } from '../sim/world';
+import type { MapDef } from '../sim/map';
 import { DEFAULT_SETTINGS, type Settings } from '../sim/save';
 import { boxCentre } from '../sim/geometry';
 import type { ProducerType } from '../../catalog/producers';
@@ -64,26 +65,38 @@ export class Sounds {
   /** Called from the Play tap: browsers only allow audio after a gesture. */
   unlock(settings: Settings): void {
     this.settings = settings;
+    if (this.sfxHowl) return;
     const base = import.meta.env.BASE_URL;
     const sprite: Record<string, [number, number]> = {};
     for (const [k, v] of Object.entries(SPRITE)) sprite[k] = [v[0], v[1]];
     this.sfxHowl = new Howl({ src: [`${base}audio/sfx.mp3`], sprite, volume: 0.8 });
   }
 
-  /** Swaps to the Map's own track; does nothing before unlock. */
-  playMusicOf(mapId: string): void {
-    if (!this.sfxHowl || mapId === this.musicMap) return;
-    this.musicMap = mapId;
+  /** Swaps to the Map's track; does nothing before unlock. */
+  playMusicOf(map: MapDef): void {
+    const track = map.music ?? map.id;
+    if (!this.sfxHowl || track === this.musicMap) return;
+    this.musicMap = track;
     this.music?.unload();
     const base = import.meta.env.BASE_URL;
-    this.music = new Howl({ src: [`${base}audio/music-${mapId}.mp3`], loop: true, volume: MUSIC_VOLUME, html5: true });
+    this.music = new Howl({
+      src: [`${base}audio/music-${track}.mp3`],
+      loop: true,
+      volume: this.musicLevel(),
+      html5: true,
+    });
     this.apply(this.settings);
+  }
+
+  private musicLevel(): number {
+    return MUSIC_VOLUME * this.settings.musicVolume;
   }
 
   apply(settings: Settings): void {
     this.settings = settings;
     if (!this.music) return;
-    if (settings.music && !this.paused) {
+    this.music.volume(this.musicLevel());
+    if (settings.musicVolume > 0 && !this.paused) {
       if (!this.music.playing()) this.music.play();
     } else this.music.pause();
   }
@@ -99,12 +112,12 @@ export class Sounds {
 
   sfx(name: SoundName, opts: { rate?: number; volume?: number } = {}): void {
     const h = this.sfxHowl;
-    if (!h || !this.settings.sounds || this.paused) return;
+    if (!h || !this.settings.soundVolume || this.paused) return;
     const live = (this.playing.get(name) ?? []).filter((id) => h.playing(id));
     if (live.length >= MAX_COPIES) return;
     const id = h.play(name);
     h.rate((opts.rate ?? 1) * (1 + (Math.random() * 2 - 1) * PITCH_JITTER), id);
-    h.volume(LEVEL[name] * (opts.volume ?? 1), id);
+    h.volume(LEVEL[name] * (opts.volume ?? 1) * this.settings.soundVolume, id);
     live.push(id);
     this.playing.set(name, live);
   }
@@ -114,8 +127,10 @@ export class Sounds {
     this.sfx(name);
     const m = this.music;
     if (!m || !m.playing()) return;
-    m.fade(MUSIC_VOLUME, MUSIC_DIP, 200);
-    setTimeout(() => m.fade(MUSIC_DIP, MUSIC_VOLUME, 600), 1600);
+    const level = this.musicLevel();
+    const dip = level * (MUSIC_DIP / MUSIC_VOLUME);
+    m.fade(level, dip, 200);
+    setTimeout(() => m.fade(dip, this.musicLevel(), 600), 1600);
   }
 
   frame(events: SimEvent[], w: World, onScreen: (p: THREE.Vector3) => boolean, dt: number): void {
@@ -236,7 +251,7 @@ export class Sounds {
       const v = at(st.id);
       if (t.kind === 'machine' && t.sound && v > volume) [volume, type] = [v, t];
     }
-    const want = type?.sound && this.settings.sounds && !this.paused ? type : null;
+    const want = type?.sound && this.settings.soundVolume > 0 && !this.paused ? type : null;
     const m = this.machine;
     if (m && (want?.sound !== m.sound || (want.soundRate ?? 1) !== m.rate)) {
       h.stop(m.id);
@@ -249,6 +264,6 @@ export class Sounds {
       h.rate(want.soundRate ?? 1, id);
       this.machine = { sound: want.sound, rate: want.soundRate ?? 1, id };
     }
-    h.volume(LEVEL[this.machine.sound] * volume, this.machine.id);
+    h.volume(LEVEL[this.machine.sound] * volume * this.settings.soundVolume, this.machine.id);
   }
 }

@@ -5,6 +5,7 @@ import { pick } from '../../catalog/pick';
 import { layout } from './layout';
 import { events, freeStations, movePrices, pads, start } from './unlocks';
 import { upgrades } from './upgrades';
+import { objectives } from './objectives';
 
 export const tutorialMap: MapDef = {
   id: 'tutorial',
@@ -17,6 +18,8 @@ export const tutorialMap: MapDef = {
   upgrades,
   start,
   tutorial: [],
+  objectives,
+  challenges: false,
   movePrices,
   events,
 };

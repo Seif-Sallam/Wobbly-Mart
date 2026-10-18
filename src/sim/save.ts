@@ -2,6 +2,7 @@
 import type { Placement } from './map';
 import { DEFAULT_LOOK } from '../../catalog/looks';
 import type { StockerRole, World } from './world';
+import { emptyStats, type Stats } from './stats';
 
 export interface MapSave {
   money: number;
@@ -12,6 +13,13 @@ export interface MapSave {
   /** Edit Layout: places moved away from the map's, and Moves bought. */
   layout?: Record<string, Placement>;
   movesUsed?: number;
+  /** Progress below: always written by snapshot, absent in hand-built saves (a fresh start). */
+  stats?: Stats;
+  /** Ids (objectiveId) of the Objectives done. */
+  objectives?: string[];
+  score?: number;
+  /** Quarters of Completion already scored (0–4). */
+  quarters?: number;
   /** Bad Reviews in a row; missing = 0. */
   badReviewStreak?: number;
 }
@@ -61,20 +69,20 @@ export const DEFAULT_SETTINGS: Settings = {
   joystick: 'fixed',
 };
 
-const DEFAULT_CAP = 'orange';
+export const DEFAULT_CAP = 'orange';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export interface SaveFile {
   version: number;
   currentMap: string;
   visited: string[];
   tutorialDone: boolean;
-  /** First unfinished tutorial step (-1 when done); purchase steps re-derive from the save on load. */
-  tutorialStep: number;
-  /** The Player's look (a Wardrobe id) and cap colour name: one choice for the whole game. */
+  /** The Player's look (an asset-table character) and cap colour: one choice for the whole game. */
   look: string;
   cap: string;
+  /** First unfinished tutorial step (-1 when done); purchase steps re-derive from the save on load. */
+  tutorialStep: number;
   maps: Record<string, MapSave>;
 }
 
@@ -83,9 +91,9 @@ export const emptySave = (firstMap: string): SaveFile => ({
   currentMap: firstMap,
   visited: [firstMap],
   tutorialDone: false,
-  tutorialStep: 0,
   look: DEFAULT_LOOK,
   cap: DEFAULT_CAP,
+  tutorialStep: 0,
   maps: {},
 });
 
@@ -102,6 +110,10 @@ export function snapshot(w: World): MapSave {
     roles: Object.fromEntries(w.stockers.map((s) => [s.id, s.role])),
     layout: { ...w.placed },
     movesUsed: w.movesUsed,
+    stats: structuredClone(w.stats),
+    objectives: [...w.objectivesDone],
+    score: w.score,
+    quarters: w.quarters,
     badReviewStreak: w.badReviewStreak,
   };
 }
@@ -112,6 +124,16 @@ const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string
   1: (old) => ({ ...emptySave(String(old.currentMap)) }),
   // Edit Layout: maps gain an optional layout and Moves used; older ones load with the map's layout
   2: (old) => old,
+  // playtest 3: Stats, Objectives, Score and Completion quarters per Map; the Player's look and cap colour
+  3: (old) => ({
+    ...old,
+    maps: Object.fromEntries(
+      Object.entries((old.maps ?? {}) as Record<string, object>).map(([id, m]) => [
+        id,
+        { stats: emptyStats(), objectives: [], score: 0, quarters: 0, badReviewStreak: 0, ...m },
+      ]),
+    ),
+  }),
 };
 
 /** Brings any older save up to date; throws with a clear message when it can't. */

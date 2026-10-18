@@ -3,6 +3,8 @@ import type { MapDef, Point, StationDef } from './map';
 import type { Intents, Station, World } from './world';
 import { newCarrier, STOCKER_ROLES } from './world';
 import type { MapSave } from './save';
+import { objectiveId } from '../../catalog/objectives';
+import { restoreStats } from './stats';
 import { boxCentre, footprint, frontPoint } from './geometry';
 import { TUNING } from './tuning';
 import { FEEL } from '../feel';
@@ -54,7 +56,19 @@ function createStation(w: World, id: string, def: StationDef): void {
     }
     case 'stocker': {
       const [x, z] = boxCentre(place.box);
-      w.stockers.push({ id, x, z, vx: 0, vz: 0, ...newCarrier(), role: 'auto', job: null, rethink: 0, spot: null, leftover: null });
+      w.stockers.push({
+        id,
+        x,
+        z,
+        vx: 0,
+        vz: 0,
+        ...newCarrier(),
+        role: 'auto',
+        job: null,
+        rethink: 0,
+        spot: null,
+        leftover: null,
+      });
       break;
     }
     case 'cleaner': {
@@ -121,6 +135,11 @@ export function applySave(w: World, save: MapSave): void {
     const role = save.roles?.[s.id];
     if (role && STOCKER_ROLES.includes(role)) s.role = role;
   }
+  w.stats = restoreStats(save.stats);
+  const objectives = new Set(w.map.objectives.map(objectiveId));
+  for (const id of save.objectives ?? []) if (objectives.has(id)) w.objectivesDone.add(id);
+  w.score = Math.max(0, Math.floor(Number(save.score) || 0));
+  w.quarters = Math.min(4, Math.max(0, Math.floor(Number(save.quarters) || 0)));
 }
 
 // ---------- stats and Upgrades
@@ -172,7 +191,7 @@ export function applyCommands(w: World, intents: Intents): void {
   if (intents.setClosed !== undefined && w.atOffice && intents.setClosed !== w.closed && w.closedWait <= 0) {
     w.closed = intents.setClosed;
     w.closedWait = w.closed ? TUNING.closed.reopenWait : TUNING.closed.closeWait;
-    if (w.closed) w.timesClosed++;
+    if (w.closed) w.stats.timesClosed++;
   }
   if (intents.skipTutorial && !w.tutorial.done) {
     w.tutorial.done = true;
@@ -212,11 +231,12 @@ export function cashPilePoint(w: World, register: string): Point {
 
 // ---------- Completion
 
-/** Bought Pads + Upgrade levels over everything purchasable (works on a save too). */
+/** Bought Pads + Upgrade levels + Objectives done over everything, equally weighted (works on a save too). */
 export function completionOf(
   map: MapDef,
   owned: { has: (id: string) => boolean },
   levels: Record<string, number>,
+  objectivesDone: { has: (id: string) => boolean },
 ): number {
   let done = 0;
   let total = 0;
@@ -228,10 +248,14 @@ export function completionOf(
     total += up.levels.length;
     done += Math.min(up.levels.length, levels[id] ?? 0);
   }
+  for (const o of map.objectives) {
+    total++;
+    if (objectivesDone.has(objectiveId(o))) done++;
+  }
   return total ? done / total : 1;
 }
 
-export const completion = (w: World): number => completionOf(w.map, w.owned, w.levels);
+export const completion = (w: World): number => completionOf(w.map, w.owned, w.levels, w.objectivesDone);
 
 export function checkCompletion(w: World, announce: boolean): boolean {
   const full = completion(w) >= 1;

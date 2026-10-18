@@ -1,5 +1,6 @@
 // Map validator: runs in CI and live in the layout editor. Returns problems; an empty list means the map is valid.
 import type { Box, EventDef, MapDef, StationDef } from './map';
+import { objectiveId } from '../../catalog/objectives';
 import { stationModel } from './map';
 import { boxGap, boxesOverlap, frontPoint } from './geometry';
 import { TUNING } from './tuning';
@@ -80,6 +81,16 @@ export function validateMap(
   for (const [i, step] of map.tutorial.entries()) {
     const ref = step.pad ?? step.station;
     if (ref && !ids.has(ref)) out.push({ id: `tutorial[${i}]`, message: `points at unknown id "${ref}"` });
+  }
+
+  const objectiveIds = new Set<string>();
+  for (const o of map.objectives) {
+    const id = objectiveId(o);
+    if (objectiveIds.has(id)) out.push({ id, message: 'is listed twice in objectives' });
+    objectiveIds.add(id);
+    if (o.kind === 'sell' && !map.products[o.product])
+      out.push({ id, message: `sells unknown Product "${o.product}"` });
+    if (o.kind === 'own' && !ids.has(o.id)) out.push({ id, message: `owns unknown id "${o.id}"` });
   }
 
   // unlock cycles and unreachable items

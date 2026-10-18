@@ -3,10 +3,12 @@ import type { Job, PickupStation, ProducerStation, ShelfStation, Station, Stocke
 import { accepts, availableCount, takeLoose, tipDrops, transferTick, trayRoom } from './carry';
 import { stockerCarry, stockerSpeed } from './economy';
 import { walkAgent, walkDistance } from './walk';
-import { messSlowdown } from './cleaning';
+import { messSlowdown, wanderSpot } from './cleaning';
 import { DT } from './world';
 import { TUNING } from './tuning';
 import { shelfCap } from './map';
+import { distToBox } from './geometry';
+import { INPUT_CAP } from '../../catalog/producers';
 
 /** Which sinks a role fills: Goods Shelves and car orders, Machines Animal and Machine inputs, Auto all. */
 function inRole(st: Station, role: StockerRole): boolean {
@@ -43,7 +45,7 @@ function wantsInput(w: World, st: ProducerStation, product: string): boolean {
   const type = w.map.producers[st.type];
   if (!type.inputs.includes(product) || st.tray >= (type.trayCap ?? 0)) return false;
   const have = st.input[product] ?? 0;
-  return have < (type.inputCap ?? 0) && type.inputs.every((p) => (st.input[p] ?? 0) >= have);
+  return have < INPUT_CAP && type.inputs.every((p) => (st.input[p] ?? 0) >= have);
 }
 
 /** A Product's final demand: its own Shelves, or inherited from what the Producers it feeds make, at any depth. */
@@ -72,12 +74,12 @@ function urgency(w: World, st: Station, product: string): number {
   const type = w.map.producers[st.type];
   const d = demand(w, type.output);
   if (d === Infinity) return Infinity;
-  return d === 0 ? TIER.bottleneck * gap + (st.input[product] ?? 0) / (type.inputCap ?? 1) : TIER.input * gap + d / 3; // d < 3
+  return d === 0 ? TIER.bottleneck * gap + (st.input[product] ?? 0) / INPUT_CAP : TIER.input * gap + d / 3; // d < 3
 }
 
 function freeSpace(w: World, st: Station, product: string): number {
   if (st.kind === 'shelf') return shelfCap(w.map, st.product) - st.items;
-  if (st.kind === 'producer') return (w.map.producers[st.type].inputCap ?? 0) - (st.input[product] ?? 0);
+  if (st.kind === 'producer') return INPUT_CAP - (st.input[product] ?? 0);
   if (st.kind === 'pickup')
     return (st.delivery?.order ?? []).reduce((n, l) => n + (l.product === product ? l.want - l.got : 0), 0);
   return 0;
@@ -162,6 +164,22 @@ function nextJob(w: World, s: Stocker, cap: number, taken: Set<string>): Job | n
   return ride;
 }
 
+/** No job: wander between spots near the Stations the role serves, until a job appears. */
+function stroll(w: World, s: Stocker): void {
+  const near = (x: number, z: number) =>
+    [...w.stations.values()].some(
+      (st) =>
+        (st.kind === 'shelf' || st.kind === 'producer') &&
+        inRole(st, s.role) &&
+        distToBox(x, z, st.box) <= TUNING.stocker.idle.radius,
+    );
+  s.spot ??= wanderSpot(w, near);
+  if (!s.spot || walkAgent(w, 'walker', s, { point: s.spot }, TUNING.cleaner.wanderSpeed)) {
+    s.vx = s.vz = 0;
+    s.spot = null;
+  }
+}
+
 function updateStocker(w: World, s: Stocker): void {
   const taken = new Set(w.stockers.filter((o) => o !== s && o.job).map((o) => o.job?.sink ?? ''));
   const cap = stockerCarry(w);
@@ -175,8 +193,9 @@ function updateStocker(w: World, s: Stocker): void {
     s.rethink = TUNING.stockerRethink;
   }
   const job = s.job;
+  if (job) s.spot = null;
   if (!job) {
-    s.vx = s.vz = 0;
+    stroll(w, s);
     transferTick(w, s, null, who, { drop: () => false, pick: () => false, cap });
     return;
   }

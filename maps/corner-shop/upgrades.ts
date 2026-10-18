@@ -34,7 +34,7 @@ export const upgrades: Record<string, UpgradeDef> = {
     family: 'player',
     target: 'player',
     stat: 'safe',
-    levels: levels([25, 45, 80], [4, 5, 6]),
+    levels: levels([25, 45, 80], [6, 7, 8]),
     requires: ['office'],
   },
   mop_speed: {

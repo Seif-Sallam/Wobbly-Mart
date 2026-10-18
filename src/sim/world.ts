@@ -64,6 +64,8 @@ export interface Stocker extends Mover, Carrier {
   role: StockerRole;
   job: Job | null;
   rethink: number;
+  /** A wander spot, while no job waits. */
+  spot: Point | null;
   /** Seconds the whole Stack has been leftovers nothing needs, or null. */
   leftover: number | null;
 }

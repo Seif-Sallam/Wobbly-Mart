@@ -1,4 +1,5 @@
 // `?debug`: lil-gui panel (lazy-loaded) — live tuning, cheats, render counts. Dev builds add the layout editor.
+import { INPUT_CAP } from '../../catalog/producers';
 import type { Game } from './game';
 import { FEEL } from '../feel';
 import { TUNING } from '../sim/tuning';
@@ -69,7 +70,7 @@ export async function openDebug(game: Game, phone: boolean, hooks: DebugHooks): 
       for (const st of w.stations.values()) {
         if (st.kind !== 'producer') continue;
         const type = w.map.producers[st.type];
-        for (const p of type.inputs) st.input[p] = type.inputCap ?? 0;
+        for (const p of type.inputs) st.input[p] = INPUT_CAP;
         st.tray = type.trayCap ?? st.tray;
         st.plants.fill(0);
       }

@@ -119,6 +119,19 @@ export const FEEL = {
   // (cycles/s), eases in/out over bagEase (s); cheer = emote('yes') per finished Customer
   bag: { lift: 0.9, rate: 1.4, turn: 0.55, cheer: true },
   bagEase: 0.125,
+  // Wardrobe preview: camera distance / height / look-at height (m), fov; idle sway (deg/s, swing in rad); drag turns
+  // dragDeg per px and coasts, slowing at coast per second; tile size (px)
+  wardrobe: {
+    camDist: 4.2,
+    camHeight: 1.1,
+    lookY: 0.62,
+    fov: 30,
+    sway: 30,
+    swing: 0.9,
+    dragDeg: 0.6,
+    coast: 3,
+    thumb: 76,
+  },
   // Delivery cars: drive in / off (s), parking bounce height (m), squash per Item, wonk (cabin tilt, rad; body height ±share)
   carDriveIn: 1.6,
   carDriveOff: 1.4,

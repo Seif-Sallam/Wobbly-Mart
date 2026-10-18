@@ -1,10 +1,22 @@
 // Animated Mini Characters: turn toward their motion, bob while walking, hold arms out when carrying.
 import * as THREE from 'three';
 import { clipsOf, model } from './assets';
+import { ASSETS } from '../../catalog/assets';
 import { FEEL } from '../feel';
 import { paletteMaterial } from './materials';
+import { lookById } from '../../catalog/looks';
+import { CAP_COLOURS, type CapName } from '../palette';
 
 type Clip = 'idle' | 'walk' | 'holding-both' | 'emote-yes' | 'emote-no';
+
+/** A cap's crown and brim, in a frame where the cap's base sits at the origin, brim toward +z. */
+export function capParts(colour: string): [THREE.Mesh, THREE.Mesh] {
+  const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.12, 12), paletteMaterial(colour));
+  const brim = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.03, 0.2), paletteMaterial(colour));
+  crown.position.y = 0.05;
+  brim.position.set(0, 0, 0.17);
+  return [crown, brim];
+}
 
 export class Character {
   readonly root = new THREE.Group();
@@ -43,11 +55,15 @@ export class Character {
     this.root.add(this.visual);
     this.top = new THREE.Box3().setFromObject(this.visual).max.y;
     if (opts.hat) {
-      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.12, 12), paletteMaterial(opts.hat));
-      const brim = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.03, 0.2), paletteMaterial(opts.hat));
-      cap.position.y = this.top + 0.05;
-      brim.position.set(0, this.top, 0.17);
-      this.wear([cap, brim], true);
+      const [cap, brim] = capParts(opts.hat);
+      // [up, forward, size, tilt in degrees] from the model's top, for looks whose hair or own hat lifts it
+      const [up, forward, size, tilt] = ASSETS[name]?.cap ?? [0, 0, 1, 0];
+      const hat = new THREE.Group();
+      hat.add(cap, brim);
+      hat.position.set(0, this.top + up, forward);
+      hat.scale.setScalar(size);
+      hat.rotation.x = THREE.MathUtils.degToRad(tilt);
+      this.wear([hat], true);
       this.cap = [cap, brim];
     }
     this.mixer = new THREE.AnimationMixer(this.visual);
@@ -99,4 +115,12 @@ export class Character {
     this.mixer.update(dt);
     this.afterClips?.(this.visual, dt);
   }
+}
+
+/** The Player in a Wardrobe look: Shop looks wear the chosen cap, Fun looks none. */
+export function lookCharacter(id: string, cap: string): Character {
+  const look = lookById(id);
+  return new Character(`look-${look.id}`, {
+    hat: look.fun ? undefined : (CAP_COLOURS[cap as CapName] ?? CAP_COLOURS.orange),
+  });
 }

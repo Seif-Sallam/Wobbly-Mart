@@ -9,7 +9,8 @@ import { cashPilePoint, padRemaining, stackCap, visiblePads } from '../sim/econo
 import { Stage } from './stage';
 import { Level } from './level';
 import { Juice } from './juice';
-import { Character } from './characters';
+import { Character, lookCharacter } from './characters';
+import { DEFAULT_LOOK } from '../../catalog/looks';
 import { CashierBag } from './cashier-bag';
 import { CleaningLook, HeldMop } from './cleaning';
 import { LayoutGhost } from './layout-ghost';
@@ -158,7 +159,7 @@ export class WorldView {
       multiDraw,
     );
     this.blobs = this.makeBlobs();
-    this.player = new Character('player', { hat: 'orange' });
+    this.player = lookCharacter(DEFAULT_LOOK, 'orange');
     this.root.add(this.player.root);
     this.playerMop = new HeldMop(this.player);
     this.maxTag = this.tag('MAX', PALETTE.orange);
@@ -324,6 +325,16 @@ export class WorldView {
       this.root.remove(pad.group);
       this.pads.delete(id);
     }
+  }
+
+  /** Swaps the Player's model for a Wardrobe look and cap. */
+  setLook(look: string, cap: string): void {
+    const facing = this.player.facing;
+    this.root.remove(this.player.root);
+    this.player = lookCharacter(look, cap);
+    this.player.facing = facing;
+    this.root.add(this.player.root);
+    this.playerMop = new HeldMop(this.player);
   }
 
   private cashierOf(register: string): Character | undefined {

@@ -24,9 +24,12 @@ import {
 import { shelfCap, stationModel } from '../sim/map';
 import { boxCentre } from '../sim/geometry';
 import { MAPS, mapById } from '../../maps';
+import { lookById } from '../../catalog/looks';
+import { CAP_COLOURS } from '../palette';
 import { Stage } from '../view/stage';
 import { loadAssets } from '../view/assets';
 import { emojiUrl, iconUrl, renderThumbs } from '../view/thumbs';
+import { WardrobeView } from '../view/wardrobe';
 import { renderStaffIcons } from '../view/staff-icons';
 import { moodOf } from '../view/receipt';
 import { Input } from '../input/input';
@@ -74,6 +77,9 @@ export class App {
   private save: SaveFile;
   private settings: Settings;
   private sounds = new Sounds();
+  private wardrobe = new WardrobeView();
+  /** No save existed at load: the Wardrobe opens by itself once the title is ready. */
+  private firstRun: boolean;
   private ui: UiState;
   private uiRoot: HTMLElement;
   private sinceSave = 0;
@@ -107,6 +113,7 @@ export class App {
     this.uiRoot = document.getElementById('ui') as HTMLElement;
     const loaded = loadSave(MAPS[0].id);
     this.save = loaded.save;
+    this.firstRun = !!loaded.fresh;
     this.settings = loadSettings();
     this.stage.viewSize = this.zoom();
     this.stage.batterySaver(this.settings.batterySaver);
@@ -139,6 +146,8 @@ export class App {
       zoom: 0,
       screenHz: 60,
       layout: null,
+      look: lookById(this.save.look).id,
+      cap: this.save.cap in CAP_COLOURS ? this.save.cap : 'orange',
     };
     this.ui.zoom = this.zoom();
     this.hud.onGear = () => this.openOverlay('pause');
@@ -172,6 +181,7 @@ export class App {
     const map = MAPS[Math.floor(Math.random() * MAPS.length)];
     this.game = new Game(this.stage, this.input, map, showcaseSave(map), true);
     this.game.paused = true;
+    this.game.view.setLook(this.ui.look, this.ui.cap);
     this.game.view.cameraOverride = new THREE.Vector3();
     this.game.view.scenery(SCENERY_PEOPLE);
     const { world } = this.game;
@@ -197,6 +207,7 @@ export class App {
     this.refreshMaps();
     this.ui.loading = 1;
     this.renderUi();
+    if (this.firstRun) this.openOverlay('wardrobe');
     const loop = (now: number) => {
       requestAnimationFrame(loop);
       const game = this.game;
@@ -605,12 +616,14 @@ export class App {
         return `That code didn't work: ${(e as Error).message}`;
       }
       writeSave(this.save);
+      this.applyLook();
       this.reopen();
       this.openOverlay(null);
       return null;
     },
     resetProgress: () => {
       this.save = wipeSave(MAPS[0].id);
+      this.applyLook();
       this.reopen();
       this.openOverlay(null);
     },
@@ -629,7 +642,21 @@ export class App {
     },
     icon: (name) => iconUrl(name),
     click: () => this.sounds.sfx('click'),
+    wardrobe: this.wardrobe,
+    selectLook: (look, cap) => {
+      this.save.look = look;
+      this.save.cap = cap;
+      writeSave(this.save);
+      this.applyLook();
+    },
   };
+
+  /** Shows the saved look and cap on the Player (an unknown id or colour falls back to the defaults). */
+  private applyLook(): void {
+    this.ui.look = lookById(this.save.look).id;
+    this.ui.cap = this.save.cap in CAP_COLOURS ? this.save.cap : 'orange';
+    this.game?.view.setLook(this.ui.look, this.ui.cap);
+  }
 
   private setSetting<K extends keyof Settings>(key: K, value: Settings[K]): void {
     this.settings = { ...this.settings, [key]: value };

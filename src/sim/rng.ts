@@ -23,6 +23,15 @@ export function shuffle<T>(state: { rng: number }, list: T[]): T[] {
   return out;
 }
 
+/** A shuffle where heavier entries tend to come first (keys rand^(1/weight)); all weights 1 = a plain shuffle. */
+export function weightedShuffle<T>(state: { rng: number }, list: T[], weight: (t: T) => number): T[] {
+  if (list.every((t) => weight(t) === 1)) return shuffle(state, list);
+  return list
+    .map((t) => ({ t, key: nextRandom(state) ** (1 / weight(t)) }))
+    .sort((a, b) => b.key - a.key)
+    .map((e) => e.t);
+}
+
 /** Index picked with chance proportional to its weight. */
 export function weighted(state: { rng: number }, weights: readonly number[]): number {
   let r = nextRandom(state) * weights.reduce((a, b) => a + b, 0);

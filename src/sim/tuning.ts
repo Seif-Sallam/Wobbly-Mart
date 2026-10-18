@@ -38,8 +38,9 @@ export const TUNING = {
   capCashierFactor: 1.3,
   /** Shopping List weights: Product count 1–4, then units 1–4 by Product count. */
   listProducts: [30, 35, 25, 10],
-  /** Premium Items (pizzas): at most `max` per Customer across all of them; that many only at `maxChance`, else 1. */
-  premium: { max: 2, maxChance: 0.3 },
+  /** Premium Items (pizzas): picked for a list `weight`× as often as others; at most `max` per Customer across all of
+   *  them, that many only at `maxChance`, else 1. */
+  premium: { weight: 1.5, max: 2, maxChance: 0.3 },
   listUnits: [
     [5, 15, 25, 55],
     [10, 25, 55, 10],

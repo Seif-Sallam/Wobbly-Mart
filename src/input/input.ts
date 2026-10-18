@@ -25,6 +25,7 @@ export class Input {
   readonly tap = new TapWalk();
   enabled = true;
   private pinch = 0;
+  private manager: ReturnType<typeof nipplejs.create> | null = null;
 
   constructor(zone: HTMLElement) {
     addEventListener('keydown', (e) => {
@@ -45,13 +46,28 @@ export class Input {
     addEventListener('blur', () => this.keys.clear());
     this.pinchZoom();
     this.taps(zone);
-    const manager = nipplejs.create({ zone, mode: 'dynamic', color: PALETTE.ink, size: 110 });
+    this.joystick(zone, FEEL.joyPortrait);
+  }
+
+  /** (Re)builds the thumb stick: it appears under the thumb, or sits at `rest` (px from the zone's bottom-left). */
+  joystick(zone: HTMLElement, size: number, rest?: { left: number; bottom: number }): void {
+    this.manager?.destroy();
+    this.joy = { x: 0, y: 0, active: false, force: 0 };
+    const manager = nipplejs.create({
+      zone,
+      color: PALETTE.ink,
+      size,
+      ...(rest
+        ? { mode: 'static' as const, position: { left: `${rest.left}px`, bottom: `${rest.bottom}px` } }
+        : { mode: 'dynamic' as const }),
+    });
+    this.manager = manager;
     manager.on('move', (e) => {
       this.firstKind ??= 'touch';
       this.joy.active = true;
-      // half push = half speed
+      // the stick reaches full speed at joyFullPush of the ring; past the ring it sprints
       this.joy.force = e.data.force;
-      const k = Math.min(1, e.data.force);
+      const k = Math.min(1, e.data.force / FEEL.joyFullPush);
       this.joy.x = e.data.vector.x * k;
       this.joy.y = e.data.vector.y * k;
     });

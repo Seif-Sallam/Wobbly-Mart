@@ -4,8 +4,12 @@ export const FEEL = {
   accelTime: 0.31,
   stopTime: 0.3,
   turnSpeed: 10,
-  /** Touch: joystick force past its ring that sprints. */
-  sprintForce: 1.4,
+  /** Touch joystick: ring sizes (px), force past the ring that sprints (drawn as a dashed ring), and the share of the
+   * ring that already gives full walk speed. */
+  joyPortrait: 110,
+  joyLandscape: 115,
+  sprintForce: 1.5,
+  joyFullPush: 0.6,
   sprintPuffGap: 0.12,
   walkBob: 0.05,
   // camera
@@ -44,8 +48,11 @@ export const FEEL = {
   tapRing: 0.6,
   tapRingPulse: 0.12,
   tapGlowMargin: 0.3,
-  followSharpness: 9,
-  lookAhead: 0.44,
+  /** Camera follow (1/s), and its lead: seconds of velocity, capped at leadMax (m), eased in at leadEase (1/s). */
+  followSharpness: 14,
+  lead: 0.25,
+  leadMax: 1.5,
+  leadEase: 3,
   // stack
   itemSpacing: 0.435,
   stackForward: 0.55,

@@ -107,6 +107,7 @@ export class App {
     const loaded = loadSave(MAPS[0].id);
     this.save = loaded.save;
     this.settings = loadSettings();
+    document.documentElement.style.setProperty('--sprint-ring', String(FEEL.sprintForce));
     this.stage.viewSize = this.zoom();
     this.stage.batterySaver(this.settings.batterySaver);
     this.hud.scale(this.settings.hudScale);
@@ -320,6 +321,7 @@ export class App {
     for (const e of events) this.onEvent(e);
     this.sounds.frame(events, w, (p) => this.onScreen(p), dt);
     this.hud.update(dt, w.money, completion(w));
+    document.documentElement.classList.toggle('sprinting', w.player.sprinting);
     // Office opens on reaching the desk; after X it stays shut until the Player walks away and back.
     if (!w.atOffice) this.officeDismissed = false;
     const office = w.atOffice && !this.officeDismissed;

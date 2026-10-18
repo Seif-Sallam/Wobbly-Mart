@@ -132,6 +132,7 @@ export class WorldView {
   /** When set, the camera looks here instead of following the Player (title screen). */
   cameraOverride: THREE.Vector3 | null = null;
   private camFocus = new THREE.Vector3();
+  private camLead = new THREE.Vector3();
 
   constructor(
     private readonly stage: Stage,
@@ -232,6 +233,7 @@ export class WorldView {
     this.ownedKey = '';
     this.player.facing = Math.PI;
     this.camFocus.set(w.player.x, 0, w.player.z);
+    this.camLead.set(0, 0, 0);
     for (const m of w.messes) this.addSplat(m.id, m.x, m.z, m.items);
     this.syncOwned(false);
   }
@@ -1256,7 +1258,9 @@ export class WorldView {
       return;
     }
     const p = this.player.root.position;
-    const goal = new THREE.Vector3(p.x + w.player.vx * FEEL.lookAhead, 0, p.z + w.player.vz * FEEL.lookAhead);
+    const want = new THREE.Vector3(w.player.vx, 0, w.player.vz).multiplyScalar(FEEL.lead).clampLength(0, FEEL.leadMax);
+    this.camLead.lerp(want, 1 - Math.exp(-FEEL.leadEase * dt));
+    const goal = new THREE.Vector3(p.x, 0, p.z).add(this.camLead);
     this.camFocus.lerp(goal, 1 - Math.exp(-FEEL.followSharpness * dt));
     const focus = this.camFocus.clone();
     if (w.pan) {

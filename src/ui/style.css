@@ -490,6 +490,39 @@ html.sprinting #joy .back::after {
   opacity: 1;
   color: var(--money);
 }
+.lesson-point {
+  position: relative;
+  animation: point-pulse 0.9s infinite;
+}
+.lesson-point::before {
+  content: '👉';
+  position: absolute;
+  right: calc(100% + 4px);
+  top: 50%;
+  font-size: 30px;
+  line-height: 1;
+  --nudge: 8px;
+  transform: translateY(-50%);
+  animation: point-nudge 0.9s infinite;
+}
+.event-card.lesson-point::before {
+  content: '👈';
+  right: auto;
+  left: calc(100% + 4px);
+  --nudge: -8px;
+}
+@keyframes point-pulse {
+  50% {
+    box-shadow:
+      0 0 0 6px var(--pad),
+      0 4px 0 var(--ink);
+  }
+}
+@keyframes point-nudge {
+  50% {
+    transform: translate(var(--nudge), -50%);
+  }
+}
 .lesson-modal {
   position: fixed;
   inset: 0;

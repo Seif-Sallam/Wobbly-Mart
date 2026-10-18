@@ -15,7 +15,7 @@ import {
 } from '../sim/save';
 import { canBuyUpgrade, completion, completionOf, padRemaining, upgradeVisible, visiblePads } from '../sim/economy';
 import { shelfCap, stationModel } from '../sim/map';
-import { lessonAim, lessonHud, lessonTarget, type LessonDevice } from '../sim/lessons';
+import { lessonAim, lessonHud, lessonHudTarget, lessonRetry, lessonTarget, type LessonDevice } from '../sim/lessons';
 import { boxCentre } from '../sim/geometry';
 import { FIRST_MAP, MAPS, isTutorialMap, mapById } from '../../maps';
 import { lookById } from '../../catalog/looks';
@@ -135,7 +135,10 @@ export class App {
       if (!game || this.ui.screen !== 'game' || game.paused || this.editing) return;
       const tap = this.input.tap;
       if (tap.car === id) tap.sprint = true;
-      else tap.startCar(game.world, id, false);
+      else {
+        tap.startCar(game.world, id, false);
+        game.report('deliveryCard');
+      }
     };
     this.input.onZoom = (k) => {
       if (this.ui.screen === 'game' && !this.editing) this.setZoom(this.zoom() * k);
@@ -402,7 +405,7 @@ export class App {
       office && !wide ? FEEL.officeSheet / 2 : 0,
     );
     if (!w.atExit) this.exitDismissed = false;
-    else if (w.owned.has('exit') && !this.exitDismissed && !this.ui.overlay) {
+    else if (w.owned.has('exit') && !w.lesson && !this.exitDismissed && !this.ui.overlay) {
       this.exitDismissed = true;
       this.openOverlay('maps');
     }
@@ -435,23 +438,23 @@ export class App {
     if (e.type === 'padBought' || e.type === 'upgradeBought') {
       if (e.type === 'padBought') persistStorage();
       this.writeSave();
-      if (e.type === 'padBought' && e.pad === 'exit' && isTutorialMap(w.map)) this.save.tutorialDone = true;
-      if (e.type === 'padBought' && e.pad === 'exit') {
+      if (e.type === 'padBought' && e.pad === 'exit' && !isTutorialMap(w.map)) {
         setTimeout(() => this.openOverlay('maps'), 900);
         this.exitDismissed = true;
       }
     }
     if (e.type === 'tutorialDone') {
+      // the closing card was dismissed: the Corner Shop is next in line on the title
       this.save.tutorialDone = true;
-      this.writeSave();
+      this.save.currentMap = FIRST_MAP.id;
+      this.toTitle();
       if (isIos && !seen('ios-tip')) {
         markSeen('ios-tip');
         this.ui.card = 'ios';
-        this.renderUi();
       }
     }
     if (e.type === 'complete') this.hud.celebrate();
-    if (e.type === 'lessonReplay') this.hud.banner(iconUrl('player'), 'Let’s try that again', 'No harm done');
+    if (e.type === 'lessonReplay') this.hud.banner(iconUrl('player'), lessonRetry(w, e.lesson), 'No harm done');
     if (e.type === 'challengeStarted') {
       this.hud.stamp('CHALLENGE!');
       this.sounds.sfx('boing');
@@ -611,6 +614,7 @@ export class App {
     const view = this.game?.view;
     if (!view) return;
     this.hud.lesson(lessonHud(w, this.lessonDevice()));
+    this.hud.pointAt(lessonHudTarget(w));
     const key = w.lesson ? `${w.lesson.index}|${w.lesson.phase}` : '';
     if (key !== this.lessonKey) {
       this.lessonKey = key;
@@ -646,6 +650,8 @@ export class App {
   // ---------- overlays
 
   private openOverlay(o: Overlay | null): void {
+    if (o === 'logbook') this.game?.report('logbookOpen');
+    else if (this.ui.overlay === 'logbook') this.game?.report('logbookClosed');
     this.ui.overlay = o;
     if (o === 'maps') this.refreshMaps();
     if (this.game && this.ui.screen === 'game') this.game.paused = !!o || this.lostTab;
@@ -693,7 +699,9 @@ export class App {
     const live = this.ui.screen === 'game' ? this.game?.world : undefined;
     const map = live?.map ?? mapById(this.save.currentMap) ?? FIRST_MAP;
     const progress = (m: MapDef): MapProgress => (m === live?.map ? live : progressOfSave(this.save.maps[m.id]));
-    this.ui.logbook = logbookView(map, progress(map), MAPS.filter((m) => !isTutorialMap(m)).map(progress));
+    // the Tutorial Map keeps no Score, so its Logbook is about this run only
+    const all = isTutorialMap(map) ? [progress(map)] : MAPS.filter((m) => !isTutorialMap(m)).map(progress);
+    this.ui.logbook = logbookView(map, progress(map), all);
     this.ui.logbookTab = tab;
     this.openOverlay('logbook');
   }

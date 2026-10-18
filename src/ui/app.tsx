@@ -8,6 +8,7 @@ import { canBuyUpgrade, nextLevelCost, upgradeVisible } from '../sim/economy';
 import { lessonCard } from '../sim/lessons';
 import { formatMoney } from '../format';
 import { FEEL } from '../feel';
+import { TUNING } from '../sim/tuning';
 import { Logo } from './logo';
 import { Logbook, type LogbookView } from './logbook';
 import { GEAR } from './hud';
@@ -148,13 +149,15 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
         ✕
       </button>
       <div class="office-scroll">
-        <section>
-          <h3>Store</h3>
-          <Btn actions={actions} disabled={world.closedWait > 0} onClick={() => actions.setClosed(!world.closed)}>
-            {world.closed ? 'Open' : 'Close'}
-            {world.closedWait > 0 ? ` again in ${clock(world.closedWait)}` : ' store'}
-          </Btn>
-        </section>
+        {(!world.lesson || world.lesson.index >= TUNING.lesson.closedFrom) && (
+          <section>
+            <h3>Store</h3>
+            <Btn actions={actions} disabled={world.closedWait > 0} onClick={() => actions.setClosed(!world.closed)}>
+              {world.closed ? 'Open' : 'Close'}
+              {world.closedWait > 0 ? ` again in ${clock(world.closedWait)}` : ' store'}
+            </Btn>
+          </section>
+        )}
         <section>
           <h3>Layout</h3>
           <Btn actions={actions} onClick={actions.editLayout}>

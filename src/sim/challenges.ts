@@ -95,6 +95,12 @@ const finish = (w: World, c: Challenge, won: boolean): void => {
   w.events.push({ type: 'challengeWon', kind: c.kind, score: TUNING.score.challenge, money: c.bonus });
 };
 
+/** A Lesson's own Challenge: the usual pay for the Areas bought, a goal and a time of its choosing. */
+export function callChallenge(w: World, kind: ChallengeKind, goal: number, time: number): void {
+  w.challenge = { kind, target: null, goal, progress: 0, t: 0, time, bonus: C.bonus[tier(w)] };
+  w.events.push({ type: 'challengeStarted', kind });
+}
+
 /** Advances the running Challenge from this step's events, or offers a new one when it is time. */
 function run(w: World, c: Challenge): void {
   for (const e of w.events) {

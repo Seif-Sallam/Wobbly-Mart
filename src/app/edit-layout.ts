@@ -21,6 +21,7 @@ import {
   spotProblem,
   turned,
 } from '../sim/layout';
+import { lessonGhost } from '../sim/lessons';
 import { FEEL } from '../feel';
 import type { LayoutUi } from '../ui/app';
 
@@ -87,6 +88,8 @@ export class EditLayout {
     );
     this.focus.set(w.player.x, 0, w.player.z);
     this.game.view.cameraOverride = this.focus;
+    this.game.view.layoutGhost.suggest(lessonGhost(w)?.spot.box ?? null);
+    this.game.report('layoutOpen');
     this.changed();
   }
 
@@ -96,6 +99,7 @@ export class EditLayout {
     this.drag = null;
     this.game.view.layoutGhost.hide();
     this.game.view.cameraOverride = null;
+    this.game.report('layoutClosed');
     this.game.input.enabled = true;
     this.joy.style.pointerEvents = '';
     this.game.paused = false;

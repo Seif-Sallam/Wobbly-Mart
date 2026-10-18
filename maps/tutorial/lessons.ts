@@ -1,14 +1,20 @@
-// Lessons 0–7 as data: card copy, setup, steps (target + goal) and what counts as going wrong. The runner is
-// src/sim/lessons.ts; later Lessons are more entries in this list.
-import type { Point } from '../../src/sim/map';
-import type { ProducerStation, ShelfStation, World } from '../../src/sim/world';
+// The Lessons as data, then the closing card: card copy, setup, steps (target + goal) and what counts as going wrong.
+// The runner is src/sim/lessons.ts.
+import type { Placement, Point } from '../../src/sim/map';
+import type { PickupStation, ProducerStation, ShelfStation, World } from '../../src/sim/world';
 import type { LessonDef, LessonDevice } from '../../src/sim/lessons';
 import { near, saw } from '../../src/sim/lessons';
 import { callCustomer } from '../../src/sim/customers';
 import { addMess } from '../../src/sim/cleaning';
 import { shed } from '../../src/sim/carry';
 import { cashPilePoint } from '../../src/sim/economy';
+import { callDelivery } from '../../src/sim/events';
+import { startRobbery } from '../../src/sim/robbery';
+import { startInspector } from '../../src/sim/inspector';
+import { callChallenge } from '../../src/sim/challenges';
+import { boxCentre } from '../../src/sim/geometry';
 import { TUNING } from '../../src/sim/tuning';
+import { layout } from './layout';
 
 const shelf = (w: World, id: string): ShelfStation => w.stations.get(id) as ShelfStation;
 const producer = (w: World, id: string): ProducerStation => w.stations.get(id) as ProducerStation;
@@ -24,6 +30,27 @@ const WALK_TO: Point = [13, 9.5];
 const SPRINT_TO: Point = [25, 9.5];
 // Lesson 7: where the scripted Mess lands
 const MESS_AT: Point = [20, 9.5];
+// Lesson 9: the outline Edit Layout shows, just inside the back door on the way to the Chicken Coop
+const EGG_SPOT: Placement = { box: [10, 10, 3, 1], rot: 0 };
+// Lesson 13: the scripted Challenge (each Customer buys `buys` tomatoes) and the Objective's head start
+const CHALLENGE = { goal: 3, time: 60, buys: 2 };
+const OBJECTIVE_HEAD_START = 8;
+
+const noTarget = (): null => null;
+const eggMoved = (w: World): boolean => {
+  const egg = w.stations.get('egg_shelf');
+  const home = layout.places.egg_shelf;
+  return !!egg && (egg.rot !== home.rot || egg.box.some((v, i) => v !== home.box[i]));
+};
+const pickupPoint = (w: World): Point | null => {
+  const car = [...w.stations.values()].find((s): s is PickupStation => s.kind === 'pickup' && !!s.delivery);
+  return car ? boxCentre(car.box) : null;
+};
+const thiefPoint = (w: World): Point | null => (w.thief ? [w.thief.x, w.thief.z] : null);
+const inspectorPoint = (w: World): Point | null => {
+  const ins = w.inspector;
+  return ins ? (ins.state === 'warn' ? ins.door : [ins.x, ins.z]) : null;
+};
 
 const stick = (d: LessonDevice): string =>
   d.joystick === 'off'
@@ -207,5 +234,178 @@ export const lessons: LessonDef[] = [
       { line: 'Walk the Mop back to its stand', target: 'mop_stand', done: (w) => !w.player.mop },
     ],
     nice: 'Spotless.',
+  },
+  {
+    title: 'Office',
+    card: () => [
+      'The Office is where you run the mart. Buy it, then stand beside it: its panel opens.',
+      'Upgrades last for good: walk faster, carry more. Buy one with the Money you have.',
+    ],
+    setup: (w) => {
+      w.money = 30;
+    },
+    steps: [
+      { line: 'Buy the Office', target: 'office', done: (w) => w.owned.has('office') },
+      { line: 'Buy an Upgrade in the Office panel', target: 'office', done: (w) => saw(w, 'upgradeBought') },
+    ],
+    nice: 'Stronger already.',
+  },
+  {
+    title: 'Edit Layout',
+    card: () => [
+      'Edit Layout lets you move Shelves, Registers and machines. Open it from the Office panel.',
+      'Tap a fixture to pick it up, drag it or tap a new spot, then press Done. Green means it fits; red says why not.',
+      'Moves are free here. On real Maps every Move costs Money, and each Area allows only a few.',
+    ],
+    steps: [
+      { line: 'Open Edit Layout from the Office panel', target: 'office', done: (w) => saw(w, 'ui:layoutOpen') },
+      {
+        line: 'Move the Egg Shelf (the outline is a good spot), then press Done',
+        target: boxCentre(EGG_SPOT.box),
+        ghost: { station: 'egg_shelf', spot: EGG_SPOT },
+        done: (w) => eggMoved(w) && saw(w, 'ui:layoutClosed'),
+      },
+    ],
+    // left Edit Layout without moving the Egg Shelf
+    fail: (w) => w.lesson?.step === 1 && saw(w, 'ui:layoutClosed') && !eggMoved(w),
+    nice: 'Everything has its place.',
+  },
+  {
+    title: 'Staff',
+    card: () => [
+      'Staff work for you. A Cashier checks Customers out at the Register. A Stocker carries goods from crops and machines to the Shelves.',
+      'In the Office panel you give each Stocker a job: Auto, Goods or Machines.',
+    ],
+    setup: (w) => {
+      w.money = 65;
+    },
+    steps: [
+      { line: 'Hire the Cashier', target: 'cashier_1', done: (w) => w.owned.has('cashier_1') },
+      { line: 'Hire the Stocker', target: 'stocker_1', done: (w) => w.owned.has('stocker_1') },
+      {
+        line: 'In the Office panel, give the Stocker a job other than Auto',
+        target: 'office',
+        done: (w) => !!w.stockers[0] && w.stockers[0].role !== 'auto',
+      },
+    ],
+    nice: 'Two helping hands.',
+  },
+  {
+    title: 'Events',
+    card: () => [
+      'Now and then something happens. Each Event is a chance to earn, and missing one costs you nothing here.',
+      'A Delivery car parks out back with an order. A Thief grabs goods and runs for the door. The Health Inspector walks the shop and wants to find it clean.',
+      'We will try them one at a time.',
+    ],
+    steps: [
+      {
+        line: 'A Delivery! Tap its card to walk to the car',
+        target: pickupPoint,
+        hud: 'delivery',
+        enter: (w) => callDelivery(w, 'tomato', 2),
+        done: (w) => saw(w, 'ui:deliveryCard'),
+      },
+      {
+        line: 'Hand the order over at the car',
+        target: pickupPoint,
+        enter: (w) => give(w, 'tomato', 2),
+        done: (w) => saw(w, 'deliveryDone'),
+      },
+      {
+        line: 'A Thief! Catch them before they reach the door',
+        target: thiefPoint,
+        enter: (w) => {
+          shelf(w, 'tomato_shelf').items = 6;
+          startRobbery(w);
+        },
+        done: (w) => saw(w, 'robberyDone') && !w.thief,
+      },
+      {
+        line: 'The Inspector is coming. Stay close as they look around',
+        target: inspectorPoint,
+        enter: (w) => startInspector(w),
+        done: (w) => saw(w, 'inspection') && !w.inspector,
+      },
+    ],
+    // the car left unfilled, the Thief got away, the Inspector was left alone
+    fail: (w) =>
+      w.events.some(
+        (e) =>
+          (e.type === 'deliveryDone' && !e.complete) ||
+          (e.type === 'robberyDone' && !e.caught) ||
+          (e.type === 'inspection' && e.review),
+      ),
+    nice: 'You handled them all.',
+  },
+  {
+    title: 'Closed',
+    card: () => [
+      'The Office can close the store. While it is closed no new Customers come in, so you can catch up. Those inside finish shopping.',
+      `Once closed, you can reopen after ${TUNING.closed.reopenWait} seconds. Once open, you can close again after ${TUNING.closed.closeWait / 60} minutes.`,
+    ],
+    setup: (w) => {
+      w.closed = false;
+      w.closedWait = 0;
+    },
+    steps: [
+      { line: 'Close the store in the Office panel', target: 'office', done: (w) => w.closed },
+      { line: 'Wait for the timer, then open the store again', target: 'office', done: (w) => !w.closed },
+    ],
+    nice: 'Open for business.',
+  },
+  {
+    title: 'Objectives & Challenges',
+    card: () => [
+      'Every Map has Objectives: goals like “Sell 100 Eggs”. Each one done earns ⭐ Score and counts toward Completion, so 100% needs them all.',
+      'Now and then a Challenge pops up: a quick task against the clock. Win it for ⭐ Score and a little Money. Miss it and you lose nothing. Score never goes down.',
+      'Tap 🏆 (desktop: click) any time to see your Objectives and Stats.',
+      'Here it is practice: the tutorial keeps no Score. On every real Map your Score is saved and adds up to your 🏆 total on the title screen.',
+    ],
+    setup: (w) => {
+      w.money = 0;
+      shelf(w, 'tomato_shelf').items += CHALLENGE.goal * CHALLENGE.buys;
+      // the Objective "Sell 10 Tomatoes" starts two sales from done
+      w.stats.sold.tomato = Math.max(w.stats.sold.tomato ?? 0, OBJECTIVE_HEAD_START);
+    },
+    steps: [
+      {
+        line: 'Win the Challenge, then open 🏆',
+        target: 'register',
+        enter: (w) => callChallenge(w, 'checkout', CHALLENGE.goal, CHALLENGE.time),
+        // the Lesson sends the Customers
+        tick: (w) => {
+          const c = w.challenge;
+          if (c && c.progress + w.customers.length < c.goal) callCustomer(w, 'tomato', CHALLENGE.buys);
+        },
+        done: (w) => saw(w, 'challengeWon'),
+      },
+      { line: 'Tap 🏆 to open the Logbook', target: noTarget, hud: 'trophy', done: (w) => saw(w, 'ui:logbookOpen') },
+      { line: 'Look around, then close the Logbook', target: noTarget, done: (w) => saw(w, 'ui:logbookClosed') },
+    ],
+    fail: (w) => saw(w, 'challengeFailed'),
+    retry: 'Time up, try again',
+    nice: 'That’s how you climb the 🏆 total on the title screen.',
+  },
+  {
+    title: 'The finish',
+    card: () => [
+      'Buy the Area 2 Pad: the camera shows what you opened up. Watch your Completion bar jump, the Objective included.',
+      'When the whole Map is yours, the Exit Pad finishes it. Buy the Exit Pad and the car drives off.',
+    ],
+    setup: (w) => {
+      w.money = 80;
+    },
+    steps: [
+      { line: 'Buy Area 2', target: 'area_2', done: (w) => w.owned.has('area_2') },
+      { line: 'Watch your Completion jump', target: 'area_2', done: (w) => !w.pan },
+      { line: 'Buy the Exit Pad', target: 'exit', done: (w) => w.owned.has('exit') },
+    ],
+    nice: 'Off you go!',
+  },
+  {
+    title: 'Tutorial complete',
+    card: () => ['You know the ropes. Time to run a real mart!', 'From here on your progress and Score are saved.'],
+    steps: [],
+    nice: '',
   },
 ];

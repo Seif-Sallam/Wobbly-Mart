@@ -18,7 +18,7 @@ import { updateStaff } from './staff';
 import { updateCleaners } from './cleaning';
 import { addPickups, thiefFreeze, updateEvents } from './events';
 import { rebuildNav } from './walk';
-import { startLessons, updateLesson, dismissLessonCard, type LessonState } from './lessons';
+import { startLessons, updateLesson, dismissLessonCard, type LessonState, type LessonUiFact } from './lessons';
 import { type Stats, emptyStats, updateStats } from './stats';
 import { updateObjectives } from './objectives';
 import { quartersOf, updateScore } from './score';
@@ -292,6 +292,7 @@ export type SimEvent =
   | { type: 'challengeStarted'; kind: ChallengeKind }
   | { type: 'challengeWon'; kind: ChallengeKind; score: number; money: number }
   | { type: 'challengeFailed'; kind: ChallengeKind }
+  /** The last Lesson's card was dismissed: the Tutorial Map is finished. */
   | { type: 'tutorialDone' }
   | { type: 'lessonDone'; lesson: number }
   | { type: 'lessonReplay'; lesson: number }
@@ -309,6 +310,8 @@ export interface Intents {
   buyUpgrade?: string;
   /** Got it on a Lesson card. */
   lessonNext?: boolean;
+  /** A screen the app opened or closed that a Lesson waits for; the app sends them one per step, in order. */
+  ui?: LessonUiFact;
   assign?: { stocker: string; role: StockerRole };
   /** Office: close or reopen the store (ignored during the wait). */
   setClosed?: boolean;
@@ -507,7 +510,7 @@ export function step(w: World, intents: Intents): void {
   updateStats(w);
   updateObjectives(w);
   updateScore(w);
-  updateLesson(w);
+  updateLesson(w, intents.ui);
   w.complete = checkCompletion(w, true);
   if (w.navDirty) rebuildNav(w);
 }

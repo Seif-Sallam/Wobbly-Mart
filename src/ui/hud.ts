@@ -357,6 +357,13 @@ export class Hud {
     setTimeout(() => el.remove(), FEEL.reportMs);
   }
 
+  /** The Lesson's pointing hand on a HUD button: the trophy or the Delivery cards. */
+  pointAt(what: 'trophy' | 'delivery' | null): void {
+    this.root.querySelector('.trophy')?.classList.toggle('lesson-point', what === 'trophy');
+    for (const el of this.cards)
+      el.classList.toggle('lesson-point', what === 'delivery' && el.classList.contains('delivery'));
+  }
+
   /** The live Lesson prompt (or its "Nice!"). `null` hides it. */
   lesson(info: { head: string; line: string; nice: boolean } | null): void {
     const key = info ? `${info.head}|${info.line}` : '';

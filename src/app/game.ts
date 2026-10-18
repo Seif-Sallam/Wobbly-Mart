@@ -1,5 +1,6 @@
 // The running game: fixed-timestep sim, the 3D view, input and the bits of glue between them.
 import type { Intents, SimEvent, StockerRole, World } from '../sim/world';
+import type { LessonUiFact } from '../sim/lessons';
 import { createWorld, DT, step } from '../sim/world';
 import type { MapDef } from '../sim/map';
 import type { MapSave } from '../sim/save';
@@ -19,6 +20,8 @@ export class Game {
   private acc = 0;
   private last = performance.now();
   private commands: Partial<Intents> = {};
+  /** Screens the app opened or closed that a Lesson waits for; the sim gets one per step. */
+  private facts: LessonUiFact[] = [];
   /** Every frame, after the sim stepped: events of this frame. */
   onFrame: (events: SimEvent[], dt: number) => void = () => {};
 
@@ -35,7 +38,13 @@ export class Game {
   /** Fresh Opening of a map (reload, map switch, reset). */
   open(map: MapDef, save: MapSave | null): void {
     this.world = createWorld(map, save, seed());
+    this.facts = [];
     this.view.reset(this.world);
+  }
+
+  /** Tells the running Lesson about a screen of the app (they pause the sim, so it learns in order, afterwards). */
+  report(fact: LessonUiFact): void {
+    if (this.world.lesson) this.facts.push(fact);
   }
 
   buyUpgrade(id: string): void {
@@ -74,6 +83,7 @@ export class Game {
           grabPaused: this.input.tap.grabPaused(this.world),
           sprint: this.input.sprint,
           manualGrab: this.manualGrab,
+          ui: this.facts.shift(),
           ...this.commands,
         });
         this.commands = {};

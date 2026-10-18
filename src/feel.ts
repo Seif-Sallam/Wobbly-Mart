@@ -146,6 +146,9 @@ export const FEEL = {
   layoutBob: 5.5,
   layoutGhostOpacity: 0.85,
   layoutReasonTime: 2.2,
+  layoutOutline: 0.12,
+  /** The Exit Pad's car leaving the Tutorial Map (s). */
+  vanDriveOff: 1.6,
   // Cashier "Bag" pose while the Register works: arms forward (rad), torso turns belt to tray (rad) at rate
   // (cycles/s), eases in/out over bagEase (s); cheer = emote('yes') per finished Customer
   bag: { lift: 0.9, rate: 1.4, turn: 0.55, cheer: true },

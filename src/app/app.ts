@@ -60,11 +60,9 @@ const SCENERY_PEOPLE = 4;
 /** How quickly the measured screen tick follows changes (it varies with ProMotion and throttling). */
 const TICK_FOLLOW = 0.05;
 
-/** Phones play fullscreen. iPhone Safari has no Fullscreen API, and an installed app already is. */
+/** Phones play fullscreen. iPhone Safari has no Fullscreen API; Android can run the installed app standalone. */
 const canFullscreen = (): boolean =>
-  isTouch &&
-  !!document.documentElement.requestFullscreen &&
-  !matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
+  isTouch && !!document.documentElement.requestFullscreen && !matchMedia('(display-mode: fullscreen)').matches;
 
 const isIos =
   /iP(hone|ad|od)/.test(navigator.userAgent) &&
@@ -187,6 +185,11 @@ export class App {
       if (this.ui.screen === 'title' && this.game) this.sounds.playMusicOf(this.game.world.map);
     };
     addEventListener('pointerdown', firstGesture, { once: true });
+    // a touch is a gesture only on release: the first tap anywhere goes fullscreen
+    const firstTap = (): void => {
+      if (canFullscreen()) void document.documentElement.requestFullscreen().catch(() => {});
+    };
+    addEventListener('pointerup', firstTap, { once: true });
     addEventListener('keydown', firstGesture, { once: true });
     addEventListener('visibilitychange', () => (document.hidden ? this.onHidden() : this.syncAudio()));
     addEventListener('pagehide', () => this.writeSave());

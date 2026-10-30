@@ -244,6 +244,7 @@ export class App {
     requestAnimationFrame(loop);
     Object.assign(window, { app: this, game: this.game });
     const params = new URLSearchParams(location.search);
+    if (params.has('boards')) void import('./boards-prototype').then((m) => m.openBoardsPrototype());
     if (params.has('debug'))
       void import('./debug').then(
         (m) =>

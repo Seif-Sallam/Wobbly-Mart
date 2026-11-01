@@ -242,6 +242,51 @@ A fixed place in a **Register**'s line where a **Customer** stands to wait for c
 **Waiting Spot**:
 Where a **Customer** stands when every **Register**'s **Queue Spots** are taken.
 
+### Online
+
+**Device**:
+One browser's online identity, held as a secret; two browsers using the same **Cloud Code** are one Device. Made only when the **Player** first goes online.
+_Avoid_: account, user, profile
+
+**Cloud Code**:
+The short secret that is the **Device**; entering it in another browser makes that browser the same Device.
+_Avoid_: password, login, token (in player-facing text)
+
+**Nickname**:
+The name a **Device** shows on **Boards**, chosen by the **Player**; not unique.
+
+**Board**:
+One ranked list of results, for one **Map** and kind (and one day, for the **Daily Board**). Each **Device** has at most one row: its best.
+_Avoid_: leaderboard, ranking
+
+**Run**:
+One continuous attempt from a fresh save of a **Map** to 100% **Completion**, timed in sim ticks across all its **Openings**. Ranked on that Map's **Speedrun Board**.
+_Avoid_: speedrun (as the attempt), playthrough
+
+**Speedrun Board**:
+The **Board** of fastest **Runs** on one **Map**.
+
+**Score Board**:
+The **Board** of highest **Score** on one **Map**.
+
+**Daily Shift**:
+One goal-based game, the same for every **Player** each UTC day, on that day's generated **Map**, in its own world that never touches the save.
+_Avoid_: daily challenge (a **Challenge** is something else), daily run
+
+**Daily Board**:
+The **Board** for one day's **Daily Shift**, ranked by fastest time to the goal.
+
+**Replay**:
+The record of a **Daily Shift**'s inputs from start to end, from which it plays back exactly. **Runs** have none.
+_Avoid_: recording, demo, ghost
+
+**Streak**:
+UTC days in a row on which a **Device** finished the **Daily Shift**. The **Streak Board** ranks the longest.
+
+**Wall of Fame**:
+The one screen that shows every **Board**; the player-facing name for Boards.
+_Avoid_ in player text: leaderboard, "X Board"
+
 ## Relationships
 
 - A **Crop**'s **Recipe** has no inputs; **Animals** and **Machines** need **Loading**

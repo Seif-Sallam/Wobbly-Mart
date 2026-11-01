@@ -244,6 +244,8 @@ export class App {
     requestAnimationFrame(loop);
     Object.assign(window, { app: this, game: this.game });
     const params = new URLSearchParams(location.search);
+    if (import.meta.env.DEV && params.has('daily'))
+      void import('./daily-prototype').then((m) => m.openDailyPrototype(this as unknown as Parameters<typeof m.openDailyPrototype>[0]));
     if (params.has('debug'))
       void import('./debug').then(
         (m) =>

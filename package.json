@@ -16,7 +16,8 @@
     "bot": "tsx scripts/bot-playthrough.ts",
     "credits": "tsx scripts/credits.ts",
     "size": "size-limit",
-    "check:dist": "tsx scripts/check-dist.ts"
+    "check:dist": "tsx scripts/check-dist.ts",
+    "daily": "tsx scripts/daily-prototype.ts"
   },
   "dependencies": {
     "howler": "^2.2.4",

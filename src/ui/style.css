@@ -1724,7 +1724,7 @@ html.joying #joy-rest {
 }
 
 /* ---------- popups: one shell (title + ✕, scrolling body, footer); the game blurs behind */
-.modal {
+.modal:not(.live) {
   backdrop-filter: blur(3px);
 }
 .panel.popup {

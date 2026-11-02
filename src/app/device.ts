@@ -26,11 +26,11 @@ export class Device {
   code = read(CODE);
   nickname = read(NICKNAME);
 
-  get accepted(): boolean {
-    return Number(read(PRIVACY)) === PRIVACY_VERSION;
-  }
+  /** Also kept in memory, so Accept holds for this visit where storage is blocked. */
+  accepted = Number(read(PRIVACY)) === PRIVACY_VERSION;
 
   accept(): void {
+    this.accepted = true;
     write(PRIVACY, String(PRIVACY_VERSION));
   }
 
@@ -78,7 +78,8 @@ export class Device {
     if (!this.code) return null;
     const r = await api.deleteDevice(this.code);
     const gone = r.ok || r.error === 'unknown_device';
-    if (gone) this.keep(null, null);
+    // another tab may have rotated the code meanwhile: keep the one it stored
+    if (gone && (r.ok || read(CODE) === this.code)) this.keep(null, null);
     return gone ? null : failure(r);
   }
 }

@@ -23,6 +23,7 @@ import { type Stats, emptyStats, updateStats } from './stats';
 import { updateObjectives } from './objectives';
 import { quartersOf, updateScore } from './score';
 import { updateChallenges } from './challenges';
+import { quantize } from './intents';
 
 export interface Mover {
   x: number;
@@ -479,7 +480,8 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number): Wo
 }
 
 /** One fixed timestep. `w.events` holds only this step's events afterwards. */
-export function step(w: World, intents: Intents): void {
+export function step(w: World, raw: Intents): void {
+  const intents = quantize(raw);
   w.events = [];
   if (w.lesson?.phase === 'card') {
     if (intents.lessonNext) dismissLessonCard(w);

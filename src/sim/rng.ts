@@ -38,3 +38,10 @@ export function weighted(state: { rng: number }, weights: readonly number[]): nu
   for (let i = 0; i < weights.length; i++) if ((r -= weights[i]) < 0) return i;
   return weights.length - 1;
 }
+
+/** FNV-1a 32-bit hash of a string: seeds from dates, fingerprints of a World. */
+export function fnv1a(text: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
+  return h >>> 0;
+}

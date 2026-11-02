@@ -13,7 +13,8 @@ const ROUTES: Record<string, Partial<Record<string, Handler>>> = {
 
 async function route(req: Request, env: Env): Promise<Response> {
   if (req.method === 'OPTIONS') return preflight();
-  const handler = ROUTES[new URL(req.url).pathname]?.[req.method];
+  const handlers = ROUTES[new URL(req.url).pathname];
+  const handler = handlers && Object.hasOwn(handlers, req.method) ? handlers[req.method] : undefined;
   return handler ? handler(req, env) : errorResponse('not_found');
 }
 

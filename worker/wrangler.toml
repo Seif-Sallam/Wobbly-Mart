@@ -58,6 +58,7 @@ simple = { limit = 3, period = 60 }
 # ---------------------------------------------------------------- staging (second, separate Cloudflare account)
 [env.staging]
 name = "wobbly-mart-api-staging"
+preview_urls = false
 vars = { CORS_ORIGINS = "", CORS_LAN = "true" }
 d1_databases = [
   { binding = "BOARD", database_name = "wobbly_board", database_id = "staging-board-id", migrations_dir = "migrations/board" },
@@ -74,6 +75,7 @@ ratelimits = [
 # ---------------------------------------------------------------- production
 [env.production]
 name = "wobbly-mart-api"
+preview_urls = false
 vars = { CORS_ORIGINS = "https://seif-sallam.github.io", CORS_LAN = "false" }
 d1_databases = [
   { binding = "BOARD", database_name = "wobbly_board", database_id = "production-board-id", migrations_dir = "migrations/board" },

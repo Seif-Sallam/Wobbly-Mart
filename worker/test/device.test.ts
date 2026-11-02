@@ -51,7 +51,7 @@ test('a Device lives, renames, rotates its Cloud Code and is deleted everywhere'
   expect((await call('PUT', '/v1/device/nickname', { body: { nickname: 'Nobody' } })).status).toBe(401);
 
   // Rename (6 a minute per Device): rule breaks and blocked words are refused, a clean name sticks.
-  for (const nickname of ['ab', 'x'.repeat(17), 'emoji 🙂', 'sh1t head', 42]) {
+  for (const nickname of ['ab', 'x'.repeat(17), '- _ -', 'sh1t head', 42]) {
     res = await call('PUT', '/v1/device/nickname', { code: cloudCode, body: { nickname } });
     expect(res.status).toBe(422);
     expect(((await res.json()) as ApiError).error).toBe('name_blocked');
@@ -139,11 +139,10 @@ test('CORS answers listed origins only, and unknown routes are 404', async () =>
   expect(res.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:5173');
 });
 
-test('the blocklist catches leetspeak and spacing but not innocent short words', () => {
-  expect(['F u c k', 'Sh1tShow', 'b1tch', 'mod', 'Admin', 'Wobbly-Mart', 'Seif Fan'].map(isBlocked)).toEqual(
-    Array(7).fill(true),
-  );
-  expect(['Spicy Chef', 'Peacock', 'Button Masher', 'Cucumber', 'Classy Bass', 'Modern'].map(isBlocked)).toEqual(
-    Array(6).fill(false),
-  );
+test('the blocklist catches leetspeak and spacing but not innocent words', () => {
+  const blocked = ['F u c k', 'Sh1tShow', 'b1tch', 'mod', 'Admin', 'Wobbly-Mart', 'Seif', 'xxBastardxx', 'Thor Rapist'];
+  expect(blocked.filter((n) => !isBlocked(n))).toEqual([]);
+  const fine = ['Spicy Chef', 'Peacocks', 'Button Masher', 'Cucumber', 'Classy Bass', 'Modern', 'Thorny Rose'];
+  fine.push('Swanky Shop', 'Basement Bob', 'Therapist', 'Pen Island', 'Support Me', 'Player 455', 'Chef 7175');
+  expect(fine.filter(isBlocked)).toEqual([]);
 });

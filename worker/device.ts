@@ -10,10 +10,11 @@ import { dayOf, nowSeconds } from './time';
 
 const BODY_CAP = 2 * KB;
 
-/** The verified Device behind `Authorization: Bearer <Cloud Code>`, or null without the header. */
+/** The verified Device behind `Authorization: Bearer <Cloud Code>`, or null without the header. Lookups are limited by IP. */
 export async function findDevice(req: Request, env: Env): Promise<number | null> {
   const auth = req.headers.get('Authorization');
   if (!auth) return null;
+  await limit(env.READ_LIMIT, clientIp(req));
   const hash = auth.startsWith('Bearer ') ? await hashCloudCode(auth.slice(7)) : null;
   if (!hash) throw new HttpError('unknown_device');
   const row = await env.BOARD.prepare('SELECT `id_device` FROM `device` WHERE `token_hash` = ?')
@@ -37,9 +38,9 @@ async function readNickname(req: Request): Promise<string> {
 }
 
 export async function createDevice(req: Request, env: Env): Promise<Response> {
+  const nickname = await readNickname(req);
   await limit(env.DEVICE_LIMIT, clientIp(req));
   await limit(env.GLOBAL_WRITE_LIMIT, 'global:write');
-  const nickname = await readNickname(req);
   const now = nowSeconds();
   await claimNewDevice(env, dayOf(now));
   const cloudCode = newCloudCode();
@@ -52,7 +53,6 @@ export async function createDevice(req: Request, env: Env): Promise<Response> {
 }
 
 export async function getDevice(req: Request, env: Env): Promise<Response> {
-  await limit(env.READ_LIMIT, clientIp(req));
   const id = await requireDevice(req, env);
   const [device, save] = await Promise.all([
     env.BOARD.prepare('SELECT `nickname` FROM `device` WHERE `id_device` = ?').bind(id).first<{ nickname: string }>(),
@@ -64,8 +64,8 @@ export async function getDevice(req: Request, env: Env): Promise<Response> {
 
 export async function renameDevice(req: Request, env: Env): Promise<Response> {
   const id = await requireDevice(req, env);
-  await limitWrite(env, 'nickname', id);
   const nickname = await readNickname(req);
+  await limitWrite(env, 'nickname', id);
   await env.BOARD.prepare('UPDATE `device` SET `nickname` = ?, `last_seen_at` = ? WHERE `id_device` = ?')
     .bind(nickname, nowSeconds(), id)
     .run();
@@ -85,8 +85,10 @@ export async function rotateCloudCode(req: Request, env: Env): Promise<Response>
 
 /** Hard delete across all three databases; the `device` row goes last so a failed delete can be retried. */
 export async function deleteDevice(env: Env, id: number): Promise<void> {
-  await env.REPLAY.prepare('DELETE FROM `replay` WHERE `id_device` = ?').bind(id).run();
-  await env.SAVE.prepare('DELETE FROM `device_save` WHERE `id_device` = ?').bind(id).run();
+  await Promise.all([
+    env.REPLAY.prepare('DELETE FROM `replay` WHERE `id_device` = ?').bind(id).run(),
+    env.SAVE.prepare('DELETE FROM `device_save` WHERE `id_device` = ?').bind(id).run(),
+  ]);
   await env.BOARD.batch([
     env.BOARD.prepare('DELETE FROM `board_entry` WHERE `id_device` = ?').bind(id),
     env.BOARD.prepare('DELETE FROM `device` WHERE `id_device` = ?').bind(id),

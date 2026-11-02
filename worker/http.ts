@@ -56,7 +56,8 @@ export async function readJson(req: Request, cap: number): Promise<unknown> {
   }
 }
 
-const LAN = /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d{1,5})?$/;
+const LAN =
+  /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(:\d{1,5})?$/;
 
 /** `CORS_ORIGINS` is a comma list of exact origins; `CORS_LAN = "true"` also allows localhost and private LAN IPs. */
 function allowedOrigin(origin: string | null, env: { CORS_ORIGINS: string; CORS_LAN: string }): string | null {

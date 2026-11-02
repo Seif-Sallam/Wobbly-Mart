@@ -1,0 +1,42 @@
+// The Board API client. A build without VITE_API_URL has API_URL null: every online feature hides.
+import type { ApiError, CloudCodeResponse, DeviceResponse, ErrorCode } from '../../worker/api';
+
+const DEV_PORT = 8787;
+
+export const API_URL: string | null =
+  import.meta.env.VITE_API_URL || (import.meta.env.DEV ? `http://${location.hostname}:${DEV_PORT}` : null);
+
+/** `offline` covers no network, a 5xx and an unreadable reply. */
+export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ErrorCode | 'offline' };
+
+async function call<T>(
+  method: string,
+  path: string,
+  opts: { code?: string; body?: unknown } = {},
+): Promise<ApiResult<T>> {
+  if (!API_URL) return { ok: false, error: 'offline' };
+  const headers: Record<string, string> = {};
+  if (opts.code) headers.Authorization = `Bearer ${opts.code}`;
+  if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
+  try {
+    const res = await fetch(`${API_URL}${path}`, {
+      method,
+      headers,
+      body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+    });
+    if (res.status >= 500) return { ok: false, error: 'offline' };
+    if (!res.ok) return { ok: false, error: ((await res.json()) as ApiError).error };
+    return { ok: true, data: (res.status === 204 ? undefined : await res.json()) as T };
+  } catch {
+    return { ok: false, error: 'offline' };
+  }
+}
+
+export const api = {
+  createDevice: (nickname: string) => call<CloudCodeResponse>('POST', '/v1/device', { body: { nickname } }),
+  checkDevice: (code: string) => call<DeviceResponse>('GET', '/v1/device', { code }),
+  rename: (code: string, nickname: string) =>
+    call<undefined>('PUT', '/v1/device/nickname', { code, body: { nickname } }),
+  rotate: (code: string) => call<CloudCodeResponse>('POST', '/v1/device/rotate', { code }),
+  deleteDevice: (code: string) => call<undefined>('DELETE', '/v1/device', { code }),
+};

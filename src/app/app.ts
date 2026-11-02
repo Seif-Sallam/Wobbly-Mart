@@ -51,6 +51,8 @@ import { TUNING } from '../sim/tuning';
 import { objectiveId } from '../../catalog/objectives';
 import { logbookView, objectiveInfo, progressOfSave, type MapProgress } from './logbook';
 import { challengeCard } from './challenge-card';
+import { API_URL } from './api';
+import { Device } from './device';
 
 const AUTOSAVE_SECONDS = 5;
 const EDGE_MARGIN = 44;
@@ -77,6 +79,10 @@ export class App {
   private settings: Settings;
   private sounds = new Sounds();
   private wardrobe = new WardrobeView();
+  private device = new Device();
+  /** Where the online popups return to: the overlay the flow started from. */
+  private onlineBack: Overlay | null = null;
+  private privacyBack: Overlay | null = null;
   /** No save existed at load: the Wardrobe opens by itself once the title is ready. */
   private firstRun: boolean;
   private ui: UiState;
@@ -165,6 +171,7 @@ export class App {
       layout: null,
       look: lookById(this.save.look).id,
       cap: this.save.cap in CAP_COLOURS ? this.save.cap : 'orange',
+      online: API_URL ? { code: this.device.code, nickname: this.device.nickname, askPrivacy: false } : null,
     };
     this.ui.zoom = this.zoom();
     watchLayout(() => this.applyLayout());
@@ -836,7 +843,63 @@ export class App {
       writeSave(this.save);
       this.applyLook();
     },
+    online: {
+      join: () => {
+        if (this.device.accepted) return this.openOnline('join');
+        this.setOnline({ askPrivacy: true });
+        this.openOnline('privacy');
+      },
+      accept: () => {
+        this.device.accept();
+        this.setOnline({ askPrivacy: false });
+        this.openOverlay('join');
+      },
+      notNow: () => {
+        this.setOnline({ askPrivacy: false });
+        this.openOverlay(this.onlineBack);
+      },
+      showPrivacy: () => {
+        this.privacyBack = this.ui.overlay;
+        this.setOnline({ askPrivacy: false });
+        this.openOverlay('privacy');
+      },
+      pickNickname: () => (this.device.accepted ? this.openOnline('nickname') : this.actions.online.join()),
+      enterCode: () => this.openOnline('cloud-code'),
+      back: () => this.openOverlay(this.ui.overlay === 'privacy' ? this.privacyBack : this.onlineBack),
+      saveNickname: (name) =>
+        this.onlineCall(this.device.code ? this.device.rename(name) : this.device.create(name), this.onlineBack),
+      useCode: (code) => this.onlineCall(this.device.useCode(code), this.onlineBack),
+      rotate: () => this.onlineCall(this.device.rotate()),
+      remove: () => this.onlineCall(this.device.remove()),
+      copyCode: async () => {
+        try {
+          await navigator.clipboard.writeText(this.device.code ?? '');
+          return true;
+        } catch {
+          return false;
+        }
+      },
+    },
   };
+
+  /** Opens an online popup, remembering where the flow started so ✕ and success return there. */
+  private openOnline(o: Overlay): void {
+    if (!ONLINE_OVERLAYS.has(this.ui.overlay)) this.onlineBack = this.ui.overlay;
+    this.openOverlay(o);
+  }
+
+  private setOnline(change: { askPrivacy: boolean }): void {
+    if (this.ui.online) this.ui.online = { ...this.ui.online, ...change };
+  }
+
+  /** Runs a Device call; on success shows the new Device state and, if given, leaves the popup. */
+  private async onlineCall(call: Promise<string | null>, then?: Overlay | null): Promise<string | null> {
+    const error = await call;
+    if (this.ui.online) this.ui.online = { ...this.ui.online, code: this.device.code, nickname: this.device.nickname };
+    if (!error && then !== undefined) this.openOverlay(then);
+    else this.renderUi();
+    return error;
+  }
 
   /** Shows the saved look and cap on the Player (an unknown id or colour falls back to the defaults). */
   private applyLook(): void {
@@ -896,6 +959,8 @@ export class App {
     renderUi(this.uiRoot, this.ui, this.actions, this.ui.screen === 'game' ? (this.game?.world ?? null) : null);
   }
 }
+
+const ONLINE_OVERLAYS = new Set<Overlay | null>(['privacy', 'join', 'nickname', 'cloud-code']);
 
 const THIEF = '🦹';
 const INSPECTOR = '🧐';

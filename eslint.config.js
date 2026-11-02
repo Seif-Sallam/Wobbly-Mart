@@ -38,6 +38,16 @@ export default tseslint.config(
     files: ['src/view/**'],
     rules: restrict([{ group: ['**/ui/**', 'preact', 'preact/*'], message: 'view/ must not import ui/' }]),
   },
+  // the game shares only the Worker's request types and the Nickname rule
+  {
+    files: ['src/**'],
+    rules: restrict([
+      {
+        group: ['**/worker/**', '!**/worker/api', '!**/worker/nickname'],
+        message: 'src/ may import worker/api (types) and worker/nickname only',
+      },
+    ]),
+  },
   // worker/ may share catalog/, maps/ and pure sim/, never the browser game
   {
     files: ['worker/**'],

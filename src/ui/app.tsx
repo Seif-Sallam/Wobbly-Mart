@@ -10,6 +10,16 @@ import { formatMoney } from '../format';
 import { FEEL } from '../feel';
 import { TUNING } from '../sim/tuning';
 import { Logo } from './logo';
+import { Btn } from './btn';
+import {
+  CodePopup,
+  JoinPopup,
+  NicknamePopup,
+  OnlineRows,
+  PrivacyPopup,
+  type OnlineActions,
+  type OnlineView,
+} from './online';
 import { Logbook, type LogbookView } from './logbook';
 import { GEAR } from './hud';
 import { CREDITS } from '../../catalog/credits';
@@ -17,7 +27,20 @@ import { LOOKS, lookById } from '../../catalog/looks';
 import { CAP_COLOURS } from '../palette';
 
 export type Overlay =
-  'pause' | 'settings' | 'maps' | 'credits' | 'controls' | 'paste' | 'home-tip' | 'wardrobe' | 'fullscreen' | 'logbook';
+  | 'pause'
+  | 'settings'
+  | 'maps'
+  | 'credits'
+  | 'controls'
+  | 'paste'
+  | 'home-tip'
+  | 'wardrobe'
+  | 'fullscreen'
+  | 'logbook'
+  | 'privacy'
+  | 'join'
+  | 'nickname'
+  | 'cloud-code';
 
 export interface UiState {
   screen: 'title' | 'game';
@@ -49,6 +72,8 @@ export interface UiState {
   /** The Player's saved look (Wardrobe id) and cap colour name. */
   look: string;
   cap: string;
+  /** Null when this build has no Board API: every online feature hides. */
+  online: OnlineView | null;
 }
 
 /** The Wardrobe's 3D preview and portraits, drawn by the view. */
@@ -107,6 +132,7 @@ export interface UiActions {
   click: () => void;
   wardrobe: WardrobeBridge;
   selectLook: (look: string, cap: string) => void;
+  online: OnlineActions;
 }
 
 const FAMILY_ORDER = ['player', 'station', 'staff'] as const;
@@ -117,28 +143,6 @@ function upgradeIcon(world: World, target: string): string {
   if (target === 'player') return 'player';
   if (target === 'cashier' || target === 'stocker') return `staff-${target}`;
   return world.map.producers[target]?.model ?? target;
-}
-
-function Btn(props: {
-  class?: string;
-  onClick: () => void;
-  disabled?: boolean;
-  children: preact.ComponentChildren;
-  actions: UiActions;
-}) {
-  return (
-    <button
-      class={`btn ${props.class ?? ''}`}
-      disabled={props.disabled}
-      onPointerDown={(e) => e.stopPropagation()}
-      onClick={() => {
-        props.actions.click();
-        props.onClick();
-      }}
-    >
-      {props.children}
-    </button>
-  );
 }
 
 const clock = (s: number): string => `${Math.floor(s / 60)}:${String(Math.ceil(s) % 60).padStart(2, '0')}`;
@@ -401,6 +405,7 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
       <Btn actions={a} onClick={a.fullscreen}>
         Fullscreen
       </Btn>
+      {s.online && <OnlineRows v={s.online} o={a.online} a={a} />}
       <div class="row">
         <Btn actions={a} onClick={() => a.open('controls')}>
           Controls
@@ -725,6 +730,11 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
         </div>
       )}
       {s.storageFailed && <p class="note">Progress won't be saved in this browser.</p>}
+      {ready && s.online && (
+        <button class="link title-privacy" onClick={() => (a.click(), a.online.showPrivacy())}>
+          Privacy
+        </button>
+      )}
     </div>
   );
 }
@@ -888,6 +898,10 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
           {overlay === 'paste' && <Paste a={a} />}
           {overlay === 'home-tip' && <HomeTip a={a} />}
           {overlay === 'wardrobe' && <Wardrobe s={s} a={a} />}
+          {overlay === 'privacy' && <PrivacyPopup ask={!!s.online?.askPrivacy} o={a.online} a={a} />}
+          {overlay === 'join' && <JoinPopup o={a.online} a={a} />}
+          {overlay === 'nickname' && <NicknamePopup current={s.online?.nickname ?? null} o={a.online} a={a} />}
+          {overlay === 'cloud-code' && <CodePopup o={a.online} a={a} />}
           {overlay === 'logbook' && s.logbook && (
             <Logbook view={s.logbook} tab={s.logbookTab} close={a.close} click={a.click} />
           )}

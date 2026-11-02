@@ -34,6 +34,9 @@ jobs:
         run: npm run bot
       - run: npm run validate
       - run: npm run build
+        env:
+          # unset (no repository variable yet) = a build without online features
+          VITE_API_URL: ${{ github.ref == 'refs/heads/main' && vars.VITE_API_URL_PRODUCTION || vars.VITE_API_URL_STAGING }}
       - run: npm run size
       - run: npm run check:dist
       - uses: actions/upload-pages-artifact@v3

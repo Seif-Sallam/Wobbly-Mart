@@ -1722,3 +1722,245 @@ html.joying #joy-rest {
   padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
     env(safe-area-inset-left, 0px);
 }
+
+/* ---------- popups: one shell (title + ✕, scrolling body, footer); the game blurs behind */
+.modal {
+  backdrop-filter: blur(3px);
+}
+.panel.popup {
+  width: min(420px, 100%);
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+.popup > header {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  padding: 12px 12px 6px;
+}
+.popup > header h2 {
+  grid-column: 2;
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.1;
+}
+.popup-x {
+  grid-column: 3;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  color: var(--ink);
+  font: 700 16px Fredoka;
+  box-shadow: 0 2px 0 var(--ink);
+  cursor: pointer;
+}
+.popup-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  touch-action: pan-y;
+  padding: 4px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.popup > footer {
+  padding: 10px 16px 14px;
+  border-top: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.popup > footer > .btn {
+  width: 100%;
+}
+.panel .popup-lead {
+  text-align: center;
+  font-size: 15px;
+  opacity: 0.85;
+}
+.privacy h3 {
+  margin: 4px 0;
+  font-size: 18px;
+}
+.panel .privacy p {
+  font-size: 14px;
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+}
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  text-align: left;
+  border: 3px solid var(--ink);
+  border-radius: 16px;
+  background: var(--cream);
+  padding: 8px 12px;
+  box-shadow: 0 3px 0 var(--ink);
+  color: var(--ink);
+  font-family: Fredoka;
+  cursor: pointer;
+}
+.choice > span {
+  font-size: 28px;
+}
+.panel .choice p {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+}
+.choice p b {
+  font-size: 17px;
+}
+.choice.main {
+  background: color-mix(in srgb, var(--money) 22%, var(--cream));
+}
+.link {
+  background: none;
+  border: 0;
+  color: var(--ink);
+  font: 600 14px Fredoka;
+  text-decoration: underline;
+  opacity: 0.75;
+  cursor: pointer;
+  align-self: center;
+}
+.title-privacy {
+  position: fixed;
+  bottom: max(8px, env(safe-area-inset-bottom));
+  right: max(12px, env(safe-area-inset-right));
+}
+.field {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.field input {
+  flex: 1;
+  min-width: 0;
+  font: 600 20px Fredoka;
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  padding: 6px 10px;
+  background: white;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.field input.code,
+.online-row .code {
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.5px;
+}
+.field input.code {
+  font-size: 16px;
+}
+.online-row .code {
+  font-size: 14px;
+  white-space: nowrap;
+}
+.field input.bad {
+  border-color: var(--angry);
+}
+.field-help {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  opacity: 0.75;
+}
+.field-help.bad {
+  color: var(--angry);
+  opacity: 1;
+}
+.online-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 10px;
+  border-top: 2px dashed color-mix(in srgb, var(--ink) 20%, transparent);
+  padding-top: 8px;
+}
+.online-row > span {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  min-width: 0;
+}
+.online-row > span b {
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.online-row > div {
+  display: flex;
+  gap: 6px;
+}
+.online-row .btn {
+  font-size: 14px;
+  padding: 4px 12px;
+}
+.online-row > small {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  opacity: 0.7;
+}
+.online-row.confirm > small {
+  grid-column: 1;
+  opacity: 1;
+}
+.panel .online-note {
+  text-align: center;
+  font-size: 14px;
+}
+.wall-av {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  flex: none;
+  display: grid;
+  place-items: center;
+  font: 700 13px Fredoka;
+  color: white;
+  border: 2px solid var(--ink);
+  background: var(--c);
+}
+.wall-row {
+  display: grid;
+  grid-template-columns: 34px auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--cream) 50%, white);
+}
+.wall-row > i {
+  font-style: normal;
+  font-weight: 700;
+  opacity: 0.6;
+  text-align: right;
+  font-size: 14px;
+}
+.wall-row > b {
+  font-weight: 600;
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wall-row > span {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.wall-row.me {
+  background: color-mix(in srgb, var(--pad) 45%, var(--cream));
+  box-shadow: inset 0 0 0 2px var(--orange);
+}

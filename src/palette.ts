@@ -232,7 +232,8 @@ export const THEMES: Record<string, ShopTheme> = {
 
 export const LIGHT = { sun: '#ffcf8a', sunIntensity: 3.0, hemiIntensity: 0.9, shadowRadius: 3, exposure: 1 };
 
-export function applyCssPalette(root: HTMLElement): void {
+/** Typed structurally so the Worker, which shares map data that imports this file, needs no DOM types. */
+export function applyCssPalette(root: { style: { setProperty(name: string, value: string): void } }): void {
   for (const [k, v] of Object.entries(PALETTE)) root.style.setProperty(`--${k}`, v);
   root.style.setProperty('--angry', SHADES.angry);
   for (const [k, v] of Object.entries(SHADES.roleCaps)) root.style.setProperty(`--role-${k}`, v);

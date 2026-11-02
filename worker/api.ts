@@ -24,3 +24,39 @@ export interface DeviceResponse {
   nickname: string;
   cloudSaveAt?: number;
 }
+
+export type BoardKind = 'speed' | 'score' | 'daily' | 'streak';
+
+/** One Wall row. `value` is ticks (speed, daily), Score (score) or the best Streak (streak). Rank 1001 = "1000+". */
+export interface Row {
+  rank: number;
+  nickname: string;
+  value: number;
+  score?: number;
+  money?: number;
+  /** Streak Board: the current Streak. */
+  streak?: number;
+  you?: true;
+}
+
+/** GET /v1/boards/:kind/:map?day= (`map` = `-` for streak). `you` only for a verified Device with a row. */
+export interface BoardResponse {
+  top: Row[];
+  you?: { rank: number; around: Row[] };
+  total: number;
+}
+
+/** PUT /v1/scores/:map */
+export interface ScoreBody {
+  score: number;
+  /** Seconds the sim ran on this Map. */
+  playTime: number;
+  simVersion: number;
+}
+
+/** Every submit's answer: where the row stands now. */
+export interface RankResponse {
+  rank: number;
+  total: number;
+  improved: boolean;
+}

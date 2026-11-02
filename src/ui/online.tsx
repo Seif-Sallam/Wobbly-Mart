@@ -1,9 +1,9 @@
 // Online popups: the shared popup shell, Privacy, Get on the Wall, the Nickname card, Cloud Code entry and Settings rows.
-import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 import { cleanNickname, NICKNAME_MAX, tidyNickname } from '../../worker/nickname';
 import { PRIVACY } from '../privacy';
 import { Btn } from './btn';
+import { Popup } from './popup';
 import { WallRow } from './wall';
 
 /** Null when the build has no Board API. `code` is the Cloud Code, null without a Device. */
@@ -17,6 +17,7 @@ export interface OnlineView {
 /** Async actions resolve to null, or to the text to show inline. */
 export interface OnlineActions {
   join: () => void;
+  openWall: () => void;
   accept: () => void;
   notNow: () => void;
   showPrivacy: () => void;
@@ -31,27 +32,6 @@ export interface OnlineActions {
 }
 
 type Click = { click: () => void };
-
-/** Every popup: title + ✕, a scrolling body, an optional footer. Only ✕ or a button closes it. */
-export function Popup(props: {
-  title: string;
-  close: () => void;
-  children: ComponentChildren;
-  foot?: ComponentChildren;
-}) {
-  return (
-    <div class="panel popup" onPointerDown={(e) => e.stopPropagation()}>
-      <header>
-        <h2>{props.title}</h2>
-        <button class="popup-x" aria-label="Close" onClick={props.close}>
-          ✕
-        </button>
-      </header>
-      <div class="popup-body">{props.children}</div>
-      {props.foot && <footer>{props.foot}</footer>}
-    </div>
-  );
-}
 
 export function PrivacyPopup({ ask, o, a }: { ask: boolean; o: OnlineActions; a: Click }) {
   return (

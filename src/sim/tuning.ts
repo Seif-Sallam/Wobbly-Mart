@@ -181,4 +181,6 @@ export const TUNING = {
     stockerCarry: 6,
     cleanTime: 2,
   },
+  /** Daily Shift: day 1 is this UTC date (ms). */
+  daily: { launch: Date.UTC(2026, 10, 1) },
 };

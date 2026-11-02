@@ -789,14 +789,9 @@ export class App {
       if (document.fullscreenElement) void document.exitFullscreen();
       else void document.documentElement.requestFullscreen?.();
     },
-    copySave: async () => {
+    copySave: () => {
       this.writeSave();
-      try {
-        await navigator.clipboard.writeText(encodeSaveCode(this.save));
-        return true;
-      } catch {
-        return false;
-      }
+      return copyText(encodeSaveCode(this.save));
     },
     pasteSave: (code) => {
       try {
@@ -852,7 +847,8 @@ export class App {
       accept: () => {
         this.device.accept();
         this.setOnline({ askPrivacy: false });
-        this.openOverlay('join');
+        // a Device asked again after a notice bump was changing its Nickname
+        this.openOverlay(this.device.code ? 'nickname' : 'join');
       },
       notNow: () => {
         this.setOnline({ askPrivacy: false });
@@ -871,14 +867,7 @@ export class App {
       useCode: (code) => this.onlineCall(this.device.useCode(code), this.onlineBack),
       rotate: () => this.onlineCall(this.device.rotate()),
       remove: () => this.onlineCall(this.device.remove()),
-      copyCode: async () => {
-        try {
-          await navigator.clipboard.writeText(this.device.code ?? '');
-          return true;
-        } catch {
-          return false;
-        }
-      },
+      copyCode: () => copyText(this.device.code ?? ''),
     },
   };
 
@@ -957,6 +946,15 @@ export class App {
   private renderUi(): void {
     document.documentElement.classList.toggle('on-title', this.ui.screen !== 'game');
     renderUi(this.uiRoot, this.ui, this.actions, this.ui.screen === 'game' ? (this.game?.world ?? null) : null);
+  }
+}
+
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
   }
 }
 

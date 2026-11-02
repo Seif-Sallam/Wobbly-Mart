@@ -864,7 +864,8 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
       {s.screen === 'game' && s.layout && !overlay && <LayoutPanel l={s.layout} a={a} />}
       {s.screen === 'game' && world?.lesson && !overlay && <LessonCard s={s} a={a} world={world} />}
       {overlay && (
-        <div class="modal" onPointerDown={(e) => e.stopPropagation()}>
+        // the Logbook leaves the game running: no blur behind it
+        <div class={`modal ${overlay === 'logbook' ? 'live' : ''}`} onPointerDown={(e) => e.stopPropagation()}>
           {overlay === 'pause' && (
             <div class="menu">
               <Btn class="big" actions={a} onClick={a.close}>

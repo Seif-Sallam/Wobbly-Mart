@@ -1,7 +1,7 @@
 // Online popups: the shared popup shell, Privacy, Get on the Wall, the Nickname card, Cloud Code entry and Settings rows.
 import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
-import { cleanNickname, NICKNAME_MAX } from '../../worker/nickname';
+import { cleanNickname, NICKNAME_MAX, tidyNickname } from '../../worker/nickname';
 import { PRIVACY } from '../privacy';
 import { Btn } from './btn';
 import { WallRow } from './wall';
@@ -187,7 +187,7 @@ export function NicknamePopup({ current, o, a }: { current: string | null; o: On
       <div class={`field-help ${error ? 'bad' : ''}`}>
         <span>{error || 'No real names'}</span>
         <span>
-          {name.trim().replace(/ +/g, ' ').length}/{NICKNAME_MAX}
+          {tidyNickname(name).length}/{NICKNAME_MAX}
         </span>
       </div>
     </Popup>
@@ -209,7 +209,8 @@ export function CodePopup({ o, a }: { o: OnlineActions; a: Click }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const use = async () => {
-    if (busy || code.length < 24) return setError('A Cloud Code has 5 groups of 4');
+    if (busy) return;
+    if (code.length < 24) return setError('A Cloud Code has 5 groups of 4');
     setBusy(true);
     setError((await o.useCode(code)) ?? '');
     setBusy(false);
@@ -268,14 +269,17 @@ export function OnlineRows({ v, o, a }: { v: OnlineView; o: OnlineActions; a: Cl
   };
   if (!v.code)
     return (
-      <div class="online-row">
-        <span>
-          Wall of Fame<b>Not on it yet</b>
-        </span>
-        <Btn actions={a} onClick={o.join}>
-          Join
-        </Btn>
-      </div>
+      <>
+        <div class="online-row">
+          <span>
+            Wall of Fame<b>Not on it yet</b>
+          </span>
+          <Btn actions={a} onClick={o.join}>
+            Join
+          </Btn>
+        </div>
+        {note && <p class="online-note">{note}</p>}
+      </>
     );
   return (
     <>

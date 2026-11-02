@@ -3,6 +3,7 @@ import { defineConfig, loadEnv, type Plugin } from 'vite';
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { privacyHtml } from './src/privacy';
+import { PALETTE } from './src/palette';
 
 /** Dev server only: the layout editor's Save rewrites maps/<id>/layout.ts (Prettier-formatted). */
 function layoutEditorSave(): Plugin {
@@ -46,7 +47,12 @@ function pagesAtBuild(apiUrl: string | undefined): Plugin {
     transformIndexHtml: {
       order: 'pre',
       handler(html, ctx) {
-        if (ctx.path.endsWith('privacy.html')) return html.replace('<!--privacy-->', privacyHtml());
+        if (ctx.path.endsWith('privacy.html'))
+          return html.replace('<!--privacy-->', privacyHtml()).replace(
+            '</head>',
+            `<style>:root{--ink:${PALETTE.ink};--cream:${PALETTE.cream}}</style>
+  </head>`,
+          );
         if (ctx.server) return html;
         return html.replace(
           '<head>',

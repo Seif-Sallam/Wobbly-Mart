@@ -2,11 +2,13 @@
 import type { ApiError, CloudCodeResponse, DeviceResponse, ErrorCode } from '../../worker/api';
 
 const DEV_PORT = 8787;
+/** A call that hangs this long counts as out of reach. */
+const TIMEOUT_MS = 10_000;
 
 export const API_URL: string | null =
   import.meta.env.VITE_API_URL || (import.meta.env.DEV ? `http://${location.hostname}:${DEV_PORT}` : null);
 
-/** `offline` covers no network, a 5xx and an unreadable reply. */
+/** `offline` covers no network, a timeout, a 5xx and an unreadable reply. */
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ErrorCode | 'offline' };
 
 async function call<T>(
@@ -23,6 +25,7 @@ async function call<T>(
       method,
       headers,
       body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if (res.status >= 500) return { ok: false, error: 'offline' };
     if (!res.ok) return { ok: false, error: ((await res.json()) as ApiError).error };

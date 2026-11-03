@@ -93,8 +93,8 @@ export function clockOf(ticks: number): string {
 const valueOf = (tab: WallTab, r: Row): string =>
   tab === 'stars' ? `⭐ ${r.value.toLocaleString('en-US')}` : tab === 'streaks' ? `🔥 ${r.value}` : clockOf(r.value);
 
-const rowOf = (tab: WallTab, r: Row) => (
-  <WallRow key={`${r.rank}-${r.nickname}`} rank={r.rank} nickname={r.nickname} value={valueOf(tab, r)} me={r.you} />
+const rowOf = (tab: WallTab, r: Row, i: number) => (
+  <WallRow key={i} rank={r.rank} nickname={r.nickname} value={valueOf(tab, r)} me={r.you} />
 );
 
 function Frames({ tab, top }: { tab: WallTab; top: Row[] }) {
@@ -169,13 +169,13 @@ function Body({ v, a }: { v: WallView; a: WallActions }) {
         {b.you && (
           <section>
             <h4 class="wall-h4">Around you</h4>
-            <div class="wall-rows">{b.you.around.map((r) => rowOf(v.tab, r))}</div>
+            <div class="wall-rows">{b.you.around.map((r, i) => rowOf(v.tab, r, i))}</div>
           </section>
         )}
         {b.top.length > 3 && (
           <section>
             <h4 class="wall-h4">Everyone · {b.total.toLocaleString('en-US')}</h4>
-            <div class="wall-rows">{b.top.slice(3).map((r) => rowOf(v.tab, r))}</div>
+            <div class="wall-rows">{b.top.slice(3).map((r, i) => rowOf(v.tab, r, i))}</div>
           </section>
         )}
       </div>

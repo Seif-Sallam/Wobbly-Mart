@@ -1,5 +1,6 @@
 // The Wall of Fame's data: Board reads kept 60 s in memory, and the Score submit at the end of an Opening.
 import type { BoardKind, BoardResponse } from '../../worker/api';
+import { fnv1a } from '../sim/rng';
 import { SIM_VERSION } from '../sim/version';
 import { api } from './api';
 import { read, write } from './storage';
@@ -25,17 +26,19 @@ export async function readBoard(
   return r.data;
 }
 
-/** Score only goes up within a save, so a Map's Score is sent only when it rose since the last accepted one. */
+/** Score only goes up within a save, so a Map's Score is sent only when it rose since the last accepted one
+ * for this Cloud Code and sim version (a hash of the code keys the record, never the code). */
 export async function submitScore(code: string, map: string, score: number, playTime: number): Promise<void> {
+  const key = `${SIM_VERSION}/${fnv1a(code)}/${map}`;
   let sent: Record<string, number> = {};
   try {
     sent = JSON.parse(read(SENT) ?? '{}') as Record<string, number>;
   } catch {
     // a broken record just sends again
   }
-  if (score <= (sent[map] ?? 0)) return;
+  if (score <= (sent[key] ?? 0)) return;
   const r = await api.putScore(code, map, { score, playTime: Math.floor(playTime), simVersion: SIM_VERSION });
   if (!r.ok) return;
-  write(SENT, JSON.stringify({ ...sent, [map]: score }));
+  write(SENT, JSON.stringify({ ...sent, [key]: score }));
   for (const key of cache.keys()) if (key.startsWith(`score/${map}/`)) cache.delete(key);
 }

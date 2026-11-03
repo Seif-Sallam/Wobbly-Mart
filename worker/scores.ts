@@ -1,5 +1,6 @@
 // PUT /v1/scores/:map — the Score Board keeps each Device's latest Score, inside what the Map could have paid.
 import { mapById } from '../maps';
+import type { MapDef } from '../src/sim/map';
 import { fixedMaxScore, maxScoreRate } from '../src/sim/score';
 import { SIM_VERSION } from '../src/sim/version';
 import type { RankResponse } from './api';
@@ -10,8 +11,8 @@ import { HttpError, json, KB, readJson } from './http';
 import { limitWrite } from './limits';
 import { nowSeconds } from './time';
 
-/** No Score Board row can claim more play time than the game has been out. */
-const RELEASE_LAUNCH_DATE = Date.UTC(2026, 10, 1) / 1000;
+/** No first submit can claim more play time than saves have counted it: since release-02 went live (#110). */
+const RELEASE_LAUNCH_DATE = Date.UTC(2026, 9, 18) / 1000;
 /** Play time may grow 10% faster than the wall clock, plus a minute of slack. */
 const PLAY_TIME_SLACK = 1.1;
 const PLAY_TIME_GRACE = 60;
@@ -31,6 +32,8 @@ export function checkSimVersion(simVersion: unknown): void {
 export async function submitScore(req: Request, env: Env, mapId: string): Promise<Response> {
   const id = await requireDevice(req, env);
   const board = boardOf('score', mapId, 0);
+  // boardOf already refused an unknown or Tutorial Map
+  const map = mapById(mapId) as MapDef;
   const body = (await readJson(req, 2 * KB)) as Record<string, unknown> | null;
   const score = int(body?.score);
   const playTime = int(body?.playTime);
@@ -44,9 +47,7 @@ export async function submitScore(req: Request, env: Env, mapId: string): Promis
   )
     .bind(mapId, SIM_VERSION, id)
     .first<{ score: number; play_time: number; updated_at: number }>();
-  const map = mapById(mapId);
   const plausible =
-    !!map &&
     score <= fixedMaxScore(map) + playTime * maxScoreRate() &&
     (stored
       ? playTime >= stored.play_time &&

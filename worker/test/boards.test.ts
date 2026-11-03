@@ -95,6 +95,29 @@ test('Score Board: submits are checked, ranked, and read back with Around you', 
   expect(row).toMatchObject({ score: 1005, play_time: 650 });
   expect(Math.abs((row?.updated_at as number) - nowSeconds())).toBeLessThan(5);
 
+  // A tie: Twin's 750 shares rank 27 with Seed 25, who shows below Twin; the next row skips to 29.
+  const twin = await newDevice('Tie Twin');
+  await call('PUT', '/v1/scores/corner-shop', {
+    code: twin,
+    body: { score: 750, playTime: 60, simVersion: SIM_VERSION },
+  });
+  board = (await (await call('GET', '/v1/boards/score/corner-shop', { code: twin })).json()) as BoardResponse;
+  expect(board.you).toEqual({
+    rank: 27,
+    around: [
+      { rank: 25, nickname: 'Seed 23', value: 770 },
+      { rank: 26, nickname: 'Seed 24', value: 760 },
+      { rank: 27, nickname: 'Tie Twin', value: 750, you: true },
+      { rank: 27, nickname: 'Seed 25', value: 750 },
+      { rank: 29, nickname: 'Seed 26', value: 740 },
+    ],
+  });
+
+  // A stale Cloud Code still reads the public Board.
+  res = await call('GET', '/v1/boards/score/corner-shop', { code: 'WBLY-0000-0000-0000-0000' });
+  board = (await res.json()) as BoardResponse;
+  expect([res.status, board.total, board.you]).toEqual([200, 62, undefined]);
+
   // Streak Board reads from Devices: seeds have best Streaks 1..60; the climber has none, so no "you".
   const streak = (await (await call('GET', '/v1/boards/streak/-', { code })).json()) as BoardResponse;
   expect(streak.total).toBe(60);

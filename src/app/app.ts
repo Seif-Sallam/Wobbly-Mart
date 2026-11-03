@@ -86,6 +86,8 @@ export class App {
   /** Where the online popups return to: the overlay the flow started from. */
   private onlineBack: Overlay | null = null;
   private privacyBack: Overlay | null = null;
+  /** Where the Wall's ✕ returns to; joining from the Wall returns to the Wall. */
+  private wallBack: Overlay | null = null;
   /** No save existed at load: the Wardrobe opens by itself once the title is ready. */
   private firstRun: boolean;
   private ui: UiState;
@@ -696,6 +698,8 @@ export class App {
     else if (this.ui.overlay === 'logbook') this.game?.report('logbookClosed');
     this.ui.overlay = o;
     if (o === 'maps') this.refreshMaps();
+    // coming back from joining reads again with the new Device
+    if (o === 'wall') void this.loadWall();
     // the Logbook alone leaves the game running
     const pause = !!o && o !== 'logbook';
     if (this.game && this.ui.screen === 'game') this.game.paused = pause || this.lostTab;
@@ -843,7 +847,7 @@ export class App {
       tab: (tab) => this.changeWall({ tab }),
       map: (map) => this.changeWall({ map }),
       retry: () => void this.loadWall(),
-      close: () => this.openOverlay(this.onlineBack),
+      close: () => this.openOverlay(this.wallBack),
       join: () => this.actions.online.join(),
       play: (id) => (this.ui.screen === 'title' ? (this.openOverlay(null), this.play(id)) : this.actions.pickMap(id)),
       click: () => this.sounds.sfx('click'),
@@ -905,9 +909,8 @@ export class App {
       board: null,
       hasDevice: !!this.device.code,
     };
-    if (!ONLINE_OVERLAYS.has(this.ui.overlay)) this.onlineBack = this.ui.overlay;
+    this.wallBack = this.ui.overlay;
     this.openOverlay('wall');
-    void this.loadWall();
   }
 
   private changeWall(change: Partial<WallView>): void {
@@ -930,7 +933,6 @@ export class App {
     this.ui.wall = { ...now, board: board ?? 'offline' };
     this.renderUi();
   }
-
 
   /** Opens an online popup, remembering where the flow started so ✕ and success return there. */
   private openOnline(o: Overlay): void {
@@ -1019,7 +1021,7 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-const ONLINE_OVERLAYS = new Set<Overlay | null>(['privacy', 'join', 'nickname', 'cloud-code', 'wall']);
+const ONLINE_OVERLAYS = new Set<Overlay | null>(['privacy', 'join', 'nickname', 'cloud-code']);
 
 const THIEF = '🦹';
 const INSPECTOR = '🧐';

@@ -12,6 +12,8 @@ const STREAK_MAP = '-';
 /** Ranks are counted up to here; anything past it is sent as RANK_CAP + 1 ("1000+"). */
 const RANK_CAP = 1000;
 const CACHE_MS = 60_000;
+/** The Board cache holds this many Boards; the oldest goes first. */
+const CACHE_BOARDS = 100;
 const MAX_DAY = 1_000_000;
 
 /** One literal query per Board shape; `scope` binds before any value. Never built from strings. */
@@ -20,7 +22,9 @@ interface Shape {
   total: string;
   mine: string;
   better: string;
+  /** The two rows just better than yours; binds scope, scope, your id. */
   above: string;
+  /** The two rows tied with or just worse than yours; binds scope, scope, your id, your id. */
   below: string;
 }
 
@@ -40,11 +44,14 @@ const BY_TICKS: Shape = {
   above:
     'SELECT b.`id_device`, d.`nickname`, b.`ticks` AS value, b.`score`, b.`money` FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
-    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? AND b.`ticks` < ? ORDER BY b.`ticks` DESC LIMIT 2',
+    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? AND b.`ticks` < (SELECT `ticks` FROM `board_entry` ' +
+    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `id_device` = ?) ORDER BY b.`ticks` DESC LIMIT 2',
   below:
     'SELECT b.`id_device`, d.`nickname`, b.`ticks` AS value, b.`score`, b.`money` FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
-    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? AND b.`ticks` > ? ORDER BY b.`ticks` LIMIT 2',
+    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? AND b.`ticks` >= (SELECT `ticks` FROM `board_entry` ' +
+    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `id_device` = ?) AND b.`id_device` <> ? ' +
+    'ORDER BY b.`ticks`, b.`updated_at` LIMIT 2',
 };
 
 const BY_SCORE: Shape = {
@@ -63,11 +70,14 @@ const BY_SCORE: Shape = {
   above:
     'SELECT b.`id_device`, d.`nickname`, b.`score` AS value FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
-    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? AND b.`score` > ? ORDER BY b.`score` LIMIT 2',
+    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? AND b.`score` > (SELECT `score` FROM `board_entry` ' +
+    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `id_device` = ?) ORDER BY b.`score` LIMIT 2',
   below:
     'SELECT b.`id_device`, d.`nickname`, b.`score` AS value FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
-    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? AND b.`score` < ? ORDER BY b.`score` DESC LIMIT 2',
+    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? AND b.`score` <= (SELECT `score` FROM `board_entry` ' +
+    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `id_device` = ?) AND b.`id_device` <> ? ' +
+    'ORDER BY b.`score` DESC, b.`updated_at` LIMIT 2',
 };
 
 const BY_STREAK: Shape = {
@@ -81,10 +91,11 @@ const BY_STREAK: Shape = {
   better: 'SELECT COUNT(*) AS n FROM (SELECT 1 FROM `device` WHERE `streak_best` > ? LIMIT 1000)',
   above:
     'SELECT `id_device`, `nickname`, `streak_best` AS value, `streak_current` AS streak FROM `device` ' +
-    'WHERE `streak_best` > ? ORDER BY `streak_best` LIMIT 2',
+    'WHERE `streak_best` > (SELECT `streak_best` FROM `device` WHERE `id_device` = ?) ORDER BY `streak_best` LIMIT 2',
   below:
     'SELECT `id_device`, `nickname`, `streak_best` AS value, `streak_current` AS streak FROM `device` ' +
-    'WHERE `streak_best` > 0 AND `streak_best` < ? ORDER BY `streak_best` DESC LIMIT 2',
+    'WHERE `streak_best` > 0 AND `streak_best` <= (SELECT `streak_best` FROM `device` WHERE `id_device` = ?) AND `id_device` <> ? ' +
+    'ORDER BY `streak_best` DESC, `id_device` LIMIT 2',
 };
 
 export interface Board {
@@ -165,6 +176,7 @@ async function topOf(env: Env, board: Board): Promise<{ top: DbRow[]; total: num
     rowsOf(env, board.shape.top, board.scope),
     count(env, board.shape.total, board.scope),
   ]);
+  if (cache.size >= CACHE_BOARDS) cache.delete(cache.keys().next().value as string);
   cache.set(key, { at: Date.now(), top, total });
   return { top, total };
 }
@@ -178,32 +190,36 @@ function ranked(rows: DbRow[], me: number | null): Row[] {
   });
 }
 
+/** Your row and ±2 around it, each ranked by its own value (ties share a rank). */
 async function around(env: Env, board: Board, me: number): Promise<BoardResponse['you']> {
-  const mine = await env.BOARD.prepare(board.shape.mine)
-    .bind(...board.scope, me)
-    .first<DbRow>();
-  if (!mine) return undefined;
-  const [{ rank }, above, below] = await Promise.all([
-    rankOf(env, board, mine.value),
-    rowsOf(env, board.shape.above, [...board.scope, mine.value]),
-    rowsOf(env, board.shape.below, [...board.scope, mine.value]),
+  const [mine, above, below] = await Promise.all([
+    env.BOARD.prepare(board.shape.mine)
+      .bind(...board.scope, me)
+      .first<DbRow>(),
+    rowsOf(env, board.shape.above, [...board.scope, ...board.scope, me]),
+    rowsOf(env, board.shape.below, [...board.scope, ...board.scope, me, me]),
   ]);
-  return {
-    rank,
-    around: [
-      ...above.reverse().map((r, i, all) => toRow(r, capRank(Math.max(1, rank - (all.length - i))), me)),
-      toRow(mine, rank, me),
-      ...below.map((r, i) => toRow(r, capRank(rank + i + 1), me)),
-    ],
-  };
+  if (!mine) return undefined;
+  const rows = [...above.reverse(), mine, ...below];
+  const values = [...new Set(rows.map((r) => r.value))];
+  const counts = await Promise.all(values.map((v) => count(env, board.shape.better, [...board.scope, v])));
+  const rankOfValue = new Map(values.map((v, i) => [v, capRank(counts[i] + 1)]));
+  const rank = (r: DbRow): number => rankOfValue.get(r.value) ?? RANK_CAP + 1;
+  return { rank: rank(mine), around: rows.map((r) => toRow(r, rank(r), me)) };
 }
+
+/** A stale Cloud Code (rotated or deleted elsewhere) reads the public Board. */
+const readerOf = (req: Request, env: Env): Promise<number | null> =>
+  findDevice(req, env).catch((e: unknown) => {
+    if (e instanceof HttpError && e.code === 'unknown_device') return null;
+    throw e;
+  });
 
 export async function readBoard(req: Request, env: Env, kind: string, map: string): Promise<Response> {
   await limit(env.READ_LIMIT, clientIp(req));
   const dayParam = new URL(req.url).searchParams.get('day');
   const board = boardOf(kind, map, dayParam === null ? 0 : Number(dayParam));
-  const me = await findDevice(req, env);
-  const { top, total } = await topOf(env, board);
+  const [me, { top, total }] = await Promise.all([readerOf(req, env), topOf(env, board)]);
   const you = me === null ? undefined : await around(env, board, me);
   return json({ top: ranked(top, me), total, ...(you && { you }) } satisfies BoardResponse);
 }

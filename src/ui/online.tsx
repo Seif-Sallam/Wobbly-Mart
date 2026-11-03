@@ -38,6 +38,8 @@ export interface OnlineActions {
   copyCode: () => Promise<boolean>;
   useCloudSave: () => void;
   keepLocalSave: () => void;
+  /** ✕: no choice made, the Cloud Code isn't kept. */
+  cancelRestore: () => void;
 }
 
 type Click = { click: () => void };
@@ -248,7 +250,7 @@ export function CodePopup({ o, a }: { o: OnlineActions; a: Click }) {
 const saveLine = (s: SaveSummary): string =>
   [s.when, ...s.maps.map((m) => `${m.name} ${m.completion}%`)].join(' · ') + (s.maps.length ? '' : ' · No Maps yet');
 
-/** Both saves at equal weight; ✕ keeps this browser's. */
+/** Both saves at equal weight; ✕ backs out without the Cloud Code. */
 export function RestorePopup({
   cloud,
   local,
@@ -262,7 +264,7 @@ export function RestorePopup({
 }) {
   const choose = (go: () => void) => () => (a.click(), go());
   return (
-    <Popup title="☁️ Which save?" close={o.keepLocalSave}>
+    <Popup title="☁️ Which save?" close={o.cancelRestore}>
       <p class="popup-lead">This Cloud Code has a save, and so does this browser. Pick the one to play on.</p>
       <button class="choice" onClick={choose(o.useCloudSave)}>
         <span>☁️</span>

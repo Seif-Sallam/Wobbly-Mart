@@ -14,7 +14,7 @@ import {
   type SaveFile,
   type Settings,
 } from '../sim/save';
-import { canBuyUpgrade, completion, completionOf, padRemaining, upgradeVisible, visiblePads } from '../sim/economy';
+import { canBuyUpgrade, completion, padRemaining, savedCompletion, upgradeVisible, visiblePads } from '../sim/economy';
 import { shelfCap, stationModel } from '../sim/map';
 import { lessonAim, lessonHud, lessonHudTarget, lessonRetry, lessonTarget, type LessonDevice } from '../sim/lessons';
 import { boxCentre } from '../sim/geometry';
@@ -762,15 +762,7 @@ export class App {
         tutorial: isTutorialMap(map),
         visited: isTutorialMap(map) || !before || this.save.visited.includes(map.id) || exitBought(before.id),
         score: map.id === live?.map.id ? live.score : (this.save.maps[map.id]?.score ?? 0),
-        completion:
-          map.id === live?.map.id
-            ? completion(live)
-            : completionOf(
-                map,
-                new Set(this.save.maps[map.id]?.owned ?? []),
-                this.save.maps[map.id]?.levels ?? {},
-                new Set(this.save.maps[map.id]?.objectives ?? []),
-              ),
+        completion: map.id === live?.map.id ? completion(live) : savedCompletion(map, this.save.maps[map.id]),
       };
     });
     this.ui.maps.forEach((m) => {
@@ -949,11 +941,9 @@ export class App {
       rotate: () => this.onlineCall(this.device.rotate()),
       remove: () => this.onlineCall(this.device.remove()),
       copyCode: () => copyText(this.device.code ?? ''),
-      useCloudSave: () => this.cloudSave && this.restoreCloudSave(this.cloudSave),
-      keepLocalSave: () => {
-        this.cloudSave = this.ui.restore = null;
-        this.openOverlay(this.onlineBack);
-      },
+      useCloudSave: () => this.settleCode(true, true),
+      keepLocalSave: () => this.settleCode(true, false),
+      cancelRestore: () => this.settleCode(false, false),
     },
   };
 
@@ -1175,31 +1165,44 @@ export class App {
   }
 
   /** A typed Cloud Code; with a cloud save, the restore choice (no choice when this browser has nothing to lose).
-   *  A cloud save that can't be fetched leaves the code unused, so this browser's save never overwrites it unseen. */
+   *  Until it is made, the code isn't kept, so this browser's save never overwrites the cloud one unseen. */
   private async enterCode(code: string): Promise<string | null> {
     const error = await this.device.useCode(code);
     if (error) return error;
-    const cloud = this.device.cloudSaveAt === null ? null : await fetchCloudSave(code);
-    if (this.device.cloudSaveAt !== null && !cloud) {
-      this.device.forget();
+    if (!this.device.pending) {
+      this.openOverlay(this.onlineBack);
+      return null;
+    }
+    const cloud = await fetchCloudSave(code);
+    if (!cloud) {
+      this.device.settle(false);
       return "☁️ Your cloud save didn't load · Try again";
     }
+    this.cloudSave = cloud.save;
     this.writeSave();
-    if (!cloud) this.openOverlay(this.onlineBack);
-    else if (!hasProgress(this.save)) this.restoreCloudSave(cloud.save);
-    else {
-      this.cloudSave = cloud.save;
-      const when = new Date(cloud.at * 1000).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-      this.ui.restore = { cloud: summary(cloud.save, when), local: summary(this.save, 'This browser, now') };
-      this.openOverlay('restore');
+    if (!hasProgress(this.save)) {
+      this.settleCode(true, true);
+      return null;
     }
+    const when = new Date(cloud.at * 1000).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    this.ui.restore = { cloud: summary(cloud.save, when), local: summary(this.save, 'This browser, now') };
+    this.openOverlay('restore');
     return null;
   }
 
-  /** Like a Save Code import, but the Runs stay valid. */
-  private restoreCloudSave(save: SaveFile): void {
-    this.save = save;
+  /** The restore choice: keep the code (or not, on ✕), and play the cloud save (like a Save Code import, but the Runs
+   *  stay valid) or send this browser's up at once. */
+  private settleCode(keep: boolean, useCloud: boolean): void {
+    this.device.settle(keep);
+    const cloud = this.cloudSave;
     this.cloudSave = this.ui.restore = null;
+    void this.onlineCall(Promise.resolve(null));
+    if (!keep || !cloud || !this.device.code) return this.openOverlay(this.onlineBack);
+    if (!useCloud) {
+      void uploadSave(this.device.code, this.save, true);
+      return this.openOverlay(this.onlineBack);
+    }
+    this.save = cloud;
     writeSave(this.save);
     this.applyLook();
     this.reopen();

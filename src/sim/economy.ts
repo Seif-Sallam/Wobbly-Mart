@@ -273,6 +273,9 @@ export function completionOf(
   return total ? done / total : 1;
 }
 
+export const savedCompletion = (map: MapDef, m: MapSave | undefined): number =>
+  completionOf(map, new Set(m?.owned ?? []), m?.levels ?? {}, new Set(m?.objectives ?? []));
+
 export const completion = (w: World): number => completionOf(w.map, w.owned, w.levels, w.objectivesDone);
 
 export function checkCompletion(w: World, announce: boolean): boolean {

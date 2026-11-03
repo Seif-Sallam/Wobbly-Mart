@@ -1,6 +1,6 @@
 // PUT and GET /v1/save — one cloud save per Device, last write wins. The Worker only checks it decodes as a save.
 import { parseSave } from '../src/sim/save';
-import { SAVE_CAP, type SaveResponse } from './api';
+import { SAVE_CAP, SAVE_UNZIPPED_MAX, type SaveResponse } from './api';
 import { requireDevice } from './device';
 import type { Env } from './env';
 import { HttpError, json, KB, noContent, readJson } from './http';
@@ -10,7 +10,6 @@ import { nowSeconds } from './time';
 
 /** The base64 body of a capped save, plus the JSON around it. */
 const BODY_CAP = Math.ceil(SAVE_CAP / 3) * 4 + KB;
-const UNZIPPED_MAX = 256 * KB;
 
 export async function putSave(req: Request, env: Env): Promise<Response> {
   const id = await requireDevice(req, env);
@@ -20,7 +19,7 @@ export async function putSave(req: Request, env: Env): Promise<Response> {
   if (!bytes || bytes.byteLength > SAVE_CAP) throw new HttpError('implausible');
   // before the unpack: a refused save still costs a write slot
   await limitWrite(env, 'save', id);
-  const text = await gunzip(bytes, UNZIPPED_MAX);
+  const text = await gunzip(bytes, SAVE_UNZIPPED_MAX);
   if (text === null) throw new HttpError('implausible');
   try {
     parseSave(text);

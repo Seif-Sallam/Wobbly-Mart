@@ -4,7 +4,7 @@ import { expect, test } from 'vitest';
 import { fixedMaxScore, maxScoreRate } from '../../src/sim/score';
 import { SIM_VERSION } from '../../src/sim/version';
 import { cornerShop } from '../../maps/corner-shop';
-import type { ApiError, BoardResponse, CloudCodeResponse, RankResponse } from '../api';
+import type { ApiError, BoardResponse, CloudCodeResponse, RankResponse, RunResponse } from '../api';
 import { nowSeconds } from '../time';
 
 let ip = 0;
@@ -132,4 +132,40 @@ test('Score Board: submits are checked, ranked, and read back with Around you', 
   expect((await call('GET', '/v1/boards/daily/daily')).status).toBe(400);
   expect(await (await call('GET', '/v1/boards/daily/daily?day=310')).json()).toEqual({ top: [], total: 0 });
   expect(await (await call('GET', '/v1/boards/speed/juice-bar')).json()).toEqual({ top: [], total: 0 });
+});
+
+test('Speedrun Board: a Run past the floor ranks, and only a faster one replaces it', async () => {
+  const floor = cornerShop.speedrunFloorTicks ?? 0;
+  const [fast, slow] = [await newDevice('Fast Hands'), await newDevice('Slow Poke')];
+  const run = (code: string, body: Record<string, unknown>) => call('POST', '/v1/runs', { code, body });
+  const err = async (r: Response) => ((await r.json()) as ApiError).error;
+  const ok = (ticks: number) => ({ map: 'corner-shop', ticks, simVersion: SIM_VERSION });
+
+  // Refused: under the floor, the Tutorial, another sim version, no Device.
+  expect(await err(await run(fast, ok(floor - 1)))).toBe('implausible');
+  expect(await err(await run(fast, { ...ok(floor), map: 'tutorial' }))).toBe('bad_request');
+  expect(await err(await run(fast, { ...ok(floor), simVersion: SIM_VERSION + 1 }))).toBe('update');
+  expect((await call('POST', '/v1/runs', { body: ok(floor) })).status).toBe(401);
+
+  const answer = async (code: string, ticks: number) => (await (await run(code, ok(ticks))).json()) as RunResponse;
+  expect(await answer(slow, floor + 5000)).toMatchObject({ rank: 1, total: 1, improved: true });
+  expect(await answer(fast, floor + 3000)).toMatchObject({ rank: 1, total: 2, improved: true });
+  // A slower Run keeps the best; a faster one replaces it. The answer carries Around you.
+  expect(await answer(fast, floor + 9000)).toMatchObject({ rank: 1, total: 2, improved: false });
+  expect(await answer(slow, floor + 1000)).toEqual({
+    rank: 1,
+    total: 2,
+    improved: true,
+    around: [
+      { rank: 1, nickname: 'Slow Poke', value: floor + 1000, you: true },
+      { rank: 2, nickname: 'Fast Hands', value: floor + 3000 },
+    ],
+  });
+
+  const board = (await (await call('GET', '/v1/boards/speed/corner-shop', { code: fast })).json()) as BoardResponse;
+  expect(board.top).toEqual([
+    { rank: 1, nickname: 'Slow Poke', value: floor + 1000 },
+    { rank: 2, nickname: 'Fast Hands', value: floor + 3000, you: true },
+  ]);
+  expect(board.you?.rank).toBe(2);
 });

@@ -24,6 +24,8 @@ export interface MapSave {
   badReviewStreak?: number;
   /** Tutorial Map: the Lesson to resume at. */
   lesson?: number;
+  /** Set by a Save Code import or a cheat; missing = the Run is valid. */
+  runVoid?: true;
 }
 
 /** Lowest frame cap offered, and the one Battery saver uses (fps). */
@@ -117,6 +119,7 @@ export function snapshot(w: World): MapSave {
     quarters: w.quarters,
     badReviewStreak: w.badReviewStreak,
     lesson: w.lesson?.index,
+    ...(w.runVoid && { runVoid: true as const }),
   };
 }
 
@@ -164,6 +167,12 @@ export function migrate(raw: unknown): SaveFile {
     look: typeof s.look === 'string' ? s.look : DEFAULT_LOOK,
     cap: typeof s.cap === 'string' ? s.cap : DEFAULT_CAP,
   };
+}
+
+/** A Save Code import: none of the Maps it carries can rank its Run. */
+export function voidRuns(save: SaveFile): SaveFile {
+  for (const m of Object.values(save.maps)) m.runVoid = true;
+  return save;
 }
 
 export function encodeSaveCode(save: SaveFile): string {

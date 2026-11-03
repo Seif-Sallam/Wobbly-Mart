@@ -1,14 +1,18 @@
 // The Wall of Fame's data: Board reads kept 60 s in memory, and the Score submit at the end of an Opening.
-import type { BoardKind, BoardResponse } from '../../worker/api';
+import type { BoardKind, BoardResponse, RunResponse } from '../../worker/api';
 import { fnv1a } from '../sim/rng';
 import { SIM_VERSION } from '../sim/version';
-import { api } from './api';
+import { api, type ApiResult } from './api';
 import { read, write } from './storage';
 
 const CACHE_MS = 60_000;
 const SENT = 'wobbly-mart.score-sent';
 
 const cache = new Map<string, { at: number; data: BoardResponse }>();
+
+const forget = (prefix: string): void => {
+  for (const key of cache.keys()) if (key.startsWith(prefix)) cache.delete(key);
+};
 
 /** A Board, or null when it is out of reach. Cached per Board and Device for 60 s. */
 export async function readBoard(
@@ -40,5 +44,12 @@ export async function submitScore(code: string, map: string, score: number, play
   const r = await api.putScore(code, map, { score, playTime: Math.floor(playTime), simVersion: SIM_VERSION });
   if (!r.ok) return;
   write(SENT, JSON.stringify({ ...sent, [key]: score }));
-  for (const key of cache.keys()) if (key.startsWith(`score/${map}/`)) cache.delete(key);
+  forget(`score/${map}/`);
+}
+
+/** A finished Run's time; the Speed Board's cached reads are dropped so the next one shows it. */
+export async function submitRun(code: string, map: string, ticks: number): Promise<ApiResult<RunResponse>> {
+  const r = await api.postRun(code, { map, ticks, simVersion: SIM_VERSION });
+  if (r.ok) forget(`speed/${map}/`);
+  return r;
 }

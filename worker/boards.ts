@@ -1,5 +1,6 @@
 // Board reads: top 50 + total (cached 60 s per isolate), and your rank with Around you for a verified Device.
 import { isTutorialMap, mapById } from '../maps';
+import type { MapDef } from '../src/sim/map';
 import { SIM_VERSION } from '../src/sim/version';
 import type { BoardResponse, Row } from './api';
 import { findDevice } from './device';
@@ -124,6 +125,12 @@ export function boardOf(kind: string, map: string, day: number): Board {
   throw new HttpError('bad_request');
 }
 
+/** A submit's Map Board and the Map it ranks; bad_request for an unknown or Tutorial Map. */
+export function mapBoardOf(kind: 'speed' | 'score', mapId: string): { board: Board; map: MapDef } {
+  const board = boardOf(kind, mapId, 0);
+  return { board, map: mapById(mapId) as MapDef };
+}
+
 const count = async (env: Env, sql: string, binds: unknown[]): Promise<number> =>
   (
     await env.BOARD.prepare(sql)
@@ -191,7 +198,7 @@ function ranked(rows: DbRow[], me: number | null): Row[] {
 }
 
 /** Your row and ±2 around it, each ranked by its own value (ties share a rank). */
-async function around(env: Env, board: Board, me: number): Promise<BoardResponse['you']> {
+export async function around(env: Env, board: Board, me: number): Promise<BoardResponse['you']> {
   const [mine, above, below] = await Promise.all([
     env.BOARD.prepare(board.shape.mine)
       .bind(...board.scope, me)

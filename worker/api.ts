@@ -54,9 +54,21 @@ export interface ScoreBody {
   simVersion: number;
 }
 
+/** POST /v1/runs, sent at 100% Completion of a valid Run. */
+export interface RunBody {
+  map: string;
+  ticks: number;
+  simVersion: number;
+}
+
 /** Every submit's answer: where the row stands now. */
 export interface RankResponse {
   rank: number;
   total: number;
   improved: boolean;
+}
+
+/** A Run's answer also carries Around you, so the end screen needs no Board read. */
+export interface RunResponse extends RankResponse {
+  around: Row[];
 }

@@ -156,6 +156,7 @@ export function applySave(w: World, save: MapSave): void {
   for (const id of save.objectives ?? []) if (objectives.has(id)) w.objectivesDone.add(id);
   w.score = Math.max(0, Math.floor(Number(save.score) || 0));
   w.quarters = Math.min(4, Math.max(0, Math.floor(Number(save.quarters) || 0)));
+  w.runVoid = save.runVoid === true;
 }
 
 // ---------- stats and Upgrades

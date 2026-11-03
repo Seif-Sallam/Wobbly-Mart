@@ -380,6 +380,8 @@ export interface World {
   /** Challenges roll on their own stream, so they never shift Events, Customers or Staff. */
   challengeRng: { rng: number };
   complete: boolean;
+  /** A Save Code import or a cheat touched this Map since its fresh start: its Run can't be ranked. */
+  runVoid: boolean;
   atOffice: boolean;
   atExit: boolean;
   nav: Nav;
@@ -456,6 +458,7 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number): Wo
     challenge: null,
     challengeWait: null,
     complete: false,
+    runVoid: false,
     atOffice: false,
     atExit: false,
     nav: {
@@ -471,6 +474,7 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number): Wo
   if (save) applySave(w, save);
   else if (!map.lessons?.length) w.pan = { area: map.start.owned[0], t: 0, duration: panDuration() };
   refreshFreeStations(w);
+  w.stats.openings++;
   startLessons(w, save?.lesson ?? 0);
   w.quarters = Math.max(w.quarters, quartersOf(completion(w)));
   w.complete = checkCompletion(w, false);

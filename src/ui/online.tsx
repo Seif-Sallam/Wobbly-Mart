@@ -1,4 +1,5 @@
-// Online popups: the shared popup shell, Privacy, Get on the Wall, the Nickname card, Cloud Code entry and Settings rows.
+// Online popups: the shared popup shell, Privacy, Get on the Wall, the Nickname card, Cloud Code entry, the cloud save
+// restore choice and Settings rows.
 import { useState } from 'preact/hooks';
 import { cleanNickname, NICKNAME_MAX, tidyNickname } from '../../worker/nickname';
 import { PRIVACY } from '../privacy';
@@ -12,6 +13,12 @@ export interface OnlineView {
   nickname: string | null;
   /** The Privacy popup asks for Accept (before the first online write) instead of just showing the notice. */
   askPrivacy: boolean;
+}
+
+/** One side of the restore choice: when it was saved, and each Map it reached with its Completion (%). */
+export interface SaveSummary {
+  when: string;
+  maps: { name: string; completion: number }[];
 }
 
 /** Async actions resolve to null, or to the text to show inline. */
@@ -29,6 +36,10 @@ export interface OnlineActions {
   rotate: () => Promise<string | null>;
   remove: () => Promise<string | null>;
   copyCode: () => Promise<boolean>;
+  useCloudSave: () => void;
+  keepLocalSave: () => void;
+  /** ✕: no choice made, the Cloud Code isn't kept. */
+  cancelRestore: () => void;
 }
 
 type Click = { click: () => void };
@@ -232,6 +243,43 @@ export function CodePopup({ o, a }: { o: OnlineActions; a: Click }) {
       <div class={`field-help ${error ? 'bad' : ''}`}>
         <span>{error || 'Keep it secret, like a key'}</span>
       </div>
+    </Popup>
+  );
+}
+
+const saveLine = (s: SaveSummary): string =>
+  [s.when, ...s.maps.map((m) => `${m.name} ${m.completion}%`)].join(' · ') + (s.maps.length ? '' : ' · No Maps yet');
+
+/** Both saves at equal weight; ✕ backs out without the Cloud Code. */
+export function RestorePopup({
+  cloud,
+  local,
+  o,
+  a,
+}: {
+  cloud: SaveSummary;
+  local: SaveSummary;
+  o: OnlineActions;
+  a: Click;
+}) {
+  const choose = (go: () => void) => () => (a.click(), go());
+  return (
+    <Popup title="☁️ Which save?" close={o.cancelRestore}>
+      <p class="popup-lead">This Cloud Code has a save, and so does this browser. Pick the one to play on.</p>
+      <button class="choice" onClick={choose(o.useCloudSave)}>
+        <span>☁️</span>
+        <p>
+          <b>Use cloud save</b>
+          {saveLine(cloud)}
+        </p>
+      </button>
+      <button class="choice" onClick={choose(o.keepLocalSave)}>
+        <span>💾</span>
+        <p>
+          <b>Keep this one</b>
+          {saveLine(local)}
+        </p>
+      </button>
     </Popup>
   );
 }

@@ -89,3 +89,19 @@ export interface RunResponse extends RankResponse {
 export interface ShiftResponse extends RunResponse {
   streak: number;
 }
+
+/** Gzipped save JSON, before base64: about 4x a full-progress save (the bot keeps that under a quarter of it). */
+export const SAVE_CAP = 16 * 1024;
+/** A cloud save unpacks to at most this; the Worker refuses anything bigger. */
+export const SAVE_UNZIPPED_MAX = 256 * 1024;
+
+/** PUT /v1/save. `saveCode`: the gzipped save JSON, base64. */
+export interface SaveBody {
+  saveCode: string;
+}
+
+/** GET /v1/save. `saveAt` in Unix seconds. */
+export interface SaveResponse {
+  saveCode: string;
+  saveAt: number;
+}

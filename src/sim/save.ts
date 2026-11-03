@@ -181,8 +181,11 @@ export function encodeSaveCode(save: SaveFile): string {
   return btoa(bin);
 }
 
+/** A save's JSON text (a Save Code or a cloud save, unpacked); throws with a clear message when it isn't one. */
+export const parseSave = (json: string): SaveFile => migrate(JSON.parse(json));
+
 export function decodeSaveCode(code: string): SaveFile {
   const bin = atob(code.trim());
   const bytes = Uint8Array.from(bin, (ch) => ch.charCodeAt(0));
-  return migrate(JSON.parse(new TextDecoder().decode(bytes)));
+  return parseSave(new TextDecoder().decode(bytes));
 }

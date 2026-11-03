@@ -9,6 +9,7 @@ import type { ShiftResponse } from './api';
 import { around, boardOf, DAILY_MAP, forgetBoard, rankOf } from './boards';
 import { requireDevice } from './device';
 import type { Env } from './env';
+import { fromBase64, gunzip } from './gzip';
 import { HttpError, json, KB, readJson } from './http';
 import { limitWrite } from './limits';
 import { checkSimVersion, int } from './scores';
@@ -18,7 +19,6 @@ const DAYS = (calendar as unknown as DailyCalendar).days;
 /** Day D is taken until 00:15 UTC on D+1. */
 const LATE_MS = 15 * 60_000;
 const REPLAY_MAX = 64 * KB;
-/** Decompressing stops here: a gzip bomb gets no further. */
 const UNZIPPED_MAX = 1024 * KB;
 
 export async function submitShift(req: Request, env: Env): Promise<Response> {
@@ -98,35 +98,14 @@ export async function submitShift(req: Request, env: Env): Promise<Response> {
 /** The gzipped Replay, or null when it is missing, over 64 KB, unreadable or claims something else than the submit. */
 async function replayOf(value: unknown, claim: ReplayHeader): Promise<Uint8Array | null> {
   if (typeof value !== 'string' || value.length > Math.ceil(REPLAY_MAX / 3) * 4) return null;
-  let bytes: Uint8Array;
-  try {
-    bytes = Uint8Array.from(atob(value), (c) => c.charCodeAt(0));
-  } catch {
-    return null;
-  }
-  const text = await gunzip(bytes);
+  const bytes = fromBase64(value);
+  const text = bytes && (await gunzip(bytes, UNZIPPED_MAX));
   if (text === null) return null;
   try {
     const r = JSON.parse(text) as Replay;
     const h = r.header as unknown as Record<string, unknown>;
     const same = (Object.keys(claim) as (keyof ReplayHeader)[]).every((k) => h[k] === claim[k]);
     return same && r.log.ticks === claim.ticks && Array.isArray(r.log.entries) ? bytes : null;
-  } catch {
-    return null;
-  }
-}
-
-async function gunzip(bytes: Uint8Array): Promise<string | null> {
-  try {
-    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-    const chunks: Uint8Array[] = [];
-    let size = 0;
-    for await (const chunk of stream) {
-      size += chunk.byteLength;
-      if (size > UNZIPPED_MAX) return null;
-      chunks.push(chunk);
-    }
-    return new TextDecoder().decode(await new Blob(chunks).arrayBuffer());
   } catch {
     return null;
   }

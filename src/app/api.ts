@@ -9,6 +9,7 @@ import type {
   RankResponse,
   RunBody,
   RunResponse,
+  SaveResponse,
   ScoreBody,
   ShiftBody,
   ShiftResponse,
@@ -64,4 +65,8 @@ export const api = {
     call<RankResponse>('PUT', `/v1/scores/${map}`, { code, body, keepalive: true }),
   postRun: (code: string, body: RunBody) => call<RunResponse>('POST', '/v1/runs', { code, body }),
   postShift: (code: string, body: ShiftBody) => call<ShiftResponse>('POST', '/v1/shifts', { code, body }),
+  /** keepalive, like the Score: both go up as an Opening ends. */
+  putSave: (code: string, saveCode: string) =>
+    call<undefined>('PUT', '/v1/save', { code, body: { saveCode }, keepalive: true }),
+  getSave: (code: string) => call<SaveResponse>('GET', '/v1/save', { code }),
 };

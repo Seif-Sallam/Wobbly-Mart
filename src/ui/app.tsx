@@ -10,6 +10,7 @@ import { formatMoney } from '../format';
 import { FEEL } from '../feel';
 import { TUNING } from '../sim/tuning';
 import { Logo } from './logo';
+import { Popup } from './popup';
 import { Btn } from './btn';
 import {
   CodePopup,
@@ -42,7 +43,8 @@ export type Overlay =
   | 'join'
   | 'nickname'
   | 'cloud-code'
-  | 'wall';
+  | 'wall'
+  | 'shift-end';
 
 export interface UiState {
   screen: 'title' | 'game';
@@ -77,6 +79,18 @@ export interface UiState {
   /** Null when this build has no Board API: every online feature hides. */
   online: OnlineView | null;
   wall: WallView | null;
+  /** Today's Daily Shift on the title; null while it loads or when the calendar has no such day. */
+  daily: { day: number; goal: string; time: string | null } | null;
+  shiftEnd: ShiftEnd | null;
+}
+
+/** The end of Shift screen. `debug`: played with ?debug, never ranked. */
+export interface ShiftEnd {
+  day: number;
+  time: string;
+  score: number;
+  money: number;
+  debug: boolean;
 }
 
 /** The Wardrobe's 3D preview and portraits, drawn by the view. */
@@ -105,6 +119,10 @@ export interface LayoutUi {
 
 export interface UiActions {
   play: (mapId: string) => void;
+  /** Opens today's Daily Shift where it was left. */
+  playShift: () => void;
+  /** ↺ Try again: the same Shift from its Opening. */
+  resetShift: () => void;
   close: () => void;
   open: (o: Overlay) => void;
   openLogbook: (tab: number) => void;
@@ -689,6 +707,13 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
       )}
       <Logo />
       {ready && <div class="plaque pill">🏆 {s.total.toLocaleString('en-US')}</div>}
+      {ready && s.daily && (
+        <button class="daily-ticket" onClick={() => (a.click(), a.playShift())}>
+          <b>📅 Shift #{s.daily.day}</b>
+          <span>{s.daily.goal}</span>
+          {s.daily.time && <small>✓ {s.daily.time}</small>}
+        </button>
+      )}
       {ready ? (
         <>
           <div class="shelf">
@@ -860,6 +885,39 @@ function Wipe({ on }: { on: boolean }) {
   return <div class={`wipe ${on ? 'closed' : ''}`} />;
 }
 
+function ShiftEndPopup({ e, s, a }: { e: ShiftEnd; s: UiState; a: UiActions }) {
+  return (
+    <Popup
+      title={`📅 Shift #${e.day} done!`}
+      close={a.close}
+      foot={
+        s.online && (
+          <Btn class="buy" actions={a} onClick={a.online.openWall}>
+            🏅 See the Wall
+          </Btn>
+        )
+      }
+    >
+      <div class="shift-end">
+        <div class="shift-time">{e.time}</div>
+        <div class="shift-pills">
+          <span class="pill">⭐ {e.score.toLocaleString('en-US')}</span>
+          <span class="pill">💵 {formatMoney(e.money)}</span>
+        </div>
+        {e.debug && <p class="note">Played with ?debug, so it isn't ranked.</p>}
+        <div class="shift-buttons">
+          <Btn actions={a} onClick={a.resetShift}>
+            ↺ Try again
+          </Btn>
+          <Btn actions={a} onClick={a.close}>
+            Keep playing
+          </Btn>
+        </div>
+      </div>
+    </Popup>
+  );
+}
+
 function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null }) {
   const [wide, setWide] = useState(innerWidth > innerHeight);
   useEffect(() => {
@@ -915,6 +973,7 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
           {overlay === 'nickname' && <NicknamePopup current={s.online?.nickname ?? null} o={a.online} a={a} />}
           {overlay === 'cloud-code' && <CodePopup o={a.online} a={a} />}
           {overlay === 'wall' && s.wall && <WallPopup v={s.wall} a={a.wall} />}
+          {overlay === 'shift-end' && s.shiftEnd && <ShiftEndPopup e={s.shiftEnd} s={s} a={a} />}
           {overlay === 'logbook' && s.logbook && (
             <Logbook view={s.logbook} tab={s.logbookTab} close={a.close} click={a.click} />
           )}

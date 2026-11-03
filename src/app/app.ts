@@ -56,6 +56,10 @@ import { Device } from './device';
 import { readBoard, submitScore } from './wall';
 import { KIND_OF, type WallTab, type WallView } from '../ui/wall';
 import { dailyDay } from '../sim/daily';
+import { objectiveProgress } from '../sim/objectives';
+import { InputRecorder, replayIntents } from '../sim/replay';
+import { clockOf } from '../ui/wall';
+import { Shift } from './shift';
 
 const AUTOSAVE_SECONDS = 5;
 const EDGE_MARGIN = 44;
@@ -112,8 +116,8 @@ export class App {
   /** Lesson index and phase last drawn: the card re-renders when it changes. */
   private lessonKey = '';
   private layout: EditLayout | null = null;
-  /** Dev `?daily=YYYY-MM-DD`: every Play opens that day's Daily Map. */
-  private devDaily: MapDef | null = null;
+  /** Today's Daily Shift, once the lazy Daily chunk is in; null without a calendar day. */
+  private shift: Shift | null = null;
   /** The Inspector's warning banner, counting down until they step in. */
   private warning: EventBanner | null = null;
 
@@ -180,10 +184,13 @@ export class App {
       cap: this.save.cap in CAP_COLOURS ? this.save.cap : 'orange',
       online: API_URL ? { code: this.device.code, nickname: this.device.nickname, askPrivacy: false } : null,
       wall: null,
+      daily: null,
+      shiftEnd: null,
     };
     this.ui.zoom = this.zoom();
     watchLayout(() => this.applyLayout());
     this.hud.onGear = () => this.openOverlay('pause');
+    this.hud.onShiftReset = () => this.resetShift();
     this.hud.onTrophy = () => this.openLogbook(0);
     this.hud.onLand = () => this.sounds.sfx('ding');
     this.input.onEscape = () => this.escape();
@@ -212,8 +219,7 @@ export class App {
   }
 
   async start(): Promise<void> {
-    const daily = import.meta.env.DEV ? new URLSearchParams(location.search).get('daily') : null;
-    if (daily) this.devDaily = (await import('./daily-dev')).dailyDevMap(daily);
+    void this.loadShift();
     await Promise.all([
       loadAssets((done, total) => {
         this.ui.loading = (done / total) * 0.95;
@@ -307,7 +313,6 @@ export class App {
   }
 
   private currentMap(): MapDef {
-    if (this.devDaily) return this.devDaily;
     const picked = import.meta.env.DEV ? new URLSearchParams(location.search).get('map') : null;
     return mapById(picked ?? this.save.currentMap) ?? FIRST_MAP;
   }
@@ -316,13 +321,18 @@ export class App {
 
   private play(id: string): void {
     this.save.currentMap = id;
+    this.enterGame(() => this.openMap(this.currentMap()));
+  }
+
+  /** The wipe from the title into the game; `open` opens the World behind it. */
+  private enterGame(open: () => void): void {
     this.sounds.unlock(this.settings);
     this.ui.wipe = true;
     this.renderUi();
     if (canFullscreen()) void document.documentElement.requestFullscreen().catch(() => {});
     document.querySelector('.logo')?.classList.add('wobble');
     setTimeout(() => {
-      this.openMap(this.currentMap());
+      open();
       this.ui.screen = 'game';
       this.ui.wipe = false;
       this.syncAudio();
@@ -363,7 +373,8 @@ export class App {
     this.syncAudio();
     this.renderUi();
     setTimeout(() => {
-      const map = game.world.map;
+      // a Daily Shift is never the backdrop: the Map Play would open is
+      const map = game.world.map.shift ? this.currentMap() : game.world.map;
       game.open(map, showcaseSave(map));
       this.input.tap.cancel();
       this.warning = null;
@@ -373,6 +384,7 @@ export class App {
       this.ui.wipe = false;
       this.hud.visible(false);
       this.refreshMaps();
+      this.refreshTicket();
       this.renderUi();
     }, WIPE_SECONDS);
   }
@@ -383,7 +395,8 @@ export class App {
     else this.refreshMaps();
   }
 
-  private openMap(map: MapDef): void {
+  /** `seed`: a Daily Shift's; other Openings get a fresh one. */
+  private openMap(map: MapDef, seed?: number): void {
     const game = this.game;
     if (!game) return;
     const mapSave: MapSave | null = this.save.maps[map.id] ?? null;
@@ -391,7 +404,8 @@ export class App {
       this.save.currentMap = map.id;
       if (!this.save.visited.includes(map.id)) this.save.visited.push(map.id);
     }
-    game.open(map, mapSave);
+    game.open(map, mapSave, seed);
+    this.hud.setShift(null);
     this.sounds.playMusicOf(map);
     this.input.tap.cancel();
     game.view.scenery(0);
@@ -444,10 +458,11 @@ export class App {
       office && !wide ? FEEL.officeSheet / 2 : 0,
     );
     if (!w.atExit) this.exitDismissed = false;
-    else if (w.owned.has('exit') && !w.lesson && !this.exitDismissed && !this.ui.overlay) {
+    else if (w.owned.has('exit') && !w.lesson && !w.map.shift && !this.exitDismissed && !this.ui.overlay) {
       this.exitDismissed = true;
       this.openOverlay('maps');
     }
+    if (w.map.shift && this.shift) this.shiftFrame(w, this.shift);
     this.guidance();
     this.sinceSave += dt;
     if (this.sinceSave > AUTOSAVE_SECONDS && !game.paused) this.writeSave();
@@ -477,7 +492,7 @@ export class App {
     if (e.type === 'padBought' || e.type === 'upgradeBought') {
       if (e.type === 'padBought') persistStorage();
       this.writeSave();
-      if (e.type === 'padBought' && e.pad === 'exit' && !isTutorialMap(w.map)) {
+      if (e.type === 'padBought' && e.pad === 'exit' && !isTutorialMap(w.map) && !w.map.shift) {
         setTimeout(() => this.openOverlay('maps'), 900);
         this.exitDismissed = true;
       }
@@ -675,7 +690,8 @@ export class App {
   private writeSave(): void {
     this.sinceSave = 0;
     const game = this.game;
-    if (!game || game.world.map.shift || this.lostTab || this.editing || this.ui.screen !== 'game') return;
+    if (!game || this.lostTab || this.editing || this.ui.screen !== 'game') return;
+    if (game.world.map.shift) return this.shift?.save();
     this.save.maps[game.world.map.id] = snapshot(game.world);
     writeSave(this.save);
     this.claimTab();
@@ -777,6 +793,8 @@ export class App {
 
   private actions: UiActions = {
     play: (id) => this.play(id),
+    playShift: () => this.playShift(),
+    resetShift: () => this.resetShift(),
     close: () => this.openOverlay(null),
     open: (o) => this.openOverlay(o),
     openLogbook: (tab) => this.openLogbook(tab),
@@ -857,6 +875,7 @@ export class App {
       close: () => this.openOverlay(this.wallBack),
       join: () => this.actions.online.join(),
       play: (id) => (this.ui.screen === 'title' ? (this.openOverlay(null), this.play(id)) : this.actions.pickMap(id)),
+      playShift: () => this.playShift(),
       click: () => this.sounds.sfx('click'),
     },
     selectLook: (look, cap) => {
@@ -900,9 +919,84 @@ export class App {
   };
 
   /** Sends the Map's Score when an Opening ends (leaving the Map, or the tab hidden); unranked without a Device. */
+  // ---------- the Daily Shift
+
+  /** Today's Daily Map, built in the lazy Daily chunk behind the title; dev `?daily=YYYY-MM-DD` picks the day. */
+  private async loadShift(): Promise<void> {
+    const picked = import.meta.env.DEV ? new URLSearchParams(location.search).get('daily') : null;
+    const { shiftDay } = await import('./shift-day');
+    const day = shiftDay(dailyDay(picked ? Date.parse(picked) : Date.now()));
+    this.shift = day && new Shift(day);
+    this.refreshTicket();
+    this.renderUi();
+  }
+
+  private refreshTicket(): void {
+    const shift = this.shift;
+    if (!shift) return;
+    const { map } = shift.day;
+    this.ui.daily = {
+      day: shift.day.day,
+      goal: map.objectives.map((o) => objectiveInfo(map, o).name).join(' + '),
+      time: shift.doneTicks === null ? null : clockOf(shift.doneTicks),
+    };
+  }
+
+  /** From the title with the wipe; in the game (the Wall's Today) at once. */
+  private playShift(): void {
+    if (!this.shift) return;
+    this.openOverlay(null);
+    if (this.ui.screen === 'title') return this.enterGame(() => this.openShift());
+    this.writeSave();
+    this.endOpening();
+    this.openShift();
+  }
+
+  /** The Daily Map on the day's seed, re-simmed through the Shift's log to where it was left. */
+  private openShift(): void {
+    const { game, shift } = this;
+    if (!game || !shift) return;
+    this.openMap(shift.day.map, shift.day.seed);
+    const log = shift.recorder.log;
+    shift.recorder = new InputRecorder();
+    game.onStep = (i) => shift.recorder.record(i);
+    game.fastForward(replayIntents(log));
+  }
+
+  /** ↺ on the chip or Try again: the same Shift from its Opening. */
+  private resetShift(): void {
+    this.shift?.reset();
+    this.openShift();
+    this.openOverlay(null);
+  }
+
+  /** The chip, and the end of Shift screen the first time the goal is done. */
+  private shiftFrame(w: World, shift: Shift): void {
+    const left = w.map.objectives.filter((o) => {
+      const p = objectiveProgress(w, o);
+      return p.got < p.want;
+    });
+    if (!left.length && shift.doneTicks === null) {
+      shift.doneTicks = shift.recorder.log.ticks;
+      shift.save();
+      this.ui.shiftEnd = {
+        day: shift.day.day,
+        time: clockOf(shift.doneTicks),
+        score: w.score,
+        money: w.stats.moneyEarned,
+        debug: shift.debug,
+      };
+      this.openOverlay('shift-end');
+    }
+    if (shift.doneTicks !== null) return this.hud.setShift(`✓ Done ${clockOf(shift.doneTicks)} · for fun now`);
+    const p = objectiveProgress(w, left[0]);
+    const name = objectiveInfo(w.map, left[0]).name;
+    this.hud.setShift(`📅 ${name} · ${Math.floor(p.got)}/${p.want} · ${clockOf(shift.recorder.log.ticks)}`);
+  }
+
   private endOpening(): void {
     const w = this.game?.world;
-    if (!w || this.ui.screen !== 'game' || isTutorialMap(w.map) || !this.device.code) return;
+    if (!w || this.ui.screen !== 'game' || isTutorialMap(w.map) || w.map.shift || !this.device.code) return;
     void submitScore(this.device.code, w.map.id, w.score, w.stats.playTime);
   }
 

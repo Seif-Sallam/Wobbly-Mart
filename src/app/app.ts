@@ -56,7 +56,7 @@ import { challengeCard } from './challenge-card';
 import { API_URL } from './api';
 import { Device } from './device';
 import { readBoard } from './wall';
-import { flushPending, submitRun, submitScore } from './submits';
+import { flushPending, submitRun, submitScore, submitShift } from './submits';
 import { KIND_OF, type WallTab, type WallView } from '../ui/wall';
 import { dailyDay } from '../sim/daily';
 import { objectiveProgress } from '../sim/objectives';
@@ -806,7 +806,6 @@ export class App {
   private actions: UiActions = {
     play: (id) => this.play(id),
     playShift: () => this.playShift(),
-    resetShift: () => this.resetShift(),
     close: () => this.openOverlay(null),
     open: (o) => this.openOverlay(o),
     openLogbook: (tab) => this.openLogbook(tab),
@@ -890,6 +889,18 @@ export class App {
       playShift: () => this.playShift(),
       click: () => this.sounds.sfx('click'),
     },
+    shiftEnd: {
+      wall: () => this.openWall('today'),
+      join: () => this.actions.online.join(),
+      retry: () => void this.sendShift(),
+      again: () => this.resetShift(),
+      close: () => {
+        // a Shift with no Device yet is kept: joining later, from anywhere, sends it
+        if (this.ui.shiftEnd?.result !== 'join') this.ui.shiftEnd = null;
+        this.openOverlay(null);
+      },
+      click: () => this.sounds.sfx('click'),
+    },
     runEnd: {
       wall: () => this.openWall('speed'),
       join: () => this.actions.online.join(),
@@ -954,10 +965,13 @@ export class App {
     const shift = this.shift;
     if (!shift) return;
     const { map } = shift.day;
+    const last = Shift.result(shift.day.day);
     this.ui.daily = {
       day: shift.day.day,
       goal: map.objectives.map((o) => objectiveInfo(map, o).name).join(' + '),
       time: shift.doneTicks === null ? null : clockOf(shift.doneTicks),
+      streak: last?.streak ?? null,
+      rank: last?.day === shift.day.day ? last.rank : null,
     };
   }
 
@@ -996,21 +1010,47 @@ export class App {
       return p.got < p.want;
     });
     if (!left.length && shift.doneTicks === null) {
-      shift.doneTicks = shift.recorder.log.ticks;
-      shift.save();
+      shift.finish(w.score, w.stats.moneyEarned);
       this.ui.shiftEnd = {
         day: shift.day.day,
-        time: clockOf(shift.doneTicks),
-        score: w.score,
-        money: w.stats.moneyEarned,
-        debug: shift.debug,
+        ticks: shift.recorder.log.ticks,
+        score: Math.floor(w.score),
+        money: Math.floor(w.stats.moneyEarned),
+        result: shift.debug ? 'debug' : !this.ui.online ? 'local' : 'join',
+        around: null,
       };
       this.openOverlay('shift-end');
+      void this.sendShift();
     }
     if (shift.doneTicks !== null) return this.hud.setShift(`✓ Done ${clockOf(shift.doneTicks)} · for fun now`);
     const p = objectiveProgress(w, left[0]);
     const name = objectiveInfo(w.map, left[0]).name;
     this.hud.setShift(`📅 ${name} · ${Math.floor(p.got)}/${p.want} · ${clockOf(shift.recorder.log.ticks)}`);
+  }
+
+  /** Posts the finished Shift on the end screen (queued when it can't post yet); a reply for a newer attempt is
+   *  dropped. Never for a ?debug Shift or a build without the Board API. */
+  private async sendShift(): Promise<void> {
+    const end = this.ui.shiftEnd;
+    const shift = this.shift;
+    if (!end || !shift?.pending || end.result === 'debug' || end.result === 'local') return;
+    const code = this.device.code;
+    if (code) {
+      this.ui.shiftEnd = { ...end, result: 'sending' };
+      this.renderUi();
+    }
+    const r = await submitShift(code, await shift.pending);
+    if (!r || this.ui.shiftEnd?.ticks !== end.ticks) return;
+    if (r.ok) {
+      Shift.keepResult(end.day, r.data);
+      this.refreshTicket();
+    }
+    this.ui.shiftEnd = {
+      ...this.ui.shiftEnd,
+      result: r.ok ? r.data : (RUN_ERROR[r.error] ?? 'refused'),
+      around: r.ok ? r.data.around : null,
+    };
+    this.renderUi();
   }
 
   private endOpening(): void {
@@ -1114,7 +1154,11 @@ export class App {
     if (this.ui.online) this.ui.online = { ...this.ui.online, code: this.device.code, nickname: this.device.nickname };
     // what was queued before the Device existed goes up now; an open end screen shows its rank
     if (!error && this.device.code)
-      void (this.ui.runEnd?.result === 'join' ? this.sendRun() : flushPending(this.device.code));
+      void (this.ui.runEnd?.result === 'join'
+        ? this.sendRun()
+        : this.ui.shiftEnd?.result === 'join'
+          ? this.sendShift()
+          : flushPending(this.device.code));
     if (!error && then !== undefined) this.openOverlay(then);
     else this.renderUi();
     return error;

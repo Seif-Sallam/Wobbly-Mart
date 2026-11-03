@@ -25,7 +25,7 @@ export interface RunEndActions {
 }
 
 /** Counts from the Board's last place up to `rank`, easing out. */
-function Climb({ rank, total }: { rank: number; total: number }) {
+export function Climb({ rank, total }: { rank: number; total: number }) {
   const [shown, setShown] = useState(total);
   useEffect(() => {
     const t0 = performance.now();

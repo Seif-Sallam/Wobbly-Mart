@@ -5,3 +5,4 @@ dist
 .claude
 *.stackdump
 .wrangler
+.scratch/worker-setup.env

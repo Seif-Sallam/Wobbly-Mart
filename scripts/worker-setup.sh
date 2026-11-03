@@ -203,6 +203,7 @@ run_wizard() {
 # Board API owner setup (spec §3). Run from the repo root: bash scripts/worker-setup.sh
 # Secrets go straight from hidden input into GitHub Environment secrets; nothing secret touches disk or the screen.
 TOTAL_STAGES=10
+cd "$(dirname "$0")/.."   # every path below is relative to the repo root
 ENV_FILE=".scratch/worker-setup.env"   # public values only (account ids, D1 ids, URLs), for re-runs
 mkdir -p .scratch
 
@@ -210,6 +211,7 @@ REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || echo "
 
 # env_secret ENV NAME VALUE: a GitHub Environment secret, value piped (never an argument, never printed).
 env_secret() {
+  if [[ -z "$3" ]]; then note "kept the existing $1/$2"; return; fi
   if printf '%s' "$3" | gh secret set "$2" --env "$1" --repo "$REPO" >/dev/null 2>&1; then
     WRITTEN_SECRET+=("$1/$2"); printf '  %s✓ set%s %s secret %s\n' "$GREEN" "$RESET" "$1" "$2"
   else
@@ -232,7 +234,8 @@ JSON
 
 # set_d1_id ENV DB ID: replaces the placeholder id in worker/wrangler.toml (D1 ids are not secret).
 set_d1_id() {
-  sed -i.bak "s/\"$1-$2-id\"/\"$3\"/" worker/wrangler.toml && rm -f worker/wrangler.toml.bak
+  sed -i.bak "s/\"$1-$2-id\"/\"$3\"/" worker/wrangler.toml
+  rm -f worker/wrangler.toml.bak
   printf '  %s✓ wrote%s %s %s id → worker/wrangler.toml\n' "$GREEN" "$RESET" "$1" "$2"
 }
 

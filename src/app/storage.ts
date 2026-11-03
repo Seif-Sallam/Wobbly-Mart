@@ -6,7 +6,7 @@ const BACKUP = 'wobbly-mart.save-backup';
 const SETTINGS = 'wobbly-mart.settings';
 const TAB = 'wobbly-mart.tab';
 
-function read(key: string): string | null {
+export function read(key: string): string | null {
   try {
     return localStorage.getItem(key);
   } catch {
@@ -14,12 +14,20 @@ function read(key: string): string | null {
   }
 }
 
-function write(key: string, value: string): boolean {
+export function write(key: string, value: string): boolean {
   try {
     localStorage.setItem(key, value);
     return true;
   } catch {
     return false;
+  }
+}
+
+export function forget(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // nothing to forget
   }
 }
 

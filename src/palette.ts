@@ -29,6 +29,9 @@ export const CAP_COLOURS = {
 
 export type CapName = keyof typeof CAP_COLOURS;
 
+/** Wall of Fame initials badges, picked by a hash of the Nickname. */
+export const AVATAR_COLOURS = ['#e8743b', '#4f9d4a', '#3f7fc1', '#a058b8', '#d9a21b', '#c94c6a', '#2f9c9c', '#7a6a58'];
+
 export type PaletteName = keyof typeof PALETTE;
 
 /** Supporting colours: splats, effects, tints. Kept here so every colour lives in one file. */

@@ -1,0 +1,19 @@
+body {
+  margin: 0;
+  font: 16px/1.5 system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--cream);
+}
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  overflow-wrap: anywhere;
+}
+h1 {
+  font-size: 28px;
+}
+h2 {
+  font-size: 20px;
+  margin-top: 28px;
+}

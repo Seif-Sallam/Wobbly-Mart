@@ -55,7 +55,8 @@ import { logbookView, objectiveInfo, progressOfSave, type MapProgress } from './
 import { challengeCard } from './challenge-card';
 import { API_URL } from './api';
 import { Device } from './device';
-import { readBoard, submitRun, submitScore } from './wall';
+import { readBoard } from './wall';
+import { flushPending, submitRun, submitScore } from './submits';
 import { KIND_OF, type WallTab, type WallView } from '../ui/wall';
 import { dailyDay } from '../sim/daily';
 
@@ -217,6 +218,8 @@ export class App {
   }
 
   async start(): Promise<void> {
+    // the one call on page load: submits queued while offline
+    if (this.device.code) void flushPending(this.device.code);
     const daily = import.meta.env.DEV ? new URLSearchParams(location.search).get('daily') : null;
     if (daily) this.devDaily = (await import('./daily-dev')).dailyDevMap(daily);
     await Promise.all([
@@ -872,11 +875,7 @@ export class App {
       wall: () => this.openWall('speed'),
       join: () => this.actions.online.join(),
       retry: () => void this.sendRun(),
-      close: () => {
-        // a Run with no Device yet is kept: joining later, from anywhere, sends it
-        if (this.ui.runEnd?.result !== 'join') this.ui.runEnd = null;
-        this.openOverlay(null);
-      },
+      close: () => ((this.ui.runEnd = null), this.openOverlay(null)),
       click: () => this.sounds.sfx('click'),
     },
     selectLook: (look, cap) => {
@@ -938,7 +937,7 @@ export class App {
       around: null,
     };
     this.runEndOwed = true;
-    if (this.device.code) void this.sendRun();
+    void this.sendRun();
     setTimeout(() => this.showRunEnd(), FEEL.score.runEndDelayMs);
   }
 
@@ -949,15 +948,17 @@ export class App {
     this.openOverlay('run-end');
   }
 
-  /** Posts the Run on the end screen, then reads Around you; a reply for a closed screen is dropped. */
+  /** Queues and posts the end screen's Run; without a Device it waits in the queue. A reply for a closed screen is dropped. */
   private async sendRun(): Promise<void> {
     const run = this.ui.runEnd;
+    if (!run) return;
     const code = this.device.code;
-    if (!run || !code) return;
-    this.ui.runEnd = { ...run, result: 'sending' };
-    this.renderUi();
+    if (code) {
+      this.ui.runEnd = { ...run, result: 'sending' };
+      this.renderUi();
+    }
     const r = await submitRun(code, run.mapId, run.ticks);
-    if (this.ui.runEnd?.mapId !== run.mapId) return;
+    if (!r || this.ui.runEnd?.mapId !== run.mapId) return;
     this.ui.runEnd = {
       ...this.ui.runEnd,
       result: r.ok ? r.data : (RUN_ERROR[r.error] ?? 'refused'),
@@ -977,6 +978,11 @@ export class App {
       hasDevice: !!this.device.code,
     };
     this.wallBack = this.ui.overlay;
+    // a queued submit that goes up now shows on a second read
+    if (this.device.code)
+      void flushPending(this.device.code).then((n) => {
+        if (n && this.ui.overlay === 'wall') void this.loadWall();
+      });
     this.openOverlay('wall');
   }
 
@@ -1015,8 +1021,9 @@ export class App {
   private async onlineCall(call: Promise<string | null>, then?: Overlay | null): Promise<string | null> {
     const error = await call;
     if (this.ui.online) this.ui.online = { ...this.ui.online, code: this.device.code, nickname: this.device.nickname };
-    // a Run finished before the Device existed goes up now
-    if (!error && this.device.code && this.ui.runEnd?.result === 'join') void this.sendRun();
+    // what was queued before the Device existed goes up now; an open end screen shows its rank
+    if (!error && this.device.code)
+      void (this.ui.runEnd?.result === 'join' ? this.sendRun() : flushPending(this.device.code));
     if (!error && then !== undefined) this.openOverlay(then);
     else this.renderUi();
     return error;

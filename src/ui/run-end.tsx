@@ -43,7 +43,7 @@ function Climb({ rank, total }: { rank: number; total: number }) {
 
 const NOTE = {
   sending: '📡 Putting it on the Wall…',
-  offline: "📡 Not on the Wall yet: you're offline.",
+  offline: "📡 Saved: it goes on the Wall when you're back online.",
   update: 'A new version is out · Reload to post your Runs.',
   refused: "This Run can't go on the Wall.",
 };

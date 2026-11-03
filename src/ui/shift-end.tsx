@@ -3,8 +3,8 @@ import type { Row, ShiftResponse } from '../../worker/api';
 import { formatMoney } from '../format';
 import { Btn } from './btn';
 import { Popup } from './popup';
-import { Climb } from './run-end';
-import { clockOf, JoinCard, WallRow } from './wall';
+import { AroundYou, Climb } from './run-end';
+import { clockOf, JoinCard } from './wall';
 
 /** `result`: the Board's answer, or why there is none ('join' = no Device, 'debug' = played with ?debug). */
 export interface ShiftEndView {
@@ -32,7 +32,6 @@ const NOTE = {
   stale: "Saved: your Cloud Code isn't recognised. Enter it again in Settings and the Shift goes up.",
   refused: "This Shift can't go on the Wall.",
   debug: "Played with ?debug, so it isn't ranked.",
-  local: '',
 };
 
 /** `online`: this build has the Board API (`local` results then never show). */
@@ -75,7 +74,7 @@ export function ShiftEndPopup({ v, a, online }: { v: ShiftEndView; a: ShiftEndAc
         </>
       )}
       {r === 'join' && <JoinCard title="Put this Shift on the Wall" line="Pick a Nickname and it goes up." a={a} />}
-      {typeof r === 'string' && r !== 'join' && r !== 'local' && (
+      {r !== 'join' && r !== 'local' && typeof r === 'string' && (
         <div class="run-note">
           {NOTE[r]}
           {r === 'offline' && (
@@ -85,16 +84,7 @@ export function ShiftEndPopup({ v, a, online }: { v: ShiftEndView; a: ShiftEndAc
           )}
         </div>
       )}
-      {v.around && (
-        <section>
-          <h4 class="wall-h4">Around you</h4>
-          <div class="wall-rows">
-            {v.around.map((row, i) => (
-              <WallRow key={i} rank={row.rank} nickname={row.nickname} value={clockOf(row.value)} me={row.you} />
-            ))}
-          </div>
-        </section>
-      )}
+      {v.around && <AroundYou rows={v.around} />}
     </Popup>
   );
 }

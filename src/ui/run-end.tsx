@@ -49,6 +49,20 @@ const NOTE = {
   refused: "This Run can't go on the Wall.",
 };
 
+/** An end screen's Around you, times as m:ss.cc. */
+export function AroundYou({ rows }: { rows: Row[] }) {
+  return (
+    <section>
+      <h4 class="wall-h4">Around you</h4>
+      <div class="wall-rows">
+        {rows.map((row, i) => (
+          <WallRow key={i} rank={row.rank} nickname={row.nickname} value={clockOf(row.value)} me={row.you} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function RunEndPopup({ v, a }: { v: RunEndView; a: RunEndActions }) {
   const r = v.result;
   return (
@@ -92,16 +106,7 @@ export function RunEndPopup({ v, a }: { v: RunEndView; a: RunEndActions }) {
           )}
         </div>
       )}
-      {v.around && (
-        <section>
-          <h4 class="wall-h4">Around you</h4>
-          <div class="wall-rows">
-            {v.around.map((row, i) => (
-              <WallRow key={i} rank={row.rank} nickname={row.nickname} value={clockOf(row.value)} me={row.you} />
-            ))}
-          </div>
-        </section>
-      )}
+      {v.around && <AroundYou rows={v.around} />}
     </Popup>
   );
 }

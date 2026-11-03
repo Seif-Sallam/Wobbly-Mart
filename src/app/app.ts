@@ -1039,12 +1039,12 @@ export class App {
       this.ui.shiftEnd = { ...end, result: 'sending' };
       this.renderUi();
     }
-    const r = await submitShift(code, await shift.pending);
-    if (!r || this.ui.shiftEnd?.ticks !== end.ticks) return;
-    if (r.ok) {
-      Shift.keepResult(end.day, r.data);
-      this.refreshTicket();
-    }
+    // no CompressionStream (an old browser): this Shift can't carry its Replay
+    const body = await shift.pending.catch(() => null);
+    const r = body && (await submitShift(code, body));
+    if (this.ui.shiftEnd?.ticks !== end.ticks) return;
+    if (!body) this.ui.shiftEnd = { ...this.ui.shiftEnd, result: 'refused' };
+    if (!r) return this.renderUi();
     this.ui.shiftEnd = {
       ...this.ui.shiftEnd,
       result: r.ok ? r.data : (RUN_ERROR[r.error] ?? 'refused'),
@@ -1153,12 +1153,11 @@ export class App {
     const error = await call;
     if (this.ui.online) this.ui.online = { ...this.ui.online, code: this.device.code, nickname: this.device.nickname };
     // what was queued before the Device existed goes up now; an open end screen shows its rank
-    if (!error && this.device.code)
-      void (this.ui.runEnd?.result === 'join'
-        ? this.sendRun()
-        : this.ui.shiftEnd?.result === 'join'
-          ? this.sendShift()
-          : flushPending(this.device.code));
+    if (!error && this.device.code) {
+      if (this.ui.runEnd?.result === 'join') void this.sendRun();
+      if (this.ui.shiftEnd?.result === 'join') void this.sendShift();
+      else if (this.ui.runEnd?.result !== 'join') void flushPending(this.device.code);
+    }
     if (!error && then !== undefined) this.openOverlay(then);
     else this.renderUi();
     return error;

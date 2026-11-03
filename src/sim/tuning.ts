@@ -219,6 +219,8 @@ export const TUNING = {
     capMinutes: 20,
     /** Daily floor: fewest plausible ticks = the bot's ticks × this. */
     floorShare: 0.5,
+    /** A Shift claiming more Money per second than this is refused: a sanity bound, not anti-cheat. */
+    maxMoneyRate: 10_000,
   },
   /** Daily Shift: day 1 is this UTC date (ms). */
   daily: { launch: Date.UTC(2026, 10, 1) },

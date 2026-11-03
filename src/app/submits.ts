@@ -7,6 +7,7 @@ import { SIM_VERSION } from '../sim/version';
 import { api, type ApiResult } from './api';
 import { read, write } from './storage';
 import { forgetBoards } from './wall';
+import { Shift } from './shift';
 
 const QUEUE = 'wobbly-mart.pending';
 const SENT = 'wobbly-mart.score-sent';
@@ -85,6 +86,7 @@ async function postShift(code: string, body: ShiftBody): Promise<ApiResult<Shift
   const r = await api.postShift(code, body);
   inFlight.delete(key);
   if (r.ok) {
+    Shift.keepResult(body.day, r.data);
     forgetBoards('daily/');
     forgetBoards('streak/');
   }

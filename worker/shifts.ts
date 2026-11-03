@@ -1,8 +1,8 @@
 // POST /v1/shifts — the Daily Board keeps each Device's fastest finished Shift of the day, and every finished Shift
 // counts for the Streak. The Worker never re-sims: the Replay is only checked for size and against the claim.
 import calendar from '../maps/daily-calendar.json';
-import { shiftCaps, type DailyCalendar } from '../src/sim/daily-goal';
-import { dailyDate, dailyDay, dailySeed } from '../src/sim/daily';
+import type { DailyCalendar } from '../src/sim/daily-goal';
+import { dailyDate, dailyDay, dailySeed, shiftCaps } from '../src/sim/daily';
 import type { Replay, ReplayHeader } from '../src/sim/replay';
 import { SIM_VERSION } from '../src/sim/version';
 import type { ShiftResponse } from './api';
@@ -75,6 +75,7 @@ export async function submitShift(req: Request, env: Env): Promise<Response> {
     env.BOARD.prepare('UPDATE `device` SET `last_seen_at` = ? WHERE `id_device` = ?').bind(at, id),
   ]);
   forgetBoard(board);
+  forgetBoard(boardOf('streak', '-', 0));
   const improved = !stored || ticks < stored.ticks;
   if (improved) await storeReplay(env, day, id, ticks, data);
 
@@ -131,13 +132,13 @@ async function gunzip(bytes: Uint8Array): Promise<string | null> {
   }
 }
 
-/** A failed Replay insert never fails the submit. */
+/** Called when the Board row improved (this sim's), so it replaces any older Replay. A failed insert never fails
+ *  the submit. */
 async function storeReplay(env: Env, day: number, id: number, ticks: number, data: Uint8Array): Promise<void> {
   try {
     await env.REPLAY.prepare(
       'INSERT INTO `replay` (`day`, `id_device`, `ticks`, `data`) VALUES (?, ?, ?, ?) ' +
-        'ON CONFLICT (`day`, `id_device`) DO UPDATE SET `ticks` = excluded.`ticks`, `data` = excluded.`data` ' +
-        'WHERE excluded.`ticks` < `replay`.`ticks`',
+        'ON CONFLICT (`day`, `id_device`) DO UPDATE SET `ticks` = excluded.`ticks`, `data` = excluded.`data`',
     )
       .bind(day, id, ticks, data)
       .run();

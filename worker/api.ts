@@ -54,6 +54,13 @@ export interface ScoreBody {
   simVersion: number;
 }
 
+/** POST /v1/runs, sent at 100% Completion of a valid Run. */
+export interface RunBody {
+  map: string;
+  ticks: number;
+  simVersion: number;
+}
+
 /** Every submit's answer: where the row stands now. */
 export interface RankResponse {
   rank: number;

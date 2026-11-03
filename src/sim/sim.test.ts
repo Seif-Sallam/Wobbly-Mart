@@ -12,9 +12,9 @@ import {
   visiblePads,
 } from './economy';
 import { moveIntent } from './bot';
-import { decodeSaveCode, encodeSaveCode, migrate, snapshot, DEFAULT_CAP } from './save';
+import { decodeSaveCode, emptySave, encodeSaveCode, migrate, snapshot, voidRuns, DEFAULT_CAP } from './save';
 import { DEFAULT_LOOK } from '../../catalog/looks';
-import { emptyStats, sumStats } from './stats';
+import { emptyStats, runTicks, sumStats } from './stats';
 import { objectiveId } from '../../catalog/objectives';
 import type { Customer, PickupStation, ProducerStation, ShelfStation, SimEvent, World } from './world';
 import { distToBox } from './geometry';
@@ -169,6 +169,23 @@ describe('Map 1 opening loop', () => {
     const odd = createWorld(cornerShop, { ...save, owned: [...save.owned, 'gone_pad'], paid: { tomato_shelf: 99 } }, 4);
     expect(odd.owned.has('gone_pad')).toBe(false);
     expect(odd.owned.has('tomato_shelf')).toBe(true);
+
+    // The Run: every tick since the fresh start, across Openings; a Save Code import voids it.
+    expect([runTicks(save.stats ?? emptyStats()), save.stats?.openings, 'runVoid' in save]).toEqual([
+      Math.round(w.t / DT),
+      1,
+      false,
+    ]);
+    expect([reloaded.stats.openings, reloaded.runVoid]).toEqual([2, false]);
+    const imported = voidRuns(
+      decodeSaveCode(encodeSaveCode({ ...emptySave('corner-shop'), maps: { 'corner-shop': save } })),
+    );
+    const voided = createWorld(cornerShop, imported.maps['corner-shop'], 5);
+    expect([voided.runVoid, snapshot(voided).runVoid, runTicks(voided.stats)]).toEqual([
+      true,
+      true,
+      Math.round(w.t / DT),
+    ]);
   });
 });
 
@@ -1261,7 +1278,7 @@ describe('Stats, Objectives, Score and Challenges', () => {
     expect([old.score, old.objectives, old.quarters, old.badReviewStreak]).toEqual([0, [], 0, 0]);
     expect(migrate(v4)).toEqual(v4);
     const loaded = createWorld(cornerShop, old, 23);
-    expect(loaded.stats).toEqual(emptyStats());
+    expect(loaded.stats).toEqual({ ...emptyStats(), openings: 1 });
     expect(loaded.score).toBe(0);
     step(loaded, idle());
     expect(loaded.objectivesDone.has('own:area_3')).toBe(true);

@@ -21,6 +21,7 @@ import {
   type OnlineView,
 } from './online';
 import { WallPopup, type WallActions, type WallView } from './wall';
+import { RunEndPopup, type RunEndActions, type RunEndView } from './run-end';
 import { Logbook, type LogbookView } from './logbook';
 import { GEAR } from './hud';
 import { CREDITS } from '../../catalog/credits';
@@ -42,7 +43,8 @@ export type Overlay =
   | 'join'
   | 'nickname'
   | 'cloud-code'
-  | 'wall';
+  | 'wall'
+  | 'run-end';
 
 export interface UiState {
   screen: 'title' | 'game';
@@ -77,6 +79,7 @@ export interface UiState {
   /** Null when this build has no Board API: every online feature hides. */
   online: OnlineView | null;
   wall: WallView | null;
+  runEnd: RunEndView | null;
 }
 
 /** The Wardrobe's 3D preview and portraits, drawn by the view. */
@@ -137,6 +140,7 @@ export interface UiActions {
   selectLook: (look: string, cap: string) => void;
   online: OnlineActions;
   wall: WallActions;
+  runEnd: RunEndActions;
 }
 
 const FAMILY_ORDER = ['player', 'station', 'staff'] as const;
@@ -913,6 +917,7 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
           {overlay === 'nickname' && <NicknamePopup current={s.online?.nickname ?? null} o={a.online} a={a} />}
           {overlay === 'cloud-code' && <CodePopup o={a.online} a={a} />}
           {overlay === 'wall' && s.wall && <WallPopup v={s.wall} a={a.wall} />}
+          {overlay === 'run-end' && s.runEnd && <RunEndPopup v={s.runEnd} a={a.runEnd} />}
           {overlay === 'logbook' && s.logbook && (
             <Logbook view={s.logbook} tab={s.logbookTab} close={a.close} click={a.click} />
           )}

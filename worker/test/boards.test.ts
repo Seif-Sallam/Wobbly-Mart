@@ -133,3 +133,30 @@ test('Score Board: submits are checked, ranked, and read back with Around you', 
   expect(await (await call('GET', '/v1/boards/daily/daily?day=310')).json()).toEqual({ top: [], total: 0 });
   expect(await (await call('GET', '/v1/boards/speed/juice-bar')).json()).toEqual({ top: [], total: 0 });
 });
+
+test('Speedrun Board: a Run past the floor ranks, and only a faster one replaces it', async () => {
+  const floor = cornerShop.speedrunFloorTicks ?? 0;
+  const [fast, slow] = [await newDevice('Fast Hands'), await newDevice('Slow Poke')];
+  const run = (code: string, body: Record<string, unknown>) => call('POST', '/v1/runs', { code, body });
+  const err = async (r: Response) => ((await r.json()) as ApiError).error;
+  const ok = (ticks: number) => ({ map: 'corner-shop', ticks, simVersion: SIM_VERSION });
+
+  // Refused: under the floor, the Tutorial, another sim version, no Device.
+  expect(await err(await run(fast, ok(floor - 1)))).toBe('implausible');
+  expect(await err(await run(fast, { ...ok(floor), map: 'tutorial' }))).toBe('bad_request');
+  expect(await err(await run(fast, { ...ok(floor), simVersion: SIM_VERSION + 1 }))).toBe('update');
+  expect((await call('POST', '/v1/runs', { body: ok(floor) })).status).toBe(401);
+
+  expect(await (await run(slow, ok(floor + 5000))).json()).toEqual({ rank: 1, total: 1, improved: true });
+  expect(await (await run(fast, ok(floor + 3000))).json()).toEqual({ rank: 1, total: 2, improved: true });
+  // A slower Run keeps the best; a faster one replaces it.
+  expect(await (await run(fast, ok(floor + 9000))).json()).toEqual({ rank: 1, total: 2, improved: false });
+  expect(await (await run(slow, ok(floor + 1000))).json()).toEqual({ rank: 1, total: 2, improved: true });
+
+  const board = (await (await call('GET', '/v1/boards/speed/corner-shop', { code: fast })).json()) as BoardResponse;
+  expect(board.top).toEqual([
+    { rank: 1, nickname: 'Slow Poke', value: floor + 1000 },
+    { rank: 2, nickname: 'Fast Hands', value: floor + 3000, you: true },
+  ]);
+  expect(board.you?.rank).toBe(2);
+});

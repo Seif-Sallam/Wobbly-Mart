@@ -6,6 +6,7 @@ import type { MapDef } from '../sim/map';
 import {
   encodeSaveCode,
   decodeSaveCode,
+  voidRuns,
   snapshot,
   ticksPerFrame,
   SAVER_FRAME_CAP,
@@ -47,13 +48,14 @@ import { Hud, type EdgeArrow, type EventBanner, type EventCard } from '../ui/hud
 import { renderUi, type Overlay, type UiActions, type UiState } from '../ui/app';
 import { Sounds } from '../audio/audio';
 import { FEEL } from '../feel';
+import { runTicks } from '../sim/stats';
 import { TUNING } from '../sim/tuning';
 import { objectiveId } from '../../catalog/objectives';
 import { logbookView, objectiveInfo, progressOfSave, type MapProgress } from './logbook';
 import { challengeCard } from './challenge-card';
 import { API_URL } from './api';
 import { Device } from './device';
-import { readBoard, submitScore } from './wall';
+import { readBoard, submitRun, submitScore } from './wall';
 import { KIND_OF, type WallTab, type WallView } from '../ui/wall';
 import { dailyDay } from '../sim/daily';
 
@@ -178,6 +180,7 @@ export class App {
       cap: this.save.cap in CAP_COLOURS ? this.save.cap : 'orange',
       online: API_URL ? { code: this.device.code, nickname: this.device.nickname, askPrivacy: false } : null,
       wall: null,
+      runEnd: null,
     };
     this.ui.zoom = this.zoom();
     watchLayout(() => this.applyLayout());
@@ -488,7 +491,10 @@ export class App {
         this.ui.card = 'ios';
       }
     }
-    if (e.type === 'complete') this.hud.celebrate();
+    if (e.type === 'complete') {
+      this.hud.celebrate();
+      this.endRun(w);
+    }
     if (e.type === 'lessonReplay') this.hud.banner(iconUrl('player'), lessonRetry(w, e.lesson), 'No harm done');
     if (e.type === 'challengeStarted') {
       this.hud.stamp('CHALLENGE!');
@@ -700,6 +706,8 @@ export class App {
     if (o === 'maps') this.refreshMaps();
     // coming back from joining reads again with the new Device
     if (o === 'wall') void this.loadWall();
+    // a Run finished without a Device goes up once the player joins from its end screen
+    if (o === 'run-end' && this.device.code && this.ui.runEnd?.result === 'join') void this.sendRun();
     // the Logbook alone leaves the game running
     const pause = !!o && o !== 'logbook';
     if (this.game && this.ui.screen === 'game') this.game.paused = pause || this.lostTab;
@@ -805,7 +813,7 @@ export class App {
     },
     pasteSave: (code) => {
       try {
-        this.save = decodeSaveCode(code);
+        this.save = voidRuns(decodeSaveCode(code));
       } catch (e) {
         return `That code didn't work: ${(e as Error).message}`;
       }
@@ -850,6 +858,13 @@ export class App {
       close: () => this.openOverlay(this.wallBack),
       join: () => this.actions.online.join(),
       play: (id) => (this.ui.screen === 'title' ? (this.openOverlay(null), this.play(id)) : this.actions.pickMap(id)),
+      click: () => this.sounds.sfx('click'),
+    },
+    runEnd: {
+      wall: () => this.openWall('speed'),
+      join: () => this.actions.online.join(),
+      retry: () => void this.sendRun(),
+      close: () => ((this.ui.runEnd = null), this.openOverlay(null)),
       click: () => this.sounds.sfx('click'),
     },
     selectLook: (look, cap) => {
@@ -897,6 +912,40 @@ export class App {
     const w = this.game?.world;
     if (!w || this.ui.screen !== 'game' || isTutorialMap(w.map) || !this.device.code) return;
     void submitScore(this.device.code, w.map.id, w.score, w.stats.playTime);
+  }
+
+  /** A valid Run reached 100%: after the confetti, its end screen opens and the Run is sent. */
+  private endRun(w: World): void {
+    if (w.runVoid || isTutorialMap(w.map)) return;
+    this.ui.runEnd = {
+      mapId: w.map.id,
+      mapName: w.map.name,
+      ticks: runTicks(w.stats),
+      openings: w.stats.openings,
+      result: 'join',
+      around: null,
+    };
+    setTimeout(() => {
+      if (this.ui.screen === 'game' && this.ui.overlay === null && this.game?.world === w) this.openOverlay('run-end');
+    }, FEEL.score.runEndDelayMs);
+  }
+
+  /** Posts the Run on the end screen, then reads Around you; a reply for a closed screen is dropped. */
+  private async sendRun(): Promise<void> {
+    const run = this.ui.runEnd;
+    const code = this.device.code;
+    if (!run || !code) return;
+    this.ui.runEnd = { ...run, result: 'sending' };
+    this.renderUi();
+    const r = await submitRun(code, run.mapId, run.ticks);
+    const board = r.ok ? await readBoard('speed', run.mapId, 0, code) : null;
+    if (this.ui.runEnd?.mapId !== run.mapId) return;
+    this.ui.runEnd = {
+      ...this.ui.runEnd,
+      result: r.ok ? r.data : r.error === 'offline' || r.error === 'update' ? r.error : 'refused',
+      around: board?.you?.around ?? null,
+    };
+    this.renderUi();
   }
 
   private openWall(tab: WallTab): void {

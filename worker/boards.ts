@@ -1,5 +1,6 @@
 // Board reads: top 50 + total (cached 60 s per isolate), and your rank with Around you for a verified Device.
 import { isTutorialMap, mapById } from '../maps';
+import type { MapDef } from '../src/sim/map';
 import { SIM_VERSION } from '../src/sim/version';
 import type { BoardResponse, Row } from './api';
 import { findDevice } from './device';
@@ -122,6 +123,12 @@ export function boardOf(kind: string, map: string, day: number): Board {
   if ((kind === 'speed' || kind === 'score') && def && !isTutorialMap(def))
     return { shape: kind === 'speed' ? BY_TICKS : BY_SCORE, scope: [kind, map, 0, SIM_VERSION] };
   throw new HttpError('bad_request');
+}
+
+/** A submit's Map Board and the Map it ranks; bad_request for an unknown or Tutorial Map. */
+export function mapBoardOf(kind: 'speed' | 'score', mapId: string): { board: Board; map: MapDef } {
+  const board = boardOf(kind, mapId, 0);
+  return { board, map: mapById(mapId) as MapDef };
 }
 
 const count = async (env: Env, sql: string, binds: unknown[]): Promise<number> =>

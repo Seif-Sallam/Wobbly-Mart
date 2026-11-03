@@ -48,25 +48,28 @@ export async function openDebug(game: Game, phone: boolean, hooks: DebugHooks): 
   };
   requestAnimationFrame(sample);
 
+  /** A cheat voids the current Map's Run. */
+  const voidRun = () => (game.world.runVoid = true);
+  const cheat = (fn: () => void) => () => (fn(), voidRun());
   const cheats = {
     noCustomers: false,
-    money100: () => (game.world.money += 100),
-    money1000: () => (game.world.money += 1000),
-    unlockAll: () => {
+    money100: cheat(() => (game.world.money += 100)),
+    money1000: cheat(() => (game.world.money += 1000)),
+    unlockAll: cheat(() => {
       const w = game.world;
       for (const id of Object.keys(w.map.pads)) own(w, id, true);
       for (const [id, up] of Object.entries(w.map.upgrades)) w.levels[id] = up.levels.length;
-    },
+    }),
     // every Pad in the Areas owned now, the next Area's Pad among them; not the new Area's own Pads
-    buyToNextArea: () => {
+    buyToNextArea: cheat(() => {
       const w = game.world;
       const here = new Set(Object.keys(w.map.layout.areas).filter((a) => w.owned.has(a)));
       for (const [id, pad] of Object.entries(w.map.pads)) {
         const place = w.map.layout.places[id];
         if (place && pad.unlocks.kind !== 'exit' && here.has(areaOf(w, place.box) ?? '')) own(w, id, true);
       }
-    },
-    fillProducers: () => {
+    }),
+    fillProducers: cheat(() => {
       const w = game.world;
       for (const st of w.stations.values()) {
         if (st.kind !== 'producer') continue;
@@ -75,11 +78,11 @@ export async function openDebug(game: Game, phone: boolean, hooks: DebugHooks): 
         st.tray = type.trayCap ?? st.tray;
         st.plants.fill(0);
       }
-    },
-    fillShelves: () => {
+    }),
+    fillShelves: cheat(() => {
       const w = game.world;
       for (const st of w.stations.values()) if (st.kind === 'shelf') st.items = shelfCap(w.map, st.product);
-    },
+    }),
     resetMap: () => hooks.resetMap(),
     openMaps: () => hooks.openMaps(),
   };
@@ -91,12 +94,13 @@ export async function openDebug(game: Game, phone: boolean, hooks: DebugHooks): 
   fCheat
     .add(cheats, 'noCustomers')
     .name('no new Customers')
-    .onChange((v: boolean) => !v && (game.world.arrivalTimer = 0));
+    .onChange((v: boolean) => (voidRun(), !v && (game.world.arrivalTimer = 0)));
   fCheat.add(cheats, 'fillProducers').name('fill Animals & Machines');
   fCheat.add(cheats, 'fillShelves').name('fill all Shelves');
   fCheat.add(cheats, 'resetMap').name('reset this Map');
   fCheat.add(cheats, 'openMaps').name('open all Maps');
-  fCheat.add(game, 'speed', 0.25, 30, 0.25).name('sim speed');
+  // slow motion gives a Run more real time per tick
+  fCheat.add(game, 'speed', 0.25, 30, 0.25).name('sim speed').onChange(voidRun);
 
   const fFeel = gui.addFolder('Feel (feel.ts)').close();
   for (const [k, v] of Object.entries(FEEL)) if (typeof v === 'number') fFeel.add(FEEL, k as keyof typeof FEEL);

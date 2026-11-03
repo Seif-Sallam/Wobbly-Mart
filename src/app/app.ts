@@ -275,7 +275,8 @@ export class App {
     requestAnimationFrame(loop);
     Object.assign(window, { app: this, game: this.game });
     const params = new URLSearchParams(location.search);
-    if (params.has('debug'))
+    // dev only: deployed builds ship no cheats
+    if (import.meta.env.DEV && params.has('debug'))
       void import('./debug').then(
         (m) =>
           this.game &&

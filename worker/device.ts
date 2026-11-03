@@ -83,21 +83,24 @@ export async function rotateCloudCode(req: Request, env: Env): Promise<Response>
   return json({ cloudCode } satisfies CloudCodeResponse);
 }
 
-/** Hard delete across all three databases; the `device` row goes last so a failed delete can be retried. */
-export async function deleteDevice(env: Env, id: number): Promise<void> {
+/** Hard delete across all three databases; the `device` rows go last so a failed delete can be retried. */
+export async function deleteDevices(env: Env, ids: number[]): Promise<void> {
+  const list = JSON.stringify(ids);
   await Promise.all([
-    env.REPLAY.prepare('DELETE FROM `replay` WHERE `id_device` = ?').bind(id).run(),
-    env.SAVE.prepare('DELETE FROM `device_save` WHERE `id_device` = ?').bind(id).run(),
+    env.REPLAY.prepare('DELETE FROM `replay` WHERE `id_device` IN (SELECT `value` FROM json_each(?))').bind(list).run(),
+    env.SAVE.prepare('DELETE FROM `device_save` WHERE `id_device` IN (SELECT `value` FROM json_each(?))')
+      .bind(list)
+      .run(),
   ]);
   await env.BOARD.batch([
-    env.BOARD.prepare('DELETE FROM `board_entry` WHERE `id_device` = ?').bind(id),
-    env.BOARD.prepare('DELETE FROM `device` WHERE `id_device` = ?').bind(id),
+    env.BOARD.prepare('DELETE FROM `board_entry` WHERE `id_device` IN (SELECT `value` FROM json_each(?))').bind(list),
+    env.BOARD.prepare('DELETE FROM `device` WHERE `id_device` IN (SELECT `value` FROM json_each(?))').bind(list),
   ]);
 }
 
 export async function deleteDeviceRoute(req: Request, env: Env): Promise<Response> {
   const id = await requireDevice(req, env);
   await limitWrite(env, 'delete', id);
-  await deleteDevice(env, id);
+  await deleteDevices(env, [id]);
   return noContent();
 }

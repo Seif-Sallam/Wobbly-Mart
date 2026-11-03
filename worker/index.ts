@@ -1,5 +1,6 @@
-// The Board API Worker: router, CORS and the error boundary.
+// The Board API Worker: router, CORS, the error boundary and the daily cron.
 import type { Env } from './env';
+import { dailyCleanup } from './cron';
 import { createDevice, deleteDeviceRoute, getDevice, renameDevice, rotateCloudCode } from './device';
 import { errorResponse, HttpError, preflight, withCors } from './http';
 import { readBoard } from './boards';
@@ -47,5 +48,8 @@ export default {
       }
     }
     return withCors(res, req.headers.get('Origin'), env);
+  },
+  async scheduled(controller: ScheduledController, env: Env): Promise<void> {
+    await dailyCleanup(env, Math.floor(controller.scheduledTime / 1000));
   },
 } satisfies ExportedHandler<Env>;

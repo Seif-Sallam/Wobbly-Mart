@@ -2,6 +2,7 @@
 import type { World } from './world';
 import { TUNING } from './tuning';
 import { completion } from './economy';
+import type { MapDef } from './map';
 
 const S = TUNING.score;
 
@@ -35,3 +36,13 @@ export function updateScore(w: World): void {
     w.events.push({ type: 'quarterScored', quarter: w.quarters });
   }
 }
+
+/** The most Score a Map pays once: every Objective and all four quarters. */
+export const fixedMaxScore = (map: MapDef): number => map.objectives.length * S.objective + 4 * S.quarter;
+
+/** An upper bound on what the repeating sources pay per second: each one at its shortest gap. */
+export const maxScoreRate = (): number =>
+  S.challenge / TUNING.challenges.gap[0] +
+  S.delivery / TUNING.events.extraCarGap[0] +
+  S.thief / TUNING.events.robberyGap[0] +
+  S.spotless / TUNING.events.inspectorGap[0];

@@ -220,4 +220,6 @@ export const TUNING = {
     /** Daily floor: fewest plausible ticks = the bot's ticks × this. */
     floorShare: 0.5,
   },
+  /** Daily Shift: day 1 is this UTC date (ms). */
+  daily: { launch: Date.UTC(2026, 10, 1) },
 };

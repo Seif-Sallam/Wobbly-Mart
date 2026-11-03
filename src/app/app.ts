@@ -53,6 +53,9 @@ import { logbookView, objectiveInfo, progressOfSave, type MapProgress } from './
 import { challengeCard } from './challenge-card';
 import { API_URL } from './api';
 import { Device } from './device';
+import { readBoard, submitScore } from './wall';
+import { KIND_OF, type WallTab, type WallView } from '../ui/wall';
+import { dailyDay } from '../sim/daily';
 
 const AUTOSAVE_SECONDS = 5;
 const EDGE_MARGIN = 44;
@@ -83,6 +86,8 @@ export class App {
   /** Where the online popups return to: the overlay the flow started from. */
   private onlineBack: Overlay | null = null;
   private privacyBack: Overlay | null = null;
+  /** Where the Wall's ✕ returns to; joining from the Wall returns to the Wall. */
+  private wallBack: Overlay | null = null;
   /** No save existed at load: the Wardrobe opens by itself once the title is ready. */
   private firstRun: boolean;
   private ui: UiState;
@@ -174,6 +179,7 @@ export class App {
       look: lookById(this.save.look).id,
       cap: this.save.cap in CAP_COLOURS ? this.save.cap : 'orange',
       online: API_URL ? { code: this.device.code, nickname: this.device.nickname, askPrivacy: false } : null,
+      wall: null,
     };
     this.ui.zoom = this.zoom();
     watchLayout(() => this.applyLayout());
@@ -350,6 +356,7 @@ export class App {
     const game = this.game;
     if (!game) return;
     this.writeSave();
+    this.endOpening();
     this.ui.overlay = null;
     this.ui.office = false;
     this.ui.wipe = true;
@@ -676,6 +683,7 @@ export class App {
 
   private onHidden(): void {
     this.writeSave();
+    this.endOpening();
     if (this.ui.screen === 'game' && (!this.ui.overlay || this.ui.overlay === 'logbook') && !this.lostTab)
       this.openOverlay('pause');
     this.syncAudio();
@@ -697,6 +705,8 @@ export class App {
     else if (this.ui.overlay === 'logbook') this.game?.report('logbookClosed');
     this.ui.overlay = o;
     if (o === 'maps') this.refreshMaps();
+    // coming back from joining reads again with the new Device
+    if (o === 'wall') void this.loadWall();
     // the Logbook alone leaves the game running
     const pause = !!o && o !== 'logbook';
     if (this.game && this.ui.screen === 'game') this.game.paused = pause || this.lostTab;
@@ -823,6 +833,7 @@ export class App {
       if (!map) return;
       if (map.id !== this.game?.world.map.id) {
         this.writeSave();
+        this.endOpening();
         this.openMap(map);
       }
       this.openOverlay(null);
@@ -839,6 +850,15 @@ export class App {
     icon: (name) => iconUrl(name),
     click: () => this.sounds.sfx('click'),
     wardrobe: this.wardrobe,
+    wall: {
+      tab: (tab) => this.changeWall({ tab }),
+      map: (map) => this.changeWall({ map }),
+      retry: () => void this.loadWall(),
+      close: () => this.openOverlay(this.wallBack),
+      join: () => this.actions.online.join(),
+      play: (id) => (this.ui.screen === 'title' ? (this.openOverlay(null), this.play(id)) : this.actions.pickMap(id)),
+      click: () => this.sounds.sfx('click'),
+    },
     selectLook: (look, cap) => {
       this.save.look = look;
       this.save.cap = cap;
@@ -846,6 +866,7 @@ export class App {
       this.applyLook();
     },
     online: {
+      openWall: () => this.openWall('today'),
       join: () => {
         if (this.device.accepted) return this.openOnline('join');
         this.setOnline({ askPrivacy: true });
@@ -877,6 +898,48 @@ export class App {
       copyCode: () => copyText(this.device.code ?? ''),
     },
   };
+
+  /** Sends the Map's Score when an Opening ends (leaving the Map, or the tab hidden); unranked without a Device. */
+  private endOpening(): void {
+    const w = this.game?.world;
+    if (!w || this.ui.screen !== 'game' || isTutorialMap(w.map) || !this.device.code) return;
+    void submitScore(this.device.code, w.map.id, w.score, w.stats.playTime);
+  }
+
+  private openWall(tab: WallTab): void {
+    const here = this.game?.world.map;
+    const maps = MAPS.filter((m) => !isTutorialMap(m));
+    this.ui.wall = {
+      tab,
+      map: here && !isTutorialMap(here) ? here.id : FIRST_MAP.id,
+      maps: maps.map((m) => ({ id: m.id, name: m.name, playable: this.save.visited.includes(m.id) })),
+      board: null,
+      hasDevice: !!this.device.code,
+    };
+    this.wallBack = this.ui.overlay;
+    this.openOverlay('wall');
+  }
+
+  private changeWall(change: Partial<WallView>): void {
+    if (!this.ui.wall) return;
+    this.ui.wall = { ...this.ui.wall, ...change };
+    void this.loadWall();
+  }
+
+  /** Reads the Board the Wall shows; a reply for a tab or Map the player already left is dropped. */
+  private async loadWall(): Promise<void> {
+    const wall = this.ui.wall;
+    if (!wall) return;
+    this.ui.wall = { ...wall, board: null, hasDevice: !!this.device.code };
+    this.renderUi();
+    const kind = KIND_OF[wall.tab];
+    const map = kind === 'daily' ? 'daily' : kind === 'streak' ? '-' : wall.map;
+    const board = await readBoard(kind, map, dailyDay(Date.now()), this.device.code);
+    const now = this.ui.wall;
+    if (!now || now.tab !== wall.tab || now.map !== wall.map) return;
+    this.ui.wall = { ...now, board: board ?? 'offline' };
+    this.renderUi();
+  }
 
   /** Opens an online popup, remembering where the flow started so ✕ and success return there. */
   private openOnline(o: Overlay): void {

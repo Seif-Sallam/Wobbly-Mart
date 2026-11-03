@@ -1,5 +1,5 @@
 // The Daily calendar: each day's goal and Daily floor, read by the client and the Worker (the Map itself comes from
-// the seed). `npm run daily:calendar [-- 2026-11-01 365]` generates and bot-calibrates every day across 12 processes
+// the seed). `npm run daily:calendar [-- YYYY-MM-DD 365]` (default: from day 1) generates and bot-calibrates every day across 12 processes
 // and rewrites maps/daily-calendar.json; it fails if any day can't be generated or the bot can't finish it.
 // `npm run daily:check` (CI, no bot) regenerates every listed day and fails if the calendar no longer matches the
 // generator or SIM_VERSION, or ends within 30 days.
@@ -11,6 +11,7 @@ import { calibrateDaily, type DailyCalendar as Calendar, type DailyDay as Day } 
 import { fnv1a } from '../src/sim/rng';
 import { SIM_VERSION } from '../src/sim/version';
 import { TUNING } from '../src/sim/tuning';
+import { dailyDate } from '../src/sim/daily';
 
 const FILE = 'maps/daily-calendar.json';
 const PROCESSES = 12;
@@ -110,5 +111,5 @@ if (args[0] === '--part') {
 } else if (args[0] === '--check') {
   process.exit(check());
 } else {
-  process.exit(await calendar(args[0] ?? '2026-11-01', Number(args[1] ?? 365)));
+  process.exit(await calendar(args[0] ?? dailyDate(1), Number(args[1] ?? 365)));
 }

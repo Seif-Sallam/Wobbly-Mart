@@ -151,6 +151,7 @@ export function cutOff(w: World): string | null {
 }
 
 export function movesLeft(w: World): number {
+  if (w.map.shift) return 0;
   const areas = Object.keys(w.map.layout.areas).filter((a) => w.owned.has(a)).length;
   return TUNING.movesPerArea * areas - w.movesUsed;
 }

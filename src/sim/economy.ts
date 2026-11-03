@@ -204,7 +204,13 @@ export function applyCommands(w: World, intents: Intents): void {
     w.levels[id] = (w.levels[id] ?? 0) + 1;
     w.events.push({ type: 'upgradeBought', upgrade: id });
   }
-  if (intents.setClosed !== undefined && w.atOffice && intents.setClosed !== w.closed && w.closedWait <= 0) {
+  if (
+    intents.setClosed !== undefined &&
+    !w.map.shift &&
+    w.atOffice &&
+    intents.setClosed !== w.closed &&
+    w.closedWait <= 0
+  ) {
     w.closed = intents.setClosed;
     w.closedWait = w.closed ? TUNING.closed.reopenWait : TUNING.closed.closeWait;
     if (w.closed) w.stats.timesClosed++;

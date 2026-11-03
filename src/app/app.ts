@@ -116,6 +116,8 @@ export class App {
   /** Lesson index and phase last drawn: the card re-renders when it changes. */
   private lessonKey = '';
   private layout: EditLayout | null = null;
+  /** Dev `?daily=YYYY-MM-DD`: every Play opens that day's Daily Map. */
+  private devDaily: MapDef | null = null;
   /** The Inspector's warning banner, counting down until they step in. */
   private warning: EventBanner | null = null;
 
@@ -215,6 +217,8 @@ export class App {
   }
 
   async start(): Promise<void> {
+    const daily = import.meta.env.DEV ? new URLSearchParams(location.search).get('daily') : null;
+    if (daily) this.devDaily = (await import('./daily-dev')).dailyDevMap(daily);
     await Promise.all([
       loadAssets((done, total) => {
         this.ui.loading = (done / total) * 0.95;
@@ -308,6 +312,7 @@ export class App {
   }
 
   private currentMap(): MapDef {
+    if (this.devDaily) return this.devDaily;
     const picked = import.meta.env.DEV ? new URLSearchParams(location.search).get('map') : null;
     return mapById(picked ?? this.save.currentMap) ?? FIRST_MAP;
   }
@@ -387,8 +392,10 @@ export class App {
     const game = this.game;
     if (!game) return;
     const mapSave: MapSave | null = this.save.maps[map.id] ?? null;
-    this.save.currentMap = map.id;
-    if (!this.save.visited.includes(map.id)) this.save.visited.push(map.id);
+    if (!map.shift) {
+      this.save.currentMap = map.id;
+      if (!this.save.visited.includes(map.id)) this.save.visited.push(map.id);
+    }
     game.open(map, mapSave);
     this.sounds.playMusicOf(map);
     this.input.tap.cancel();
@@ -676,7 +683,7 @@ export class App {
   private writeSave(): void {
     this.sinceSave = 0;
     const game = this.game;
-    if (!game || this.lostTab || this.editing || this.ui.screen !== 'game') return;
+    if (!game || game.world.map.shift || this.lostTab || this.editing || this.ui.screen !== 'game') return;
     this.save.maps[game.world.map.id] = snapshot(game.world);
     writeSave(this.save);
     this.claimTab();

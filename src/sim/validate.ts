@@ -83,8 +83,6 @@ export function validateMap(
     for (const [j, step] of lesson.steps.entries())
       if (typeof step.target === 'string' && !L.places[step.target])
         out.push({ id: `lessons[${i}].steps[${j}]`, message: `points at unknown place "${step.target}"` });
-  if (!map.lessons?.length && !(Number.isInteger(map.speedrunFloorTicks) && (map.speedrunFloorTicks ?? 0) > 0))
-    out.push({ id: map.id, message: 'needs a whole positive speedrunFloorTicks' });
   const objectiveIds = new Set<string>();
   for (const o of map.objectives) {
     const id = objectiveId(o);

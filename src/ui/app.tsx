@@ -18,8 +18,10 @@ import {
   NicknamePopup,
   OnlineRows,
   PrivacyPopup,
+  RestorePopup,
   type OnlineActions,
   type OnlineView,
+  type SaveSummary,
 } from './online';
 import { WallPopup, rankText, type WallActions, type WallView } from './wall';
 import { RunEndPopup, type RunEndActions, type RunEndView } from './run-end';
@@ -44,6 +46,7 @@ export type Overlay =
   | 'join'
   | 'nickname'
   | 'cloud-code'
+  | 'restore'
   | 'wall'
   | 'shift-end'
   | 'run-end';
@@ -80,6 +83,8 @@ export interface UiState {
   cap: string;
   /** Null when this build has no Board API: every online feature hides. */
   online: OnlineView | null;
+  /** The restore choice after a Cloud Code was entered: both saves. */
+  restore: { cloud: SaveSummary; local: SaveSummary } | null;
   wall: WallView | null;
   /** Today's Daily Shift on the title; null while it loads or when the calendar has no such day. `streak` and `rank`
    *  come from the last accepted Shift. */
@@ -940,6 +945,9 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
           {overlay === 'join' && <JoinPopup o={a.online} a={a} />}
           {overlay === 'nickname' && <NicknamePopup current={s.online?.nickname ?? null} o={a.online} a={a} />}
           {overlay === 'cloud-code' && <CodePopup o={a.online} a={a} />}
+          {overlay === 'restore' && s.restore && (
+            <RestorePopup cloud={s.restore.cloud} local={s.restore.local} o={a.online} a={a} />
+          )}
           {overlay === 'wall' && s.wall && <WallPopup v={s.wall} a={a.wall} />}
           {overlay === 'shift-end' && s.shiftEnd && <ShiftEndPopup v={s.shiftEnd} a={a.shiftEnd} online={!!s.online} />}
           {overlay === 'run-end' && s.runEnd && <RunEndPopup v={s.runEnd} a={a.runEnd} />}

@@ -1,6 +1,7 @@
 // Today's Daily Shift: its input log, kept locally so a reload re-sims to the exact moment, its finish and Replay,
 // and the Board's last answer for the title's ticket.
 import type { ShiftBody, ShiftResponse } from '../../worker/api';
+import { gzipBase64 } from '../../worker/gzip';
 import type { InputLog, Replay } from '../sim/replay';
 import { InputRecorder, replayIntents } from '../sim/replay';
 import { SIM_VERSION } from '../sim/version';
@@ -86,12 +87,4 @@ export class Shift {
   static keepResult(day: number, r: ShiftResponse): void {
     write(RESULT, JSON.stringify({ day, rank: r.rank, streak: r.streak } satisfies ShiftResult));
   }
-}
-
-async function gzipBase64(text: string): Promise<string> {
-  const stream = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'));
-  const bytes = new Uint8Array(await new Response(stream).arrayBuffer());
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  return btoa(binary);
 }

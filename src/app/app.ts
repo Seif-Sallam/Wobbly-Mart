@@ -55,6 +55,7 @@ import { logbookView, objectiveInfo, progressOfSave, type MapProgress } from './
 import { challengeCard } from './challenge-card';
 import { API_URL } from './api';
 import { Device } from './device';
+import { fetchCloudSave, hasProgress, summary, uploadSave } from './cloud-save';
 import { readBoard } from './wall';
 import { flushPending, submitRun, submitScore, submitShift } from './submits';
 import { KIND_OF, type WallTab, type WallView } from '../ui/wall';
@@ -92,6 +93,8 @@ export class App {
   private device = new Device();
   /** Where the online popups return to: the overlay the flow started from. */
   private onlineBack: Overlay | null = null;
+  /** The cloud save waiting on the restore choice. */
+  private cloudSave: SaveFile | null = null;
   private privacyBack: Overlay | null = null;
   /** Where the Wall's ✕ returns to; joining from the Wall returns to the Wall. */
   private wallBack: Overlay | null = null;
@@ -192,6 +195,7 @@ export class App {
       daily: null,
       shiftEnd: null,
       runEnd: null,
+      restore: null,
     };
     this.ui.zoom = this.zoom();
     watchLayout(() => this.applyLayout());
@@ -941,10 +945,15 @@ export class App {
       back: () => this.openOverlay(this.ui.overlay === 'privacy' ? this.privacyBack : this.onlineBack),
       saveNickname: (name) =>
         this.onlineCall(this.device.code ? this.device.rename(name) : this.device.create(name), this.onlineBack),
-      useCode: (code) => this.onlineCall(this.device.useCode(code), this.onlineBack),
+      useCode: (code) => this.onlineCall(this.enterCode(code)),
       rotate: () => this.onlineCall(this.device.rotate()),
       remove: () => this.onlineCall(this.device.remove()),
       copyCode: () => copyText(this.device.code ?? ''),
+      useCloudSave: () => this.cloudSave && this.restoreCloudSave(this.cloudSave),
+      keepLocalSave: () => {
+        this.cloudSave = this.ui.restore = null;
+        this.openOverlay(this.onlineBack);
+      },
     },
   };
 
@@ -1053,10 +1062,12 @@ export class App {
     this.renderUi();
   }
 
+  /** Callers write the save first: it goes up as the cloud save, and the Map's Score is sent. */
   private endOpening(): void {
     const w = this.game?.world;
-    if (!w || this.ui.screen !== 'game' || isTutorialMap(w.map) || w.map.shift || !this.device.code) return;
-    void submitScore(this.device.code, w.map.id, w.score, w.stats.playTime);
+    if (!w || this.ui.screen !== 'game' || w.map.shift || !this.device.code) return;
+    void uploadSave(this.device.code, this.save);
+    if (!isTutorialMap(w.map)) void submitScore(this.device.code, w.map.id, w.score, w.stats.playTime);
   }
 
   /** A valid Run reached 100%: after the confetti, its end screen opens and the Run is sent. */
@@ -1163,6 +1174,38 @@ export class App {
     return error;
   }
 
+  /** A typed Cloud Code; with a cloud save, the restore choice (no choice when this browser has nothing to lose).
+   *  A cloud save that can't be fetched leaves the code unused, so this browser's save never overwrites it unseen. */
+  private async enterCode(code: string): Promise<string | null> {
+    const error = await this.device.useCode(code);
+    if (error) return error;
+    const cloud = this.device.cloudSaveAt === null ? null : await fetchCloudSave(code);
+    if (this.device.cloudSaveAt !== null && !cloud) {
+      this.device.forget();
+      return "☁️ Your cloud save didn't load · Try again";
+    }
+    this.writeSave();
+    if (!cloud) this.openOverlay(this.onlineBack);
+    else if (!hasProgress(this.save)) this.restoreCloudSave(cloud.save);
+    else {
+      this.cloudSave = cloud.save;
+      const when = new Date(cloud.at * 1000).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+      this.ui.restore = { cloud: summary(cloud.save, when), local: summary(this.save, 'This browser, now') };
+      this.openOverlay('restore');
+    }
+    return null;
+  }
+
+  /** Like a Save Code import, but the Runs stay valid. */
+  private restoreCloudSave(save: SaveFile): void {
+    this.save = save;
+    this.cloudSave = this.ui.restore = null;
+    writeSave(this.save);
+    this.applyLook();
+    this.reopen();
+    this.openOverlay(null);
+  }
+
   /** Shows the saved look and cap on the Player (an unknown id or colour falls back to the defaults). */
   private applyLook(): void {
     this.ui.look = lookById(this.save.look).id;
@@ -1239,7 +1282,7 @@ const RUN_ERROR: Partial<Record<string, 'offline' | 'update' | 'stale'>> = {
   unknown_device: 'stale',
 };
 
-const ONLINE_OVERLAYS = new Set<Overlay | null>(['privacy', 'join', 'nickname', 'cloud-code']);
+const ONLINE_OVERLAYS = new Set<Overlay | null>(['privacy', 'join', 'nickname', 'cloud-code', 'restore']);
 
 const THIEF = '🦹';
 const INSPECTOR = '🧐';

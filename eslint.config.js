@@ -6,8 +6,8 @@ const restrict = (patterns) => ({ 'no-restricted-imports': ['error', { patterns 
 
 // Flat config replaces rule options per file, so every src/ block repeats this one.
 const WORKER = {
-  group: ['**/worker/**', '!**/worker/api', '!**/worker/nickname'],
-  message: 'src/ may import worker/api (types) and worker/nickname only',
+  group: ['**/worker/**', '!**/worker/api', '!**/worker/nickname', '!**/worker/gzip'],
+  message: 'src/ may import worker/api (types), worker/nickname and worker/gzip only',
 };
 
 export default tseslint.config(

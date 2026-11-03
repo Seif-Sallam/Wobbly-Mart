@@ -1,10 +1,14 @@
-// CI gate: a headless bot plays each map at full speed and must reach 100% Completion.
+// CI gate: a headless bot plays each map at full speed and must reach 100% Completion, and the save of the whole
+// finished game must stay under a quarter of the cloud save cap.
+import { gzipSync } from 'node:zlib';
 import { MAPS } from '../maps';
 import { createWorld, step, type World } from '../src/sim/world';
 import { Bot } from '../src/sim/bot';
 import { LessonPlayer } from '../src/sim/lesson-player';
 import { completion } from '../src/sim/economy';
 import { TUNING } from '../src/sim/tuning';
+import { emptySave, snapshot } from '../src/sim/save';
+import { SAVE_CAP } from '../worker/api';
 
 const LIMIT_SECONDS = 4 * 3600;
 
@@ -95,6 +99,7 @@ function playLessons(w: World): boolean {
 
 let failed = false;
 const only = process.argv[2];
+const save = emptySave(MAPS[0].id);
 for (const map of MAPS.filter((m) => !only || m.id === only)) {
   const w = createWorld(map, null, 1);
   if (map.lessons) {
@@ -107,6 +112,7 @@ for (const map of MAPS.filter((m) => !only || m.id === only)) {
   }
   const tiers = new Map<number, Tier>();
   const t = playthrough(w, true, tiers);
+  save.maps[map.id] = snapshot(w);
   const pct = completion(w) * 100;
   console.log(`${map.id}: ${pct.toFixed(0)}% after ${(t / 60).toFixed(1)} simulated minutes`);
   console.log(`  Longest stretch below $0: ${(longestDebt / 60).toFixed(1)} min`);
@@ -116,5 +122,11 @@ for (const map of MAPS.filter((m) => !only || m.id === only)) {
     failed = true;
     console.error(`${map.id}: 100% Completion was not reached within ${LIMIT_SECONDS / 3600} h`);
   }
+}
+const saveSize = gzipSync(JSON.stringify(save)).byteLength;
+console.log(`Cloud save of every Map played: ${saveSize} B gzipped, cap ${SAVE_CAP} B`);
+if (!only && saveSize >= SAVE_CAP / 4) {
+  failed = true;
+  console.error(`The full-progress save is over a quarter of SAVE_CAP: raise the cap or shrink the save`);
 }
 process.exit(failed ? 1 : 0);

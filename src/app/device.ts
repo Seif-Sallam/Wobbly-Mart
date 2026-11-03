@@ -25,6 +25,8 @@ function failure(r: ApiResult<unknown>): string {
 export class Device {
   code = read(CODE);
   nickname = read(NICKNAME);
+  /** From the last Cloud Code entered here: when its cloud save was made (Unix seconds), null without one. */
+  cloudSaveAt: number | null = null;
 
   /** Also kept in memory, so Accept holds for this visit where storage is blocked. */
   accepted = Number(read(PRIVACY)) === PRIVACY_VERSION;
@@ -55,7 +57,10 @@ export class Device {
 
   async useCode(code: string): Promise<string | null> {
     const r = await api.checkDevice(code);
-    if (r.ok) this.keep(code, r.data.nickname);
+    if (r.ok) {
+      this.keep(code, r.data.nickname);
+      this.cloudSaveAt = r.data.cloudSaveAt ?? null;
+    }
     return failure(r) || null;
   }
 
@@ -71,6 +76,11 @@ export class Device {
     const r = await api.rotate(this.code);
     if (r.ok) this.keep(r.data.cloudCode, this.nickname);
     return failure(r) || null;
+  }
+
+  /** Forgets the Cloud Code on this browser only: the Device stays on the server. */
+  forget(): void {
+    this.keep(null, null);
   }
 
   /** Offline, nothing is wiped: the Device still exists on the server. */

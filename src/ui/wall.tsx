@@ -71,6 +71,7 @@ export interface WallActions {
   close: () => void;
   join: () => void;
   play: (mapId: string) => void;
+  playShift: () => void;
   click: () => void;
 }
 
@@ -208,11 +209,17 @@ export function WallPopup({ v, a }: { v: WallView; a: WallActions }) {
         title="🏅 Wall of Fame"
         close={a.close}
         foot={
-          perMap &&
-          map?.playable && (
-            <Btn class="buy" actions={a} onClick={() => a.play(map.id)}>
-              ▶ Play {map.name}
+          v.tab === 'today' ? (
+            <Btn class="buy" actions={a} onClick={a.playShift}>
+              ▶ Play today's Shift
             </Btn>
+          ) : (
+            perMap &&
+            map?.playable && (
+              <Btn class="buy" actions={a} onClick={() => a.play(map.id)}>
+                ▶ Play {map.name}
+              </Btn>
+            )
           )
         }
       >

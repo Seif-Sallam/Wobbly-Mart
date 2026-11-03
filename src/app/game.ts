@@ -25,6 +25,8 @@ export class Game {
   private pending: SimEvent[] = [];
   /** Every frame, after the sim stepped: events of this frame. */
   onFrame: (events: SimEvent[], dt: number) => void = () => {};
+  /** Every sim step, with the Intents it got (a Daily Shift records them). */
+  onStep: ((intents: Intents) => void) | null = null;
 
   constructor(
     readonly stage: Stage,
@@ -36,10 +38,20 @@ export class Game {
     this.view = new WorldView(stage, this.world);
   }
 
-  /** Fresh Opening of a map (reload, map switch, reset). */
-  open(map: MapDef, save: MapSave | null): void {
-    this.world = createWorld(map, save, seed());
+  /** Fresh Opening of a map (reload, map switch, reset); a Daily Shift passes its day's seed. */
+  open(map: MapDef, save: MapSave | null, worldSeed = seed()): void {
+    this.world = createWorld(map, save, worldSeed);
     this.pending = [];
+    this.onStep = null;
+    this.view.reset(this.world);
+  }
+
+  /** Steps the World through `intents` at once, then redraws: a Daily Shift's reload resume. Events are dropped. */
+  fastForward(intents: Iterable<Intents>): void {
+    for (const i of intents) {
+      step(this.world, i);
+      this.onStep?.(i);
+    }
     this.view.reset(this.world);
   }
 
@@ -81,14 +93,16 @@ export class Game {
       while (this.acc >= DT && steps < MAX_STEPS_PER_FRAME) {
         // the view blends between the last two steps, however many run this frame
         this.view.beforeSteps();
-        step(this.world, {
+        const intents: Intents = {
           move: this.input.move(this.world),
           grab: this.input.grab,
           grabPaused: this.input.tap.grabPaused(this.world),
           sprint: this.input.sprint,
           manualGrab: this.manualGrab,
           ...this.commands,
-        });
+        };
+        step(this.world, intents);
+        this.onStep?.(intents);
         this.commands = {};
         events.push(...this.world.events);
         this.acc -= DT;

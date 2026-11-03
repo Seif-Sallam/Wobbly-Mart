@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest';
 import { cornerShop } from '../../maps/corner-shop';
 import { Bot } from './bot';
+import { generateDailyMap } from './daily-map';
 import { quantize } from './intents';
 import { fnv1a } from './rng';
 import { snapshot } from './save';
@@ -8,9 +9,9 @@ import { SIM_VERSION } from './version';
 import { createWorld, step } from './world';
 
 /** Refresh with the printed fingerprint whenever SIM_VERSION is bumped. */
-const GOLDEN = { simVersion: 1, fingerprint: 2285308934 };
+const GOLDEN = { simVersion: 1, fingerprint: 2191089066 };
 
-test('golden run: the bot plays 4 sim minutes and the World matches SIM_VERSION', () => {
+test('golden run: the bot plays 4 sim minutes, a Daily Map is generated, and both match SIM_VERSION', () => {
   const w = createWorld(cornerShop, null, 20261102);
   const bot = new Bot();
   for (let i = 0; i < 4 * 60 * 60; i++) step(w, bot.intents(w));
@@ -22,6 +23,7 @@ test('golden run: the bot plays 4 sim minutes and the World matches SIM_VERSION'
       rng: w.rng,
       player: [p.x, p.z, p.stack.length],
       customers: w.customers.length,
+      daily: generateDailyMap(20261102).map,
     }),
   );
   expect(w.money + snapshot(w).owned.length).toBeGreaterThan(0);

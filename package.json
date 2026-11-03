@@ -17,6 +17,8 @@
     "credits": "tsx scripts/credits.ts",
     "size": "size-limit",
     "check:dist": "tsx scripts/check-dist.ts",
+    "daily:calendar": "tsx scripts/daily-calendar.ts",
+    "daily:check": "tsx scripts/daily-calendar.ts --check",
     "worker:dev": "wrangler dev --config worker/wrangler.toml --ip 0.0.0.0",
     "worker:migrate": "wrangler d1 migrations apply wobbly_board --local --config worker/wrangler.toml && wrangler d1 migrations apply wobbly_replay --local --config worker/wrangler.toml && wrangler d1 migrations apply wobbly_save --local --config worker/wrangler.toml"
   },

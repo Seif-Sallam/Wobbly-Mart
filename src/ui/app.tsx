@@ -159,7 +159,7 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
         ✕
       </button>
       <div class="office-scroll">
-        {(!world.lesson || world.lesson.index >= TUNING.lesson.closedFrom) && (
+        {!world.map.shift && (!world.lesson || world.lesson.index >= TUNING.lesson.closedFrom) && (
           <section>
             <h3>Store</h3>
             <Btn actions={actions} disabled={world.closedWait > 0} onClick={() => actions.setClosed(!world.closed)}>
@@ -168,12 +168,14 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
             </Btn>
           </section>
         )}
-        <section>
-          <h3>Layout</h3>
-          <Btn actions={actions} onClick={actions.editLayout}>
-            ✎ Edit Layout
-          </Btn>
-        </section>
+        {!world.map.shift && (
+          <section>
+            <h3>Layout</h3>
+            <Btn actions={actions} onClick={actions.editLayout}>
+              ✎ Edit Layout
+            </Btn>
+          </section>
+        )}
         {FAMILY_ORDER.map((family) => {
           const list = ups.filter(([, u]) => u.family === family);
           if (!list.length) return null;

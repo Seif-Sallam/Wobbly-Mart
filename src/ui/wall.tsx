@@ -59,7 +59,12 @@ export interface WallActions {
 }
 
 const TABS: WallTab[] = ['today', 'speed', 'stars', 'streaks'];
-export const KIND_OF: Record<WallTab, BoardKind> = { today: 'daily', speed: 'speed', stars: 'score', streaks: 'streak' };
+export const KIND_OF: Record<WallTab, BoardKind> = {
+  today: 'daily',
+  speed: 'speed',
+  stars: 'score',
+  streaks: 'streak',
+};
 const TAB = {
   today: ['📅', 'Today', 'Shift of the Day', 'Employee of the Day'],
   speed: ['⏱️', 'Speed', 'Speed Legends', 'Fastest Hands'],
@@ -145,32 +150,36 @@ function Body({ v, a }: { v: WallView; a: WallActions }) {
       </div>
     );
   return (
-    <>
-      <Frames tab={v.tab} top={b.top} />
-      {!v.hasDevice && (
-        <div class="wall-join">
-          <span class="wall-av">?</span>
-          <p>
-            <b>You're not on the Wall yet</b>Pick a Nickname to get your times up here.
-          </p>
-          <Btn class="buy" actions={a} onClick={a.join}>
-            Pick a Nickname
-          </Btn>
-        </div>
-      )}
-      {b.you && (
-        <section>
-          <h4 class="wall-h4">Around you</h4>
-          <div class="wall-rows">{b.you.around.map((r) => rowOf(v.tab, r))}</div>
-        </section>
-      )}
-      {b.top.length > 3 && (
-        <section>
-          <h4 class="wall-h4">Everyone · {b.total.toLocaleString('en-US')}</h4>
-          <div class="wall-rows">{b.top.slice(3).map((r) => rowOf(v.tab, r))}</div>
-        </section>
-      )}
-    </>
+    <div class="wall-lists">
+      <div>
+        <Frames tab={v.tab} top={b.top} />
+        {!v.hasDevice && (
+          <div class="wall-join">
+            <span class="wall-av">?</span>
+            <p>
+              <b>You're not on the Wall yet</b>Pick a Nickname to get your times up here.
+            </p>
+            <Btn class="buy" actions={a} onClick={a.join}>
+              Pick a Nickname
+            </Btn>
+          </div>
+        )}
+      </div>
+      <div>
+        {b.you && (
+          <section>
+            <h4 class="wall-h4">Around you</h4>
+            <div class="wall-rows">{b.you.around.map((r) => rowOf(v.tab, r))}</div>
+          </section>
+        )}
+        {b.top.length > 3 && (
+          <section>
+            <h4 class="wall-h4">Everyone · {b.total.toLocaleString('en-US')}</h4>
+            <div class="wall-rows">{b.top.slice(3).map((r) => rowOf(v.tab, r))}</div>
+          </section>
+        )}
+      </div>
+    </div>
   );
 }
 

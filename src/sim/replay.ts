@@ -9,6 +9,23 @@ export type LogCommand = Pick<Intents, 'buyUpgrade' | 'assign' | 'setClosed'>;
  *  command?] */
 export type LogEntry = [number, number, number, number] | [number, number, number, number, LogCommand];
 
+/** What a finished Shift claims; the Worker checks it against the submit. The seed stands for the Map. */
+export interface ReplayHeader {
+  simVersion: number;
+  day: number;
+  seed: number;
+  /** Ticks to the goal: the log ends there. */
+  ticks: number;
+  score: number;
+  money: number;
+}
+
+/** A Shift's Replay, gzipped JSON on the wire. */
+export interface Replay {
+  header: ReplayHeader;
+  log: InputLog;
+}
+
 export interface InputLog {
   /** Ticks stepped so far. */
   ticks: number;

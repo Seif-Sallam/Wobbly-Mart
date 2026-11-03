@@ -8,6 +8,9 @@ import { createWorld, step } from './world';
 import { Bot } from './bot';
 import { objectiveProgress } from './objectives';
 import { TUNING } from './tuning';
+import { PRODUCTS } from '../../catalog/products';
+import { CASHIER_CHECKOUT, dailyEvents } from '../../maps/daily/economy';
+import { fixedMaxScore, maxScoreRate } from './score';
 
 export interface DailyGoal {
   goal: ObjectiveDef[];
@@ -37,6 +40,28 @@ const nice = (n: number) => {
   const step = n < 50 ? 5 : n < 200 ? 10 : n < 1000 ? 50 : 100;
   return Math.max(step, Math.floor(n / step) * step);
 };
+
+/** The most a Shift finished in `ticks` can claim; the Worker refuses more. Loose on purpose: every source at its
+ *  fastest (a full list at the top price through the one Register, the biggest Delivery, bounty and reward). */
+export function shiftCaps(goal: ObjectiveDef[], ticks: number): { score: number; money: number } {
+  const seconds = ticks / TUNING.tickRate;
+  const E = TUNING.events;
+  const price = Math.max(...Object.values(PRODUCTS).map((p) => p.price));
+  const listItems = TUNING.listProducts.length * TUNING.listUnits[0].length;
+  const checkout = Math.min(TUNING.playerCheckoutTime, ...CASHIER_CHECKOUT);
+  const { robbery, inspector } = dailyEvents('');
+  const bounty = Math.max(...Object.values(robbery?.byArea ?? {}).map((a) => a.bounty));
+  const reward = Math.max(...Object.values(inspector?.byArea ?? {}).map((a) => a.reward[1]));
+  const moneyRate =
+    (listItems * price) / checkout +
+    (E.deliveryItems[E.deliveryItems.length - 1][1] * price * E.deliveryPay * (1 + E.tipMax)) / E.extraCarGap[0] +
+    bounty / E.robberyGap[0] +
+    reward / E.inspectorGap[0];
+  return {
+    score: fixedMaxScore({ objectives: goal }) + seconds * maxScoreRate(),
+    money: Math.ceil(seconds * moneyRate),
+  };
+}
 
 /** `seed` is the day's; the Shift's World runs on the same one. */
 export function calibrateDaily(map: MapDef, seed: number): DailyGoal {

@@ -2,6 +2,9 @@
 import type { MapEvents, UpgradeDef } from '../../src/sim/map';
 import type { ProducerType } from '../../catalog/producers';
 
+/** Cashier speed Upgrade: checkout seconds per level. */
+export const CASHIER_CHECKOUT = [1.6, 1.3];
+
 const levels = (costs: number[], values: number[]) => costs.map((cost, i) => ({ cost, value: values[i] }));
 
 /** Costs double on a Map with more than one Area. */
@@ -29,7 +32,7 @@ export function dailyUpgrades(producers: Record<string, ProducerType>, areas: nu
       family: 'staff',
       target: 'cashier',
       stat: 'checkoutTime',
-      levels: levels([40 * m, 75 * m], [1.6, 1.3]),
+      levels: levels([40 * m, 75 * m], CASHIER_CHECKOUT),
       requires: ['cashier_1'],
     },
   };

@@ -38,7 +38,8 @@ export function updateScore(w: World): void {
 }
 
 /** The most Score a Map pays once: every Objective and all four quarters. */
-export const fixedMaxScore = (map: MapDef): number => map.objectives.length * S.objective + 4 * S.quarter;
+export const fixedMaxScore = (map: Pick<MapDef, 'objectives'>): number =>
+  map.objectives.length * S.objective + 4 * S.quarter;
 
 /** An upper bound on what the repeating sources pay per second: each one at its shortest gap. */
 export const maxScoreRate = (): number =>

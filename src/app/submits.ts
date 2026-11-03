@@ -42,11 +42,20 @@ function change(edit: (q: Queue) => void): void {
 
 const settled = <T>(r: ApiResult<T>): boolean => r.ok || !RETRY.has(r.error);
 
+/** Submits on their way (`run/map/ticks`, `score/map/score`): a flush skips them instead of posting twice. */
+const inFlight = new Set<string>();
+
 async function postRun(code: string, map: string, ticks: number): Promise<ApiResult<RunResponse>> {
+  const key = `run/${map}/${ticks}`;
+  inFlight.add(key);
   const r = await api.postRun(code, { map, ticks, simVersion: SIM_VERSION });
+  inFlight.delete(key);
   if (r.ok) forgetBoards(`speed/${map}/`);
   // a better Run queued meanwhile stays
-  if (settled(r)) change((q) => q.runs[map] === ticks && delete q.runs[map]);
+  if (settled(r))
+    change((q) => {
+      if (q.runs[map] === ticks) delete q.runs[map];
+    });
   return r;
 }
 
@@ -54,46 +63,36 @@ async function postRun(code: string, map: string, ticks: number): Promise<ApiRes
 const sentKey = (code: string, map: string): string => `${SIM_VERSION}/${fnv1a(code)}/${map}`;
 
 async function postScore(code: string, map: string, s: Queue['scores'][string]): Promise<ApiResult<RankResponse>> {
+  const key = `score/${map}/${s.score}`;
+  inFlight.add(key);
   const r = await api.putScore(code, map, { ...s, simVersion: SIM_VERSION });
+  inFlight.delete(key);
   if (r.ok) {
     write(SENT, JSON.stringify({ ...readJson<Record<string, number>>(SENT, {}), [sentKey(code, map)]: s.score }));
     forgetBoards(`score/${map}/`);
   }
-  if (settled(r)) change((q) => q.scores[map]?.score === s.score && delete q.scores[map]);
+  if (settled(r))
+    change((q) => {
+      if (q.scores[map]?.score === s.score) delete q.scores[map];
+    });
   return r;
 }
 
-let flushing = false;
+let flushing: Promise<void> | null = null;
 
-/** Posts everything queued, Runs first; stops at the first error worth a retry (likely still offline).
- * Resolves to how many were accepted. */
-export async function flushPending(code: string): Promise<number> {
-  if (flushing) return 0;
-  flushing = true;
-  let posted = 0;
-  try {
+/** Posts everything queued, Runs first, and stops at the first error worth a retry (likely still offline).
+ * A call during a flush waits for that one. */
+export function flushPending(code: string): Promise<void> {
+  flushing ??= (async () => {
     const q = queue();
-    const sends = [
-      ...Object.entries(q.runs).map(
-        ([map, ticks]) =>
-          () =>
-            postRun(code, map, ticks),
-      ),
-      ...Object.entries(q.scores).map(
-        ([map, s]) =>
-          () =>
-            postScore(code, map, s),
-      ),
-    ];
-    for (const send of sends) {
-      const r = await send();
-      if (!settled(r)) break;
-      if (r.ok) posted++;
+    for (const [map, ticks] of Object.entries(q.runs)) {
+      if (!inFlight.has(`run/${map}/${ticks}`) && !settled(await postRun(code, map, ticks))) return;
     }
-  } finally {
-    flushing = false;
-  }
-  return posted;
+    for (const [map, s] of Object.entries(q.scores)) {
+      if (!inFlight.has(`score/${map}/${s.score}`) && !settled(await postScore(code, map, s))) return;
+    }
+  })().finally(() => (flushing = null));
+  return flushing;
 }
 
 /** Queues a finished Run, then posts it; null without a Device (it waits in the queue for one). */

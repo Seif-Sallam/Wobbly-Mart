@@ -927,7 +927,7 @@ export class App {
 
   /** A valid Run reached 100%: after the confetti, its end screen opens and the Run is sent. */
   private endRun(w: World): void {
-    if (w.runVoid || isTutorialMap(w.map)) return;
+    if (!this.ui.online || w.runVoid || isTutorialMap(w.map)) return;
     this.ui.runEnd = {
       mapId: w.map.id,
       mapName: w.map.name,
@@ -978,11 +978,6 @@ export class App {
       hasDevice: !!this.device.code,
     };
     this.wallBack = this.ui.overlay;
-    // a queued submit that goes up now shows on a second read
-    if (this.device.code)
-      void flushPending(this.device.code).then((n) => {
-        if (n && this.ui.overlay === 'wall') void this.loadWall();
-      });
     this.openOverlay('wall');
   }
 
@@ -1000,6 +995,8 @@ export class App {
     this.renderUi();
     const kind = KIND_OF[wall.tab];
     const map = kind === 'daily' ? 'daily' : kind === 'streak' ? '-' : wall.map;
+    // queued submits go up first, so the read shows them
+    if (this.device.code) await flushPending(this.device.code);
     const board = await readBoard(kind, map, dailyDay(Date.now()), this.device.code);
     const now = this.ui.wall;
     if (!now || now.tab !== wall.tab || now.map !== wall.map) return;
@@ -1098,10 +1095,11 @@ async function copyText(text: string): Promise<boolean> {
 }
 
 /** What the end screen says for a failed Run submit; a 429 retries like offline (spec §7.2). */
-const RUN_ERROR: Partial<Record<string, 'offline' | 'update'>> = {
+const RUN_ERROR: Partial<Record<string, 'offline' | 'update' | 'stale'>> = {
   offline: 'offline',
   slow_down: 'offline',
   update: 'update',
+  unknown_device: 'stale',
 };
 
 const ONLINE_OVERLAYS = new Set<Overlay | null>(['privacy', 'join', 'nickname', 'cloud-code']);

@@ -12,7 +12,7 @@ export interface RunEndView {
   mapName: string;
   ticks: number;
   openings: number;
-  result: RankResponse | 'join' | 'sending' | 'offline' | 'update' | 'refused';
+  result: RankResponse | 'join' | 'sending' | 'offline' | 'update' | 'stale' | 'refused';
   around: Row[] | null;
 }
 
@@ -45,6 +45,7 @@ const NOTE = {
   sending: '📡 Putting it on the Wall…',
   offline: "📡 Saved: it goes on the Wall when you're back online.",
   update: 'A new version is out · Reload to post your Runs.',
+  stale: "Saved: your Cloud Code isn't recognised. Enter it again in Settings and the Run goes up.",
   refused: "This Run can't go on the Wall.",
 };
 

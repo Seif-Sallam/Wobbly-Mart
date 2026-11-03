@@ -61,9 +61,9 @@ name = "wobbly-mart-api-staging"
 preview_urls = false
 vars = { CORS_ORIGINS = "", CORS_LAN = "true" }
 d1_databases = [
-  { binding = "BOARD", database_name = "wobbly_board", database_id = "staging-board-id", migrations_dir = "migrations/board" },
-  { binding = "REPLAY", database_name = "wobbly_replay", database_id = "staging-replay-id", migrations_dir = "migrations/replay" },
-  { binding = "SAVE", database_name = "wobbly_save", database_id = "staging-save-id", migrations_dir = "migrations/save" },
+  { binding = "BOARD", database_name = "wobbly_board", database_id = "25c896fa-342e-469a-a0a1-022eec3cc175", migrations_dir = "migrations/board" },
+  { binding = "REPLAY", database_name = "wobbly_replay", database_id = "da10b982-2b65-4a68-80f4-8bf1faf09ce5", migrations_dir = "migrations/replay" },
+  { binding = "SAVE", database_name = "wobbly_save", database_id = "9e014d87-0130-4d51-bab9-10bd916caff2", migrations_dir = "migrations/save" },
 ]
 ratelimits = [
   { name = "READ_LIMIT", namespace_id = "1001", simple = { limit = 30, period = 60 } },
@@ -78,9 +78,9 @@ name = "wobbly-mart-api"
 preview_urls = false
 vars = { CORS_ORIGINS = "https://seif-sallam.github.io", CORS_LAN = "false" }
 d1_databases = [
-  { binding = "BOARD", database_name = "wobbly_board", database_id = "production-board-id", migrations_dir = "migrations/board" },
-  { binding = "REPLAY", database_name = "wobbly_replay", database_id = "production-replay-id", migrations_dir = "migrations/replay" },
-  { binding = "SAVE", database_name = "wobbly_save", database_id = "production-save-id", migrations_dir = "migrations/save" },
+  { binding = "BOARD", database_name = "wobbly_board", database_id = "3c546337-03ae-493e-b5bc-2e5b385698d5", migrations_dir = "migrations/board" },
+  { binding = "REPLAY", database_name = "wobbly_replay", database_id = "26d799f0-a6b7-47a1-b4f0-a2c1c62a4cda", migrations_dir = "migrations/replay" },
+  { binding = "SAVE", database_name = "wobbly_save", database_id = "124c8948-c0e9-4cb0-a7e0-edc4d862b0c2", migrations_dir = "migrations/save" },
 ]
 ratelimits = [
   { name = "READ_LIMIT", namespace_id = "1001", simple = { limit = 30, period = 60 } },

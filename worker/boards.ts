@@ -198,7 +198,7 @@ function ranked(rows: DbRow[], me: number | null): Row[] {
 }
 
 /** Your row and ±2 around it, each ranked by its own value (ties share a rank). */
-async function around(env: Env, board: Board, me: number): Promise<BoardResponse['you']> {
+export async function around(env: Env, board: Board, me: number): Promise<BoardResponse['you']> {
   const [mine, above, below] = await Promise.all([
     env.BOARD.prepare(board.shape.mine)
       .bind(...board.scope, me)

@@ -67,3 +67,8 @@ export interface RankResponse {
   total: number;
   improved: boolean;
 }
+
+/** A Run's answer also carries Around you, so the end screen needs no Board read. */
+export interface RunResponse extends RankResponse {
+  around: Row[];
+}

@@ -4,7 +4,7 @@ import type { RankResponse, Row } from '../../worker/api';
 import { FEEL } from '../feel';
 import { Btn } from './btn';
 import { Popup } from './popup';
-import { clockOf, rankText, WallRow } from './wall';
+import { clockOf, JoinCard, rankText, WallRow } from './wall';
 
 /** `result`: the Board's answer, or why there is none yet ('join' = no Device, 'sending' = on its way). */
 export interface RunEndView {
@@ -80,17 +80,7 @@ export function RunEndPopup({ v, a }: { v: RunEndView; a: RunEndActions }) {
           </p>
         </>
       )}
-      {r === 'join' && (
-        <div class="wall-join">
-          <span class="wall-av">?</span>
-          <p>
-            <b>Put this Run on the Wall</b>Pick a Nickname and it goes up.
-          </p>
-          <Btn class="buy" actions={a} onClick={a.join}>
-            Pick a Nickname
-          </Btn>
-        </div>
-      )}
+      {r === 'join' && <JoinCard title="Put this Run on the Wall" line="Pick a Nickname and it goes up." a={a} />}
       {typeof r === 'string' && r !== 'join' && (
         <div class="run-note">
           {NOTE[r]}

@@ -4,7 +4,7 @@ import { expect, test } from 'vitest';
 import { fixedMaxScore, maxScoreRate } from '../../src/sim/score';
 import { SIM_VERSION } from '../../src/sim/version';
 import { cornerShop } from '../../maps/corner-shop';
-import type { ApiError, BoardResponse, CloudCodeResponse, RankResponse } from '../api';
+import type { ApiError, BoardResponse, CloudCodeResponse, RankResponse, RunResponse } from '../api';
 import { nowSeconds } from '../time';
 
 let ip = 0;
@@ -147,11 +147,20 @@ test('Speedrun Board: a Run past the floor ranks, and only a faster one replaces
   expect(await err(await run(fast, { ...ok(floor), simVersion: SIM_VERSION + 1 }))).toBe('update');
   expect((await call('POST', '/v1/runs', { body: ok(floor) })).status).toBe(401);
 
-  expect(await (await run(slow, ok(floor + 5000))).json()).toEqual({ rank: 1, total: 1, improved: true });
-  expect(await (await run(fast, ok(floor + 3000))).json()).toEqual({ rank: 1, total: 2, improved: true });
-  // A slower Run keeps the best; a faster one replaces it.
-  expect(await (await run(fast, ok(floor + 9000))).json()).toEqual({ rank: 1, total: 2, improved: false });
-  expect(await (await run(slow, ok(floor + 1000))).json()).toEqual({ rank: 1, total: 2, improved: true });
+  const answer = async (code: string, ticks: number) => (await (await run(code, ok(ticks))).json()) as RunResponse;
+  expect(await answer(slow, floor + 5000)).toMatchObject({ rank: 1, total: 1, improved: true });
+  expect(await answer(fast, floor + 3000)).toMatchObject({ rank: 1, total: 2, improved: true });
+  // A slower Run keeps the best; a faster one replaces it. The answer carries Around you.
+  expect(await answer(fast, floor + 9000)).toMatchObject({ rank: 1, total: 2, improved: false });
+  expect(await answer(slow, floor + 1000)).toEqual({
+    rank: 1,
+    total: 2,
+    improved: true,
+    around: [
+      { rank: 1, nickname: 'Slow Poke', value: floor + 1000, you: true },
+      { rank: 2, nickname: 'Fast Hands', value: floor + 3000 },
+    ],
+  });
 
   const board = (await (await call('GET', '/v1/boards/speed/corner-shop', { code: fast })).json()) as BoardResponse;
   expect(board.top).toEqual([

@@ -1,7 +1,7 @@
 // POST /v1/runs — the Speedrun Board keeps each Device's fastest Run of a Map.
 import { SIM_VERSION } from '../src/sim/version';
-import type { RankResponse } from './api';
-import { forgetBoard, mapBoardOf, rankOf } from './boards';
+import type { RunResponse } from './api';
+import { around, forgetBoard, mapBoardOf, rankOf } from './boards';
 import { requireDevice } from './device';
 import type { Env } from './env';
 import { HttpError, json, KB, readJson } from './http';
@@ -37,6 +37,9 @@ export async function submitRun(req: Request, env: Env): Promise<Response> {
   ]);
   forgetBoard(board);
   const improved = !stored || ticks < stored.ticks;
-  const { rank, total } = await rankOf(env, board, improved ? ticks : stored.ticks);
-  return json({ rank, total, improved } satisfies RankResponse);
+  const [{ rank, total }, you] = await Promise.all([
+    rankOf(env, board, improved ? ticks : stored.ticks),
+    around(env, board, id),
+  ]);
+  return json({ rank, total, improved, around: you?.around ?? [] } satisfies RunResponse);
 }

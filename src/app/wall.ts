@@ -1,5 +1,5 @@
 // The Wall of Fame's data: Board reads kept 60 s in memory, and the Score submit at the end of an Opening.
-import type { BoardKind, BoardResponse, RankResponse } from '../../worker/api';
+import type { BoardKind, BoardResponse, RunResponse } from '../../worker/api';
 import { fnv1a } from '../sim/rng';
 import { SIM_VERSION } from '../sim/version';
 import { api, type ApiResult } from './api';
@@ -48,7 +48,7 @@ export async function submitScore(code: string, map: string, score: number, play
 }
 
 /** A finished Run's time; the Speed Board's cached reads are dropped so the next one shows it. */
-export async function submitRun(code: string, map: string, ticks: number): Promise<ApiResult<RankResponse>> {
+export async function submitRun(code: string, map: string, ticks: number): Promise<ApiResult<RunResponse>> {
   const r = await api.postRun(code, { map, ticks, simVersion: SIM_VERSION });
   if (r.ok) forget(`speed/${map}/`);
   return r;

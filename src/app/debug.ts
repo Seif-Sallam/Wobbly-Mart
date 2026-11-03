@@ -106,6 +106,9 @@ export async function openDebug(game: Game, phone: boolean, hooks: DebugHooks): 
   for (const [k, v] of Object.entries(FEEL)) if (typeof v === 'number') fFeel.add(FEEL, k as keyof typeof FEEL);
   const fTuning = gui.addFolder('Tuning (tuning.ts)').close();
   for (const [k, v] of Object.entries(TUNING)) if (typeof v === 'number') fTuning.add(TUNING, k as keyof typeof TUNING);
+  // Feel and Tuning numbers change how fast a Map can be finished
+  fFeel.onChange(voidRun);
+  fTuning.onChange(voidRun);
   const fBase = fTuning.addFolder('Base values');
   for (const k of Object.keys(TUNING.base)) fBase.add(TUNING.base, k as keyof typeof TUNING.base);
   fFeel

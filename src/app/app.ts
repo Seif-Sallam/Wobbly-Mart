@@ -90,6 +90,8 @@ export class App {
   private privacyBack: Overlay | null = null;
   /** Where the Wall's ✕ returns to; joining from the Wall returns to the Wall. */
   private wallBack: Overlay | null = null;
+  /** A Run reached 100% and its end screen hasn't opened yet. */
+  private runEndOwed = false;
   /** No save existed at load: the Wardrobe opens by itself once the title is ready. */
   private firstRun: boolean;
   private ui: UiState;
@@ -706,8 +708,6 @@ export class App {
     if (o === 'maps') this.refreshMaps();
     // coming back from joining reads again with the new Device
     if (o === 'wall') void this.loadWall();
-    // a Run finished without a Device goes up once the player joins from its end screen
-    if (o === 'run-end' && this.device.code && this.ui.runEnd?.result === 'join') void this.sendRun();
     // the Logbook alone leaves the game running
     const pause = !!o && o !== 'logbook';
     if (this.game && this.ui.screen === 'game') this.game.paused = pause || this.lostTab;
@@ -715,6 +715,7 @@ export class App {
     this.redraw = true;
     this.syncAudio();
     this.renderUi();
+    if (o === null) this.showRunEnd();
   }
 
   // a Map opens once it was visited or the Map before it has its Exit Pad bought
@@ -864,7 +865,11 @@ export class App {
       wall: () => this.openWall('speed'),
       join: () => this.actions.online.join(),
       retry: () => void this.sendRun(),
-      close: () => ((this.ui.runEnd = null), this.openOverlay(null)),
+      close: () => {
+        // a Run with no Device yet is kept: joining later, from anywhere, sends it
+        if (this.ui.runEnd?.result !== 'join') this.ui.runEnd = null;
+        this.openOverlay(null);
+      },
       click: () => this.sounds.sfx('click'),
     },
     selectLook: (look, cap) => {
@@ -925,9 +930,16 @@ export class App {
       result: 'join',
       around: null,
     };
-    setTimeout(() => {
-      if (this.ui.screen === 'game' && this.ui.overlay === null && this.game?.world === w) this.openOverlay('run-end');
-    }, FEEL.score.runEndDelayMs);
+    this.runEndOwed = true;
+    if (this.device.code) void this.sendRun();
+    setTimeout(() => this.showRunEnd(), FEEL.score.runEndDelayMs);
+  }
+
+  /** The end screen waits for a moment with no other popup; openOverlay(null) asks again. */
+  private showRunEnd(): void {
+    if (!this.runEndOwed || this.ui.overlay !== null || this.ui.screen !== 'game') return;
+    this.runEndOwed = false;
+    this.openOverlay('run-end');
   }
 
   /** Posts the Run on the end screen, then reads Around you; a reply for a closed screen is dropped. */
@@ -938,12 +950,11 @@ export class App {
     this.ui.runEnd = { ...run, result: 'sending' };
     this.renderUi();
     const r = await submitRun(code, run.mapId, run.ticks);
-    const board = r.ok ? await readBoard('speed', run.mapId, 0, code) : null;
     if (this.ui.runEnd?.mapId !== run.mapId) return;
     this.ui.runEnd = {
       ...this.ui.runEnd,
-      result: r.ok ? r.data : r.error === 'offline' || r.error === 'update' ? r.error : 'refused',
-      around: board?.you?.around ?? null,
+      result: r.ok ? r.data : (RUN_ERROR[r.error] ?? 'refused'),
+      around: r.ok ? r.data.around : null,
     };
     this.renderUi();
   }
@@ -997,6 +1008,8 @@ export class App {
   private async onlineCall(call: Promise<string | null>, then?: Overlay | null): Promise<string | null> {
     const error = await call;
     if (this.ui.online) this.ui.online = { ...this.ui.online, code: this.device.code, nickname: this.device.nickname };
+    // a Run finished before the Device existed goes up now
+    if (!error && this.device.code && this.ui.runEnd?.result === 'join') void this.sendRun();
     if (!error && then !== undefined) this.openOverlay(then);
     else this.renderUi();
     return error;
@@ -1069,6 +1082,13 @@ async function copyText(text: string): Promise<boolean> {
     return false;
   }
 }
+
+/** What the end screen says for a failed Run submit; a 429 retries like offline (spec §7.2). */
+const RUN_ERROR: Partial<Record<string, 'offline' | 'update'>> = {
+  offline: 'offline',
+  slow_down: 'offline',
+  update: 'update',
+};
 
 const ONLINE_OVERLAYS = new Set<Overlay | null>(['privacy', 'join', 'nickname', 'cloud-code']);
 

@@ -33,6 +33,8 @@ jobs:
       - name: Bot playthrough (fails if 100% Completion is unreachable)
         run: npm run bot
       - run: npm run validate
+      - name: Daily calendar matches the generator (npm run daily:calendar refreshes it)
+        run: npm run daily:check
       - run: npm run build
         env:
           # main gets only the production URL, everything else only staging; unset = a build without online features

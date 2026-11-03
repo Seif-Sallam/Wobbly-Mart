@@ -126,6 +126,8 @@ export interface MapDef {
   objectives: ObjectiveDef[];
   /** false: no Challenge is ever offered (the Tutorial Map, where only a Lesson starts one). */
   challenges?: false;
+  /** A Daily Shift: no Edit Layout and no Closed. */
+  shift?: true;
   /** The Map whose music track this one plays (default: its own). */
   music?: string;
   /** Edit Layout: the price of each Move in order (3 per Area). */

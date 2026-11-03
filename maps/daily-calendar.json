@@ -1,0 +1,5078 @@
+{
+  "simVersion": 1,
+  "days": {
+    "2026-11-01": {
+      "map": 3764956842,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 500
+        }
+      ],
+      "floorTicks": 17405
+    },
+    "2026-11-02": {
+      "map": 3818492013,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 350
+        },
+        {
+          "kind": "deliveries",
+          "n": 2
+        }
+      ],
+      "floorTicks": 16078
+    },
+    "2026-11-03": {
+      "map": 1979349295,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 250
+        },
+        {
+          "kind": "sell",
+          "product": "ketchup",
+          "n": 25
+        }
+      ],
+      "floorTicks": 10457
+    },
+    "2026-11-04": {
+      "map": 321859455,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "butter",
+          "n": 15
+        }
+      ],
+      "floorTicks": 13072
+    },
+    "2026-11-05": {
+      "map": 1423621970,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 850
+        },
+        {
+          "kind": "sell",
+          "product": "orange",
+          "n": 60
+        },
+        {
+          "kind": "own",
+          "id": "mill"
+        }
+      ],
+      "floorTicks": 17300
+    },
+    "2026-11-06": {
+      "map": 1974110870,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_cheese",
+          "n": 35
+        },
+        {
+          "kind": "own",
+          "id": "strawberry_shelf"
+        }
+      ],
+      "floorTicks": 17202
+    },
+    "2026-11-07": {
+      "map": 2129685180,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "milk_shelf"
+        },
+        {
+          "kind": "earn",
+          "n": 1100
+        }
+      ],
+      "floorTicks": 17863
+    },
+    "2026-11-08": {
+      "map": 2938314843,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 700
+        },
+        {
+          "kind": "own",
+          "id": "wheat_shelf"
+        }
+      ],
+      "floorTicks": 17867
+    },
+    "2026-11-09": {
+      "map": 3515423416,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "olives",
+          "n": 60
+        },
+        {
+          "kind": "earn",
+          "n": 550
+        }
+      ],
+      "floorTicks": 16415
+    },
+    "2026-11-10": {
+      "map": 2609807988,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 550
+        },
+        {
+          "kind": "own",
+          "id": "stocker_1"
+        },
+        {
+          "kind": "sell",
+          "product": "pizza_sauce",
+          "n": 50
+        }
+      ],
+      "floorTicks": 17766
+    },
+    "2026-11-11": {
+      "map": 1389534457,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 600
+        }
+      ],
+      "floorTicks": 16490
+    },
+    "2026-11-12": {
+      "map": 3114173838,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 650
+        },
+        {
+          "kind": "sell",
+          "product": "ketchup",
+          "n": 70
+        }
+      ],
+      "floorTicks": 17722
+    },
+    "2026-11-13": {
+      "map": 3944007751,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 850
+        },
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 50
+        },
+        {
+          "kind": "own",
+          "id": "stocker_1"
+        }
+      ],
+      "floorTicks": 17844
+    },
+    "2026-11-14": {
+      "map": 3738299042,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 500
+        },
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 25
+        }
+      ],
+      "floorTicks": 14842
+    },
+    "2026-11-15": {
+      "map": 1587220546,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 400
+        },
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 20
+        }
+      ],
+      "floorTicks": 17435
+    },
+    "2026-11-16": {
+      "map": 2588531416,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "wheat_shelf"
+        },
+        {
+          "kind": "earn",
+          "n": 700
+        }
+      ],
+      "floorTicks": 17911
+    },
+    "2026-11-17": {
+      "map": 3755145135,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 70
+        },
+        {
+          "kind": "earn",
+          "n": 600
+        }
+      ],
+      "floorTicks": 17570
+    },
+    "2026-11-18": {
+      "map": 4272250026,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "cheese",
+          "n": 25
+        },
+        {
+          "kind": "earn",
+          "n": 650
+        }
+      ],
+      "floorTicks": 16422
+    },
+    "2026-11-19": {
+      "map": 3805380255,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 650
+        },
+        {
+          "kind": "sell",
+          "product": "cheese",
+          "n": 20
+        }
+      ],
+      "floorTicks": 17201
+    },
+    "2026-11-20": {
+      "map": 3401547881,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 750
+        }
+      ],
+      "floorTicks": 16239
+    },
+    "2026-11-21": {
+      "map": 534765487,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "strawberry",
+          "n": 90
+        },
+        {
+          "kind": "own",
+          "id": "exit"
+        }
+      ],
+      "floorTicks": 17832
+    },
+    "2026-11-22": {
+      "map": 2484128326,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "pizza_sauce",
+          "n": 25
+        }
+      ],
+      "floorTicks": 10083
+    },
+    "2026-11-23": {
+      "map": 3854010730,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "office"
+        }
+      ],
+      "floorTicks": 17458
+    },
+    "2026-11-24": {
+      "map": 30896131,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 300
+        },
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 10
+        }
+      ],
+      "floorTicks": 13785
+    },
+    "2026-11-25": {
+      "map": 334698692,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "cheese",
+          "n": 20
+        },
+        {
+          "kind": "earn",
+          "n": 600
+        }
+      ],
+      "floorTicks": 15852
+    },
+    "2026-11-26": {
+      "map": 3801079774,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_cheese",
+          "n": 25
+        },
+        {
+          "kind": "earn",
+          "n": 800
+        }
+      ],
+      "floorTicks": 17607
+    },
+    "2026-11-27": {
+      "map": 326798811,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "butter",
+          "n": 35
+        },
+        {
+          "kind": "own",
+          "id": "strawberry_patch"
+        },
+        {
+          "kind": "earn",
+          "n": 800
+        }
+      ],
+      "floorTicks": 17914
+    },
+    "2026-11-28": {
+      "map": 2288529871,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 70
+        }
+      ],
+      "floorTicks": 15526
+    },
+    "2026-11-29": {
+      "map": 1357327932,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 700
+        },
+        {
+          "kind": "sell",
+          "product": "cheese",
+          "n": 20
+        }
+      ],
+      "floorTicks": 17293
+    },
+    "2026-11-30": {
+      "map": 2698344025,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 1000
+        },
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 45
+        }
+      ],
+      "floorTicks": 17362
+    },
+    "2026-12-01": {
+      "map": 1824997356,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 50
+        },
+        {
+          "kind": "deliveries",
+          "n": 2
+        }
+      ],
+      "floorTicks": 16493
+    },
+    "2026-12-02": {
+      "map": 2506042523,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "ketchup",
+          "n": 20
+        },
+        {
+          "kind": "earn",
+          "n": 200
+        }
+      ],
+      "floorTicks": 16105
+    },
+    "2026-12-03": {
+      "map": 4139005279,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 60
+        },
+        {
+          "kind": "earn",
+          "n": 850
+        }
+      ],
+      "floorTicks": 17861
+    },
+    "2026-12-04": {
+      "map": 156733079,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "butter_churn"
+        },
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 70
+        },
+        {
+          "kind": "earn",
+          "n": 1000
+        }
+      ],
+      "floorTicks": 17168
+    },
+    "2026-12-05": {
+      "map": 3167956663,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "butter",
+          "n": 20
+        },
+        {
+          "kind": "earn",
+          "n": 600
+        }
+      ],
+      "floorTicks": 14163
+    },
+    "2026-12-06": {
+      "map": 2961394631,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 650
+        }
+      ],
+      "floorTicks": 17773
+    },
+    "2026-12-07": {
+      "map": 2893498663,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 70
+        },
+        {
+          "kind": "earn",
+          "n": 700
+        }
+      ],
+      "floorTicks": 17338
+    },
+    "2026-12-08": {
+      "map": 2830826557,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 900
+        },
+        {
+          "kind": "sell",
+          "product": "apple_juice",
+          "n": 60
+        }
+      ],
+      "floorTicks": 17959
+    },
+    "2026-12-09": {
+      "map": 3514690842,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 70
+        },
+        {
+          "kind": "own",
+          "id": "sugar_shelf"
+        }
+      ],
+      "floorTicks": 17734
+    },
+    "2026-12-10": {
+      "map": 1602475034,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "cheese",
+          "n": 30
+        },
+        {
+          "kind": "earn",
+          "n": 750
+        }
+      ],
+      "floorTicks": 17976
+    },
+    "2026-12-11": {
+      "map": 3415940161,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 400
+        },
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 10
+        }
+      ],
+      "floorTicks": 15652
+    },
+    "2026-12-12": {
+      "map": 896712938,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 40
+        },
+        {
+          "kind": "earn",
+          "n": 750
+        }
+      ],
+      "floorTicks": 16182
+    },
+    "2026-12-13": {
+      "map": 3516502109,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_cheese",
+          "n": 35
+        },
+        {
+          "kind": "own",
+          "id": "apple_tree"
+        }
+      ],
+      "floorTicks": 17781
+    },
+    "2026-12-14": {
+      "map": 599811679,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 650
+        }
+      ],
+      "floorTicks": 16264
+    },
+    "2026-12-15": {
+      "map": 4013050947,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "olive_tree"
+        }
+      ],
+      "floorTicks": 16358
+    },
+    "2026-12-16": {
+      "map": 92115710,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 450
+        }
+      ],
+      "floorTicks": 15100
+    },
+    "2026-12-17": {
+      "map": 911201194,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 950
+        },
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 70
+        },
+        {
+          "kind": "own",
+          "id": "cow_pen"
+        }
+      ],
+      "floorTicks": 17703
+    },
+    "2026-12-18": {
+      "map": 74325592,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 400
+        },
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 20
+        }
+      ],
+      "floorTicks": 15844
+    },
+    "2026-12-19": {
+      "map": 2302912295,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 1000
+        }
+      ],
+      "floorTicks": 16227
+    },
+    "2026-12-20": {
+      "map": 1670259399,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_cheese",
+          "n": 10
+        },
+        {
+          "kind": "earn",
+          "n": 600
+        }
+      ],
+      "floorTicks": 16634
+    },
+    "2026-12-21": {
+      "map": 2345104537,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "strawberry",
+          "n": 35
+        },
+        {
+          "kind": "earn",
+          "n": 400
+        }
+      ],
+      "floorTicks": 15698
+    },
+    "2026-12-22": {
+      "map": 424610528,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "orange_juice",
+          "n": 60
+        },
+        {
+          "kind": "own",
+          "id": "sugar_shelf"
+        },
+        {
+          "kind": "earn",
+          "n": 850
+        }
+      ],
+      "floorTicks": 17041
+    },
+    "2026-12-23": {
+      "map": 4073967216,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "ketchup",
+          "n": 70
+        }
+      ],
+      "floorTicks": 17879
+    },
+    "2026-12-24": {
+      "map": 4038742193,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "apple_juice",
+          "n": 60
+        }
+      ],
+      "floorTicks": 17772
+    },
+    "2026-12-25": {
+      "map": 1894772121,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 40
+        }
+      ],
+      "floorTicks": 17019
+    },
+    "2026-12-26": {
+      "map": 1650257430,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 600
+        }
+      ],
+      "floorTicks": 15586
+    },
+    "2026-12-27": {
+      "map": 2500668206,
+      "goal": [
+        {
+          "kind": "deliveries",
+          "n": 2
+        },
+        {
+          "kind": "own",
+          "id": "cashier_1"
+        }
+      ],
+      "floorTicks": 17321
+    },
+    "2026-12-28": {
+      "map": 1386790381,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 900
+        }
+      ],
+      "floorTicks": 17526
+    },
+    "2026-12-29": {
+      "map": 784655448,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 400
+        },
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 15
+        }
+      ],
+      "floorTicks": 17648
+    },
+    "2026-12-30": {
+      "map": 1842448957,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "area_2"
+        },
+        {
+          "kind": "sell",
+          "product": "butter",
+          "n": 15
+        }
+      ],
+      "floorTicks": 15460
+    },
+    "2026-12-31": {
+      "map": 3669527925,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 750
+        },
+        {
+          "kind": "sell",
+          "product": "goat_cheese",
+          "n": 15
+        }
+      ],
+      "floorTicks": 17047
+    },
+    "2027-01-01": {
+      "map": 43203053,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 850
+        },
+        {
+          "kind": "own",
+          "id": "stocker_1"
+        },
+        {
+          "kind": "sell",
+          "product": "pizza_sauce",
+          "n": 60
+        }
+      ],
+      "floorTicks": 17965
+    },
+    "2027-01-02": {
+      "map": 2949476878,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 1000
+        },
+        {
+          "kind": "own",
+          "id": "chicken_coop"
+        }
+      ],
+      "floorTicks": 17199
+    },
+    "2027-01-03": {
+      "map": 272704929,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "butter",
+          "n": 35
+        },
+        {
+          "kind": "own",
+          "id": "area_2"
+        },
+        {
+          "kind": "earn",
+          "n": 800
+        }
+      ],
+      "floorTicks": 17916
+    },
+    "2027-01-04": {
+      "map": 3452388464,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 10
+        },
+        {
+          "kind": "earn",
+          "n": 300
+        }
+      ],
+      "floorTicks": 17985
+    },
+    "2027-01-05": {
+      "map": 2511944737,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 1000
+        },
+        {
+          "kind": "own",
+          "id": "cow_pen"
+        }
+      ],
+      "floorTicks": 17953
+    },
+    "2027-01-06": {
+      "map": 4010752649,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "strawberry_patch"
+        }
+      ],
+      "floorTicks": 15688
+    },
+    "2027-01-07": {
+      "map": 1067687582,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 25
+        },
+        {
+          "kind": "earn",
+          "n": 450
+        },
+        {
+          "kind": "own",
+          "id": "cashier_1"
+        }
+      ],
+      "floorTicks": 14969
+    },
+    "2027-01-08": {
+      "map": 1188950332,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 300
+        },
+        {
+          "kind": "sell",
+          "product": "olives",
+          "n": 40
+        }
+      ],
+      "floorTicks": 17315
+    },
+    "2027-01-09": {
+      "map": 155313340,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 800
+        },
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 80
+        }
+      ],
+      "floorTicks": 17948
+    },
+    "2027-01-10": {
+      "map": 2397331533,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 950
+        },
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 70
+        },
+        {
+          "kind": "own",
+          "id": "tomato_bed"
+        }
+      ],
+      "floorTicks": 17935
+    },
+    "2027-01-11": {
+      "map": 453526262,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 550
+        },
+        {
+          "kind": "sell",
+          "product": "wheat",
+          "n": 70
+        }
+      ],
+      "floorTicks": 16411
+    },
+    "2027-01-12": {
+      "map": 3925751317,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 400
+        }
+      ],
+      "floorTicks": 16772
+    },
+    "2027-01-13": {
+      "map": 329683459,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "cheese",
+          "n": 30
+        },
+        {
+          "kind": "own",
+          "id": "stocker_1"
+        }
+      ],
+      "floorTicks": 17543
+    },
+    "2027-01-14": {
+      "map": 1368230147,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "pizza_sauce",
+          "n": 60
+        }
+      ],
+      "floorTicks": 14475
+    },
+    "2027-01-15": {
+      "map": 2539352407,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "orange_juice",
+          "n": 60
+        },
+        {
+          "kind": "earn",
+          "n": 800
+        }
+      ],
+      "floorTicks": 17055
+    },
+    "2027-01-16": {
+      "map": 1965645320,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 70
+        },
+        {
+          "kind": "earn",
+          "n": 1300
+        }
+      ],
+      "floorTicks": 17984
+    },
+    "2027-01-17": {
+      "map": 671073939,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 350
+        },
+        {
+          "kind": "sell",
+          "product": "pizza_sauce",
+          "n": 20
+        }
+      ],
+      "floorTicks": 16496
+    },
+    "2027-01-18": {
+      "map": 4205909295,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 25
+        },
+        {
+          "kind": "earn",
+          "n": 450
+        }
+      ],
+      "floorTicks": 14793
+    },
+    "2027-01-19": {
+      "map": 2426737243,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 850
+        },
+        {
+          "kind": "own",
+          "id": "wheat_field"
+        }
+      ],
+      "floorTicks": 17658
+    },
+    "2027-01-20": {
+      "map": 2627251316,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 700
+        }
+      ],
+      "floorTicks": 17944
+    },
+    "2027-01-21": {
+      "map": 3388493902,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 45
+        }
+      ],
+      "floorTicks": 17683
+    },
+    "2027-01-22": {
+      "map": 1612025571,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 20
+        },
+        {
+          "kind": "earn",
+          "n": 450
+        }
+      ],
+      "floorTicks": 16533
+    },
+    "2027-01-23": {
+      "map": 3833408556,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 70
+        },
+        {
+          "kind": "earn",
+          "n": 1000
+        },
+        {
+          "kind": "own",
+          "id": "flour_shelf"
+        }
+      ],
+      "floorTicks": 17714
+    },
+    "2027-01-24": {
+      "map": 1926866479,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 750
+        },
+        {
+          "kind": "sell",
+          "product": "ice_cream",
+          "n": 15
+        }
+      ],
+      "floorTicks": 14174
+    },
+    "2027-01-25": {
+      "map": 441097279,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 80
+        }
+      ],
+      "floorTicks": 16451
+    },
+    "2027-01-26": {
+      "map": 1148781538,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "strawberry",
+          "n": 60
+        }
+      ],
+      "floorTicks": 17733
+    },
+    "2027-01-27": {
+      "map": 288919751,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 700
+        },
+        {
+          "kind": "sell",
+          "product": "smoothie",
+          "n": 15
+        }
+      ],
+      "floorTicks": 17423
+    },
+    "2027-01-28": {
+      "map": 335763128,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "orange_juice",
+          "n": 70
+        },
+        {
+          "kind": "own",
+          "id": "wheat_field"
+        }
+      ],
+      "floorTicks": 17308
+    },
+    "2027-01-29": {
+      "map": 4139265932,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_cheese",
+          "n": 25
+        },
+        {
+          "kind": "earn",
+          "n": 850
+        }
+      ],
+      "floorTicks": 17388
+    },
+    "2027-01-30": {
+      "map": 760957163,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "cheese",
+          "n": 10
+        },
+        {
+          "kind": "own",
+          "id": "cashier_1"
+        }
+      ],
+      "floorTicks": 17578
+    },
+    "2027-01-31": {
+      "map": 1978528949,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 400
+        },
+        {
+          "kind": "sell",
+          "product": "apple_juice",
+          "n": 40
+        }
+      ],
+      "floorTicks": 16491
+    },
+    "2027-02-01": {
+      "map": 3521433327,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 700
+        },
+        {
+          "kind": "sell",
+          "product": "orange_juice",
+          "n": 50
+        }
+      ],
+      "floorTicks": 15914
+    },
+    "2027-02-02": {
+      "map": 219450396,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 45
+        },
+        {
+          "kind": "earn",
+          "n": 350
+        }
+      ],
+      "floorTicks": 17619
+    },
+    "2027-02-03": {
+      "map": 88897477,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 750
+        },
+        {
+          "kind": "sell",
+          "product": "cheese",
+          "n": 25
+        }
+      ],
+      "floorTicks": 17989
+    },
+    "2027-02-04": {
+      "map": 3726136607,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 900
+        },
+        {
+          "kind": "own",
+          "id": "sauce_pot"
+        }
+      ],
+      "floorTicks": 17695
+    },
+    "2027-02-05": {
+      "map": 1268919950,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 450
+        }
+      ],
+      "floorTicks": 16513
+    },
+    "2027-02-06": {
+      "map": 318104669,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 600
+        }
+      ],
+      "floorTicks": 17645
+    },
+    "2027-02-07": {
+      "map": 2081461175,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 400
+        },
+        {
+          "kind": "own",
+          "id": "area_2"
+        }
+      ],
+      "floorTicks": 17534
+    },
+    "2027-02-08": {
+      "map": 3331237076,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 15
+        },
+        {
+          "kind": "earn",
+          "n": 300
+        }
+      ],
+      "floorTicks": 15407
+    },
+    "2027-02-09": {
+      "map": 234993374,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 750
+        }
+      ],
+      "floorTicks": 17688
+    },
+    "2027-02-10": {
+      "map": 1318908410,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "stocker_1"
+        },
+        {
+          "kind": "earn",
+          "n": 900
+        }
+      ],
+      "floorTicks": 17902
+    },
+    "2027-02-11": {
+      "map": 1563429017,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 70
+        }
+      ],
+      "floorTicks": 17909
+    },
+    "2027-02-12": {
+      "map": 836168966,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "wheat",
+          "n": 80
+        }
+      ],
+      "floorTicks": 16522
+    },
+    "2027-02-13": {
+      "map": 3900941126,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 500
+        }
+      ],
+      "floorTicks": 17840
+    },
+    "2027-02-14": {
+      "map": 1475399816,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 60
+        },
+        {
+          "kind": "earn",
+          "n": 800
+        }
+      ],
+      "floorTicks": 17907
+    },
+    "2027-02-15": {
+      "map": 674228947,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 950
+        },
+        {
+          "kind": "own",
+          "id": "stocker_1"
+        }
+      ],
+      "floorTicks": 17956
+    },
+    "2027-02-16": {
+      "map": 2666704130,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 1100
+        },
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 70
+        },
+        {
+          "kind": "own",
+          "id": "strawberry_shelf"
+        }
+      ],
+      "floorTicks": 17362
+    },
+    "2027-02-17": {
+      "map": 1059680413,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 10
+        }
+      ],
+      "floorTicks": 10798
+    },
+    "2027-02-18": {
+      "map": 1032008744,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "smoothie",
+          "n": 10
+        },
+        {
+          "kind": "earn",
+          "n": 750
+        }
+      ],
+      "floorTicks": 17444
+    },
+    "2027-02-19": {
+      "map": 1941325690,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "pizza_sauce",
+          "n": 70
+        },
+        {
+          "kind": "earn",
+          "n": 700
+        }
+      ],
+      "floorTicks": 17634
+    },
+    "2027-02-20": {
+      "map": 1689034784,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 400
+        }
+      ],
+      "floorTicks": 17751
+    },
+    "2027-02-21": {
+      "map": 2263986448,
+      "goal": [
+        {
+          "kind": "deliveries",
+          "n": 2
+        },
+        {
+          "kind": "own",
+          "id": "pizza_sauce_shelf"
+        }
+      ],
+      "floorTicks": 17999
+    },
+    "2027-02-22": {
+      "map": 2259761177,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "orange_juice",
+          "n": 70
+        }
+      ],
+      "floorTicks": 17739
+    },
+    "2027-02-23": {
+      "map": 2411265859,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 10
+        },
+        {
+          "kind": "earn",
+          "n": 250
+        }
+      ],
+      "floorTicks": 13599
+    },
+    "2027-02-24": {
+      "map": 2134694122,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 20
+        },
+        {
+          "kind": "earn",
+          "n": 250
+        }
+      ],
+      "floorTicks": 17608
+    },
+    "2027-02-25": {
+      "map": 2617428050,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 700
+        }
+      ],
+      "floorTicks": 17681
+    },
+    "2027-02-26": {
+      "map": 3277851273,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 550
+        },
+        {
+          "kind": "sell",
+          "product": "ketchup",
+          "n": 60
+        }
+      ],
+      "floorTicks": 16325
+    },
+    "2027-02-27": {
+      "map": 3858217626,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 15
+        }
+      ],
+      "floorTicks": 15254
+    },
+    "2027-02-28": {
+      "map": 4083176400,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "cashier_1"
+        },
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 15
+        }
+      ],
+      "floorTicks": 17733
+    },
+    "2027-03-01": {
+      "map": 2888544978,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 50
+        },
+        {
+          "kind": "own",
+          "id": "strawberry_patch"
+        },
+        {
+          "kind": "earn",
+          "n": 850
+        }
+      ],
+      "floorTicks": 17847
+    },
+    "2027-03-02": {
+      "map": 2428424722,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "tomato_shelf"
+        },
+        {
+          "kind": "sell",
+          "product": "goat_cheese",
+          "n": 30
+        }
+      ],
+      "floorTicks": 17552
+    },
+    "2027-03-03": {
+      "map": 2953220659,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_cheese",
+          "n": 25
+        },
+        {
+          "kind": "own",
+          "id": "apple_tree"
+        }
+      ],
+      "floorTicks": 16788
+    },
+    "2027-03-04": {
+      "map": 94185106,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "ketchup",
+          "n": 15
+        },
+        {
+          "kind": "earn",
+          "n": 350
+        }
+      ],
+      "floorTicks": 14976
+    },
+    "2027-03-05": {
+      "map": 1473511874,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 15
+        },
+        {
+          "kind": "earn",
+          "n": 400
+        }
+      ],
+      "floorTicks": 17069
+    },
+    "2027-03-06": {
+      "map": 804302688,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "stocker_1"
+        },
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 60
+        }
+      ],
+      "floorTicks": 17105
+    },
+    "2027-03-07": {
+      "map": 4078960616,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_cheese",
+          "n": 15
+        },
+        {
+          "kind": "earn",
+          "n": 600
+        }
+      ],
+      "floorTicks": 17609
+    },
+    "2027-03-08": {
+      "map": 3631917766,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 15
+        }
+      ],
+      "floorTicks": 17763
+    },
+    "2027-03-09": {
+      "map": 3722546642,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 25
+        }
+      ],
+      "floorTicks": 14520
+    },
+    "2027-03-10": {
+      "map": 1309974351,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 80
+        }
+      ],
+      "floorTicks": 16922
+    },
+    "2027-03-11": {
+      "map": 3346250979,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "cheese",
+          "n": 30
+        }
+      ],
+      "floorTicks": 15420
+    },
+    "2027-03-12": {
+      "map": 681925038,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 500
+        },
+        {
+          "kind": "own",
+          "id": "cashier_1"
+        }
+      ],
+      "floorTicks": 17596
+    },
+    "2027-03-13": {
+      "map": 572385815,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 700
+        },
+        {
+          "kind": "sell",
+          "product": "cheese",
+          "n": 20
+        }
+      ],
+      "floorTicks": 17827
+    },
+    "2027-03-14": {
+      "map": 1247944303,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 30
+        },
+        {
+          "kind": "earn",
+          "n": 500
+        }
+      ],
+      "floorTicks": 16298
+    },
+    "2027-03-15": {
+      "map": 3725536172,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 350
+        },
+        {
+          "kind": "own",
+          "id": "cashier_1"
+        }
+      ],
+      "floorTicks": 15812
+    },
+    "2027-03-16": {
+      "map": 3983919068,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 25
+        },
+        {
+          "kind": "earn",
+          "n": 500
+        }
+      ],
+      "floorTicks": 16963
+    },
+    "2027-03-17": {
+      "map": 2922327860,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 20
+        },
+        {
+          "kind": "earn",
+          "n": 450
+        }
+      ],
+      "floorTicks": 17176
+    },
+    "2027-03-18": {
+      "map": 3027372486,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 20
+        }
+      ],
+      "floorTicks": 14152
+    },
+    "2027-03-19": {
+      "map": 1342749763,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "egg_shelf"
+        },
+        {
+          "kind": "sell",
+          "product": "pizza_sauce",
+          "n": 70
+        },
+        {
+          "kind": "earn",
+          "n": 900
+        }
+      ],
+      "floorTicks": 17883
+    },
+    "2027-03-20": {
+      "map": 1503411051,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 900
+        },
+        {
+          "kind": "deliveries",
+          "n": 2
+        },
+        {
+          "kind": "own",
+          "id": "egg_shelf"
+        }
+      ],
+      "floorTicks": 16910
+    },
+    "2027-03-21": {
+      "map": 1374681514,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 950
+        },
+        {
+          "kind": "own",
+          "id": "apple_shelf"
+        }
+      ],
+      "floorTicks": 17944
+    },
+    "2027-03-22": {
+      "map": 2478479532,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 70
+        }
+      ],
+      "floorTicks": 14605
+    },
+    "2027-03-23": {
+      "map": 570023418,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "apple_tree"
+        },
+        {
+          "kind": "sell",
+          "product": "cheese",
+          "n": 30
+        }
+      ],
+      "floorTicks": 16487
+    },
+    "2027-03-24": {
+      "map": 4294870268,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 950
+        }
+      ],
+      "floorTicks": 17852
+    },
+    "2027-03-25": {
+      "map": 339901337,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "butter",
+          "n": 25
+        },
+        {
+          "kind": "earn",
+          "n": 450
+        }
+      ],
+      "floorTicks": 17955
+    },
+    "2027-03-26": {
+      "map": 2728113530,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "cheese_press"
+        },
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 70
+        },
+        {
+          "kind": "earn",
+          "n": 1000
+        }
+      ],
+      "floorTicks": 17890
+    },
+    "2027-03-27": {
+      "map": 3766746844,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "cashier_1"
+        },
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 15
+        }
+      ],
+      "floorTicks": 17563
+    },
+    "2027-03-28": {
+      "map": 2965580233,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "ice_cream",
+          "n": 10
+        },
+        {
+          "kind": "earn",
+          "n": 650
+        }
+      ],
+      "floorTicks": 16529
+    },
+    "2027-03-29": {
+      "map": 2627957640,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 550
+        },
+        {
+          "kind": "sell",
+          "product": "candy_apple",
+          "n": 15
+        }
+      ],
+      "floorTicks": 16288
+    },
+    "2027-03-30": {
+      "map": 3889435087,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 190
+        }
+      ],
+      "floorTicks": 16916
+    },
+    "2027-03-31": {
+      "map": 424676705,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 300
+        },
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 25
+        }
+      ],
+      "floorTicks": 13198
+    },
+    "2027-04-01": {
+      "map": 3880130257,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "orange_juice",
+          "n": 60
+        }
+      ],
+      "floorTicks": 16354
+    },
+    "2027-04-02": {
+      "map": 3753957574,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "stocker_1"
+        },
+        {
+          "kind": "sell",
+          "product": "pizza_sauce",
+          "n": 80
+        }
+      ],
+      "floorTicks": 17759
+    },
+    "2027-04-03": {
+      "map": 2837349053,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 850
+        },
+        {
+          "kind": "sell",
+          "product": "pizza_sauce",
+          "n": 10
+        }
+      ],
+      "floorTicks": 16768
+    },
+    "2027-04-04": {
+      "map": 3654123124,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 10
+        },
+        {
+          "kind": "earn",
+          "n": 400
+        }
+      ],
+      "floorTicks": 17816
+    },
+    "2027-04-05": {
+      "map": 2987573441,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "cashier_1"
+        },
+        {
+          "kind": "sell",
+          "product": "goat_cheese",
+          "n": 10
+        }
+      ],
+      "floorTicks": 17064
+    },
+    "2027-04-06": {
+      "map": 4221738653,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 20
+        },
+        {
+          "kind": "earn",
+          "n": 250
+        }
+      ],
+      "floorTicks": 11627
+    },
+    "2027-04-07": {
+      "map": 2614903306,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "area_2"
+        },
+        {
+          "kind": "earn",
+          "n": 700
+        },
+        {
+          "kind": "sell",
+          "product": "cheese",
+          "n": 30
+        }
+      ],
+      "floorTicks": 16201
+    },
+    "2027-04-08": {
+      "map": 1896633322,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 550
+        },
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 50
+        }
+      ],
+      "floorTicks": 16065
+    },
+    "2027-04-09": {
+      "map": 3367613518,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 400
+        },
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 15
+        }
+      ],
+      "floorTicks": 17855
+    },
+    "2027-04-10": {
+      "map": 2319684080,
+      "goal": [
+        {
+          "kind": "deliveries",
+          "n": 3
+        }
+      ],
+      "floorTicks": 16854
+    },
+    "2027-04-11": {
+      "map": 3921450103,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 650
+        },
+        {
+          "kind": "sell",
+          "product": "ketchup",
+          "n": 70
+        }
+      ],
+      "floorTicks": 17553
+    },
+    "2027-04-12": {
+      "map": 2385068621,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "apple_press"
+        },
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 70
+        }
+      ],
+      "floorTicks": 16773
+    },
+    "2027-04-13": {
+      "map": 603322951,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 450
+        }
+      ],
+      "floorTicks": 17683
+    },
+    "2027-04-14": {
+      "map": 135112602,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 50
+        }
+      ],
+      "floorTicks": 16552
+    },
+    "2027-04-15": {
+      "map": 893037371,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "milk_shelf"
+        },
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 80
+        }
+      ],
+      "floorTicks": 16058
+    },
+    "2027-04-16": {
+      "map": 2724083885,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 450
+        },
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 15
+        }
+      ],
+      "floorTicks": 17034
+    },
+    "2027-04-17": {
+      "map": 2895249521,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 300
+        },
+        {
+          "kind": "deliveries",
+          "n": 2
+        }
+      ],
+      "floorTicks": 17680
+    },
+    "2027-04-18": {
+      "map": 27705706,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 25
+        },
+        {
+          "kind": "earn",
+          "n": 250
+        }
+      ],
+      "floorTicks": 15881
+    },
+    "2027-04-19": {
+      "map": 1908009076,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 450
+        },
+        {
+          "kind": "sell",
+          "product": "olives",
+          "n": 60
+        }
+      ],
+      "floorTicks": 17407
+    },
+    "2027-04-20": {
+      "map": 2093032877,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 60
+        },
+        {
+          "kind": "own",
+          "id": "tomato_bed"
+        }
+      ],
+      "floorTicks": 16174
+    },
+    "2027-04-21": {
+      "map": 2683692294,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "strawberry",
+          "n": 60
+        },
+        {
+          "kind": "earn",
+          "n": 550
+        }
+      ],
+      "floorTicks": 17705
+    },
+    "2027-04-22": {
+      "map": 2075200347,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 900
+        },
+        {
+          "kind": "sell",
+          "product": "butter",
+          "n": 45
+        }
+      ],
+      "floorTicks": 17844
+    },
+    "2027-04-23": {
+      "map": 3483207468,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 450
+        }
+      ],
+      "floorTicks": 15215
+    },
+    "2027-04-24": {
+      "map": 1893174307,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 1000
+        },
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 60
+        }
+      ],
+      "floorTicks": 15942
+    },
+    "2027-04-25": {
+      "map": 528705369,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 500
+        },
+        {
+          "kind": "own",
+          "id": "stocker_1"
+        }
+      ],
+      "floorTicks": 17408
+    },
+    "2027-04-26": {
+      "map": 157180706,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 800
+        },
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 70
+        },
+        {
+          "kind": "own",
+          "id": "stocker_1"
+        }
+      ],
+      "floorTicks": 17243
+    },
+    "2027-04-27": {
+      "map": 4049898888,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "cheese",
+          "n": 15
+        },
+        {
+          "kind": "earn",
+          "n": 550
+        }
+      ],
+      "floorTicks": 16531
+    },
+    "2027-04-28": {
+      "map": 1429239885,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 50
+        },
+        {
+          "kind": "earn",
+          "n": 1000
+        },
+        {
+          "kind": "own",
+          "id": "cow_pen"
+        }
+      ],
+      "floorTicks": 17163
+    },
+    "2027-04-29": {
+      "map": 1735793999,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "apple_juice",
+          "n": 60
+        },
+        {
+          "kind": "earn",
+          "n": 600
+        }
+      ],
+      "floorTicks": 17383
+    },
+    "2027-04-30": {
+      "map": 799174057,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 550
+        },
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 25
+        }
+      ],
+      "floorTicks": 17243
+    },
+    "2027-05-01": {
+      "map": 1234396238,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "olives",
+          "n": 80
+        },
+        {
+          "kind": "earn",
+          "n": 800
+        }
+      ],
+      "floorTicks": 17277
+    },
+    "2027-05-02": {
+      "map": 1481618568,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 750
+        },
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 60
+        }
+      ],
+      "floorTicks": 17295
+    },
+    "2027-05-03": {
+      "map": 850751321,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 70
+        },
+        {
+          "kind": "own",
+          "id": "wheat_field"
+        }
+      ],
+      "floorTicks": 16177
+    },
+    "2027-05-04": {
+      "map": 1817478926,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "tomato_shelf"
+        },
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 50
+        }
+      ],
+      "floorTicks": 17597
+    },
+    "2027-05-05": {
+      "map": 608403749,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 550
+        }
+      ],
+      "floorTicks": 16561
+    },
+    "2027-05-06": {
+      "map": 3446225868,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 15
+        }
+      ],
+      "floorTicks": 17993
+    },
+    "2027-05-07": {
+      "map": 937894413,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 500
+        },
+        {
+          "kind": "sell",
+          "product": "orange",
+          "n": 70
+        }
+      ],
+      "floorTicks": 15505
+    },
+    "2027-05-08": {
+      "map": 411302039,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "wheat_shelf"
+        }
+      ],
+      "floorTicks": 17697
+    },
+    "2027-05-09": {
+      "map": 133618754,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 400
+        }
+      ],
+      "floorTicks": 14652
+    },
+    "2027-05-10": {
+      "map": 548386069,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 550
+        },
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 60
+        }
+      ],
+      "floorTicks": 16806
+    },
+    "2027-05-11": {
+      "map": 829657471,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "stocker_1"
+        },
+        {
+          "kind": "earn",
+          "n": 750
+        }
+      ],
+      "floorTicks": 17689
+    },
+    "2027-05-12": {
+      "map": 1623614031,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 70
+        },
+        {
+          "kind": "own",
+          "id": "orange_shelf"
+        }
+      ],
+      "floorTicks": 17465
+    },
+    "2027-05-13": {
+      "map": 3943539218,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "orange_juice",
+          "n": 60
+        },
+        {
+          "kind": "earn",
+          "n": 750
+        }
+      ],
+      "floorTicks": 17382
+    },
+    "2027-05-14": {
+      "map": 24365788,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "wheat",
+          "n": 90
+        },
+        {
+          "kind": "earn",
+          "n": 650
+        }
+      ],
+      "floorTicks": 17690
+    },
+    "2027-05-15": {
+      "map": 762040480,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "wheat_shelf"
+        },
+        {
+          "kind": "earn",
+          "n": 600
+        }
+      ],
+      "floorTicks": 17105
+    },
+    "2027-05-16": {
+      "map": 3298449635,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 10
+        },
+        {
+          "kind": "earn",
+          "n": 400
+        }
+      ],
+      "floorTicks": 15464
+    },
+    "2027-05-17": {
+      "map": 109036249,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 250
+        },
+        {
+          "kind": "sell",
+          "product": "apple_juice",
+          "n": 15
+        }
+      ],
+      "floorTicks": 16756
+    },
+    "2027-05-18": {
+      "map": 1609725190,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 45
+        },
+        {
+          "kind": "own",
+          "id": "cheese_press"
+        }
+      ],
+      "floorTicks": 16257
+    },
+    "2027-05-19": {
+      "map": 3488068886,
+      "goal": [
+        {
+          "kind": "deliveries",
+          "n": 2
+        },
+        {
+          "kind": "earn",
+          "n": 900
+        }
+      ],
+      "floorTicks": 17598
+    },
+    "2027-05-20": {
+      "map": 2266493176,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 650
+        },
+        {
+          "kind": "sell",
+          "product": "smoothie",
+          "n": 10
+        }
+      ],
+      "floorTicks": 14906
+    },
+    "2027-05-21": {
+      "map": 4281088979,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 950
+        }
+      ],
+      "floorTicks": 17486
+    },
+    "2027-05-22": {
+      "map": 2326203333,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 300
+        }
+      ],
+      "floorTicks": 16681
+    },
+    "2027-05-23": {
+      "map": 590542757,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 550
+        },
+        {
+          "kind": "sell",
+          "product": "ice_cream",
+          "n": 10
+        }
+      ],
+      "floorTicks": 17129
+    },
+    "2027-05-24": {
+      "map": 2268753801,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 950
+        },
+        {
+          "kind": "sell",
+          "product": "apple_juice",
+          "n": 60
+        },
+        {
+          "kind": "own",
+          "id": "milk_shelf"
+        }
+      ],
+      "floorTicks": 17901
+    },
+    "2027-05-25": {
+      "map": 2880199527,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 35
+        },
+        {
+          "kind": "earn",
+          "n": 750
+        },
+        {
+          "kind": "own",
+          "id": "tomato_shelf"
+        }
+      ],
+      "floorTicks": 17709
+    },
+    "2027-05-26": {
+      "map": 596027138,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 70
+        },
+        {
+          "kind": "earn",
+          "n": 900
+        },
+        {
+          "kind": "own",
+          "id": "orange_shelf"
+        }
+      ],
+      "floorTicks": 17057
+    },
+    "2027-05-27": {
+      "map": 4247059496,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "strawberry",
+          "n": 90
+        },
+        {
+          "kind": "earn",
+          "n": 800
+        }
+      ],
+      "floorTicks": 17788
+    },
+    "2027-05-28": {
+      "map": 3968658343,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 800
+        },
+        {
+          "kind": "sell",
+          "product": "pizza_sauce",
+          "n": 80
+        }
+      ],
+      "floorTicks": 17539
+    },
+    "2027-05-29": {
+      "map": 1331655468,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "ketchup",
+          "n": 70
+        },
+        {
+          "kind": "earn",
+          "n": 950
+        }
+      ],
+      "floorTicks": 17357
+    },
+    "2027-05-30": {
+      "map": 4093233692,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 20
+        }
+      ],
+      "floorTicks": 16014
+    },
+    "2027-05-31": {
+      "map": 3120142026,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "pizza_sauce",
+          "n": 70
+        },
+        {
+          "kind": "earn",
+          "n": 1000
+        }
+      ],
+      "floorTicks": 17235
+    },
+    "2027-06-01": {
+      "map": 105368414,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 500
+        },
+        {
+          "kind": "sell",
+          "product": "orange",
+          "n": 80
+        }
+      ],
+      "floorTicks": 15347
+    },
+    "2027-06-02": {
+      "map": 1816970103,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 1000
+        }
+      ],
+      "floorTicks": 17714
+    },
+    "2027-06-03": {
+      "map": 847112653,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 70
+        },
+        {
+          "kind": "own",
+          "id": "wheat_field"
+        }
+      ],
+      "floorTicks": 17988
+    },
+    "2027-06-04": {
+      "map": 3581535763,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 900
+        }
+      ],
+      "floorTicks": 17899
+    },
+    "2027-06-05": {
+      "map": 1143069623,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 450
+        }
+      ],
+      "floorTicks": 17640
+    },
+    "2027-06-06": {
+      "map": 1151423067,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 600
+        }
+      ],
+      "floorTicks": 15462
+    },
+    "2027-06-07": {
+      "map": 972634777,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 40
+        },
+        {
+          "kind": "earn",
+          "n": 450
+        }
+      ],
+      "floorTicks": 17700
+    },
+    "2027-06-08": {
+      "map": 2917733461,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 20
+        },
+        {
+          "kind": "earn",
+          "n": 400
+        }
+      ],
+      "floorTicks": 17770
+    },
+    "2027-06-09": {
+      "map": 808262722,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 650
+        }
+      ],
+      "floorTicks": 17683
+    },
+    "2027-06-10": {
+      "map": 432385919,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "sugar_cane_shelf"
+        }
+      ],
+      "floorTicks": 17782
+    },
+    "2027-06-11": {
+      "map": 2476541855,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "cashier_1"
+        },
+        {
+          "kind": "earn",
+          "n": 400
+        }
+      ],
+      "floorTicks": 16757
+    },
+    "2027-06-12": {
+      "map": 442055161,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 1000
+        }
+      ],
+      "floorTicks": 17497
+    },
+    "2027-06-13": {
+      "map": 774699119,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 15
+        },
+        {
+          "kind": "earn",
+          "n": 600
+        }
+      ],
+      "floorTicks": 16193
+    },
+    "2027-06-14": {
+      "map": 3748693246,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 20
+        },
+        {
+          "kind": "earn",
+          "n": 250
+        }
+      ],
+      "floorTicks": 17096
+    },
+    "2027-06-15": {
+      "map": 3525037110,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "stocker_1"
+        },
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 80
+        }
+      ],
+      "floorTicks": 17638
+    },
+    "2027-06-16": {
+      "map": 454870521,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 60
+        }
+      ],
+      "floorTicks": 16698
+    },
+    "2027-06-17": {
+      "map": 2299741623,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 20
+        },
+        {
+          "kind": "earn",
+          "n": 500
+        }
+      ],
+      "floorTicks": 17911
+    },
+    "2027-06-18": {
+      "map": 3293726451,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 400
+        }
+      ],
+      "floorTicks": 15514
+    },
+    "2027-06-19": {
+      "map": 657765926,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 850
+        },
+        {
+          "kind": "sell",
+          "product": "ketchup",
+          "n": 50
+        },
+        {
+          "kind": "own",
+          "id": "chicken_coop"
+        }
+      ],
+      "floorTicks": 17722
+    },
+    "2027-06-20": {
+      "map": 36769279,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 650
+        }
+      ],
+      "floorTicks": 17539
+    },
+    "2027-06-21": {
+      "map": 4188348,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "sugar_shelf"
+        }
+      ],
+      "floorTicks": 17863
+    },
+    "2027-06-22": {
+      "map": 3446404038,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "cheese",
+          "n": 20
+        },
+        {
+          "kind": "earn",
+          "n": 550
+        }
+      ],
+      "floorTicks": 13995
+    },
+    "2027-06-23": {
+      "map": 4208812369,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 550
+        }
+      ],
+      "floorTicks": 16001
+    },
+    "2027-06-24": {
+      "map": 4171232187,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 350
+        }
+      ],
+      "floorTicks": 14846
+    },
+    "2027-06-25": {
+      "map": 1090884405,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "wheat_field"
+        },
+        {
+          "kind": "earn",
+          "n": 850
+        }
+      ],
+      "floorTicks": 17878
+    },
+    "2027-06-26": {
+      "map": 2433582749,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_cheese",
+          "n": 25
+        },
+        {
+          "kind": "earn",
+          "n": 1000
+        }
+      ],
+      "floorTicks": 17697
+    },
+    "2027-06-27": {
+      "map": 2194438865,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 70
+        }
+      ],
+      "floorTicks": 17948
+    },
+    "2027-06-28": {
+      "map": 894763943,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "pizza_sauce",
+          "n": 40
+        }
+      ],
+      "floorTicks": 17898
+    },
+    "2027-06-29": {
+      "map": 4293689663,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 550
+        },
+        {
+          "kind": "sell",
+          "product": "pizza_sauce",
+          "n": 40
+        }
+      ],
+      "floorTicks": 16657
+    },
+    "2027-06-30": {
+      "map": 53061366,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 450
+        }
+      ],
+      "floorTicks": 15855
+    },
+    "2027-07-01": {
+      "map": 4175701662,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 10
+        },
+        {
+          "kind": "earn",
+          "n": 300
+        }
+      ],
+      "floorTicks": 17581
+    },
+    "2027-07-02": {
+      "map": 1607834101,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "apple",
+          "n": 20
+        }
+      ],
+      "floorTicks": 13856
+    },
+    "2027-07-03": {
+      "map": 4072766703,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 15
+        },
+        {
+          "kind": "earn",
+          "n": 300
+        }
+      ],
+      "floorTicks": 16939
+    },
+    "2027-07-04": {
+      "map": 1488792506,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 650
+        },
+        {
+          "kind": "sell",
+          "product": "apple_juice",
+          "n": 60
+        }
+      ],
+      "floorTicks": 16956
+    },
+    "2027-07-05": {
+      "map": 732145119,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 300
+        }
+      ],
+      "floorTicks": 17963
+    },
+    "2027-07-06": {
+      "map": 686076904,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 400
+        }
+      ],
+      "floorTicks": 15190
+    },
+    "2027-07-07": {
+      "map": 2863656291,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 250
+        },
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 10
+        }
+      ],
+      "floorTicks": 14466
+    },
+    "2027-07-08": {
+      "map": 4008818121,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "pizza_sauce",
+          "n": 35
+        },
+        {
+          "kind": "earn",
+          "n": 400
+        }
+      ],
+      "floorTicks": 16444
+    },
+    "2027-07-09": {
+      "map": 869038219,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 70
+        },
+        {
+          "kind": "own",
+          "id": "orange_tree"
+        },
+        {
+          "kind": "earn",
+          "n": 950
+        }
+      ],
+      "floorTicks": 17723
+    },
+    "2027-07-10": {
+      "map": 1158433629,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 30
+        },
+        {
+          "kind": "earn",
+          "n": 400
+        }
+      ],
+      "floorTicks": 17938
+    },
+    "2027-07-11": {
+      "map": 752689208,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "olives",
+          "n": 90
+        },
+        {
+          "kind": "earn",
+          "n": 750
+        }
+      ],
+      "floorTicks": 17641
+    },
+    "2027-07-12": {
+      "map": 3326138343,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 700
+        }
+      ],
+      "floorTicks": 17748
+    },
+    "2027-07-13": {
+      "map": 2461246819,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 650
+        },
+        {
+          "kind": "sell",
+          "product": "ketchup",
+          "n": 60
+        }
+      ],
+      "floorTicks": 16977
+    },
+    "2027-07-14": {
+      "map": 348194583,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "ketchup",
+          "n": 30
+        },
+        {
+          "kind": "earn",
+          "n": 350
+        }
+      ],
+      "floorTicks": 17740
+    },
+    "2027-07-15": {
+      "map": 1335187656,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 650
+        },
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 25
+        }
+      ],
+      "floorTicks": 17879
+    },
+    "2027-07-16": {
+      "map": 691102108,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "tomato_shelf"
+        },
+        {
+          "kind": "earn",
+          "n": 700
+        }
+      ],
+      "floorTicks": 17747
+    },
+    "2027-07-17": {
+      "map": 3949467187,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "milk_shelf"
+        }
+      ],
+      "floorTicks": 17167
+    },
+    "2027-07-18": {
+      "map": 2723951677,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 15
+        },
+        {
+          "kind": "earn",
+          "n": 300
+        }
+      ],
+      "floorTicks": 13952
+    },
+    "2027-07-19": {
+      "map": 2587131018,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 500
+        },
+        {
+          "kind": "sell",
+          "product": "orange",
+          "n": 60
+        }
+      ],
+      "floorTicks": 17253
+    },
+    "2027-07-20": {
+      "map": 4167635066,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "cashier_1"
+        },
+        {
+          "kind": "sell",
+          "product": "apple_juice",
+          "n": 15
+        }
+      ],
+      "floorTicks": 14649
+    },
+    "2027-07-21": {
+      "map": 3730245928,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 400
+        },
+        {
+          "kind": "sell",
+          "product": "apple",
+          "n": 60
+        }
+      ],
+      "floorTicks": 17898
+    },
+    "2027-07-22": {
+      "map": 804456049,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 20
+        }
+      ],
+      "floorTicks": 10297
+    },
+    "2027-07-23": {
+      "map": 108613700,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "wheat_shelf"
+        },
+        {
+          "kind": "earn",
+          "n": 850
+        }
+      ],
+      "floorTicks": 17510
+    },
+    "2027-07-24": {
+      "map": 1729110748,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "candy_pot"
+        }
+      ],
+      "floorTicks": 17624
+    },
+    "2027-07-25": {
+      "map": 2663854518,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 1100
+        }
+      ],
+      "floorTicks": 17910
+    },
+    "2027-07-26": {
+      "map": 3689265461,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 500
+        }
+      ],
+      "floorTicks": 17975
+    },
+    "2027-07-27": {
+      "map": 3463717749,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 70
+        },
+        {
+          "kind": "earn",
+          "n": 1100
+        }
+      ],
+      "floorTicks": 17429
+    },
+    "2027-07-28": {
+      "map": 3097149480,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 20
+        },
+        {
+          "kind": "earn",
+          "n": 500
+        }
+      ],
+      "floorTicks": 17943
+    },
+    "2027-07-29": {
+      "map": 1103957842,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 500
+        },
+        {
+          "kind": "sell",
+          "product": "pizza_sauce",
+          "n": 30
+        }
+      ],
+      "floorTicks": 17282
+    },
+    "2027-07-30": {
+      "map": 236439665,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 1100
+        },
+        {
+          "kind": "own",
+          "id": "sugar_cane_field"
+        }
+      ],
+      "floorTicks": 16343
+    },
+    "2027-07-31": {
+      "map": 495689436,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 550
+        }
+      ],
+      "floorTicks": 17711
+    },
+    "2027-08-01": {
+      "map": 368015977,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "ketchup",
+          "n": 60
+        }
+      ],
+      "floorTicks": 14982
+    },
+    "2027-08-02": {
+      "map": 2325709922,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 350
+        },
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 10
+        }
+      ],
+      "floorTicks": 16317
+    },
+    "2027-08-03": {
+      "map": 3166315792,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 1100
+        }
+      ],
+      "floorTicks": 17485
+    },
+    "2027-08-04": {
+      "map": 538591421,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_cheese",
+          "n": 35
+        }
+      ],
+      "floorTicks": 17145
+    },
+    "2027-08-05": {
+      "map": 4145573344,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 500
+        },
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 50
+        }
+      ],
+      "floorTicks": 15960
+    },
+    "2027-08-06": {
+      "map": 1556359728,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "cow_pen"
+        },
+        {
+          "kind": "sell",
+          "product": "pizza_sauce",
+          "n": 70
+        }
+      ],
+      "floorTicks": 17467
+    },
+    "2027-08-07": {
+      "map": 963668106,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 650
+        }
+      ],
+      "floorTicks": 16863
+    },
+    "2027-08-08": {
+      "map": 1434094731,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 250
+        },
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 15
+        }
+      ],
+      "floorTicks": 17795
+    },
+    "2027-08-09": {
+      "map": 2833885059,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 25
+        },
+        {
+          "kind": "own",
+          "id": "cashier_1"
+        }
+      ],
+      "floorTicks": 16192
+    },
+    "2027-08-10": {
+      "map": 2541036775,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 1100
+        },
+        {
+          "kind": "own",
+          "id": "apple_tree"
+        },
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 80
+        }
+      ],
+      "floorTicks": 17621
+    },
+    "2027-08-11": {
+      "map": 3592197546,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "orange",
+          "n": 70
+        },
+        {
+          "kind": "earn",
+          "n": 750
+        }
+      ],
+      "floorTicks": 17857
+    },
+    "2027-08-12": {
+      "map": 3443011330,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 1000
+        },
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 50
+        }
+      ],
+      "floorTicks": 16415
+    },
+    "2027-08-13": {
+      "map": 3295921870,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "dough_mixer"
+        },
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 60
+        },
+        {
+          "kind": "earn",
+          "n": 950
+        }
+      ],
+      "floorTicks": 17141
+    },
+    "2027-08-14": {
+      "map": 392524619,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 250
+        },
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 30
+        }
+      ],
+      "floorTicks": 13286
+    },
+    "2027-08-15": {
+      "map": 1293418574,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 40
+        },
+        {
+          "kind": "earn",
+          "n": 500
+        },
+        {
+          "kind": "own",
+          "id": "cashier_1"
+        }
+      ],
+      "floorTicks": 17608
+    },
+    "2027-08-16": {
+      "map": 4124073765,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 550
+        },
+        {
+          "kind": "sell",
+          "product": "ketchup",
+          "n": 25
+        }
+      ],
+      "floorTicks": 17760
+    },
+    "2027-08-17": {
+      "map": 3614138784,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 10
+        }
+      ],
+      "floorTicks": 16919
+    },
+    "2027-08-18": {
+      "map": 1804611019,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 700
+        },
+        {
+          "kind": "sell",
+          "product": "cheese",
+          "n": 30
+        }
+      ],
+      "floorTicks": 17418
+    },
+    "2027-08-19": {
+      "map": 1022325485,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 10
+        },
+        {
+          "kind": "earn",
+          "n": 250
+        }
+      ],
+      "floorTicks": 15471
+    },
+    "2027-08-20": {
+      "map": 2848547447,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 400
+        },
+        {
+          "kind": "sell",
+          "product": "orange_juice",
+          "n": 20
+        }
+      ],
+      "floorTicks": 17854
+    },
+    "2027-08-21": {
+      "map": 2781402629,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 250
+        },
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 15
+        }
+      ],
+      "floorTicks": 10021
+    },
+    "2027-08-22": {
+      "map": 2214558154,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 1000
+        },
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 70
+        }
+      ],
+      "floorTicks": 16742
+    },
+    "2027-08-23": {
+      "map": 1975888700,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 10
+        },
+        {
+          "kind": "earn",
+          "n": 300
+        }
+      ],
+      "floorTicks": 17507
+    },
+    "2027-08-24": {
+      "map": 1817241863,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 70
+        },
+        {
+          "kind": "earn",
+          "n": 500
+        }
+      ],
+      "floorTicks": 17821
+    },
+    "2027-08-25": {
+      "map": 2140292825,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 700
+        }
+      ],
+      "floorTicks": 17649
+    },
+    "2027-08-26": {
+      "map": 4155378170,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 600
+        },
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 20
+        }
+      ],
+      "floorTicks": 16287
+    },
+    "2027-08-27": {
+      "map": 1150678993,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 950
+        },
+        {
+          "kind": "sell",
+          "product": "pizza_sauce",
+          "n": 60
+        },
+        {
+          "kind": "own",
+          "id": "wheat_shelf"
+        }
+      ],
+      "floorTicks": 17126
+    },
+    "2027-08-28": {
+      "map": 2256530842,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "strawberry_shelf"
+        }
+      ],
+      "floorTicks": 16563
+    },
+    "2027-08-29": {
+      "map": 2480194931,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 300
+        },
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 10
+        }
+      ],
+      "floorTicks": 16399
+    },
+    "2027-08-30": {
+      "map": 2199768271,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 850
+        }
+      ],
+      "floorTicks": 17712
+    },
+    "2027-08-31": {
+      "map": 3416784419,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "cheese_press"
+        },
+        {
+          "kind": "earn",
+          "n": 800
+        }
+      ],
+      "floorTicks": 16034
+    },
+    "2027-09-01": {
+      "map": 278829333,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "cashier_1"
+        }
+      ],
+      "floorTicks": 15013
+    },
+    "2027-09-02": {
+      "map": 370677223,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "olives",
+          "n": 30
+        },
+        {
+          "kind": "earn",
+          "n": 400
+        },
+        {
+          "kind": "own",
+          "id": "cashier_1"
+        }
+      ],
+      "floorTicks": 17895
+    },
+    "2027-09-03": {
+      "map": 4148630363,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "apple_juice",
+          "n": 20
+        }
+      ],
+      "floorTicks": 12908
+    },
+    "2027-09-04": {
+      "map": 92084549,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 1000
+        }
+      ],
+      "floorTicks": 17699
+    },
+    "2027-09-05": {
+      "map": 22259890,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 15
+        },
+        {
+          "kind": "earn",
+          "n": 350
+        }
+      ],
+      "floorTicks": 16937
+    },
+    "2027-09-06": {
+      "map": 2626061831,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "ketchup",
+          "n": 70
+        }
+      ],
+      "floorTicks": 16963
+    },
+    "2027-09-07": {
+      "map": 1212298394,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "tomato_shelf"
+        },
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 80
+        }
+      ],
+      "floorTicks": 17418
+    },
+    "2027-09-08": {
+      "map": 3900468406,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 400
+        }
+      ],
+      "floorTicks": 16086
+    },
+    "2027-09-09": {
+      "map": 2285745506,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "strawberry",
+          "n": 90
+        },
+        {
+          "kind": "earn",
+          "n": 750
+        }
+      ],
+      "floorTicks": 17955
+    },
+    "2027-09-10": {
+      "map": 4103723442,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 60
+        },
+        {
+          "kind": "earn",
+          "n": 700
+        }
+      ],
+      "floorTicks": 16273
+    },
+    "2027-09-11": {
+      "map": 4136702099,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 15
+        },
+        {
+          "kind": "earn",
+          "n": 500
+        }
+      ],
+      "floorTicks": 13848
+    },
+    "2027-09-12": {
+      "map": 1112556193,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 450
+        },
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 20
+        }
+      ],
+      "floorTicks": 15110
+    },
+    "2027-09-13": {
+      "map": 2155427107,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "wheat_shelf"
+        },
+        {
+          "kind": "earn",
+          "n": 850
+        },
+        {
+          "kind": "sell",
+          "product": "ketchup",
+          "n": 50
+        }
+      ],
+      "floorTicks": 17844
+    },
+    "2027-09-14": {
+      "map": 3572860517,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "apple_juice_shelf"
+        },
+        {
+          "kind": "sell",
+          "product": "pizza_sauce",
+          "n": 70
+        }
+      ],
+      "floorTicks": 16399
+    },
+    "2027-09-15": {
+      "map": 3680990436,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "wheat_field"
+        },
+        {
+          "kind": "earn",
+          "n": 900
+        }
+      ],
+      "floorTicks": 17866
+    },
+    "2027-09-16": {
+      "map": 2381967571,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "cheese",
+          "n": 15
+        }
+      ],
+      "floorTicks": 16874
+    },
+    "2027-09-17": {
+      "map": 4145371015,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 80
+        },
+        {
+          "kind": "earn",
+          "n": 1100
+        }
+      ],
+      "floorTicks": 16323
+    },
+    "2027-09-18": {
+      "map": 1739694064,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_cheese",
+          "n": 20
+        },
+        {
+          "kind": "earn",
+          "n": 550
+        }
+      ],
+      "floorTicks": 17544
+    },
+    "2027-09-19": {
+      "map": 2600368159,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 70
+        },
+        {
+          "kind": "own",
+          "id": "apple_shelf"
+        }
+      ],
+      "floorTicks": 17616
+    },
+    "2027-09-20": {
+      "map": 2585699276,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 40
+        },
+        {
+          "kind": "earn",
+          "n": 550
+        }
+      ],
+      "floorTicks": 17684
+    },
+    "2027-09-21": {
+      "map": 1886534666,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 950
+        },
+        {
+          "kind": "sell",
+          "product": "goat_cheese",
+          "n": 30
+        }
+      ],
+      "floorTicks": 17219
+    },
+    "2027-09-22": {
+      "map": 3258041030,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "smoothie",
+          "n": 10
+        }
+      ],
+      "floorTicks": 15044
+    },
+    "2027-09-23": {
+      "map": 2555117224,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 950
+        }
+      ],
+      "floorTicks": 16051
+    },
+    "2027-09-24": {
+      "map": 2104882518,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 400
+        },
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 20
+        }
+      ],
+      "floorTicks": 17897
+    },
+    "2027-09-25": {
+      "map": 2719017972,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "orange_juice",
+          "n": 35
+        },
+        {
+          "kind": "earn",
+          "n": 700
+        }
+      ],
+      "floorTicks": 17046
+    },
+    "2027-09-26": {
+      "map": 858893186,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 650
+        },
+        {
+          "kind": "sell",
+          "product": "orange_juice",
+          "n": 40
+        },
+        {
+          "kind": "deliveries",
+          "n": 2
+        }
+      ],
+      "floorTicks": 17737
+    },
+    "2027-09-27": {
+      "map": 424268981,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "smoothie",
+          "n": 10
+        },
+        {
+          "kind": "earn",
+          "n": 750
+        }
+      ],
+      "floorTicks": 17004
+    },
+    "2027-09-28": {
+      "map": 2442817296,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 950
+        },
+        {
+          "kind": "own",
+          "id": "sugar_shelf"
+        }
+      ],
+      "floorTicks": 17079
+    },
+    "2027-09-29": {
+      "map": 1846728369,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "butter",
+          "n": 10
+        }
+      ],
+      "floorTicks": 17036
+    },
+    "2027-09-30": {
+      "map": 1564268023,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 350
+        }
+      ],
+      "floorTicks": 16013
+    },
+    "2027-10-01": {
+      "map": 3331098506,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 400
+        },
+        {
+          "kind": "own",
+          "id": "office"
+        }
+      ],
+      "floorTicks": 16201
+    },
+    "2027-10-02": {
+      "map": 1112600857,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "area_2"
+        },
+        {
+          "kind": "sell",
+          "product": "butter",
+          "n": 20
+        }
+      ],
+      "floorTicks": 14320
+    },
+    "2027-10-03": {
+      "map": 995418208,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 70
+        },
+        {
+          "kind": "earn",
+          "n": 700
+        },
+        {
+          "kind": "own",
+          "id": "stocker_1"
+        }
+      ],
+      "floorTicks": 17725
+    },
+    "2027-10-04": {
+      "map": 1675829545,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "butter",
+          "n": 30
+        },
+        {
+          "kind": "earn",
+          "n": 700
+        }
+      ],
+      "floorTicks": 17540
+    },
+    "2027-10-05": {
+      "map": 4268645706,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "ketchup",
+          "n": 70
+        },
+        {
+          "kind": "earn",
+          "n": 750
+        }
+      ],
+      "floorTicks": 17655
+    },
+    "2027-10-06": {
+      "map": 1910347704,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 60
+        },
+        {
+          "kind": "earn",
+          "n": 700
+        }
+      ],
+      "floorTicks": 17953
+    },
+    "2027-10-07": {
+      "map": 2027714947,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 700
+        }
+      ],
+      "floorTicks": 17977
+    },
+    "2027-10-08": {
+      "map": 1483979235,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "milk_shelf"
+        }
+      ],
+      "floorTicks": 15536
+    },
+    "2027-10-09": {
+      "map": 1860084791,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 650
+        }
+      ],
+      "floorTicks": 17788
+    },
+    "2027-10-10": {
+      "map": 1865602561,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 500
+        },
+        {
+          "kind": "sell",
+          "product": "orange",
+          "n": 80
+        }
+      ],
+      "floorTicks": 17093
+    },
+    "2027-10-11": {
+      "map": 51176816,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 350
+        }
+      ],
+      "floorTicks": 15407
+    },
+    "2027-10-12": {
+      "map": 979998194,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 25
+        },
+        {
+          "kind": "earn",
+          "n": 350
+        }
+      ],
+      "floorTicks": 16802
+    },
+    "2027-10-13": {
+      "map": 1723216947,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "orange",
+          "n": 60
+        },
+        {
+          "kind": "own",
+          "id": "area_2"
+        },
+        {
+          "kind": "earn",
+          "n": 400
+        }
+      ],
+      "floorTicks": 16258
+    },
+    "2027-10-14": {
+      "map": 795119493,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "tomato_shelf"
+        },
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 10
+        }
+      ],
+      "floorTicks": 17819
+    },
+    "2027-10-15": {
+      "map": 3966676436,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 450
+        }
+      ],
+      "floorTicks": 17633
+    },
+    "2027-10-16": {
+      "map": 4066770950,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "flour_shelf"
+        },
+        {
+          "kind": "earn",
+          "n": 1100
+        }
+      ],
+      "floorTicks": 16131
+    },
+    "2027-10-17": {
+      "map": 4152618950,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 1100
+        },
+        {
+          "kind": "sell",
+          "product": "orange_juice",
+          "n": 60
+        }
+      ],
+      "floorTicks": 17614
+    },
+    "2027-10-18": {
+      "map": 410155658,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 950
+        }
+      ],
+      "floorTicks": 17742
+    },
+    "2027-10-19": {
+      "map": 1803954073,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 350
+        },
+        {
+          "kind": "sell",
+          "product": "sugar",
+          "n": 20
+        }
+      ],
+      "floorTicks": 17677
+    },
+    "2027-10-20": {
+      "map": 3000560048,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 15
+        },
+        {
+          "kind": "own",
+          "id": "office"
+        }
+      ],
+      "floorTicks": 13776
+    },
+    "2027-10-21": {
+      "map": 4036964427,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 300
+        }
+      ],
+      "floorTicks": 17620
+    },
+    "2027-10-22": {
+      "map": 2277484579,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 850
+        },
+        {
+          "kind": "sell",
+          "product": "cheese",
+          "n": 30
+        }
+      ],
+      "floorTicks": 16881
+    },
+    "2027-10-23": {
+      "map": 1875666705,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 20
+        },
+        {
+          "kind": "earn",
+          "n": 450
+        }
+      ],
+      "floorTicks": 16463
+    },
+    "2027-10-24": {
+      "map": 428554718,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "milk",
+          "n": 30
+        }
+      ],
+      "floorTicks": 16869
+    },
+    "2027-10-25": {
+      "map": 917253432,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 1200
+        },
+        {
+          "kind": "own",
+          "id": "strawberry_shelf"
+        }
+      ],
+      "floorTicks": 17870
+    },
+    "2027-10-26": {
+      "map": 501568799,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 15
+        },
+        {
+          "kind": "earn",
+          "n": 250
+        }
+      ],
+      "floorTicks": 15469
+    },
+    "2027-10-27": {
+      "map": 710911644,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "flour",
+          "n": 20
+        }
+      ],
+      "floorTicks": 12043
+    },
+    "2027-10-28": {
+      "map": 527216873,
+      "goal": [
+        {
+          "kind": "earn",
+          "n": 450
+        }
+      ],
+      "floorTicks": 16326
+    },
+    "2027-10-29": {
+      "map": 2406540312,
+      "goal": [
+        {
+          "kind": "own",
+          "id": "apple_tree"
+        },
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 70
+        }
+      ],
+      "floorTicks": 17944
+    },
+    "2027-10-30": {
+      "map": 270012016,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "goat_milk",
+          "n": 70
+        },
+        {
+          "kind": "own",
+          "id": "ketchup_shelf"
+        }
+      ],
+      "floorTicks": 17671
+    },
+    "2027-10-31": {
+      "map": 1141242307,
+      "goal": [
+        {
+          "kind": "sell",
+          "product": "egg",
+          "n": 20
+        },
+        {
+          "kind": "earn",
+          "n": 250
+        }
+      ],
+      "floorTicks": 17984
+    }
+  }
+}

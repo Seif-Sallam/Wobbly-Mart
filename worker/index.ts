@@ -3,6 +3,7 @@ import type { Env } from './env';
 import { createDevice, deleteDeviceRoute, getDevice, renameDevice, rotateCloudCode } from './device';
 import { errorResponse, HttpError, preflight, withCors } from './http';
 import { readBoard } from './boards';
+import { submitRun } from './runs';
 import { submitScore } from './scores';
 
 type Handler = (req: Request, env: Env) => Promise<Response>;
@@ -11,6 +12,7 @@ const ROUTES: Record<string, Partial<Record<string, Handler>>> = {
   '/v1/device': { POST: createDevice, GET: getDevice, DELETE: deleteDeviceRoute },
   '/v1/device/nickname': { PUT: renameDevice },
   '/v1/device/rotate': { POST: rotateCloudCode },
+  '/v1/runs': { POST: submitRun },
 };
 
 /** Routes with a path parameter: /v1/boards/:kind/:map and /v1/scores/:map. */

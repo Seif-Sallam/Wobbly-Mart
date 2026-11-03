@@ -22,6 +22,7 @@ import {
   type OnlineView,
 } from './online';
 import { WallPopup, type WallActions, type WallView } from './wall';
+import { RunEndPopup, type RunEndActions, type RunEndView } from './run-end';
 import { Logbook, type LogbookView } from './logbook';
 import { GEAR } from './hud';
 import { CREDITS } from '../../catalog/credits';
@@ -44,7 +45,8 @@ export type Overlay =
   | 'nickname'
   | 'cloud-code'
   | 'wall'
-  | 'shift-end';
+  | 'shift-end'
+  | 'run-end';
 
 export interface UiState {
   screen: 'title' | 'game';
@@ -82,6 +84,7 @@ export interface UiState {
   /** Today's Daily Shift on the title; null while it loads or when the calendar has no such day. */
   daily: { day: number; goal: string; time: string | null } | null;
   shiftEnd: ShiftEnd | null;
+  runEnd: RunEndView | null;
 }
 
 /** The end of Shift screen. `debug`: played with ?debug, never ranked. */
@@ -155,6 +158,7 @@ export interface UiActions {
   selectLook: (look: string, cap: string) => void;
   online: OnlineActions;
   wall: WallActions;
+  runEnd: RunEndActions;
 }
 
 const FAMILY_ORDER = ['player', 'station', 'staff'] as const;
@@ -974,6 +978,7 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
           {overlay === 'cloud-code' && <CodePopup o={a.online} a={a} />}
           {overlay === 'wall' && s.wall && <WallPopup v={s.wall} a={a.wall} />}
           {overlay === 'shift-end' && s.shiftEnd && <ShiftEndPopup e={s.shiftEnd} s={s} a={a} />}
+          {overlay === 'run-end' && s.runEnd && <RunEndPopup v={s.runEnd} a={a.runEnd} />}
           {overlay === 'logbook' && s.logbook && (
             <Logbook view={s.logbook} tab={s.logbookTab} close={a.close} click={a.click} />
           )}

@@ -1,10 +1,8 @@
 // PUT /v1/scores/:map — the Score Board keeps each Device's latest Score, inside what the Map could have paid.
-import { mapById } from '../maps';
-import type { MapDef } from '../src/sim/map';
 import { fixedMaxScore, maxScoreRate } from '../src/sim/score';
 import { SIM_VERSION } from '../src/sim/version';
 import type { RankResponse } from './api';
-import { boardOf, forgetBoard, rankOf } from './boards';
+import { forgetBoard, mapBoardOf, rankOf } from './boards';
 import { requireDevice } from './device';
 import type { Env } from './env';
 import { HttpError, json, KB, readJson } from './http';
@@ -31,9 +29,7 @@ export function checkSimVersion(simVersion: unknown): void {
 
 export async function submitScore(req: Request, env: Env, mapId: string): Promise<Response> {
   const id = await requireDevice(req, env);
-  const board = boardOf('score', mapId, 0);
-  // boardOf already refused an unknown or Tutorial Map
-  const map = mapById(mapId) as MapDef;
+  const { board, map } = mapBoardOf('score', mapId);
   const body = (await readJson(req, 2 * KB)) as Record<string, unknown> | null;
   const score = int(body?.score);
   const playTime = int(body?.playTime);

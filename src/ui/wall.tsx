@@ -36,6 +36,22 @@ export function WallRow(props: { rank: number; nickname: string; value: string; 
   );
 }
 
+/** No Device yet: the way onto the Wall. */
+export function JoinCard(props: { title: string; line: string; a: { join: () => void; click: () => void } }) {
+  return (
+    <div class="wall-join">
+      <span class="wall-av">?</span>
+      <p>
+        <b>{props.title}</b>
+        {props.line}
+      </p>
+      <Btn class="buy" actions={props.a} onClick={props.a.join}>
+        Pick a Nickname
+      </Btn>
+    </div>
+  );
+}
+
 export type WallTab = 'today' | 'speed' | 'stars' | 'streaks';
 
 /** `board`: null while loading, 'offline' when out of reach. */
@@ -155,15 +171,7 @@ function Body({ v, a }: { v: WallView; a: WallActions }) {
       <div>
         <Frames tab={v.tab} top={b.top} />
         {!v.hasDevice && (
-          <div class="wall-join">
-            <span class="wall-av">?</span>
-            <p>
-              <b>You're not on the Wall yet</b>Pick a Nickname to get your times up here.
-            </p>
-            <Btn class="buy" actions={a} onClick={a.join}>
-              Pick a Nickname
-            </Btn>
-          </div>
+          <JoinCard title="You're not on the Wall yet" line="Pick a Nickname to get your times up here." a={a} />
         )}
       </div>
       <div>

@@ -130,6 +130,8 @@ export interface MapDef {
   shift?: true;
   /** The Map whose music track this one plays (default: its own). */
   music?: string;
+  /** Every released non-Tutorial Map: the fewest ticks a Run may take (half the bot's time to 100%). */
+  speedrunFloorTicks?: number;
   /** Edit Layout: the price of each Move in order (3 per Area). */
   movePrices: number[];
   events: MapEvents;

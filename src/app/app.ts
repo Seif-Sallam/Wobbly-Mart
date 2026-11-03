@@ -6,6 +6,7 @@ import type { MapDef } from '../sim/map';
 import {
   encodeSaveCode,
   decodeSaveCode,
+  voidRuns,
   snapshot,
   ticksPerFrame,
   SAVER_FRAME_CAP,
@@ -47,13 +48,14 @@ import { Hud, type EdgeArrow, type EventBanner, type EventCard } from '../ui/hud
 import { renderUi, type Overlay, type UiActions, type UiState } from '../ui/app';
 import { Sounds } from '../audio/audio';
 import { FEEL } from '../feel';
+import { runTicks } from '../sim/stats';
 import { TUNING } from '../sim/tuning';
 import { objectiveId } from '../../catalog/objectives';
 import { logbookView, objectiveInfo, progressOfSave, type MapProgress } from './logbook';
 import { challengeCard } from './challenge-card';
 import { API_URL } from './api';
 import { Device } from './device';
-import { readBoard, submitScore } from './wall';
+import { readBoard, submitRun, submitScore } from './wall';
 import { KIND_OF, type WallTab, type WallView } from '../ui/wall';
 import { dailyDay } from '../sim/daily';
 import { objectiveProgress } from '../sim/objectives';
@@ -92,6 +94,8 @@ export class App {
   private privacyBack: Overlay | null = null;
   /** Where the Wall's ✕ returns to; joining from the Wall returns to the Wall. */
   private wallBack: Overlay | null = null;
+  /** A Run reached 100% and its end screen hasn't opened yet. */
+  private runEndOwed = false;
   /** No save existed at load: the Wardrobe opens by itself once the title is ready. */
   private firstRun: boolean;
   private ui: UiState;
@@ -186,6 +190,7 @@ export class App {
       wall: null,
       daily: null,
       shiftEnd: null,
+      runEnd: null,
     };
     this.ui.zoom = this.zoom();
     watchLayout(() => this.applyLayout());
@@ -510,7 +515,10 @@ export class App {
         this.ui.card = 'ios';
       }
     }
-    if (e.type === 'complete') this.hud.celebrate();
+    if (e.type === 'complete') {
+      this.hud.celebrate();
+      this.endRun(w);
+    }
     if (e.type === 'lessonReplay') this.hud.banner(iconUrl('player'), lessonRetry(w, e.lesson), 'No harm done');
     if (e.type === 'challengeStarted') {
       this.hud.stamp('CHALLENGE!');
@@ -730,6 +738,7 @@ export class App {
     this.redraw = true;
     this.syncAudio();
     this.renderUi();
+    if (o === null) this.showRunEnd();
   }
 
   // a Map opens once it was visited or the Map before it has its Exit Pad bought
@@ -830,7 +839,7 @@ export class App {
     },
     pasteSave: (code) => {
       try {
-        this.save = decodeSaveCode(code);
+        this.save = voidRuns(decodeSaveCode(code));
       } catch (e) {
         return `That code didn't work: ${(e as Error).message}`;
       }
@@ -876,6 +885,17 @@ export class App {
       join: () => this.actions.online.join(),
       play: (id) => (this.ui.screen === 'title' ? (this.openOverlay(null), this.play(id)) : this.actions.pickMap(id)),
       playShift: () => this.playShift(),
+      click: () => this.sounds.sfx('click'),
+    },
+    runEnd: {
+      wall: () => this.openWall('speed'),
+      join: () => this.actions.online.join(),
+      retry: () => void this.sendRun(),
+      close: () => {
+        // a Run with no Device yet is kept: joining later, from anywhere, sends it
+        if (this.ui.runEnd?.result !== 'join') this.ui.runEnd = null;
+        this.openOverlay(null);
+      },
       click: () => this.sounds.sfx('click'),
     },
     selectLook: (look, cap) => {
@@ -1000,6 +1020,46 @@ export class App {
     void submitScore(this.device.code, w.map.id, w.score, w.stats.playTime);
   }
 
+  /** A valid Run reached 100%: after the confetti, its end screen opens and the Run is sent. */
+  private endRun(w: World): void {
+    if (w.runVoid || isTutorialMap(w.map) || w.map.shift) return;
+    this.ui.runEnd = {
+      mapId: w.map.id,
+      mapName: w.map.name,
+      ticks: runTicks(w.stats),
+      openings: w.stats.openings,
+      result: 'join',
+      around: null,
+    };
+    this.runEndOwed = true;
+    if (this.device.code) void this.sendRun();
+    setTimeout(() => this.showRunEnd(), FEEL.score.runEndDelayMs);
+  }
+
+  /** The end screen waits for a moment with no other popup; openOverlay(null) asks again. */
+  private showRunEnd(): void {
+    if (!this.runEndOwed || this.ui.overlay !== null || this.ui.screen !== 'game') return;
+    this.runEndOwed = false;
+    this.openOverlay('run-end');
+  }
+
+  /** Posts the Run on the end screen, then reads Around you; a reply for a closed screen is dropped. */
+  private async sendRun(): Promise<void> {
+    const run = this.ui.runEnd;
+    const code = this.device.code;
+    if (!run || !code) return;
+    this.ui.runEnd = { ...run, result: 'sending' };
+    this.renderUi();
+    const r = await submitRun(code, run.mapId, run.ticks);
+    if (this.ui.runEnd?.mapId !== run.mapId) return;
+    this.ui.runEnd = {
+      ...this.ui.runEnd,
+      result: r.ok ? r.data : (RUN_ERROR[r.error] ?? 'refused'),
+      around: r.ok ? r.data.around : null,
+    };
+    this.renderUi();
+  }
+
   private openWall(tab: WallTab): void {
     const here = this.game?.world.map;
     const maps = MAPS.filter((m) => !isTutorialMap(m));
@@ -1049,6 +1109,8 @@ export class App {
   private async onlineCall(call: Promise<string | null>, then?: Overlay | null): Promise<string | null> {
     const error = await call;
     if (this.ui.online) this.ui.online = { ...this.ui.online, code: this.device.code, nickname: this.device.nickname };
+    // a Run finished before the Device existed goes up now
+    if (!error && this.device.code && this.ui.runEnd?.result === 'join') void this.sendRun();
     if (!error && then !== undefined) this.openOverlay(then);
     else this.renderUi();
     return error;
@@ -1121,6 +1183,13 @@ async function copyText(text: string): Promise<boolean> {
     return false;
   }
 }
+
+/** What the end screen says for a failed Run submit; a 429 retries like offline (spec §7.2). */
+const RUN_ERROR: Partial<Record<string, 'offline' | 'update'>> = {
+  offline: 'offline',
+  slow_down: 'offline',
+  update: 'update',
+};
 
 const ONLINE_OVERLAYS = new Set<Overlay | null>(['privacy', 'join', 'nickname', 'cloud-code']);
 

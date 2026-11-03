@@ -7,6 +7,8 @@ import type {
   DeviceResponse,
   ErrorCode,
   RankResponse,
+  RunBody,
+  RunResponse,
   ScoreBody,
 } from '../../worker/api';
 
@@ -58,4 +60,5 @@ export const api = {
   /** keepalive: it may be sent as the page is hidden. */
   putScore: (code: string, map: string, body: ScoreBody) =>
     call<RankResponse>('PUT', `/v1/scores/${map}`, { code, body, keepalive: true }),
+  postRun: (code: string, body: RunBody) => call<RunResponse>('POST', '/v1/runs', { code, body }),
 };

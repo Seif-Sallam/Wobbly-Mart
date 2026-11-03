@@ -1,0 +1,90 @@
+# Board API Worker. Top level = local dev (`npm run worker:dev`); [env.staging] and [env.production] deploy from CI.
+# D1 ids are not secrets; the owner fills them in from the setup wizard (scripts/worker-setup.sh).
+name = "wobbly-mart-api"
+main = "index.ts"
+compatibility_date = "2026-10-01"
+workers_dev = true
+preview_urls = false
+send_metrics = false
+
+[observability]
+enabled = true
+
+
+[vars]
+CORS_ORIGINS = ""
+CORS_LAN = "true"
+
+[[d1_databases]]
+binding = "BOARD"
+database_name = "wobbly_board"
+database_id = "local-board"
+migrations_dir = "migrations/board"
+
+[[d1_databases]]
+binding = "REPLAY"
+database_name = "wobbly_replay"
+database_id = "local-replay"
+migrations_dir = "migrations/replay"
+
+[[d1_databases]]
+binding = "SAVE"
+database_name = "wobbly_save"
+database_id = "local-save"
+migrations_dir = "migrations/save"
+
+# Board reads by IP / writes by Device and route / all writes / new Devices by IP.
+[[ratelimits]]
+name = "READ_LIMIT"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }
+
+[[ratelimits]]
+name = "WRITE_LIMIT"
+namespace_id = "1002"
+simple = { limit = 6, period = 60 }
+
+# ~10/min per location: 3 busy locations x 1,440 min x ~2 rows per write stays under D1 Free's 100K row writes a day.
+[[ratelimits]]
+name = "GLOBAL_WRITE_LIMIT"
+namespace_id = "1003"
+simple = { limit = 10, period = 60 }
+
+[[ratelimits]]
+name = "DEVICE_LIMIT"
+namespace_id = "1004"
+simple = { limit = 3, period = 60 }
+
+# ---------------------------------------------------------------- staging (second, separate Cloudflare account)
+[env.staging]
+name = "wobbly-mart-api-staging"
+preview_urls = false
+vars = { CORS_ORIGINS = "", CORS_LAN = "true" }
+d1_databases = [
+  { binding = "BOARD", database_name = "wobbly_board", database_id = "25c896fa-342e-469a-a0a1-022eec3cc175", migrations_dir = "migrations/board" },
+  { binding = "REPLAY", database_name = "wobbly_replay", database_id = "da10b982-2b65-4a68-80f4-8bf1faf09ce5", migrations_dir = "migrations/replay" },
+  { binding = "SAVE", database_name = "wobbly_save", database_id = "9e014d87-0130-4d51-bab9-10bd916caff2", migrations_dir = "migrations/save" },
+]
+ratelimits = [
+  { name = "READ_LIMIT", namespace_id = "1001", simple = { limit = 30, period = 60 } },
+  { name = "WRITE_LIMIT", namespace_id = "1002", simple = { limit = 6, period = 60 } },
+  { name = "GLOBAL_WRITE_LIMIT", namespace_id = "1003", simple = { limit = 10, period = 60 } },
+  { name = "DEVICE_LIMIT", namespace_id = "1004", simple = { limit = 3, period = 60 } },
+]
+
+# ---------------------------------------------------------------- production
+[env.production]
+name = "wobbly-mart-api"
+preview_urls = false
+vars = { CORS_ORIGINS = "https://seif-sallam.github.io", CORS_LAN = "false" }
+d1_databases = [
+  { binding = "BOARD", database_name = "wobbly_board", database_id = "3c546337-03ae-493e-b5bc-2e5b385698d5", migrations_dir = "migrations/board" },
+  { binding = "REPLAY", database_name = "wobbly_replay", database_id = "26d799f0-a6b7-47a1-b4f0-a2c1c62a4cda", migrations_dir = "migrations/replay" },
+  { binding = "SAVE", database_name = "wobbly_save", database_id = "124c8948-c0e9-4cb0-a7e0-edc4d862b0c2", migrations_dir = "migrations/save" },
+]
+ratelimits = [
+  { name = "READ_LIMIT", namespace_id = "1001", simple = { limit = 30, period = 60 } },
+  { name = "WRITE_LIMIT", namespace_id = "1002", simple = { limit = 6, period = 60 } },
+  { name = "GLOBAL_WRITE_LIMIT", namespace_id = "1003", simple = { limit = 10, period = 60 } },
+  { name = "DEVICE_LIMIT", namespace_id = "1004", simple = { limit = 3, period = 60 } },
+]

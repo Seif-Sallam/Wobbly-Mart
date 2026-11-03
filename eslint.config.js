@@ -5,7 +5,7 @@ import globals from 'globals';
 const restrict = (patterns) => ({ 'no-restricted-imports': ['error', { patterns }] });
 
 export default tseslint.config(
-  { ignores: ['dist', 'public', '.scratch', 'node_modules'] },
+  { ignores: ['dist', 'public', '.scratch', 'node_modules', '**/.wrangler'] },
   js.configs.recommended,
   ...tseslint.configs.strict,
   {
@@ -37,6 +37,27 @@ export default tseslint.config(
   {
     files: ['src/view/**'],
     rules: restrict([{ group: ['**/ui/**', 'preact', 'preact/*'], message: 'view/ must not import ui/' }]),
+  },
+  // worker/ may share catalog/, maps/ and pure sim/, never the browser game
+  {
+    files: ['worker/**'],
+    rules: restrict([
+      {
+        group: [
+          '**/src/app/**',
+          '**/src/view/**',
+          '**/src/ui/**',
+          '**/src/input/**',
+          '**/src/audio/**',
+          '**/src/editor/**',
+        ],
+        message: 'worker/ may import catalog/, maps/ and src/sim/ only',
+      },
+      {
+        group: ['three', 'three/*', 'preact', 'preact/*', 'howler', 'nipplejs', 'lil-gui'],
+        message: 'worker/ has no game deps',
+      },
+    ]),
   },
   {
     files: ['src/ui/**'],

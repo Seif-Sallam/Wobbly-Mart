@@ -36,5 +36,8 @@ export default defineConfig({
   plugins: [layoutEditorSave()],
   build: { target: 'es2022', chunkSizeWarningLimit: 800 },
   // flowing tests simulate an hour or more of play; CI runners are ~2× slower than a laptop
-  test: { testTimeout: 30_000 },
+  test: {
+    testTimeout: 30_000,
+    projects: [{ extends: true, test: { name: 'game', include: ['src/**/*.test.ts'] } }, 'worker/vitest.config.ts'],
+  },
 });

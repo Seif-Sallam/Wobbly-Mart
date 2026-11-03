@@ -120,4 +120,10 @@ export const CREDITS: Credit[] = [
     license: 'OFL 1.1',
     url: 'https://fonts.google.com/specimen/Fredoka',
   },
+  {
+    what: 'List of Dirty, Naughty, Obscene, and Otherwise Bad Words (Nickname filter)',
+    author: 'Shutterstock (LDNOOBW)',
+    license: 'CC-BY 4.0',
+    url: 'https://github.com/LDNOOBW/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words',
+  },
 ];

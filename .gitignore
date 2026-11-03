@@ -4,3 +4,5 @@ dist
 .playwright-mcp
 .claude
 *.stackdump
+.wrangler
+.scratch/worker-setup.env

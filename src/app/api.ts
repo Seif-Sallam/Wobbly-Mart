@@ -1,5 +1,14 @@
 // The Board API client. A build without VITE_API_URL has API_URL null: every online feature hides.
-import type { ApiError, CloudCodeResponse, DeviceResponse, ErrorCode } from '../../worker/api';
+import type {
+  ApiError,
+  BoardKind,
+  BoardResponse,
+  CloudCodeResponse,
+  DeviceResponse,
+  ErrorCode,
+  RankResponse,
+  ScoreBody,
+} from '../../worker/api';
 
 const DEV_PORT = 8787;
 /** A call that hangs this long counts as out of reach. */
@@ -14,7 +23,7 @@ export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ErrorCode
 async function call<T>(
   method: string,
   path: string,
-  opts: { code?: string; body?: unknown } = {},
+  opts: { code?: string | null; body?: unknown; keepalive?: boolean } = {},
 ): Promise<ApiResult<T>> {
   if (!API_URL) return { ok: false, error: 'offline' };
   const headers: Record<string, string> = {};
@@ -26,6 +35,7 @@ async function call<T>(
       headers,
       body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
       signal: AbortSignal.timeout(TIMEOUT_MS),
+      keepalive: opts.keepalive,
     });
     if (res.status >= 500) return { ok: false, error: 'offline' };
     if (!res.ok) return { ok: false, error: ((await res.json()) as ApiError).error };
@@ -42,4 +52,10 @@ export const api = {
     call<undefined>('PUT', '/v1/device/nickname', { code, body: { nickname } }),
   rotate: (code: string) => call<CloudCodeResponse>('POST', '/v1/device/rotate', { code }),
   deleteDevice: (code: string) => call<undefined>('DELETE', '/v1/device', { code }),
+  /** `code` (optional) adds your rank and Around you. */
+  board: (kind: BoardKind, map: string, day: number, code: string | null) =>
+    call<BoardResponse>('GET', `/v1/boards/${kind}/${map}${kind === 'daily' ? `?day=${day}` : ''}`, { code }),
+  /** keepalive: it may be sent as the page is hidden. */
+  putScore: (code: string, map: string, body: ScoreBody) =>
+    call<RankResponse>('PUT', `/v1/scores/${map}`, { code, body, keepalive: true }),
 };

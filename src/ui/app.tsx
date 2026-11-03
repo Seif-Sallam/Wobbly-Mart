@@ -20,6 +20,7 @@ import {
   type OnlineActions,
   type OnlineView,
 } from './online';
+import { WallPopup, type WallActions, type WallView } from './wall';
 import { Logbook, type LogbookView } from './logbook';
 import { GEAR } from './hud';
 import { CREDITS } from '../../catalog/credits';
@@ -40,7 +41,8 @@ export type Overlay =
   | 'privacy'
   | 'join'
   | 'nickname'
-  | 'cloud-code';
+  | 'cloud-code'
+  | 'wall';
 
 export interface UiState {
   screen: 'title' | 'game';
@@ -74,6 +76,7 @@ export interface UiState {
   cap: string;
   /** Null when this build has no Board API: every online feature hides. */
   online: OnlineView | null;
+  wall: WallView | null;
 }
 
 /** The Wardrobe's 3D preview and portraits, drawn by the view. */
@@ -133,6 +136,7 @@ export interface UiActions {
   wardrobe: WardrobeBridge;
   selectLook: (look: string, cap: string) => void;
   online: OnlineActions;
+  wall: WallActions;
 }
 
 const FAMILY_ORDER = ['player', 'station', 'staff'] as const;
@@ -659,6 +663,11 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
     <div class="title">
       {ready && (
         <div class="title-corner">
+          {s.online && (
+            <button class="round" aria-label="Wall of Fame" onClick={() => (a.click(), a.online.openWall())}>
+              🏅
+            </button>
+          )}
           <button class="round" aria-label="Wardrobe" onClick={() => (a.click(), a.open('wardrobe'))}>
             👕
           </button>
@@ -903,6 +912,7 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
           {overlay === 'join' && <JoinPopup o={a.online} a={a} />}
           {overlay === 'nickname' && <NicknamePopup current={s.online?.nickname ?? null} o={a.online} a={a} />}
           {overlay === 'cloud-code' && <CodePopup o={a.online} a={a} />}
+          {overlay === 'wall' && s.wall && <WallPopup v={s.wall} a={a.wall} />}
           {overlay === 'logbook' && s.logbook && (
             <Logbook view={s.logbook} tab={s.logbookTab} close={a.close} click={a.click} />
           )}

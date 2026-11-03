@@ -10,11 +10,10 @@ import { dayOf, nowSeconds } from './time';
 
 const BODY_CAP = 2 * KB;
 
-/** The verified Device behind `Authorization: Bearer <Cloud Code>`, or null without the header. Lookups are limited by IP. */
+/** The verified Device behind `Authorization: Bearer <Cloud Code>`, or null without the header. Callers limit by IP first. */
 export async function findDevice(req: Request, env: Env): Promise<number | null> {
   const auth = req.headers.get('Authorization');
   if (!auth) return null;
-  await limit(env.READ_LIMIT, clientIp(req));
   const hash = auth.startsWith('Bearer ') ? await hashCloudCode(auth.slice(7)) : null;
   if (!hash) throw new HttpError('unknown_device');
   const row = await env.BOARD.prepare('SELECT `id_device` FROM `device` WHERE `token_hash` = ?')
@@ -25,6 +24,7 @@ export async function findDevice(req: Request, env: Env): Promise<number | null>
 }
 
 export async function requireDevice(req: Request, env: Env): Promise<number> {
+  await limit(env.READ_LIMIT, clientIp(req));
   const id = await findDevice(req, env);
   if (id === null) throw new HttpError('unknown_device');
   return id;

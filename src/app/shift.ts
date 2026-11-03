@@ -34,7 +34,7 @@ export class Shift {
   pending: Promise<ShiftBody> | null = null;
 
   constructor(readonly day: ShiftDay) {
-    this.debug = new URLSearchParams(location.search).has('debug');
+    this.debug = import.meta.env.DEV && new URLSearchParams(location.search).has('debug');
     try {
       const s = JSON.parse(read(KEY) ?? 'null') as Stored | null;
       // a stored Shift of another day (or sim) is just dropped

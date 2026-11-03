@@ -1,4 +1,4 @@
-// `?debug`: lil-gui panel (lazy-loaded) — live tuning, cheats, render counts. Dev builds add the layout editor.
+// `?debug` (dev builds only): lil-gui panel (lazy-loaded) — live tuning, cheats, render counts, the layout editor.
 import { INPUT_CAP } from '../../catalog/producers';
 import type { Game } from './game';
 import { FEEL } from '../feel';
@@ -116,8 +116,6 @@ export async function openDebug(game: Game, phone: boolean, hooks: DebugHooks): 
     .name('view size (m)')
     .onChange(() => game.stage.resize());
 
-  if (import.meta.env.DEV) {
-    const { addEditor } = await import('../editor/editor');
-    addEditor(gui);
-  }
+  const { addEditor } = await import('../editor/editor');
+  addEditor(gui);
 }

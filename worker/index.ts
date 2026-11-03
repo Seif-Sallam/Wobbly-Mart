@@ -4,6 +4,7 @@ import { createDevice, deleteDeviceRoute, getDevice, renameDevice, rotateCloudCo
 import { errorResponse, HttpError, preflight, withCors } from './http';
 import { readBoard } from './boards';
 import { submitRun } from './runs';
+import { submitShift } from './shifts';
 import { submitScore } from './scores';
 
 type Handler = (req: Request, env: Env) => Promise<Response>;
@@ -13,6 +14,7 @@ const ROUTES: Record<string, Partial<Record<string, Handler>>> = {
   '/v1/device/nickname': { PUT: renameDevice },
   '/v1/device/rotate': { POST: rotateCloudCode },
   '/v1/runs': { POST: submitRun },
+  '/v1/shifts': { POST: submitShift },
 };
 
 /** Routes with a path parameter: /v1/boards/:kind/:map and /v1/scores/:map. */

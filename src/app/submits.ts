@@ -1,12 +1,13 @@
-// Run and Score submits, and the queue that keeps what couldn't post yet (offline, a 429, no Device) until the
-// next app start, Wall open, accepted submit or new Device (spec §12). One entry per Board: a Map's best Run and
-// its latest Score.
-import type { ErrorCode, RankResponse, RunResponse } from '../../worker/api';
+// Run, Score and Shift submits, and the queue that keeps what couldn't post yet (offline, a 429, no Device) until the
+// next app start, Wall open, accepted submit or new Device (spec §12). One entry per Board: a Map's best Run, its
+// latest Score, the day's best Shift (the Worker drops it past 00:15 UTC the next day).
+import type { ErrorCode, RankResponse, RunResponse, ShiftBody, ShiftResponse } from '../../worker/api';
 import { fnv1a } from '../sim/rng';
 import { SIM_VERSION } from '../sim/version';
 import { api, type ApiResult } from './api';
 import { read, write } from './storage';
 import { forgetBoards } from './wall';
+import { Shift } from './shift';
 
 const QUEUE = 'wobbly-mart.pending';
 const SENT = 'wobbly-mart.score-sent';
@@ -18,6 +19,7 @@ interface Queue {
   /** Map → ticks */
   runs: Record<string, number>;
   scores: Record<string, { score: number; playTime: number }>;
+  shift?: ShiftBody;
 }
 
 function readJson<T>(key: string, fallback: T): T {
@@ -78,6 +80,23 @@ async function postScore(code: string, map: string, s: Queue['scores'][string]):
   return r;
 }
 
+async function postShift(code: string, body: ShiftBody): Promise<ApiResult<ShiftResponse>> {
+  const key = `shift/${body.day}/${body.ticks}`;
+  inFlight.add(key);
+  const r = await api.postShift(code, body);
+  inFlight.delete(key);
+  if (r.ok) {
+    Shift.keepResult(body.day, r.data);
+    forgetBoards('daily/');
+    forgetBoards('streak/');
+  }
+  if (settled(r))
+    change((q) => {
+      if (q.shift?.day === body.day && q.shift.ticks === body.ticks) delete q.shift;
+    });
+  return r;
+}
+
 let flushing: Promise<void> | null = null;
 
 /** Posts everything queued, Runs first, and stops at the first error worth a retry (likely still offline).
@@ -91,6 +110,8 @@ export function flushPending(code: string): Promise<void> {
     for (const [map, s] of Object.entries(q.scores)) {
       if (!inFlight.has(`score/${map}/${s.score}`) && !settled(await postScore(code, map, s))) return;
     }
+    const s = q.shift;
+    if (s && !inFlight.has(`shift/${s.day}/${s.ticks}`)) await postShift(code, s);
   })().finally(() => (flushing = null));
   return flushing;
 }
@@ -116,4 +137,15 @@ export async function submitScore(code: string, map: string, score: number, play
   const s = { score, playTime: Math.floor(playTime) };
   change((q) => (q.scores[map] = s));
   if ((await postScore(code, map, s)).ok) void flushPending(code);
+}
+
+/** Queues a finished Shift (a faster one of the same day replaces it), then posts it; null without a Device. */
+export async function submitShift(code: string | null, body: ShiftBody): Promise<ApiResult<ShiftResponse> | null> {
+  change((q) => {
+    if (q.shift?.day !== body.day || body.ticks < q.shift.ticks) q.shift = body;
+  });
+  if (!code) return null;
+  const r = await postShift(code, body);
+  if (r.ok) void flushPending(code);
+  return r;
 }

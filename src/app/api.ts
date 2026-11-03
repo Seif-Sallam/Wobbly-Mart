@@ -10,6 +10,8 @@ import type {
   RunBody,
   RunResponse,
   ScoreBody,
+  ShiftBody,
+  ShiftResponse,
 } from '../../worker/api';
 
 const DEV_PORT = 8787;
@@ -61,4 +63,5 @@ export const api = {
   putScore: (code: string, map: string, body: ScoreBody) =>
     call<RankResponse>('PUT', `/v1/scores/${map}`, { code, body, keepalive: true }),
   postRun: (code: string, body: RunBody) => call<RunResponse>('POST', '/v1/runs', { code, body }),
+  postShift: (code: string, body: ShiftBody) => call<ShiftResponse>('POST', '/v1/shifts', { code, body }),
 };

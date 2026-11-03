@@ -25,7 +25,7 @@ export interface RunEndActions {
 }
 
 /** Counts from the Board's last place up to `rank`, easing out. */
-function Climb({ rank, total }: { rank: number; total: number }) {
+export function Climb({ rank, total }: { rank: number; total: number }) {
   const [shown, setShown] = useState(total);
   useEffect(() => {
     const t0 = performance.now();
@@ -48,6 +48,20 @@ const NOTE = {
   stale: "Saved: your Cloud Code isn't recognised. Enter it again in Settings and the Run goes up.",
   refused: "This Run can't go on the Wall.",
 };
+
+/** An end screen's Around you, times as m:ss.cc. */
+export function AroundYou({ rows }: { rows: Row[] }) {
+  return (
+    <section>
+      <h4 class="wall-h4">Around you</h4>
+      <div class="wall-rows">
+        {rows.map((row, i) => (
+          <WallRow key={i} rank={row.rank} nickname={row.nickname} value={clockOf(row.value)} me={row.you} />
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export function RunEndPopup({ v, a }: { v: RunEndView; a: RunEndActions }) {
   const r = v.result;
@@ -92,16 +106,7 @@ export function RunEndPopup({ v, a }: { v: RunEndView; a: RunEndActions }) {
           )}
         </div>
       )}
-      {v.around && (
-        <section>
-          <h4 class="wall-h4">Around you</h4>
-          <div class="wall-rows">
-            {v.around.map((row, i) => (
-              <WallRow key={i} rank={row.rank} nickname={row.nickname} value={clockOf(row.value)} me={row.you} />
-            ))}
-          </div>
-        </section>
-      )}
+      {v.around && <AroundYou rows={v.around} />}
     </Popup>
   );
 }

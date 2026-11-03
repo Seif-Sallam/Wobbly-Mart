@@ -61,6 +61,18 @@ export interface RunBody {
   simVersion: number;
 }
 
+/** POST /v1/shifts. `replay`: the gzipped Replay JSON, base64; at most 64 KB before base64. */
+export interface ShiftBody {
+  day: number;
+  /** Sim ticks to the goal. */
+  ticks: number;
+  score: number;
+  /** Money earned in the Shift. */
+  money: number;
+  simVersion: number;
+  replay: string;
+}
+
 /** Every submit's answer: where the row stands now. */
 export interface RankResponse {
   rank: number;
@@ -71,4 +83,9 @@ export interface RankResponse {
 /** A Run's answer also carries Around you, so the end screen needs no Board read. */
 export interface RunResponse extends RankResponse {
   around: Row[];
+}
+
+/** POST /v1/shifts: the rank of the day, Around you and the Streak after this Shift. */
+export interface ShiftResponse extends RunResponse {
+  streak: number;
 }

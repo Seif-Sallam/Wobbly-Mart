@@ -215,10 +215,13 @@ SEED_DEVICES=2000
 record() { printf -- '- %s: %s\n' "$1" "$2" >> "$RESULTS"; printf '  %s✓ recorded%s %s: %s\n' "$GREEN" "$RESET" "$1" "$2"; }
 # masked CODE shows only the last group of a Cloud Code.
 masked() { printf 'WBLY-••••-••••-••••-%s' "${1: -4}"; }
-# api METHOD PATH [curl args…] calls staging as the probe; the Cloud Code goes in through a header file, never argv.
+# api METHOD PATH [curl args…] calls staging as the probe. The Cloud Code goes in through a mode-600 header file, never
+# argv. Git Bash's curl can't open a <(…) path, so it is a real file, removed on exit.
+AUTH_FILE=".scratch/release-gate.auth"
+trap 'rm -f "$AUTH_FILE"' EXIT
 api() {
   local method="$1" path="$2"; shift 2
-  curl -sS -X "$method" -H @<(printf 'Authorization: Bearer %s\n' "$PROBE_CODE") "$@" "$STAGING_API_URL$path"
+  curl -sS -X "$method" -H @"$AUTH_FILE" "$@" "$STAGING_API_URL$path"
 }
 # d1 DB ARGS… runs wrangler d1 execute against a STAGING database.
 d1() { local db="$1"; shift; CLOUDFLARE_ACCOUNT_ID="$STAGING_ACCOUNT_ID" "${WRANGLER[@]}" d1 execute "$db" --remote --env staging "$@"; }
@@ -243,12 +246,16 @@ printf '# Release gate results, %s UTC\n\nDaily day %s, SIM_VERSION %s, %s seede
 stage "A probe Device and 2,000 seeded Devices"
 say "Creates one Device ('Gate Probe') through the API, then seeds $SEED_DEVICES fake Devices straight into"
 say "staging's wobbly_board: a Corner Shop Score and Speed row, today's Daily row and a Streak each."
-note "About $((SEED_DEVICES * 4)) row writes, well inside the free 100K a day. Stage 9 deletes them all."
+warn "D1 counts every index entry as a row written: seeding is ~$((SEED_DEVICES * 17 / 1000))K rows_written and the clean-up as much again."
+warn "That is ~70% of staging's free 100K a day: run this at most once per UTC day. Stage 9 deletes it all."
 confirm "Create the probe and seed staging now?" || { warn "Nothing seeded. Stopping."; exit 1; }
 res=$(curl -sS -X POST -H 'Content-Type: application/json' --data '{"nickname":"Gate Probe"}' "$STAGING_API_URL/v1/device")
 PROBE_CODE=$(printf '%s' "$res" | sed -n 's/.*"cloudCode":"\([^"]*\)".*/\1/p')
 [[ -n "$PROBE_CODE" ]] || { warn "POST /v1/device failed: $res"; exit 1; }
 write_env PROBE_CODE "$PROBE_CODE"
+(umask 077 && printf 'Authorization: Bearer %s\n' "$PROBE_CODE" > "$AUTH_FILE")
+code=$(api GET /v1/device -o /dev/null -w '%{http_code}')
+[[ "$code" == 200 ]] || { warn "Staging doesn't accept the probe's Cloud Code (HTTP $code). Stopping before seeding."; exit 1; }
 say "Probe Cloud Code $(masked "$PROBE_CODE") (kept in $ENV_FILE, mode 600)."
 # the Worker stores SHA-256 of the 16 code characters (no WBLY, no dashes)
 flat=$(printf '%s' "$PROBE_CODE" | tr -d '-'); hash=$(printf '%s' "${flat#WBLY}" | sha256sum | cut -c1-64)
@@ -278,7 +285,8 @@ say "Reads each of the four Boards once as the probe: what a Wall tab costs with
 for path in "/v1/boards/score/corner-shop" "/v1/boards/speed/corner-shop" "/v1/boards/daily/daily?day=$DAY" "/v1/boards/streak/-"; do
   out=$(api GET "$path" -w '\n%{http_code}')
   code=$(printf '%s' "$out" | tail -n1); total=$(printf '%s' "$out" | sed -n 's/.*"total":\([0-9]*\).*/\1/p')
-  record "GET $path" "HTTP $code, total ${total:-?}"
+  rank=$(printf '%s' "$out" | sed -n 's/.*"you":{"rank":\([0-9]*\).*/\1/p')
+  record "GET $path" "HTTP $code, total ${total:-?}, your rank ${rank:-MISSING (read was anonymous)}"
 done
 say "D1 Insights lags a few minutes behind."
 pause "Wait about 3 minutes, then press Enter to fetch Insights."
@@ -305,8 +313,9 @@ step "wobbly-mart-api-staging → Observability (Logs) → the newest PUT /v1/sa
 step "Read its CPU time (\$workers.cpuTimeMs). Free allows 10 ms; it includes gunzip + parseSave (decodeSaveCode)."
 ask SAVE_CPU_MS "CPU time of that PUT /v1/save, in ms:"
 record "PUT /v1/save CPU" "$SAVE_CPU_MS ms"
-ask READ_CPU_MS "While there: the highest CPU time of the four GET /v1/boards calls, in ms (Enter to skip):" || true
-[[ -n "${READ_CPU_MS:-}" ]] && record "GET /v1/boards CPU (max)" "$READ_CPU_MS ms"
+step "Then the four GET /v1/boards calls from stage 3: note each one's CPU time, and whether the first was a cold start."
+ask READ_CPU_MS "Their CPU times in ms, in order score speed daily streak (e.g. 9 3 2 2):"
+record "GET /v1/boards CPU (score speed daily streak)" "$READ_CPU_MS ms"
 
 stage "Logs carry no Cloud Code"
 say "Same Logs view. Open the PUT /v1/save entry and expand the request."
@@ -316,15 +325,17 @@ if confirm "No Authorization header and no WBLY code anywhere in the logs?"; the
 else record "Logs free of Cloud Codes" "NO (blocker)"; fi
 
 stage "Rate limits on Free: a scripted burst"
-say "Waits 60 s so the earlier calls don't count, then fires 40 Board reads and 4 Device creates from this IP."
+say "Waits 60 s so the earlier calls don't count, then fires 120 Board reads and 8 Device creates from this IP."
 note "Expect about 30 × 200 then 429 for reads (limit 30/60 s), and 3 × 200 then 429 for creates (3/60 s)."
 note "The binding counts per Cloudflare location and is approximate, so a few over is fine."
 pause "Press Enter to start (takes about a minute)."
 sleep 60
-reads=$(for _ in $(seq 40); do curl -s -o /dev/null -w '%{http_code}\n' "$STAGING_API_URL/v1/boards/score/corner-shop"; done | sort | uniq -c | awk '{printf "%s×%s ", $1, $2}')
-record "Read burst (40)" "$reads"
-creates=$(for _ in 1 2 3 4; do curl -s -o /dev/null -w '%{http_code}\n' -X POST -H 'Content-Type: application/json' --data '{"nickname":"Gate Burst"}' "$STAGING_API_URL/v1/device"; done | tr '\n' ' ')
-record "Device create burst (4)" "$creates"
+# one connection for the whole burst, so every request lands on the same Cloudflare location
+burst=(); for _ in $(seq 120); do burst+=(-o /dev/null "$STAGING_API_URL/v1/boards/score/corner-shop"); done
+reads=$(curl -s -w '%{http_code}\n' "${burst[@]}" | awk '{c[NR]=$1} END {for (i = 1; i <= NR; i++) printf "%s%s", c[i], (i % 30 ? " " : " | ")}')
+record "Read burst (120, in order)" "$reads"
+creates=$(for _ in $(seq 8); do curl -s -o /dev/null -w '%{http_code}\n' -X POST -H 'Content-Type: application/json' --data '{"nickname":"Gate Burst"}' "$STAGING_API_URL/v1/device"; done | tr '\n' ' ')
+record "Device create burst (8, in order)" "$creates"
 
 stage "The nightly cron"
 open_url "https://dash.cloudflare.com/?to=/:account/workers-and-pages"
@@ -334,6 +345,8 @@ if confirm "Cron is 30 0 * * * and the last 00:30 UTC run succeeded?"; then reco
 else ask CRON_NOTE "What did you see?"; record "Cron" "NOT ok: $CRON_NOTE"; fi
 
 stage "Delete my Device on staging"
+note "Waiting 60 s: the burst used up this IP's budget, and Delete's Cloud Code check counts against it too."
+sleep 60
 code=$(api DELETE /v1/device -o /dev/null -w '%{http_code}')
 record "DELETE /v1/device" "HTTP $code (expect 204)"
 code=$(api GET /v1/device -o /dev/null -w '%{http_code}')
@@ -342,16 +355,16 @@ code=$(api GET /v1/save -o /dev/null -w '%{http_code}')
 record "GET /v1/save after Delete" "HTTP $code (expect 401)"
 
 stage "Clean up the seeded rows"
-say "Deletes the 'Seed …' and 'Gate Burst' Devices and their Board rows from staging's wobbly_board."
+say "Deletes the 'Seed …', 'Gate Burst' and any leftover 'Gate Probe' Devices and their Board rows from staging's wobbly_board."
 if confirm "Delete them now?"; then
-  d1 wobbly_board --command "DELETE FROM \`board_entry\` WHERE \`id_device\` IN (SELECT \`id_device\` FROM \`device\` WHERE \`nickname\` LIKE 'Seed %' OR \`nickname\` = 'Gate Burst'); DELETE FROM \`device\` WHERE \`nickname\` LIKE 'Seed %' OR \`nickname\` = 'Gate Burst';"
+  d1 wobbly_board --command "DELETE FROM \`board_entry\` WHERE \`id_device\` IN (SELECT \`id_device\` FROM \`device\` WHERE \`nickname\` LIKE 'Seed %' OR \`nickname\` IN ('Gate Burst', 'Gate Probe')); DELETE FROM \`device\` WHERE \`nickname\` LIKE 'Seed %' OR \`nickname\` IN ('Gate Burst', 'Gate Probe');"
   left=$(d1 wobbly_board --json --command "SELECT COUNT(*) AS n FROM \`device\` WHERE \`nickname\` LIKE 'Seed %' OR \`nickname\` IN ('Gate Burst', 'Gate Probe')" | sed -n 's/.*"n": *\([0-9]*\).*/\1/p')
   record "Seed rows left" "${left:-?} (expect 0)"
 else
   SKIPPED+=("seed clean-up: re-run the wizard's last stage, or run its DELETE by hand on staging")
 fi
-rm -f "$SAVE_B64"
-write_env PROBE_CODE ""
+rm -f "$SAVE_B64" "$AUTH_FILE"
+sed -i '/^PROBE_CODE=/d' "$ENV_FILE"
 
 finish
 say "Results: $RESULTS (and .scratch/release-gate-insights.json). Hand both back to the session."

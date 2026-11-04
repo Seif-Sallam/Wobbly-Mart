@@ -203,6 +203,9 @@ export const FEEL = {
     cardHoldMs: 1300,
     cardFlyMs: 600,
     badgeCount: 8,
+    /** End of Run: wait after the 100%! confetti (ms), then the rank counts up from the last place (ms). */
+    runEndDelayMs: 2500,
+    rankClimbMs: 1400,
   },
   /** Thief Pan: camera glide to the Thief and back (s); the game freezes for the glide in plus the sim's freeze. */
   thiefPanGlide: 0.35,

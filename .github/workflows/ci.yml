@@ -33,7 +33,12 @@ jobs:
       - name: Bot playthrough (fails if 100% Completion is unreachable)
         run: npm run bot
       - run: npm run validate
+      - name: Daily calendar matches the generator (npm run daily:calendar refreshes it)
+        run: npm run daily:check
       - run: npm run build
+        env:
+          # main gets only the production URL, everything else only staging; unset = a build without online features
+          VITE_API_URL: ${{ github.ref == 'refs/heads/main' && vars.VITE_API_URL_PRODUCTION || github.ref != 'refs/heads/main' && vars.VITE_API_URL_STAGING || '' }}
       - run: npm run size
       - run: npm run check:dist
       - uses: actions/upload-pages-artifact@v3

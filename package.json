@@ -7,7 +7,7 @@
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p worker",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -16,7 +16,11 @@
     "bot": "tsx scripts/bot-playthrough.ts",
     "credits": "tsx scripts/credits.ts",
     "size": "size-limit",
-    "check:dist": "tsx scripts/check-dist.ts"
+    "check:dist": "tsx scripts/check-dist.ts",
+    "daily:calendar": "tsx scripts/daily-calendar.ts",
+    "daily:check": "tsx scripts/daily-calendar.ts --check",
+    "worker:dev": "wrangler dev --config worker/wrangler.toml --ip 0.0.0.0",
+    "worker:migrate": "wrangler d1 migrations apply wobbly_board --local --config worker/wrangler.toml && wrangler d1 migrations apply wobbly_replay --local --config worker/wrangler.toml && wrangler d1 migrations apply wobbly_save --local --config worker/wrangler.toml"
   },
   "dependencies": {
     "howler": "^2.2.4",
@@ -26,6 +30,8 @@
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.4.4",
+    "@cloudflare/workers-types": "^5.20261016.1",
     "@eslint/js": "^10.0.1",
     "@gltf-transform/core": "^4.5.1",
     "@gltf-transform/extensions": "^4.5.1",
@@ -43,6 +49,7 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.71.0",
     "vite": "^8.3.2",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "wrangler": "^4.151.1"
   }
 }

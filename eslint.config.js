@@ -4,8 +4,14 @@ import globals from 'globals';
 
 const restrict = (patterns) => ({ 'no-restricted-imports': ['error', { patterns }] });
 
+// Flat config replaces rule options per file, so every src/ block repeats this one.
+const WORKER = {
+  group: ['**/worker/**', '!**/worker/api', '!**/worker/nickname', '!**/worker/gzip'],
+  message: 'src/ may import worker/api (types), worker/nickname and worker/gzip only',
+};
+
 export default tseslint.config(
-  { ignores: ['dist', 'public', '.scratch', 'node_modules'] },
+  { ignores: ['dist', 'public', '.scratch', 'node_modules', '**/.wrangler'] },
   js.configs.recommended,
   ...tseslint.configs.strict,
   {
@@ -25,6 +31,7 @@ export default tseslint.config(
           group: ['**/view/**', '**/ui/**', '**/input/**', '**/app/**', '**/audio/**'],
           message: 'sim/ must not import view/ui/input',
         },
+        WORKER,
       ]),
       'no-restricted-properties': [
         'error',
@@ -36,10 +43,40 @@ export default tseslint.config(
   // view/ and ui/ only read sim state
   {
     files: ['src/view/**'],
-    rules: restrict([{ group: ['**/ui/**', 'preact', 'preact/*'], message: 'view/ must not import ui/' }]),
+    rules: restrict([{ group: ['**/ui/**', 'preact', 'preact/*'], message: 'view/ must not import ui/' }, WORKER]),
+  },
+  // the game shares only the Worker's request types and the Nickname rule
+  {
+    files: ['src/**'],
+    ignores: ['src/sim/**', 'src/view/**', 'src/ui/**'],
+    rules: restrict([WORKER]),
+  },
+  // worker/ may share catalog/, maps/ and pure sim/, never the browser game
+  {
+    files: ['worker/**'],
+    rules: restrict([
+      {
+        group: [
+          '**/src/app/**',
+          '**/src/view/**',
+          '**/src/ui/**',
+          '**/src/input/**',
+          '**/src/audio/**',
+          '**/src/editor/**',
+        ],
+        message: 'worker/ may import catalog/, maps/ and src/sim/ only',
+      },
+      {
+        group: ['three', 'three/*', 'preact', 'preact/*', 'howler', 'nipplejs', 'lil-gui'],
+        message: 'worker/ has no game deps',
+      },
+    ]),
   },
   {
     files: ['src/ui/**'],
-    rules: restrict([{ group: ['**/view/**', 'three', 'three/*'], message: 'ui/ must not import view/ or three' }]),
+    rules: restrict([
+      { group: ['**/view/**', 'three', 'three/*'], message: 'ui/ must not import view/ or three' },
+      WORKER,
+    ]),
   },
 );

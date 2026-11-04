@@ -29,6 +29,8 @@ export interface Stats {
   timesClosed: number;
   /** Seconds the sim ran. */
   playTime: number;
+  /** Times the Map was loaded. */
+  openings: number;
 }
 
 export const emptyStats = (): Stats => ({
@@ -54,6 +56,7 @@ export const emptyStats = (): Stats => ({
   challengesFailed: 0,
   timesClosed: 0,
   playTime: 0,
+  openings: 0,
 });
 
 const count = (r: Record<string, number>, key: string, n = 1): void => {
@@ -84,6 +87,9 @@ export function sumStats(all: Stats[]): Stats {
     }
   return total;
 }
+
+/** A Run's time: every sim tick since the Map's fresh start (paused time never steps the sim). */
+export const runTicks = (s: Stats): number => Math.round(s.playTime / DT);
 
 /** Counts this step's events; runs after everything that raises them. */
 export function updateStats(w: World): void {

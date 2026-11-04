@@ -24,6 +24,8 @@ export interface MapSave {
   badReviewStreak?: number;
   /** Tutorial Map: the Lesson to resume at. */
   lesson?: number;
+  /** Set by a Save Code import or a cheat; missing = the Run is valid. */
+  runVoid?: true;
 }
 
 /** Lowest frame cap offered, and the one Battery saver uses (fps). */
@@ -117,6 +119,7 @@ export function snapshot(w: World): MapSave {
     quarters: w.quarters,
     badReviewStreak: w.badReviewStreak,
     lesson: w.lesson?.index,
+    ...(w.runVoid && { runVoid: true as const }),
   };
 }
 
@@ -166,14 +169,23 @@ export function migrate(raw: unknown): SaveFile {
   };
 }
 
+/** A Save Code import: none of the Maps it carries can rank its Run. */
+export function voidRuns(save: SaveFile): SaveFile {
+  for (const m of Object.values(save.maps)) m.runVoid = true;
+  return save;
+}
+
 export function encodeSaveCode(save: SaveFile): string {
   let bin = '';
   for (const b of new TextEncoder().encode(JSON.stringify(save))) bin += String.fromCharCode(b);
   return btoa(bin);
 }
 
+/** A save's JSON text (a Save Code or a cloud save, unpacked); throws with a clear message when it isn't one. */
+export const parseSave = (json: string): SaveFile => migrate(JSON.parse(json));
+
 export function decodeSaveCode(code: string): SaveFile {
   const bin = atob(code.trim());
   const bytes = Uint8Array.from(bin, (ch) => ch.charCodeAt(0));
-  return migrate(JSON.parse(new TextDecoder().decode(bytes)));
+  return parseSave(new TextDecoder().decode(bytes));
 }

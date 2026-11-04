@@ -181,4 +181,56 @@ export const TUNING = {
     stockerCarry: 6,
     cleanTime: 2,
   },
+  /** Daily Map generator (src/sim/daily-map.ts) and its goal calibration (daily-goal.ts). */
+  dailyMap: {
+    /** Format weights; `kit` is the one-Area variant, the rest are Slabs. */
+    formats: { row: 1, column: 1, corner: 1, split: 1, courtyard: 1, kit: 1 },
+    slabsAreas: [2, 3] as readonly [number, number],
+    /** A day failing a check rerolls on a derived seed, up to this many times. */
+    rerolls: 20,
+    /** Producers per Chain, and per Area (Slabs, Kit). */
+    chainProducers: 4,
+    areaProducers: { slabs: 5, kit: 6 },
+    /** Share of the Pad chain bought at the Opening (never past Area 1, never a Stocker). */
+    startShare: [0.35, 0.55] as readonly [number, number],
+    startMoney: 40,
+    /** First Pad cost per Area, then × `padGrowth` each Pad; an Area Pad costs `areaPadShare` of the previous Area's Pads. */
+    padBase: [12, 60, 300] as readonly number[],
+    padGrowth: 1.18,
+    areaPadShare: 0.6,
+    exitShare: 0.5,
+    staffCost: { cashier: 1.5, stocker: 2 },
+    /** The Office Pad comes after this many Pads in Area 1. */
+    officeAfter: 4,
+    trees: [8, 18] as readonly [number, number],
+    indoorProps: 3,
+    yardFlowers: 3,
+    // goal: the bot plays `targetMinutes × botPace` with no goal; each part is sized to what it reached
+    targetMinutes: 10,
+    botPace: 1,
+    goalParts: 3,
+    extraPartChance: 0.45,
+    /** Buy-a-Pad only for a Pad the bot bought after this share of the target. */
+    ownAfter: 0.75,
+    sellMin: 10,
+    deliveriesMin: 2,
+    earnMin: 50,
+    /** Goal numbers round down to a step: 5 below 50, 10 below 200, 50 below 1000, then 100. */
+    goalSteps: [
+      [50, 5],
+      [200, 10],
+      [1000, 50],
+    ] as readonly (readonly [below: number, step: number])[],
+    goalStepTop: 100,
+    /** Mixed into the day's seed so goal picks don't follow the Map's own draws. */
+    goalSalt: 0x5eed,
+    /** The re-run with the goal set gives up after this. */
+    capMinutes: 20,
+    /** Daily floor: fewest plausible ticks = the bot's ticks × this. */
+    floorShare: 0.5,
+    /** A Shift claiming more Money per second than this is refused: a sanity bound, not anti-cheat. */
+    maxMoneyRate: 10_000,
+  },
+  /** Daily Shift: day 1 is this UTC date (ms). */
+  daily: { launch: Date.UTC(2026, 10, 1) },
 };

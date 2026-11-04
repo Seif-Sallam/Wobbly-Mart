@@ -17,7 +17,7 @@ Dev-only tools: press **V** (or open `?edit`) for the layout editor (modes 1–5
 
 ```bash
 npm run typecheck && npm run lint && npm run format:check
-npm test             # Vitest: sim + map validator
+npm test             # Vitest: sim + map validator, and the Worker (in workerd)
 npm run bot          # headless bot plays every map to 100% Completion
 npm run validate     # map validator (add --record before a release to freeze ids)
 npm run build && npm run size && npm run check:dist
@@ -26,6 +26,17 @@ npm run build && npm run size && npm run check:dist
 ## Deploy
 
 Every push to `main` runs the CI gate and deploys `dist/` to GitHub Pages (`.github/workflows/ci.yml`). In the repo settings, set Pages → Source to **GitHub Actions**.
+
+## Board API (Worker)
+
+The online features' backend lives in `worker/` (Cloudflare Worker + D1). Local, reachable from a phone on the LAN:
+
+```bash
+npm run worker:migrate   # once: creates the local D1 tables
+npm run worker:dev       # http://<this machine>:8787
+```
+
+Staging deploys on every push to `release-03-leaderboard`, production on `main` (`.github/workflows/worker.yml`). First-time setup (Cloudflare accounts, D1 databases, GitHub Environments): `bash scripts/worker-setup.sh`. D1 migrations are applied by the owner, never by CI.
 
 ## Assets
 

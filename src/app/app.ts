@@ -6,6 +6,7 @@ import type { MapDef } from '../sim/map';
 import {
   encodeSaveCode,
   decodeSaveCode,
+  voidRuns,
   snapshot,
   ticksPerFrame,
   SAVER_FRAME_CAP,
@@ -13,7 +14,7 @@ import {
   type SaveFile,
   type Settings,
 } from '../sim/save';
-import { canBuyUpgrade, completion, completionOf, padRemaining, upgradeVisible, visiblePads } from '../sim/economy';
+import { canBuyUpgrade, completion, padRemaining, savedCompletion, upgradeVisible, visiblePads } from '../sim/economy';
 import { shelfCap, stationModel } from '../sim/map';
 import { lessonAim, lessonHud, lessonHudTarget, lessonRetry, lessonTarget, type LessonDevice } from '../sim/lessons';
 import { boxCentre } from '../sim/geometry';
@@ -47,10 +48,22 @@ import { Hud, type EdgeArrow, type EventBanner, type EventCard } from '../ui/hud
 import { renderUi, type Overlay, type UiActions, type UiState } from '../ui/app';
 import { Sounds } from '../audio/audio';
 import { FEEL } from '../feel';
+import { runTicks } from '../sim/stats';
 import { TUNING } from '../sim/tuning';
 import { objectiveId } from '../../catalog/objectives';
 import { logbookView, objectiveInfo, progressOfSave, type MapProgress } from './logbook';
 import { challengeCard } from './challenge-card';
+import { API_URL } from './api';
+import { Device } from './device';
+import { fetchCloudSave, hasProgress, summary, uploadSave } from './cloud-save';
+import { readBoard } from './wall';
+import { flushPending, submitRun, submitScore, submitShift } from './submits';
+import { KIND_OF, type WallTab, type WallView } from '../ui/wall';
+import { dailyDay } from '../sim/daily';
+import { objectiveProgress } from '../sim/objectives';
+import { InputRecorder, replayIntents } from '../sim/replay';
+import { clockOf } from '../ui/wall';
+import { Shift } from './shift';
 
 const AUTOSAVE_SECONDS = 5;
 const EDGE_MARGIN = 44;
@@ -77,6 +90,16 @@ export class App {
   private settings: Settings;
   private sounds = new Sounds();
   private wardrobe = new WardrobeView();
+  private device = new Device();
+  /** Where the online popups return to: the overlay the flow started from. */
+  private onlineBack: Overlay | null = null;
+  /** The cloud save waiting on the restore choice. */
+  private cloudSave: SaveFile | null = null;
+  private privacyBack: Overlay | null = null;
+  /** Where the Wall's ✕ returns to; joining from the Wall returns to the Wall. */
+  private wallBack: Overlay | null = null;
+  /** A Run reached 100% and its end screen hasn't opened yet. */
+  private runEndOwed = false;
   /** No save existed at load: the Wardrobe opens by itself once the title is ready. */
   private firstRun: boolean;
   private ui: UiState;
@@ -101,6 +124,8 @@ export class App {
   /** Lesson index and phase last drawn: the card re-renders when it changes. */
   private lessonKey = '';
   private layout: EditLayout | null = null;
+  /** Today's Daily Shift, once the lazy Daily chunk is in; null without a calendar day. */
+  private shift: Shift | null = null;
   /** The Inspector's warning banner, counting down until they step in. */
   private warning: EventBanner | null = null;
 
@@ -165,10 +190,17 @@ export class App {
       layout: null,
       look: lookById(this.save.look).id,
       cap: this.save.cap in CAP_COLOURS ? this.save.cap : 'orange',
+      online: API_URL ? { code: this.device.code, nickname: this.device.nickname, askPrivacy: false } : null,
+      wall: null,
+      daily: null,
+      shiftEnd: null,
+      runEnd: null,
+      restore: null,
     };
     this.ui.zoom = this.zoom();
     watchLayout(() => this.applyLayout());
     this.hud.onGear = () => this.openOverlay('pause');
+    this.hud.onShiftReset = () => this.resetShift();
     this.hud.onTrophy = () => this.openLogbook(0);
     this.hud.onLand = () => this.sounds.sfx('ding');
     this.input.onEscape = () => this.escape();
@@ -197,6 +229,9 @@ export class App {
   }
 
   async start(): Promise<void> {
+    // the one call on page load: submits queued while offline
+    if (this.device.code) void flushPending(this.device.code);
+    void this.loadShift();
     await Promise.all([
       loadAssets((done, total) => {
         this.ui.loading = (done / total) * 0.95;
@@ -244,7 +279,8 @@ export class App {
     requestAnimationFrame(loop);
     Object.assign(window, { app: this, game: this.game });
     const params = new URLSearchParams(location.search);
-    if (params.has('debug'))
+    // dev only: deployed builds ship no cheats
+    if (import.meta.env.DEV && params.has('debug'))
       void import('./debug').then(
         (m) =>
           this.game &&
@@ -298,13 +334,18 @@ export class App {
 
   private play(id: string): void {
     this.save.currentMap = id;
+    this.enterGame(() => this.openMap(this.currentMap()));
+  }
+
+  /** The wipe from the title into the game; `open` opens the World behind it. */
+  private enterGame(open: () => void): void {
     this.sounds.unlock(this.settings);
     this.ui.wipe = true;
     this.renderUi();
     if (canFullscreen()) void document.documentElement.requestFullscreen().catch(() => {});
     document.querySelector('.logo')?.classList.add('wobble');
     setTimeout(() => {
-      this.openMap(this.currentMap());
+      open();
       this.ui.screen = 'game';
       this.ui.wipe = false;
       this.syncAudio();
@@ -338,13 +379,15 @@ export class App {
     const game = this.game;
     if (!game) return;
     this.writeSave();
+    this.endOpening();
     this.ui.overlay = null;
     this.ui.office = false;
     this.ui.wipe = true;
     this.syncAudio();
     this.renderUi();
     setTimeout(() => {
-      const map = game.world.map;
+      // a Daily Shift is never the backdrop: the Map Play would open is
+      const map = game.world.map.shift ? this.currentMap() : game.world.map;
       game.open(map, showcaseSave(map));
       this.input.tap.cancel();
       this.warning = null;
@@ -354,6 +397,7 @@ export class App {
       this.ui.wipe = false;
       this.hud.visible(false);
       this.refreshMaps();
+      this.refreshTicket();
       this.renderUi();
     }, WIPE_SECONDS);
   }
@@ -364,13 +408,17 @@ export class App {
     else this.refreshMaps();
   }
 
-  private openMap(map: MapDef): void {
+  /** `seed`: a Daily Shift's; other Openings get a fresh one. */
+  private openMap(map: MapDef, seed?: number): void {
     const game = this.game;
     if (!game) return;
     const mapSave: MapSave | null = this.save.maps[map.id] ?? null;
-    this.save.currentMap = map.id;
-    if (!this.save.visited.includes(map.id)) this.save.visited.push(map.id);
-    game.open(map, mapSave);
+    if (!map.shift) {
+      this.save.currentMap = map.id;
+      if (!this.save.visited.includes(map.id)) this.save.visited.push(map.id);
+    }
+    game.open(map, mapSave, seed);
+    this.hud.setShift(null);
     this.sounds.playMusicOf(map);
     this.input.tap.cancel();
     game.view.scenery(0);
@@ -423,10 +471,11 @@ export class App {
       office && !wide ? FEEL.officeSheet / 2 : 0,
     );
     if (!w.atExit) this.exitDismissed = false;
-    else if (w.owned.has('exit') && !w.lesson && !this.exitDismissed && !this.ui.overlay) {
+    else if (w.owned.has('exit') && !w.lesson && !w.map.shift && !this.exitDismissed && !this.ui.overlay) {
       this.exitDismissed = true;
       this.openOverlay('maps');
     }
+    if (w.map.shift && this.shift) this.shiftFrame(w, this.shift);
     this.guidance();
     this.sinceSave += dt;
     if (this.sinceSave > AUTOSAVE_SECONDS && !game.paused) this.writeSave();
@@ -456,7 +505,7 @@ export class App {
     if (e.type === 'padBought' || e.type === 'upgradeBought') {
       if (e.type === 'padBought') persistStorage();
       this.writeSave();
-      if (e.type === 'padBought' && e.pad === 'exit' && !isTutorialMap(w.map)) {
+      if (e.type === 'padBought' && e.pad === 'exit' && !isTutorialMap(w.map) && !w.map.shift) {
         setTimeout(() => this.openOverlay('maps'), 900);
         this.exitDismissed = true;
       }
@@ -474,7 +523,10 @@ export class App {
         this.ui.card = 'ios';
       }
     }
-    if (e.type === 'complete') this.hud.celebrate();
+    if (e.type === 'complete') {
+      this.hud.celebrate();
+      this.endRun(w);
+    }
     if (e.type === 'lessonReplay') this.hud.banner(iconUrl('player'), lessonRetry(w, e.lesson), 'No harm done');
     if (e.type === 'challengeStarted') {
       this.hud.stamp('CHALLENGE!');
@@ -655,6 +707,7 @@ export class App {
     this.sinceSave = 0;
     const game = this.game;
     if (!game || this.lostTab || this.editing || this.ui.screen !== 'game') return;
+    if (game.world.map.shift) return this.shift?.save();
     this.save.maps[game.world.map.id] = snapshot(game.world);
     writeSave(this.save);
     this.claimTab();
@@ -662,6 +715,7 @@ export class App {
 
   private onHidden(): void {
     this.writeSave();
+    this.endOpening();
     if (this.ui.screen === 'game' && (!this.ui.overlay || this.ui.overlay === 'logbook') && !this.lostTab)
       this.openOverlay('pause');
     this.syncAudio();
@@ -683,6 +737,8 @@ export class App {
     else if (this.ui.overlay === 'logbook') this.game?.report('logbookClosed');
     this.ui.overlay = o;
     if (o === 'maps') this.refreshMaps();
+    // coming back from joining reads again with the new Device
+    if (o === 'wall') void this.loadWall();
     // the Logbook alone leaves the game running
     const pause = !!o && o !== 'logbook';
     if (this.game && this.ui.screen === 'game') this.game.paused = pause || this.lostTab;
@@ -690,6 +746,7 @@ export class App {
     this.redraw = true;
     this.syncAudio();
     this.renderUi();
+    if (o === null) this.showRunEnd();
   }
 
   // a Map opens once it was visited or the Map before it has its Exit Pad bought
@@ -706,15 +763,7 @@ export class App {
         tutorial: isTutorialMap(map),
         visited: isTutorialMap(map) || !before || this.save.visited.includes(map.id) || exitBought(before.id),
         score: map.id === live?.map.id ? live.score : (this.save.maps[map.id]?.score ?? 0),
-        completion:
-          map.id === live?.map.id
-            ? completion(live)
-            : completionOf(
-                map,
-                new Set(this.save.maps[map.id]?.owned ?? []),
-                this.save.maps[map.id]?.levels ?? {},
-                new Set(this.save.maps[map.id]?.objectives ?? []),
-              ),
+        completion: map.id === live?.map.id ? completion(live) : savedCompletion(map, this.save.maps[map.id]),
       };
     });
     this.ui.maps.forEach((m) => {
@@ -753,6 +802,7 @@ export class App {
 
   private actions: UiActions = {
     play: (id) => this.play(id),
+    playShift: () => this.playShift(),
     close: () => this.openOverlay(null),
     open: (o) => this.openOverlay(o),
     openLogbook: (tab) => this.openLogbook(tab),
@@ -782,18 +832,13 @@ export class App {
       if (document.fullscreenElement) void document.exitFullscreen();
       else void document.documentElement.requestFullscreen?.();
     },
-    copySave: async () => {
+    copySave: () => {
       this.writeSave();
-      try {
-        await navigator.clipboard.writeText(encodeSaveCode(this.save));
-        return true;
-      } catch {
-        return false;
-      }
+      return copyText(encodeSaveCode(this.save));
     },
     pasteSave: (code) => {
       try {
-        this.save = decodeSaveCode(code);
+        this.save = voidRuns(decodeSaveCode(code));
       } catch (e) {
         return `That code didn't work: ${(e as Error).message}`;
       }
@@ -814,6 +859,7 @@ export class App {
       if (!map) return;
       if (map.id !== this.game?.world.map.id) {
         this.writeSave();
+        this.endOpening();
         this.openMap(map);
       }
       this.openOverlay(null);
@@ -830,13 +876,339 @@ export class App {
     icon: (name) => iconUrl(name),
     click: () => this.sounds.sfx('click'),
     wardrobe: this.wardrobe,
+    wall: {
+      tab: (tab) => this.changeWall({ tab }),
+      map: (map) => this.changeWall({ map }),
+      retry: () => void this.loadWall(),
+      close: () => this.openOverlay(this.wallBack),
+      join: () => this.actions.online.join(),
+      play: (id) => (this.ui.screen === 'title' ? (this.openOverlay(null), this.play(id)) : this.actions.pickMap(id)),
+      playShift: () => this.playShift(),
+      click: () => this.sounds.sfx('click'),
+    },
+    shiftEnd: {
+      wall: () => this.openWall('today'),
+      join: () => this.actions.online.join(),
+      retry: () => void this.sendShift(),
+      again: () => this.resetShift(),
+      close: () => {
+        // a Shift with no Device yet is kept: joining later, from anywhere, sends it
+        if (this.ui.shiftEnd?.result !== 'join') this.ui.shiftEnd = null;
+        this.openOverlay(null);
+      },
+      click: () => this.sounds.sfx('click'),
+    },
+    runEnd: {
+      wall: () => this.openWall('speed'),
+      join: () => this.actions.online.join(),
+      retry: () => void this.sendRun(),
+      close: () => ((this.ui.runEnd = null), this.openOverlay(null)),
+      click: () => this.sounds.sfx('click'),
+    },
     selectLook: (look, cap) => {
       this.save.look = look;
       this.save.cap = cap;
       writeSave(this.save);
       this.applyLook();
     },
+    online: {
+      openWall: () => this.openWall('today'),
+      join: () => {
+        if (this.device.accepted) return this.openOnline('join');
+        this.setOnline({ askPrivacy: true });
+        this.openOnline('privacy');
+      },
+      accept: () => {
+        this.device.accept();
+        this.setOnline({ askPrivacy: false });
+        // a Device asked again after a notice bump was changing its Nickname
+        this.openOverlay(this.device.code ? 'nickname' : 'join');
+      },
+      notNow: () => {
+        this.setOnline({ askPrivacy: false });
+        this.openOverlay(this.onlineBack);
+      },
+      showPrivacy: () => {
+        this.privacyBack = this.ui.overlay;
+        this.setOnline({ askPrivacy: false });
+        this.openOverlay('privacy');
+      },
+      pickNickname: () => (this.device.accepted ? this.openOnline('nickname') : this.actions.online.join()),
+      enterCode: () => this.openOnline('cloud-code'),
+      back: () => this.openOverlay(this.ui.overlay === 'privacy' ? this.privacyBack : this.onlineBack),
+      saveNickname: (name) =>
+        this.onlineCall(this.device.code ? this.device.rename(name) : this.device.create(name), this.onlineBack),
+      useCode: (code) => this.onlineCall(this.enterCode(code)),
+      rotate: () => this.onlineCall(this.device.rotate()),
+      remove: () => this.onlineCall(this.device.remove()),
+      copyCode: () => copyText(this.device.code ?? ''),
+      useCloudSave: () => this.settleCode(true, true),
+      keepLocalSave: () => this.settleCode(true, false),
+      cancelRestore: () => this.settleCode(false, false),
+    },
   };
+
+  /** Sends the Map's Score when an Opening ends (leaving the Map, or the tab hidden); unranked without a Device. */
+  // ---------- the Daily Shift
+
+  /** Today's Daily Map, built in the lazy Daily chunk behind the title; dev `?daily=YYYY-MM-DD` picks the day. */
+  private async loadShift(): Promise<void> {
+    const picked = import.meta.env.DEV ? new URLSearchParams(location.search).get('daily') : null;
+    const { shiftDay } = await import('./shift-day');
+    const day = shiftDay(dailyDay(picked ? Date.parse(picked) : Date.now()));
+    this.shift = day && new Shift(day);
+    this.refreshTicket();
+    this.renderUi();
+  }
+
+  private refreshTicket(): void {
+    const shift = this.shift;
+    if (!shift) return;
+    const { map } = shift.day;
+    const last = Shift.result(shift.day.day);
+    this.ui.daily = {
+      day: shift.day.day,
+      goal: map.objectives.map((o) => objectiveInfo(map, o).name).join(' + '),
+      time: shift.doneTicks === null ? null : clockOf(shift.doneTicks),
+      streak: last?.streak ?? null,
+      rank: last?.day === shift.day.day ? last.rank : null,
+    };
+  }
+
+  /** From the title with the wipe; in the game (the Wall's Today) at once. */
+  private playShift(): void {
+    if (!this.shift) return;
+    this.openOverlay(null);
+    if (this.ui.screen === 'title') return this.enterGame(() => this.openShift());
+    this.writeSave();
+    this.endOpening();
+    this.openShift();
+  }
+
+  /** The Daily Map on the day's seed, re-simmed through the Shift's log to where it was left. */
+  private openShift(): void {
+    const { game, shift } = this;
+    if (!game || !shift) return;
+    this.openMap(shift.day.map, shift.day.seed);
+    const log = shift.recorder.log;
+    shift.recorder = new InputRecorder();
+    game.onStep = (i) => shift.recorder.record(i);
+    game.fastForward(replayIntents(log));
+  }
+
+  /** ↺ on the chip or Try again: the same Shift from its Opening. */
+  private resetShift(): void {
+    this.shift?.reset();
+    this.openShift();
+    this.openOverlay(null);
+  }
+
+  /** The chip, and the end of Shift screen the first time the goal is done. */
+  private shiftFrame(w: World, shift: Shift): void {
+    const left = w.map.objectives.filter((o) => {
+      const p = objectiveProgress(w, o);
+      return p.got < p.want;
+    });
+    if (!left.length && shift.doneTicks === null) {
+      shift.finish(w.score, w.stats.moneyEarned);
+      this.ui.shiftEnd = {
+        day: shift.day.day,
+        ticks: shift.recorder.log.ticks,
+        score: Math.floor(w.score),
+        money: Math.floor(w.stats.moneyEarned),
+        result: shift.debug ? 'debug' : !this.ui.online ? 'local' : 'join',
+        around: null,
+      };
+      this.openOverlay('shift-end');
+      void this.sendShift();
+    }
+    if (shift.doneTicks !== null) return this.hud.setShift(`✓ Done ${clockOf(shift.doneTicks)} · for fun now`);
+    const p = objectiveProgress(w, left[0]);
+    const name = objectiveInfo(w.map, left[0]).name;
+    this.hud.setShift(`📅 ${name} · ${Math.floor(p.got)}/${p.want} · ${clockOf(shift.recorder.log.ticks)}`);
+  }
+
+  /** Posts the finished Shift on the end screen (queued when it can't post yet); a reply for a newer attempt is
+   *  dropped. Never for a ?debug Shift or a build without the Board API. */
+  private async sendShift(): Promise<void> {
+    const end = this.ui.shiftEnd;
+    const shift = this.shift;
+    if (!end || !shift?.pending || end.result === 'debug' || end.result === 'local') return;
+    const code = this.device.code;
+    if (code) {
+      this.ui.shiftEnd = { ...end, result: 'sending' };
+      this.renderUi();
+    }
+    // no CompressionStream (an old browser): this Shift can't carry its Replay
+    const body = await shift.pending.catch(() => null);
+    const r = body && (await submitShift(code, body));
+    if (this.ui.shiftEnd?.ticks !== end.ticks) return;
+    if (!body) this.ui.shiftEnd = { ...this.ui.shiftEnd, result: 'refused' };
+    if (!r) return this.renderUi();
+    this.ui.shiftEnd = {
+      ...this.ui.shiftEnd,
+      result: r.ok ? r.data : (RUN_ERROR[r.error] ?? 'refused'),
+      around: r.ok ? r.data.around : null,
+    };
+    this.renderUi();
+  }
+
+  /** Callers write the save first: it goes up as the cloud save, and the Map's Score is sent. */
+  private endOpening(): void {
+    const w = this.game?.world;
+    if (!w || this.ui.screen !== 'game' || w.map.shift || !this.device.code) return;
+    void uploadSave(this.device.code, this.save);
+    if (!isTutorialMap(w.map)) void submitScore(this.device.code, w.map.id, w.score, w.stats.playTime);
+  }
+
+  /** A valid Run reached 100%: after the confetti, its end screen opens and the Run is sent. */
+  private endRun(w: World): void {
+    if (!this.ui.online || w.runVoid || isTutorialMap(w.map) || w.map.shift) return;
+    this.ui.runEnd = {
+      mapId: w.map.id,
+      mapName: w.map.name,
+      ticks: runTicks(w.stats),
+      openings: w.stats.openings,
+      result: 'join',
+      around: null,
+    };
+    this.runEndOwed = true;
+    void this.sendRun();
+    setTimeout(() => this.showRunEnd(), FEEL.score.runEndDelayMs);
+  }
+
+  /** The end screen waits for a moment with no other popup; openOverlay(null) asks again. */
+  private showRunEnd(): void {
+    if (!this.runEndOwed || this.ui.overlay !== null || this.ui.screen !== 'game') return;
+    this.runEndOwed = false;
+    this.openOverlay('run-end');
+  }
+
+  /** Queues and posts the end screen's Run; without a Device it waits in the queue. A reply for a closed screen is dropped. */
+  private async sendRun(): Promise<void> {
+    const run = this.ui.runEnd;
+    if (!run) return;
+    const code = this.device.code;
+    if (code) {
+      this.ui.runEnd = { ...run, result: 'sending' };
+      this.renderUi();
+    }
+    const r = await submitRun(code, run.mapId, run.ticks);
+    if (!r || this.ui.runEnd?.mapId !== run.mapId) return;
+    this.ui.runEnd = {
+      ...this.ui.runEnd,
+      result: r.ok ? r.data : (RUN_ERROR[r.error] ?? 'refused'),
+      around: r.ok ? r.data.around : null,
+    };
+    this.renderUi();
+  }
+
+  private openWall(tab: WallTab): void {
+    const here = this.game?.world.map;
+    const maps = MAPS.filter((m) => !isTutorialMap(m));
+    this.ui.wall = {
+      tab,
+      map: here && !isTutorialMap(here) ? here.id : FIRST_MAP.id,
+      maps: maps.map((m) => ({ id: m.id, name: m.name, playable: this.save.visited.includes(m.id) })),
+      board: null,
+      hasDevice: !!this.device.code,
+    };
+    this.wallBack = this.ui.overlay;
+    this.openOverlay('wall');
+  }
+
+  private changeWall(change: Partial<WallView>): void {
+    if (!this.ui.wall) return;
+    this.ui.wall = { ...this.ui.wall, ...change };
+    void this.loadWall();
+  }
+
+  /** Reads the Board the Wall shows; a reply for a tab or Map the player already left is dropped. */
+  private async loadWall(): Promise<void> {
+    const wall = this.ui.wall;
+    if (!wall) return;
+    this.ui.wall = { ...wall, board: null, hasDevice: !!this.device.code };
+    this.renderUi();
+    const kind = KIND_OF[wall.tab];
+    const map = kind === 'daily' ? 'daily' : kind === 'streak' ? '-' : wall.map;
+    // queued submits go up first, so the read shows them
+    if (this.device.code) await flushPending(this.device.code);
+    const board = await readBoard(kind, map, dailyDay(Date.now()), this.device.code);
+    const now = this.ui.wall;
+    if (!now || now.tab !== wall.tab || now.map !== wall.map) return;
+    this.ui.wall = { ...now, board: board ?? 'offline' };
+    this.renderUi();
+  }
+
+  /** Opens an online popup, remembering where the flow started so ✕ and success return there. */
+  private openOnline(o: Overlay): void {
+    if (!ONLINE_OVERLAYS.has(this.ui.overlay)) this.onlineBack = this.ui.overlay;
+    this.openOverlay(o);
+  }
+
+  private setOnline(change: { askPrivacy: boolean }): void {
+    if (this.ui.online) this.ui.online = { ...this.ui.online, ...change };
+  }
+
+  /** Runs a Device call; on success shows the new Device state and, if given, leaves the popup. */
+  private async onlineCall(call: Promise<string | null>, then?: Overlay | null): Promise<string | null> {
+    const error = await call;
+    if (this.ui.online) this.ui.online = { ...this.ui.online, code: this.device.code, nickname: this.device.nickname };
+    // what was queued before the Device existed goes up now; an open end screen shows its rank
+    if (!error && this.device.code) {
+      if (this.ui.runEnd?.result === 'join') void this.sendRun();
+      if (this.ui.shiftEnd?.result === 'join') void this.sendShift();
+      else if (this.ui.runEnd?.result !== 'join') void flushPending(this.device.code);
+    }
+    if (!error && then !== undefined) this.openOverlay(then);
+    else this.renderUi();
+    return error;
+  }
+
+  /** A typed Cloud Code; with a cloud save, the restore choice (no choice when this browser has nothing to lose).
+   *  Until it is made, the code isn't kept, so this browser's save never overwrites the cloud one unseen. */
+  private async enterCode(code: string): Promise<string | null> {
+    const error = await this.device.useCode(code);
+    if (error) return error;
+    if (!this.device.pending) {
+      this.openOverlay(this.onlineBack);
+      return null;
+    }
+    const cloud = await fetchCloudSave(code);
+    if (!cloud) {
+      this.device.settle(false);
+      return "☁️ Your cloud save didn't load · Try again";
+    }
+    this.cloudSave = cloud.save;
+    this.writeSave();
+    if (!hasProgress(this.save)) {
+      this.settleCode(true, true);
+      return null;
+    }
+    const when = new Date(cloud.at * 1000).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    this.ui.restore = { cloud: summary(cloud.save, when), local: summary(this.save, 'This browser, now') };
+    this.openOverlay('restore');
+    return null;
+  }
+
+  /** The restore choice: keep the code (or not, on ✕), and play the cloud save (like a Save Code import, but the Runs
+   *  stay valid) or send this browser's up at once. */
+  private settleCode(keep: boolean, useCloud: boolean): void {
+    this.device.settle(keep);
+    const cloud = this.cloudSave;
+    this.cloudSave = this.ui.restore = null;
+    void this.onlineCall(Promise.resolve(null));
+    if (!keep || !cloud || !this.device.code) return this.openOverlay(this.onlineBack);
+    if (!useCloud) {
+      void uploadSave(this.device.code, this.save, true);
+      return this.openOverlay(this.onlineBack);
+    }
+    this.save = cloud;
+    writeSave(this.save);
+    this.applyLook();
+    this.reopen();
+    this.openOverlay(null);
+  }
 
   /** Shows the saved look and cap on the Player (an unknown id or colour falls back to the defaults). */
   private applyLook(): void {
@@ -896,6 +1268,25 @@ export class App {
     renderUi(this.uiRoot, this.ui, this.actions, this.ui.screen === 'game' ? (this.game?.world ?? null) : null);
   }
 }
+
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** What the end screen says for a failed Run submit; a 429 retries like offline (spec §7.2). */
+const RUN_ERROR: Partial<Record<string, 'offline' | 'update' | 'stale'>> = {
+  offline: 'offline',
+  slow_down: 'offline',
+  update: 'update',
+  unknown_device: 'stale',
+};
+
+const ONLINE_OVERLAYS = new Set<Overlay | null>(['privacy', 'join', 'nickname', 'cloud-code', 'restore']);
 
 const THIEF = '🦹';
 const INSPECTOR = '🧐';

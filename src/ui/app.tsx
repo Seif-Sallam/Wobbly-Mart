@@ -10,6 +10,21 @@ import { formatMoney } from '../format';
 import { FEEL } from '../feel';
 import { TUNING } from '../sim/tuning';
 import { Logo } from './logo';
+import { ShiftEndPopup, type ShiftEndActions, type ShiftEndView } from './shift-end';
+import { Btn } from './btn';
+import {
+  CodePopup,
+  JoinPopup,
+  NicknamePopup,
+  OnlineRows,
+  PrivacyPopup,
+  RestorePopup,
+  type OnlineActions,
+  type OnlineView,
+  type SaveSummary,
+} from './online';
+import { WallPopup, countText, type WallActions, type WallView } from './wall';
+import { RunEndPopup, type RunEndActions, type RunEndView } from './run-end';
 import { Logbook, type LogbookView } from './logbook';
 import { GEAR } from './hud';
 import { CREDITS } from '../../catalog/credits';
@@ -17,7 +32,24 @@ import { LOOKS, lookById } from '../../catalog/looks';
 import { CAP_COLOURS } from '../palette';
 
 export type Overlay =
-  'pause' | 'settings' | 'maps' | 'credits' | 'controls' | 'paste' | 'home-tip' | 'wardrobe' | 'fullscreen' | 'logbook';
+  | 'pause'
+  | 'settings'
+  | 'maps'
+  | 'credits'
+  | 'controls'
+  | 'paste'
+  | 'home-tip'
+  | 'wardrobe'
+  | 'fullscreen'
+  | 'logbook'
+  | 'privacy'
+  | 'join'
+  | 'nickname'
+  | 'cloud-code'
+  | 'restore'
+  | 'wall'
+  | 'shift-end'
+  | 'run-end';
 
 export interface UiState {
   screen: 'title' | 'game';
@@ -49,6 +81,16 @@ export interface UiState {
   /** The Player's saved look (Wardrobe id) and cap colour name. */
   look: string;
   cap: string;
+  /** Null when this build has no Board API: every online feature hides. */
+  online: OnlineView | null;
+  /** The restore choice after a Cloud Code was entered: both saves. */
+  restore: { cloud: SaveSummary; local: SaveSummary } | null;
+  wall: WallView | null;
+  /** Today's Daily Shift on the title; null while it loads or when the calendar has no such day. `streak` and `rank`
+   *  come from the last accepted Shift. */
+  daily: { day: number; goal: string; time: string | null; streak: number | null; rank: number | null } | null;
+  shiftEnd: ShiftEndView | null;
+  runEnd: RunEndView | null;
 }
 
 /** The Wardrobe's 3D preview and portraits, drawn by the view. */
@@ -77,6 +119,8 @@ export interface LayoutUi {
 
 export interface UiActions {
   play: (mapId: string) => void;
+  /** Opens today's Daily Shift where it was left. */
+  playShift: () => void;
   close: () => void;
   open: (o: Overlay) => void;
   openLogbook: (tab: number) => void;
@@ -107,6 +151,10 @@ export interface UiActions {
   click: () => void;
   wardrobe: WardrobeBridge;
   selectLook: (look: string, cap: string) => void;
+  online: OnlineActions;
+  wall: WallActions;
+  runEnd: RunEndActions;
+  shiftEnd: ShiftEndActions;
 }
 
 const FAMILY_ORDER = ['player', 'station', 'staff'] as const;
@@ -119,28 +167,6 @@ function upgradeIcon(world: World, target: string): string {
   return world.map.producers[target]?.model ?? target;
 }
 
-function Btn(props: {
-  class?: string;
-  onClick: () => void;
-  disabled?: boolean;
-  children: preact.ComponentChildren;
-  actions: UiActions;
-}) {
-  return (
-    <button
-      class={`btn ${props.class ?? ''}`}
-      disabled={props.disabled}
-      onPointerDown={(e) => e.stopPropagation()}
-      onClick={() => {
-        props.actions.click();
-        props.onClick();
-      }}
-    >
-      {props.children}
-    </button>
-  );
-}
-
 const clock = (s: number): string => `${Math.floor(s / 60)}:${String(Math.ceil(s) % 60).padStart(2, '0')}`;
 
 function Office({ world, actions, wide }: { world: World; actions: UiActions; wide: boolean }) {
@@ -151,7 +177,7 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
         ✕
       </button>
       <div class="office-scroll">
-        {(!world.lesson || world.lesson.index >= TUNING.lesson.closedFrom) && (
+        {!world.map.shift && (!world.lesson || world.lesson.index >= TUNING.lesson.closedFrom) && (
           <section>
             <h3>Store</h3>
             <Btn actions={actions} disabled={world.closedWait > 0} onClick={() => actions.setClosed(!world.closed)}>
@@ -160,12 +186,14 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
             </Btn>
           </section>
         )}
-        <section>
-          <h3>Layout</h3>
-          <Btn actions={actions} onClick={actions.editLayout}>
-            ✎ Edit Layout
-          </Btn>
-        </section>
+        {!world.map.shift && (
+          <section>
+            <h3>Layout</h3>
+            <Btn actions={actions} onClick={actions.editLayout}>
+              ✎ Edit Layout
+            </Btn>
+          </section>
+        )}
         {FAMILY_ORDER.map((family) => {
           const list = ups.filter(([, u]) => u.family === family);
           if (!list.length) return null;
@@ -401,6 +429,7 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
       <Btn actions={a} onClick={a.fullscreen}>
         Fullscreen
       </Btn>
+      {s.online && <OnlineRows v={s.online} o={a.online} a={a} />}
       <div class="row">
         <Btn actions={a} onClick={() => a.open('controls')}>
           Controls
@@ -654,6 +683,11 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
     <div class="title">
       {ready && (
         <div class="title-corner">
+          {s.online && (
+            <button class="round" aria-label="Wall of Fame" onClick={() => (a.click(), a.online.openWall())}>
+              🏅
+            </button>
+          )}
           <button class="round" aria-label="Wardrobe" onClick={() => (a.click(), a.open('wardrobe'))}>
             👕
           </button>
@@ -673,6 +707,19 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
       )}
       <Logo />
       {ready && <div class="plaque pill">🏆 {s.total.toLocaleString('en-US')}</div>}
+      {ready && s.daily && (
+        <button class="daily-ticket" onClick={() => (a.click(), a.playShift())}>
+          <b>📅 Shift #{s.daily.day}</b>
+          <span>{s.daily.goal}</span>
+          {s.daily.time && <small>✓ {s.daily.time}</small>}
+          {s.daily.streak !== null && (
+            <small>
+              🔥 {s.daily.streak}
+              {s.daily.rank !== null && ` · #${countText(s.daily.rank)} today`}
+            </small>
+          )}
+        </button>
+      )}
       {ready ? (
         <>
           <div class="shelf">
@@ -725,6 +772,11 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
         </div>
       )}
       {s.storageFailed && <p class="note">Progress won't be saved in this browser.</p>}
+      {ready && s.online && (
+        <button class="link title-privacy" onClick={() => (a.click(), a.online.showPrivacy())}>
+          Privacy
+        </button>
+      )}
     </div>
   );
 }
@@ -854,7 +906,8 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
       {s.screen === 'game' && s.layout && !overlay && <LayoutPanel l={s.layout} a={a} />}
       {s.screen === 'game' && world?.lesson && !overlay && <LessonCard s={s} a={a} world={world} />}
       {overlay && (
-        <div class="modal" onPointerDown={(e) => e.stopPropagation()}>
+        // the Logbook leaves the game running: no blur behind it
+        <div class={`modal ${overlay === 'logbook' ? 'live' : ''}`} onPointerDown={(e) => e.stopPropagation()}>
           {overlay === 'pause' && (
             <div class="menu">
               <Btn class="big" actions={a} onClick={a.close}>
@@ -888,6 +941,16 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
           {overlay === 'paste' && <Paste a={a} />}
           {overlay === 'home-tip' && <HomeTip a={a} />}
           {overlay === 'wardrobe' && <Wardrobe s={s} a={a} />}
+          {overlay === 'privacy' && <PrivacyPopup ask={!!s.online?.askPrivacy} o={a.online} a={a} />}
+          {overlay === 'join' && <JoinPopup o={a.online} a={a} />}
+          {overlay === 'nickname' && <NicknamePopup current={s.online?.nickname ?? null} o={a.online} a={a} />}
+          {overlay === 'cloud-code' && <CodePopup o={a.online} a={a} />}
+          {overlay === 'restore' && s.restore && (
+            <RestorePopup cloud={s.restore.cloud} local={s.restore.local} o={a.online} a={a} />
+          )}
+          {overlay === 'wall' && s.wall && <WallPopup v={s.wall} a={a.wall} />}
+          {overlay === 'shift-end' && s.shiftEnd && <ShiftEndPopup v={s.shiftEnd} a={a.shiftEnd} online={!!s.online} />}
+          {overlay === 'run-end' && s.runEnd && <RunEndPopup v={s.runEnd} a={a.runEnd} />}
           {overlay === 'logbook' && s.logbook && (
             <Logbook view={s.logbook} tab={s.logbookTab} close={a.close} click={a.click} />
           )}

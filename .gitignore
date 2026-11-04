@@ -4,3 +4,6 @@ dist
 .playwright-mcp
 .claude
 *.stackdump
+.wrangler
+.scratch/worker-setup.env
+.scratch/release-gate*

@@ -156,6 +156,7 @@ export function applySave(w: World, save: MapSave): void {
   for (const id of save.objectives ?? []) if (objectives.has(id)) w.objectivesDone.add(id);
   w.score = Math.max(0, Math.floor(Number(save.score) || 0));
   w.quarters = Math.min(4, Math.max(0, Math.floor(Number(save.quarters) || 0)));
+  w.runVoid = save.runVoid === true;
 }
 
 // ---------- stats and Upgrades
@@ -203,7 +204,13 @@ export function applyCommands(w: World, intents: Intents): void {
     w.levels[id] = (w.levels[id] ?? 0) + 1;
     w.events.push({ type: 'upgradeBought', upgrade: id });
   }
-  if (intents.setClosed !== undefined && w.atOffice && intents.setClosed !== w.closed && w.closedWait <= 0) {
+  if (
+    intents.setClosed !== undefined &&
+    !w.map.shift &&
+    w.atOffice &&
+    intents.setClosed !== w.closed &&
+    w.closedWait <= 0
+  ) {
     w.closed = intents.setClosed;
     w.closedWait = w.closed ? TUNING.closed.reopenWait : TUNING.closed.closeWait;
     if (w.closed) w.stats.timesClosed++;
@@ -265,6 +272,9 @@ export function completionOf(
   }
   return total ? done / total : 1;
 }
+
+export const savedCompletion = (map: MapDef, m: MapSave | undefined): number =>
+  completionOf(map, new Set(m?.owned ?? []), m?.levels ?? {}, new Set(m?.objectives ?? []));
 
 export const completion = (w: World): number => completionOf(w.map, w.owned, w.levels, w.objectivesDone);
 

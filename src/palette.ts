@@ -29,6 +29,9 @@ export const CAP_COLOURS = {
 
 export type CapName = keyof typeof CAP_COLOURS;
 
+/** Wall of Fame initials badges, picked by a hash of the Nickname. */
+export const AVATAR_COLOURS = ['#e8743b', '#4f9d4a', '#3f7fc1', '#a058b8', '#d9a21b', '#c94c6a', '#2f9c9c', '#7a6a58'];
+
 export type PaletteName = keyof typeof PALETTE;
 
 /** Supporting colours: splats, effects, tints. Kept here so every colour lives in one file. */
@@ -229,7 +232,8 @@ export const THEMES: Record<string, ShopTheme> = {
 
 export const LIGHT = { sun: '#ffcf8a', sunIntensity: 3.0, hemiIntensity: 0.9, shadowRadius: 3, exposure: 1 };
 
-export function applyCssPalette(root: HTMLElement): void {
+/** Typed structurally so the Worker, which shares map data that imports this file, needs no DOM types. */
+export function applyCssPalette(root: { style: { setProperty(name: string, value: string): void } }): void {
   for (const [k, v] of Object.entries(PALETTE)) root.style.setProperty(`--${k}`, v);
   root.style.setProperty('--angry', SHADES.angry);
   for (const [k, v] of Object.entries(SHADES.roleCaps)) root.style.setProperty(`--role-${k}`, v);

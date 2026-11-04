@@ -23,6 +23,7 @@ import { type Stats, emptyStats, updateStats } from './stats';
 import { updateObjectives } from './objectives';
 import { quartersOf, updateScore } from './score';
 import { updateChallenges } from './challenges';
+import { quantize } from './intents';
 
 export interface Mover {
   x: number;
@@ -379,6 +380,8 @@ export interface World {
   /** Challenges roll on their own stream, so they never shift Events, Customers or Staff. */
   challengeRng: { rng: number };
   complete: boolean;
+  /** A Save Code import or a cheat touched this Map since its fresh start: its Run can't be ranked. */
+  runVoid: boolean;
   atOffice: boolean;
   atExit: boolean;
   nav: Nav;
@@ -455,6 +458,7 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number): Wo
     challenge: null,
     challengeWait: null,
     complete: false,
+    runVoid: false,
     atOffice: false,
     atExit: false,
     nav: {
@@ -470,6 +474,7 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number): Wo
   if (save) applySave(w, save);
   else if (!map.lessons?.length) w.pan = { area: map.start.owned[0], t: 0, duration: panDuration() };
   refreshFreeStations(w);
+  w.stats.openings++;
   startLessons(w, save?.lesson ?? 0);
   w.quarters = Math.max(w.quarters, quartersOf(completion(w)));
   w.complete = checkCompletion(w, false);
@@ -479,7 +484,8 @@ export function createWorld(map: MapDef, save: MapSave | null, seed: number): Wo
 }
 
 /** One fixed timestep. `w.events` holds only this step's events afterwards. */
-export function step(w: World, intents: Intents): void {
+export function step(w: World, raw: Intents): void {
+  const intents = quantize(raw);
   w.events = [];
   if (w.lesson?.phase === 'card') {
     if (intents.lessonNext) dismissLessonCard(w);

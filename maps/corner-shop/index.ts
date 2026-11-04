@@ -18,6 +18,8 @@ export const cornerShop: MapDef = {
   upgrades,
   start,
   objectives,
+  // half the bot's time to 100% (npm run bot, 2026-11-03)
+  speedrunFloorTicks: 154800,
   movePrices,
   events,
 };

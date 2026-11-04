@@ -15,5 +15,5 @@ Arcade-idle store game, Three.js + TypeScript, static on GitHub Pages. Glossary:
 - No magic numbers in `sim/`: they live in `catalog/`, map data or `src/sim/tuning.ts`. Feel/juice numbers live in `src/feel.ts`; the sim reads it only for the movement ramp, Area Pan, Thief Pan and Cash Pile drain timings. Colours only in `src/palette.ts` (`PALETTE` + `SHADES`).
 - Minimal code: reuse or extend before adding; never duplicate; light comments.
 - Runtime deps are only `three`, `preact`, `nipplejs`, `howler`, `lil-gui`. Another one needs the owner's OK in the PR.
-- Tests: Vitest on `sim/` and the validator only — broad flowing tests, no mocking our own code.
+- Tests: Vitest on `sim/`, the validator and the Worker only — broad flowing tests, no mocking our own code.
 - Branch + PR, small playable steps; commits single-line, no prefix. Released ids are never renamed (`maps/released-ids.json`).

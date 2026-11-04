@@ -215,6 +215,15 @@ export const TUNING = {
     sellMin: 10,
     deliveriesMin: 2,
     earnMin: 50,
+    /** Goal numbers round down to a step: 5 below 50, 10 below 200, 50 below 1000, then 100. */
+    goalSteps: [
+      [50, 5],
+      [200, 10],
+      [1000, 50],
+    ] as readonly (readonly [below: number, step: number])[],
+    goalStepTop: 100,
+    /** Mixed into the day's seed so goal picks don't follow the Map's own draws. */
+    goalSalt: 0x5eed,
     /** The re-run with the goal set gives up after this. */
     capMinutes: 20,
     /** Daily floor: fewest plausible ticks = the bot's ticks × this. */

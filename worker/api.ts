@@ -90,6 +90,9 @@ export interface ShiftResponse extends RunResponse {
   streak: number;
 }
 
+/** Day D's Shift is taken until 00:15 UTC on D+1; the client drops a queued one past that. */
+export const SHIFT_LATE_MS = 15 * 60_000;
+
 /** Gzipped save JSON, before base64: about 4x a full-progress save (the bot keeps that under a quarter of it). */
 export const SAVE_CAP = 16 * 1024;
 /** A cloud save unpacks to at most this; the Worker refuses anything bigger. */

@@ -28,17 +28,17 @@ Out (parked, also in project memory): ghost race from a Replay, Mutators after 1
   - **production**: CI deploys on every push to `main`, after the release gate.
 - **Host**: `workers.dev` for both. A custom domain (Free WAF rate-limit rule, Cache API, `workers_dev = false`) is an additive move only if abuse shows up.
 - **Config**: `preview_urls = false` everywhere. Workers Logs on (the gate checks no `Authorization` header is logged). Cron trigger once a day (§9).
-- **CORS** (manual, in the router): allow-list per environment in `wrangler.toml` `[vars]`. Production: exactly `https://seif-sallam.github.io`. Staging and local: `http://localhost:<any>` and private LAN IPs (`192.168.*`, `10.*`). Never reflect an unlisted `Origin`; `Vary: Origin`; no `Allow-Credentials`; preflight `Access-Control-Max-Age: 86400`.
+- **CORS** (manual, in the router): allow-list per environment in `wrangler.toml` `[vars]`. Production: exactly `https://seif-sallam.github.io`. Staging and local: `http://localhost:<any>`, `127.0.0.1` and private LAN IPs (`192.168.*`, `10.*`, `172.16–31.*`). Never reflect an unlisted `Origin`; `Vary: Origin`; no `Allow-Credentials`; preflight `Access-Control-Max-Age: 86400`.
 - **Client URL**: build variable `VITE_API_URL`; dev defaults to `http://<page host>:8787`; CI sets staging/production URLs from GitHub repository variables.
 - **Secrets**: `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` only in GitHub Environments `worker-staging` / `worker-production`, each restricted to its branch; staging's are the second account's. Token scope: Workers Scripts Edit + D1 Read (CI never migrates). Secrets are never committed, logged, echoed, put in `wrangler.toml`, a PR, an issue or a chat. Deploy via `cloudflare/wrangler-action@v4`. Third-party Actions pinned to a commit SHA; CI uses `npm ci`; Dependabot alerts on.
 - **Migrations**: `worker/migrations/<db>/NNNN_name.sql`, additive only, copied into the PR description. The owner applies them: `npx wrangler d1 migrations apply <db> --remote --env <staging|production>`, staging before the merge into `release-03-leaderboard`, production before the release merge to `main`.
 - **Setup checklist**: the first Worker PR ships a `/wizard` for the owner: both Cloudflare accounts, the six D1 databases, the rate-limit namespaces, the GitHub Environments and variables.
-- **Game page**: stays on `seif-sallam.github.io/Wobbly-Mart/`. Standing rule: the owner's other Pages sites on that origin load no third-party scripts. The game page gets a CSP `<meta>`: `default-src 'self'; connect-src 'self' <API URL>; script-src 'self'`, no inline scripts.
+- **Game page**: stays on `seif-sallam.github.io/Wobbly-Mart/`. Standing rule: the owner's other Pages sites on that origin load no third-party scripts. The game page gets a CSP `<meta>`: `default-src 'self'; connect-src 'self' blob: data: <API URL>; script-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; style-src 'self' 'unsafe-inline'`, no inline scripts (`blob:`/`data:` for the glTF loader's textures and Howler's audio, inline styles for Preact `style` props).
 
 ## 4. Device, Cloud Code, Nickname — [Device identity and Nicknames](https://github.com/Seif-Sallam/Wobbly-Mart/issues/118)
 
 - **Identity is one secret.** The Cloud Code, e.g. `WBLY-7F3K-9QXM-2RTA`: Crockford base32, ~80 random bits from `crypto.getRandomValues`. The client keeps it in `localStorage` key `wobbly-mart.device` and sends it as `Authorization: Bearer …`. The Worker stores only its SHA-256 hash; no public Device id exists anywhere. Never in a URL, query string, log or error body.
-- **Made lazily** on the first online write (Nickname before a first submit, or turning on cloud save), after the privacy Accept (§11). Reading Boards needs no Device. No "login" wording anywhere. Save Code copy/paste stays as today.
+- **Made lazily** on the first online write (Nickname before a first submit); cloud save then runs on its own, no toggle, after the privacy Accept (§11). Reading Boards needs no Device. No "login" wording anywhere. Save Code copy/paste stays as today.
 - **Another browser**: entering the Cloud Code makes it the same Device; the cloud save restore choice follows (§10). Lost code + wiped storage ⇒ a new Device; old rows stay under the old Nickname.
 - **Rotate**: Settings → New Cloud Code → confirm ⇒ `POST /v1/device/rotate`; the old code dies at once.
 - **Nicknames**: typed, with 🎲 suggesting adjective + game noun, pre-filled. 3–16 chars of ASCII letters, digits, space, `_`, `-`; trimmed, inner spaces collapsed. Not unique; changeable any time; shows on all the Device's rows. Hint line "No real names" (real names still accepted; owner-accepted risk, in the DPIA).
@@ -172,17 +172,17 @@ Bearer = Cloud Code. Types in `worker/api.ts`. **No row id, `id_device` or `toke
 | `PUT /v1/device/nickname` | `{nickname}` → 204 | 2 KB |
 | `POST /v1/device/rotate` | → `{cloudCode}` | — |
 | `DELETE /v1/device` | → 204 | — |
-| `POST /v1/runs` | `{map, ticks, simVersion}` → `{rank, total, improved}` | 2 KB |
-| `POST /v1/shifts` | `{day, ticks, score, money, simVersion, replay}` (base64 gzip) → `{rank, total, improved, streak}` | 96 KB |
+| `POST /v1/runs` | `{map, ticks, simVersion}` → `{rank, total, improved, around}` | 2 KB |
+| `POST /v1/shifts` | `{day, ticks, score, money, simVersion, replay}` (base64 gzip) → `{rank, total, improved, streak, around}` | 96 KB |
 | `PUT /v1/scores/:map` | `{score, playTime, simVersion}` → `{rank, total, improved}` | 2 KB |
 | `GET /v1/boards/:kind/:map?day=` | `kind` = `speed\|score\|daily\|streak` (`map` = `-` for streak), bearer optional → `{top: Row[≤50], you?: {rank, around: Row[≤5]}, total}` | — |
 | `PUT /v1/save` | `{saveCode}` → 204 | save cap |
 | `GET /v1/save` | → `{saveCode, saveAt}` | — |
 
-- `Row` = `{rank, nickname, value, score?, money?, you?}`; your own row `"you": true`; same-Nickname rows told apart by `rank`. `rank` above 1,000 is sent as `1001` and shown "1000+".
-- **Errors** `{error, message}` with fixed `message` strings (never SQL errors, stacks or D1 `meta`): `bad_request` 400, `unknown_device` 401, `update` 409, `name_blocked` / `implausible` 422, `slow_down` 429. The client maps `error` to its own text; network failure / 5xx ⇒ "📡 out of reach".
+- `Row` = `{rank, nickname, value, score?, money?, streak?, you?}` (`streak`: the current 🔥, 0 once a day was missed); `around` = Around you, so end screens need no Board read; your own row `"you": true`; same-Nickname rows told apart by `rank`. `rank` above 1,000 is sent as `1001` and shown "1000+".
+- **Errors** `{error, message}` with fixed `message` strings (never SQL errors, stacks or D1 `meta`): `bad_request` 400, `unknown_device` 401, `not_found` 404 (no route; no cloud save yet), `update` 409, `name_blocked` / `implausible` 422, `slow_down` 429, `server` 500. The client maps `error` to its own text; network failure / 5xx ⇒ "📡 out of reach".
 - **Input handling**: reject on `Content-Length` over the route's cap before reading; parse JSON in try/catch ⇒ `bad_request`. Whitelist `kind` and `map` against `catalog`/`maps` before any query; parse `day` as a bounded integer; every value `.bind()`ed; one literal query per kind (never `ORDER BY ${col}`).
-- **Writes**: Speedrun and Daily keep the lowest `ticks` (`ON CONFLICT DO UPDATE … WHERE excluded.ticks < ticks`); a Replay is replaced only when its row improves. Score overwrites. Every write updates `device.last_seen_at`.
+- **Writes**: Speedrun and Daily keep the lowest `ticks` (`ON CONFLICT DO UPDATE … WHERE excluded.ticks < ticks`); a Replay is replaced only when its row improves. Score overwrites only upward (`WHERE excluded.score >= score AND excluded.play_time >= play_time`), so a reset save never lowers it. Every write updates `device.last_seen_at`.
 - **Board read**: top 50 + total cached 60 s per Board in a module-level `Map` (per isolate, best effort). Your rank and Around you only for a verified Device with a row; rank is a bounded count: `SELECT COUNT(*) FROM (SELECT 1 FROM … WHERE ticks < ? LIMIT 1000)`. Around you = ±2 rows by the index.
 - **Delete**: hard delete at once of the `device` row, its `board_entry` rows, Replays and save across all three DBs. No grace period.
 

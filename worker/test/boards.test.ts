@@ -5,6 +5,7 @@ import { fixedMaxScore, maxScoreRate } from '../../src/sim/score';
 import { SIM_VERSION } from '../../src/sim/version';
 import { cornerShop } from '../../maps/corner-shop';
 import type { ApiError, BoardResponse, CloudCodeResponse, RankResponse, RunResponse } from '../api';
+import { dailyDay } from '../../src/sim/daily';
 import { nowSeconds } from '../time';
 
 let ip = 0;
@@ -20,13 +21,13 @@ async function newDevice(nickname: string): Promise<string> {
   return ((await res.json()) as CloudCodeResponse).cloudCode;
 }
 
-/** Seeds `n` other Devices with Scores 1000, 990, 980… on Corner Shop. */
+/** Seeds `n` other Devices with Scores 1000, 990, 980… on Corner Shop; the best Streak's last Shift was long ago. */
 async function seedScores(n: number): Promise<void> {
   for (let i = 0; i < n; i++) {
     const { meta } = await env.BOARD.prepare(
-      'INSERT INTO `device` (`token_hash`, `nickname`, `created_at`, `last_seen_at`, `streak_best`, `streak_current`) VALUES (?, ?, 0, 0, ?, ?)',
+      'INSERT INTO `device` (`token_hash`, `nickname`, `created_at`, `last_seen_at`, `streak_best`, `streak_current`, `streak_last_day`) VALUES (?, ?, 0, 0, ?, ?, ?)',
     )
-      .bind(new Uint8Array([i, 7]), `Seed ${i}`, i + 1, i % 3)
+      .bind(new Uint8Array([i, 7]), `Seed ${i}`, i + 1, i % 3, dailyDay(Date.now()) - (i === n - 1 ? 5 : 0))
       .run();
     await env.BOARD.prepare(
       "INSERT INTO `board_entry` (`kind`, `map`, `day`, `sim_version`, `id_device`, `score`, `play_time`, `updated_at`) VALUES ('score', 'corner-shop', 0, ?, ?, ?, 100, 0)",
@@ -95,6 +96,11 @@ test('Score Board: submits are checked, ranked, and read back with Around you', 
   expect(row).toMatchObject({ score: 1005, play_time: 650 });
   expect(Math.abs((row?.updated_at as number) - nowSeconds())).toBeLessThan(5);
 
+  // A lower Score (a reset save that played past the stored play time) never lowers the row.
+  res = await put({ score: 900, playTime: 655, simVersion: SIM_VERSION });
+  expect(await res.json()).toEqual({ rank: 1, total: 61, improved: false });
+  expect(await env.BOARD.prepare('SELECT COUNT(*) AS n FROM `board_entry` WHERE `score` = 1005').first('n')).toBe(1);
+
   // A tie: Twin's 750 shares rank 27 with Seed 25, who shows below Twin; the next row skips to 29.
   const twin = await newDevice('Tie Twin');
   await call('PUT', '/v1/scores/corner-shop', {
@@ -119,10 +125,11 @@ test('Score Board: submits are checked, ranked, and read back with Around you', 
   expect([res.status, board.total, board.you]).toEqual([200, 62, undefined]);
 
   // Streak Board reads from Devices: seeds have best Streaks 1..60; the climber has none, so no "you".
+  // The best one missed days, so its current 🔥 shows 0.
   const streak = (await (await call('GET', '/v1/boards/streak/-', { code })).json()) as BoardResponse;
   expect(streak.total).toBe(60);
   expect(streak.top.slice(0, 3).map((r) => [r.rank, r.value, r.streak])).toEqual([
-    [1, 60, 2],
+    [1, 60, 0],
     [2, 59, 1],
     [3, 58, 0],
   ]);

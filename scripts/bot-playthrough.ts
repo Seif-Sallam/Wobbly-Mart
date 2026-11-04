@@ -1,6 +1,7 @@
 // CI gate: a headless bot plays each map at full speed and must reach 100% Completion, and the save of the whole
 // finished game must stay under a quarter of the cloud save cap.
 import { gzipSync } from 'node:zlib';
+import { writeFileSync } from 'node:fs';
 import { MAPS } from '../maps';
 import { createWorld, step, type World } from '../src/sim/world';
 import { Bot } from '../src/sim/bot';
@@ -123,7 +124,10 @@ for (const map of MAPS.filter((m) => !only || m.id === only)) {
     console.error(`${map.id}: 100% Completion was not reached within ${LIMIT_SECONDS / 3600} h`);
   }
 }
-const saveSize = gzipSync(JSON.stringify(save)).byteLength;
+const gzipped = gzipSync(JSON.stringify(save));
+const saveSize = gzipped.byteLength;
+// the release gate uploads this, the largest real cloud save, to staging (scripts/release-gate.sh)
+if (process.env.BOT_SAVE_OUT) writeFileSync(process.env.BOT_SAVE_OUT, gzipped.toString('base64'));
 console.log(`Cloud save of every Map played: ${saveSize} B gzipped, cap ${SAVE_CAP} B`);
 if (!only && saveSize >= SAVE_CAP / 4) {
   failed = true;

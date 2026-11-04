@@ -1,6 +1,7 @@
 // Board reads: top 50 + total (cached 60 s per isolate), and your rank with Around you for a verified Device.
 import { isTutorialMap, mapById } from '../maps';
 import type { MapDef } from '../src/sim/map';
+import { dailyDay } from '../src/sim/daily';
 import { SIM_VERSION } from '../src/sim/version';
 import type { BoardResponse, Row } from './api';
 import { findDevice } from './device';
@@ -9,7 +10,7 @@ import { HttpError, json } from './http';
 import { clientIp, limit } from './limits';
 
 export const DAILY_MAP = 'daily';
-const STREAK_MAP = '-';
+export const STREAK_MAP = '-';
 /** Ranks are counted up to here; anything past it is sent as RANK_CAP + 1 ("1000+"). */
 const RANK_CAP = 1000;
 const CACHE_MS = 60_000;
@@ -22,6 +23,7 @@ interface Shape {
   top: string;
   total: string;
   mine: string;
+  /** Binds scope, the value, then RANK_CAP. */
   better: string;
   /** The two rows just better than yours; binds scope, scope, your id. */
   above: string;
@@ -41,7 +43,7 @@ const BY_TICKS: Shape = {
     'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? AND b.`id_device` = ?',
   better:
     'SELECT COUNT(*) AS n FROM (SELECT 1 FROM `board_entry` ' +
-    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `ticks` < ? LIMIT 1000)',
+    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `ticks` < ? LIMIT ?)',
   above:
     'SELECT b.`id_device`, d.`nickname`, b.`ticks` AS value, b.`score`, b.`money` FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
@@ -67,7 +69,7 @@ const BY_SCORE: Shape = {
     'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? AND b.`id_device` = ?',
   better:
     'SELECT COUNT(*) AS n FROM (SELECT 1 FROM `board_entry` ' +
-    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `score` > ? LIMIT 1000)',
+    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `score` > ? LIMIT ?)',
   above:
     'SELECT b.`id_device`, d.`nickname`, b.`score` AS value FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
@@ -83,18 +85,18 @@ const BY_SCORE: Shape = {
 
 const BY_STREAK: Shape = {
   top:
-    'SELECT `id_device`, `nickname`, `streak_best` AS value, `streak_current` AS streak FROM `device` ' +
+    'SELECT `id_device`, `nickname`, `streak_best` AS value, `streak_current` AS streak, `streak_last_day` AS last_day FROM `device` ' +
     'WHERE `streak_best` > 0 ORDER BY `streak_best` DESC, `id_device` LIMIT 50',
   total: 'SELECT COUNT(*) AS n FROM `device` WHERE `streak_best` > 0',
   mine:
-    'SELECT `id_device`, `nickname`, `streak_best` AS value, `streak_current` AS streak FROM `device` ' +
+    'SELECT `id_device`, `nickname`, `streak_best` AS value, `streak_current` AS streak, `streak_last_day` AS last_day FROM `device` ' +
     'WHERE `streak_best` > 0 AND `id_device` = ?',
-  better: 'SELECT COUNT(*) AS n FROM (SELECT 1 FROM `device` WHERE `streak_best` > ? LIMIT 1000)',
+  better: 'SELECT COUNT(*) AS n FROM (SELECT 1 FROM `device` WHERE `streak_best` > ? LIMIT ?)',
   above:
-    'SELECT `id_device`, `nickname`, `streak_best` AS value, `streak_current` AS streak FROM `device` ' +
+    'SELECT `id_device`, `nickname`, `streak_best` AS value, `streak_current` AS streak, `streak_last_day` AS last_day FROM `device` ' +
     'WHERE `streak_best` > (SELECT `streak_best` FROM `device` WHERE `id_device` = ?) ORDER BY `streak_best` LIMIT 2',
   below:
-    'SELECT `id_device`, `nickname`, `streak_best` AS value, `streak_current` AS streak FROM `device` ' +
+    'SELECT `id_device`, `nickname`, `streak_best` AS value, `streak_current` AS streak, `streak_last_day` AS last_day FROM `device` ' +
     'WHERE `streak_best` > 0 AND `streak_best` <= (SELECT `streak_best` FROM `device` WHERE `id_device` = ?) AND `id_device` <> ? ' +
     'ORDER BY `streak_best` DESC, `id_device` LIMIT 2',
 };
@@ -112,6 +114,7 @@ interface DbRow {
   score?: number | null;
   money?: number | null;
   streak?: number | null;
+  last_day?: number | null;
 }
 
 /** Whitelists kind, map and day before any query. */
@@ -147,6 +150,9 @@ const rowsOf = async (env: Env, sql: string, binds: unknown[]): Promise<DbRow[]>
 
 const capRank = (rank: number): number => Math.min(rank, RANK_CAP + 1);
 
+/** The current Streak as of today: a Streak whose last Shift is older than yesterday's has broken. */
+const liveStreak = (r: DbRow, today: number): number => ((r.last_day ?? 0) >= today - 1 ? (r.streak ?? 0) : 0);
+
 /** Strips the Device id; marks your own row. */
 function toRow(r: DbRow, rank: number, me: number | null): Row {
   return {
@@ -155,7 +161,7 @@ function toRow(r: DbRow, rank: number, me: number | null): Row {
     value: r.value,
     ...(r.score != null && { score: r.score }),
     ...(r.money != null && { money: r.money }),
-    ...(r.streak != null && { streak: r.streak }),
+    ...(r.streak != null && { streak: liveStreak(r, dailyDay(Date.now())) }),
     ...(r.id_device === me && { you: true as const }),
   };
 }
@@ -163,7 +169,7 @@ function toRow(r: DbRow, rank: number, me: number | null): Row {
 /** A value's rank on a Board (ties share a rank) and the Board's size. */
 export async function rankOf(env: Env, board: Board, value: number): Promise<{ rank: number; total: number }> {
   const [better, total] = await Promise.all([
-    count(env, board.shape.better, [...board.scope, value]),
+    count(env, board.shape.better, [...board.scope, value, RANK_CAP]),
     count(env, board.shape.total, board.scope),
   ]);
   return { rank: capRank(better + 1), total };
@@ -209,7 +215,7 @@ export async function around(env: Env, board: Board, me: number): Promise<BoardR
   if (!mine) return undefined;
   const rows = [...above.reverse(), mine, ...below];
   const values = [...new Set(rows.map((r) => r.value))];
-  const counts = await Promise.all(values.map((v) => count(env, board.shape.better, [...board.scope, v])));
+  const counts = await Promise.all(values.map((v) => count(env, board.shape.better, [...board.scope, v, RANK_CAP])));
   const rankOfValue = new Map(values.map((v, i) => [v, capRank(counts[i] + 1)]));
   const rank = (r: DbRow): number => rankOfValue.get(r.value) ?? RANK_CAP + 1;
   return { rank: rank(mine), around: rows.map((r) => toRow(r, rank(r), me)) };

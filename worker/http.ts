@@ -1,5 +1,7 @@
-// Responses, errors, CORS and capped JSON bodies.
+// Responses, errors, CORS, capped JSON bodies and the checks on their fields.
+import { SIM_VERSION } from '../src/sim/version';
 import type { ApiError, ErrorCode } from './api';
+import type { Env } from './env';
 
 const ERRORS: Record<ErrorCode, [status: number, message: string]> = {
   bad_request: [400, 'Bad request'],
@@ -56,22 +58,30 @@ export async function readJson(req: Request, cap: number): Promise<unknown> {
   }
 }
 
+/** A whole number in 0..max, or a 400. */
+export function int(value: unknown, max = Number.MAX_SAFE_INTEGER): number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > max)
+    throw new HttpError('bad_request');
+  return value;
+}
+
+/** A submit from another sim version can't be compared: the client must reload. */
+export function checkSimVersion(simVersion: unknown): void {
+  if (int(simVersion) !== SIM_VERSION) throw new HttpError('update');
+}
+
 const LAN =
   /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(:\d{1,5})?$/;
 
 /** `CORS_ORIGINS` is a comma list of exact origins; `CORS_LAN = "true"` also allows localhost and private LAN IPs. */
-function allowedOrigin(origin: string | null, env: { CORS_ORIGINS: string; CORS_LAN: string }): string | null {
+function allowedOrigin(origin: string | null, env: Pick<Env, 'CORS_ORIGINS' | 'CORS_LAN'>): string | null {
   if (!origin) return null;
   if (env.CORS_ORIGINS.split(',').some((o) => o.trim() === origin)) return origin;
   return env.CORS_LAN === 'true' && LAN.test(origin) ? origin : null;
 }
 
 /** Adds CORS headers for a listed Origin only; never reflects an unlisted one, never allows credentials. */
-export function withCors(
-  res: Response,
-  origin: string | null,
-  env: { CORS_ORIGINS: string; CORS_LAN: string },
-): Response {
+export function withCors(res: Response, origin: string | null, env: Pick<Env, 'CORS_ORIGINS' | 'CORS_LAN'>): Response {
   const out = new Response(res.body, res);
   out.headers.append('Vary', 'Origin');
   const allowed = allowedOrigin(origin, env);

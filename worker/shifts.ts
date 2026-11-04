@@ -5,25 +5,24 @@ import type { DailyCalendar } from '../src/sim/daily-goal';
 import { dailyDate, dailyDay, dailySeed, shiftCaps } from '../src/sim/daily';
 import type { Replay, ReplayHeader } from '../src/sim/replay';
 import { SIM_VERSION } from '../src/sim/version';
-import type { ShiftResponse } from './api';
-import { around, boardOf, DAILY_MAP, forgetBoard, rankOf } from './boards';
+import { SHIFT_LATE_MS, type ShiftResponse } from './api';
+import { around, boardOf, DAILY_MAP, forgetBoard, rankOf, STREAK_MAP } from './boards';
 import { requireDevice } from './device';
 import type { Env } from './env';
 import { fromBase64, gunzip } from './gzip';
-import { HttpError, json, KB, readJson } from './http';
+import { checkSimVersion, HttpError, int, json, KB, readJson } from './http';
 import { limitWrite } from './limits';
-import { checkSimVersion, int } from './scores';
 import { nowSeconds } from './time';
 
 const DAYS = (calendar as unknown as DailyCalendar).days;
-/** Day D is taken until 00:15 UTC on D+1. */
-const LATE_MS = 15 * 60_000;
 const REPLAY_MAX = 64 * KB;
+/** The base64 Replay plus the claim around it. */
+const BODY_CAP = 96 * KB;
 const UNZIPPED_MAX = 1024 * KB;
 
 export async function submitShift(req: Request, env: Env): Promise<Response> {
   const id = await requireDevice(req, env);
-  const body = (await readJson(req, 96 * KB)) as Record<string, unknown> | null;
+  const body = (await readJson(req, BODY_CAP)) as Record<string, unknown> | null;
   const claim: ReplayHeader = {
     simVersion: SIM_VERSION,
     day: int(body?.day),
@@ -35,7 +34,7 @@ export async function submitShift(req: Request, env: Env): Promise<Response> {
   checkSimVersion(body?.simVersion);
   const { day, ticks } = claim;
   const now = Date.now();
-  if (day !== dailyDay(now) && day !== dailyDay(now - LATE_MS)) throw new HttpError('implausible');
+  if (day !== dailyDay(now) && day !== dailyDay(now - SHIFT_LATE_MS)) throw new HttpError('implausible');
   claim.seed = dailySeed(day);
   const entry = DAYS[dailyDate(day)];
   if (!entry || ticks < entry.floorTicks) throw new HttpError('implausible');
@@ -75,7 +74,7 @@ export async function submitShift(req: Request, env: Env): Promise<Response> {
     env.BOARD.prepare('UPDATE `device` SET `last_seen_at` = ? WHERE `id_device` = ?').bind(at, id),
   ]);
   forgetBoard(board);
-  forgetBoard(boardOf('streak', '-', 0));
+  forgetBoard(boardOf('streak', STREAK_MAP, 0));
   const improved = !stored || ticks < stored.ticks;
   if (improved) await storeReplay(env, day, id, ticks, data);
 

@@ -4,9 +4,8 @@ import type { RunResponse } from './api';
 import { around, forgetBoard, mapBoardOf, rankOf } from './boards';
 import { requireDevice } from './device';
 import type { Env } from './env';
-import { HttpError, json, KB, readJson } from './http';
+import { checkSimVersion, HttpError, int, json, KB, readJson } from './http';
 import { limitWrite } from './limits';
-import { checkSimVersion, int } from './scores';
 import { nowSeconds } from './time';
 
 export async function submitRun(req: Request, env: Env): Promise<Response> {

@@ -1,17 +1,17 @@
 // Board reads: top 50 + total (cached 60 s per isolate), and your rank with Around you for a verified Device.
+// Counts stop at RANK_CAP rows, so no read scans a whole Board (D1 Free bills every row read).
 import { isTutorialMap, mapById } from '../maps';
 import type { MapDef } from '../src/sim/map';
+import { dailyDay } from '../src/sim/daily';
 import { SIM_VERSION } from '../src/sim/version';
-import type { BoardResponse, Row } from './api';
+import { RANK_CAP, type BoardResponse, type Row } from './api';
 import { findDevice } from './device';
 import type { Env } from './env';
 import { HttpError, json } from './http';
 import { clientIp, limit } from './limits';
 
 export const DAILY_MAP = 'daily';
-const STREAK_MAP = '-';
-/** Ranks are counted up to here; anything past it is sent as RANK_CAP + 1 ("1000+"). */
-const RANK_CAP = 1000;
+export const STREAK_MAP = '-';
 const CACHE_MS = 60_000;
 /** The Board cache holds this many Boards; the oldest goes first. */
 const CACHE_BOARDS = 100;
@@ -22,7 +22,10 @@ interface Shape {
   top: string;
   total: string;
   mine: string;
+  /** Rows better than a value, counted up to a cap; binds scope, the value, the cap. */
   better: string;
+  /** Rows better than `a` but not better than `b` (b is the better or equal one); binds scope, a, b. */
+  between: string;
   /** The two rows just better than yours; binds scope, scope, your id. */
   above: string;
   /** The two rows tied with or just worse than yours; binds scope, scope, your id, your id. */
@@ -34,14 +37,18 @@ const BY_TICKS: Shape = {
     'SELECT b.`id_device`, d.`nickname`, b.`ticks` AS value, b.`score`, b.`money` FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
     'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? ORDER BY b.`ticks`, b.`updated_at` LIMIT 50',
-  total: 'SELECT COUNT(*) AS n FROM `board_entry` WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ?',
+  total:
+    'SELECT COUNT(*) AS n FROM (SELECT 1 FROM `board_entry` WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? LIMIT ?)',
   mine:
     'SELECT b.`id_device`, d.`nickname`, b.`ticks` AS value, b.`score`, b.`money` FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
     'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? AND b.`id_device` = ?',
   better:
     'SELECT COUNT(*) AS n FROM (SELECT 1 FROM `board_entry` ' +
-    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `ticks` < ? LIMIT 1000)',
+    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `ticks` < ? LIMIT ?)',
+  between:
+    'SELECT COUNT(*) AS n FROM `board_entry` ' +
+    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `ticks` < ? AND `ticks` >= ?',
   above:
     'SELECT b.`id_device`, d.`nickname`, b.`ticks` AS value, b.`score`, b.`money` FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
@@ -60,14 +67,18 @@ const BY_SCORE: Shape = {
     'SELECT b.`id_device`, d.`nickname`, b.`score` AS value FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
     'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? ORDER BY b.`score` DESC, b.`updated_at` LIMIT 50',
-  total: 'SELECT COUNT(*) AS n FROM `board_entry` WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ?',
+  total:
+    'SELECT COUNT(*) AS n FROM (SELECT 1 FROM `board_entry` WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? LIMIT ?)',
   mine:
     'SELECT b.`id_device`, d.`nickname`, b.`score` AS value FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
     'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? AND b.`id_device` = ?',
   better:
     'SELECT COUNT(*) AS n FROM (SELECT 1 FROM `board_entry` ' +
-    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `score` > ? LIMIT 1000)',
+    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `score` > ? LIMIT ?)',
+  between:
+    'SELECT COUNT(*) AS n FROM `board_entry` ' +
+    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `score` > ? AND `score` <= ?',
   above:
     'SELECT b.`id_device`, d.`nickname`, b.`score` AS value FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
@@ -83,18 +94,19 @@ const BY_SCORE: Shape = {
 
 const BY_STREAK: Shape = {
   top:
-    'SELECT `id_device`, `nickname`, `streak_best` AS value, `streak_current` AS streak FROM `device` ' +
+    'SELECT `id_device`, `nickname`, `streak_best` AS value, `streak_current` AS streak, `streak_last_day` AS last_day FROM `device` ' +
     'WHERE `streak_best` > 0 ORDER BY `streak_best` DESC, `id_device` LIMIT 50',
-  total: 'SELECT COUNT(*) AS n FROM `device` WHERE `streak_best` > 0',
+  total: 'SELECT COUNT(*) AS n FROM (SELECT 1 FROM `device` WHERE `streak_best` > 0 LIMIT ?)',
   mine:
-    'SELECT `id_device`, `nickname`, `streak_best` AS value, `streak_current` AS streak FROM `device` ' +
+    'SELECT `id_device`, `nickname`, `streak_best` AS value, `streak_current` AS streak, `streak_last_day` AS last_day FROM `device` ' +
     'WHERE `streak_best` > 0 AND `id_device` = ?',
-  better: 'SELECT COUNT(*) AS n FROM (SELECT 1 FROM `device` WHERE `streak_best` > ? LIMIT 1000)',
+  better: 'SELECT COUNT(*) AS n FROM (SELECT 1 FROM `device` WHERE `streak_best` > ? LIMIT ?)',
+  between: 'SELECT COUNT(*) AS n FROM `device` WHERE `streak_best` > ? AND `streak_best` <= ?',
   above:
-    'SELECT `id_device`, `nickname`, `streak_best` AS value, `streak_current` AS streak FROM `device` ' +
+    'SELECT `id_device`, `nickname`, `streak_best` AS value, `streak_current` AS streak, `streak_last_day` AS last_day FROM `device` ' +
     'WHERE `streak_best` > (SELECT `streak_best` FROM `device` WHERE `id_device` = ?) ORDER BY `streak_best` LIMIT 2',
   below:
-    'SELECT `id_device`, `nickname`, `streak_best` AS value, `streak_current` AS streak FROM `device` ' +
+    'SELECT `id_device`, `nickname`, `streak_best` AS value, `streak_current` AS streak, `streak_last_day` AS last_day FROM `device` ' +
     'WHERE `streak_best` > 0 AND `streak_best` <= (SELECT `streak_best` FROM `device` WHERE `id_device` = ?) AND `id_device` <> ? ' +
     'ORDER BY `streak_best` DESC, `id_device` LIMIT 2',
 };
@@ -112,6 +124,7 @@ interface DbRow {
   score?: number | null;
   money?: number | null;
   streak?: number | null;
+  last_day?: number | null;
 }
 
 /** Whitelists kind, map and day before any query. */
@@ -147,6 +160,9 @@ const rowsOf = async (env: Env, sql: string, binds: unknown[]): Promise<DbRow[]>
 
 const capRank = (rank: number): number => Math.min(rank, RANK_CAP + 1);
 
+/** The current Streak as of today: a Streak whose last Shift is older than yesterday's has broken. */
+const liveStreak = (r: DbRow, today: number): number => ((r.last_day ?? 0) >= today - 1 ? (r.streak ?? 0) : 0);
+
 /** Strips the Device id; marks your own row. */
 function toRow(r: DbRow, rank: number, me: number | null): Row {
   return {
@@ -155,7 +171,7 @@ function toRow(r: DbRow, rank: number, me: number | null): Row {
     value: r.value,
     ...(r.score != null && { score: r.score }),
     ...(r.money != null && { money: r.money }),
-    ...(r.streak != null && { streak: r.streak }),
+    ...(r.streak != null && { streak: liveStreak(r, dailyDay(Date.now())) }),
     ...(r.id_device === me && { you: true as const }),
   };
 }
@@ -163,8 +179,8 @@ function toRow(r: DbRow, rank: number, me: number | null): Row {
 /** A value's rank on a Board (ties share a rank) and the Board's size. */
 export async function rankOf(env: Env, board: Board, value: number): Promise<{ rank: number; total: number }> {
   const [better, total] = await Promise.all([
-    count(env, board.shape.better, [...board.scope, value]),
-    count(env, board.shape.total, board.scope),
+    count(env, board.shape.better, [...board.scope, value, RANK_CAP]),
+    count(env, board.shape.total, [...board.scope, RANK_CAP + 1]),
   ]);
   return { rank: capRank(better + 1), total };
 }
@@ -181,7 +197,7 @@ async function topOf(env: Env, board: Board): Promise<{ top: DbRow[]; total: num
   if (hit && Date.now() - hit.at < CACHE_MS) return hit;
   const [top, total] = await Promise.all([
     rowsOf(env, board.shape.top, board.scope),
-    count(env, board.shape.total, board.scope),
+    count(env, board.shape.total, [...board.scope, RANK_CAP + 1]),
   ]);
   if (cache.size >= CACHE_BOARDS) cache.delete(cache.keys().next().value as string);
   cache.set(key, { at: Date.now(), top, total });
@@ -197,7 +213,8 @@ function ranked(rows: DbRow[], me: number | null): Row[] {
   });
 }
 
-/** Your row and ±2 around it, each ranked by its own value (ties share a rank). */
+/** Your row and ±2 around it, each ranked by its own value (ties share a rank). One capped count ranks you; each
+ *  neighbour's rank is yours moved by the few rows between you. Past the cap, a better neighbour counts its own. */
 export async function around(env: Env, board: Board, me: number): Promise<BoardResponse['you']> {
   const [mine, above, below] = await Promise.all([
     env.BOARD.prepare(board.shape.mine)
@@ -207,11 +224,27 @@ export async function around(env: Env, board: Board, me: number): Promise<BoardR
     rowsOf(env, board.shape.below, [...board.scope, ...board.scope, me, me]),
   ]);
   if (!mine) return undefined;
+  const { shape, scope } = board;
+  const myBetter = await count(env, shape.better, [...scope, mine.value, RANK_CAP]);
+  const capped = myBetter >= RANK_CAP;
+  const betterOf = new Map([[mine.value, myBetter]]);
+  await Promise.all([
+    ...[...new Set(above.map((r) => r.value))].map(async (v) =>
+      betterOf.set(
+        v,
+        capped
+          ? await count(env, shape.better, [...scope, v, RANK_CAP])
+          : myBetter - (await count(env, shape.between, [...scope, mine.value, v])),
+      ),
+    ),
+    ...[...new Set(below.map((r) => r.value))]
+      .filter((v) => v !== mine.value)
+      .map(async (v) =>
+        betterOf.set(v, capped ? RANK_CAP : myBetter + (await count(env, shape.between, [...scope, v, mine.value]))),
+      ),
+  ]);
+  const rank = (r: DbRow): number => capRank((betterOf.get(r.value) ?? RANK_CAP) + 1);
   const rows = [...above.reverse(), mine, ...below];
-  const values = [...new Set(rows.map((r) => r.value))];
-  const counts = await Promise.all(values.map((v) => count(env, board.shape.better, [...board.scope, v])));
-  const rankOfValue = new Map(values.map((v, i) => [v, capRank(counts[i] + 1)]));
-  const rank = (r: DbRow): number => rankOfValue.get(r.value) ?? RANK_CAP + 1;
   return { rank: rank(mine), around: rows.map((r) => toRow(r, rank(r), me)) };
 }
 

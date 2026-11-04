@@ -1,6 +1,6 @@
 // The Wall of Fame: tabs, the top three in Employee-of-the-Month frames, Around you, Everyone; and its row.
 import { useRef } from 'preact/hooks';
-import type { BoardKind, BoardResponse, Row } from '../../worker/api';
+import { RANK_CAP, type BoardKind, type BoardResponse, type Row } from '../../worker/api';
 import { AVATAR_COLOURS } from '../palette';
 import { Btn } from './btn';
 import { Popup } from './popup';
@@ -22,13 +22,13 @@ export const Avatar = ({ name }: { name: string }) => (
   </span>
 );
 
-/** Ranks above 1,000 come from the Worker as 1001. */
-export const rankText = (rank: number): string => (rank > 1000 ? '1000+' : String(rank));
+/** A rank or Board total; the Worker counts up to RANK_CAP and sends anything past it as RANK_CAP + 1. */
+export const countText = (n: number): string => (n > RANK_CAP ? `${RANK_CAP}+` : n.toLocaleString('en-US'));
 
 export function WallRow(props: { rank: number; nickname: string; value: string; me?: boolean }) {
   return (
     <div class={`wall-row ${props.me ? 'me' : ''}`}>
-      <i>{rankText(props.rank)}</i>
+      <i>{countText(props.rank)}</i>
       <Avatar name={props.nickname} />
       <b>{props.nickname}</b>
       <span>{props.value}</span>
@@ -183,7 +183,7 @@ function Body({ v, a }: { v: WallView; a: WallActions }) {
         )}
         {b.top.length > 3 && (
           <section>
-            <h4 class="wall-h4">Everyone · {b.total.toLocaleString('en-US')}</h4>
+            <h4 class="wall-h4">Everyone · {countText(b.total)}</h4>
             <div class="wall-rows">{b.top.slice(3).map((r, i) => rowOf(v.tab, r, i))}</div>
           </section>
         )}

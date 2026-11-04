@@ -14,7 +14,7 @@ export const PRIVACY: PrivacySection[] = [
   {
     heading: 'The short version',
     lines: [
-      'Wobbly Mart plays fully offline. Nothing leaves your browser until you choose to get on the Wall of Fame or turn on cloud save.',
+      'Wobbly Mart plays fully offline. Nothing leaves your browser until you choose to get on the Wall of Fame.',
       'No ads, no analytics, no tracking, no third-party scripts.',
     ],
   },
@@ -25,7 +25,7 @@ export const PRIVACY: PrivacySection[] = [
       'Your Nickname, which shows next to your results. Please don’t use your real name.',
       'Your Wall of Fame rows: times, Scores and Money for the Maps and Daily Shifts you finish, and your Daily Shift Streak.',
       'Replays of your Daily Shifts (the buttons you pressed), so a time can be checked.',
-      'Your cloud save, if you turn it on, so you can carry on in another browser.',
+      'A copy of your save once you are on the Wall, so you can carry on in another browser with your Cloud Code.',
       'Cloudflare, which runs our server, sees your IP address with each request to stop abuse. We don’t store it.',
     ],
   },

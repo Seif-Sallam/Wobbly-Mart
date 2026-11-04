@@ -21,12 +21,28 @@ export const BLOCK = {
   frontDoor: { x: [7, 3.5], w: 3 },
   backDoor: { x: [12.5, 6], w: 2.5 },
   /** A side door opens where a shop meets another Area's yard over at least `minOverlap`. */
-  sideDoor: { w: 2.5, minOverlap: 4 },
+  sideDoor: { w: 2.5, minOverlap: 4, probe: 0.5 },
+  /** Wall pieces shorter than this, left between two doors, are dropped. */
+  wallMin: 0.05,
   /** Yard packing: a half-metre scan from just behind the shop, keeping `clear` round everything. */
   yard: { from: 2.5, step: 0.5, edge: 0.5, clear: 1.6 },
   /** Road beside Area 1's yard: `gap` off the yard, `overhang` past each side. */
   road: { gap: 2, w: 4, overhang: 3 },
-  carSpots: { n: 3, step: 3, pickup: 1.5, car: [3, 1.8] as Point, van: [3, 1.6] as Point },
+  /** Pickups sit `inset` in and `edgeGap` off the yard's road edge; a car is centred on its pickup, `carIn` into the
+   *  road from its north edge (south road) or `carInNorth` (north road). */
+  carSpots: {
+    n: 3,
+    step: 3,
+    pickup: 1.5,
+    car: [3, 1.8] as Point,
+    van: [3, 1.6] as Point,
+    inset: 0.3,
+    edgeGap: 0.5,
+    carIn: 0.6,
+    carInNorth: 1.6,
+    /** The van parks this far back from the road's east end. */
+    vanFromEnd: 4,
+  },
 };
 
 /** Where each Area's unit sits per Format, in Area order. `kit` takes the facing the seed picks. */
@@ -143,4 +159,8 @@ export const PROPS = {
   ],
   flower: 0.6,
   flowerClear: 1.2,
+  /** Yard flowers keep this far from the yard's sides (local x) and its front and back (local z). */
+  flowerMargin: { left: 0.5, right: 1, front: 1, back: 1 },
+  /** Indoor props keep this far from anything already placed. */
+  indoorClear: 1,
 };

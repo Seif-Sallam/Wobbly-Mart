@@ -190,10 +190,10 @@ function attemptDaily(seed: number): Omit<DailyMap, 'rerolls'> | string {
   const roadSouth = road === roadS;
   const C = BLOCK.carSpots;
   const carSpots = [...Array(C.n)].map((_, i) => {
-    const px = yard1[0] + 0.3 + i * C.step;
-    const pickup: Box = [px, roadSouth ? south - 2 : yard1[1] + 0.5, C.pickup, C.pickup];
+    const px = yard1[0] + C.inset + i * C.step;
+    const pickup: Box = [px, roadSouth ? south - (C.pickup + C.edgeGap) : yard1[1] + C.edgeGap, C.pickup, C.pickup];
     taken.push(pickup);
-    const car: Box = [px - 0.75, roadSouth ? road[1] + 0.6 : road[1] + 1.6, ...C.car];
+    const car: Box = [px + (C.pickup - C.car[0]) / 2, road[1] + (roadSouth ? C.carIn : C.carInNorth), ...C.car];
     return { car, pickup };
   });
 
@@ -285,14 +285,15 @@ function attemptDaily(seed: number): Omit<DailyMap, 'rerolls'> | string {
     for (const side of SIDES) {
       if (side === u.facing || side === BACK[u.facing]) continue;
       const e = edges[side];
+      const p = BLOCK.sideDoor.probe;
       const probe: Box =
         side === 'N'
-          ? [e[0], e[1] - 0.5, e[2], 0.5]
+          ? [e[0], e[1] - p, e[2], p]
           : side === 'S'
-            ? [e[0], e[1] + t, e[2], 0.5]
+            ? [e[0], e[1] + t, e[2], p]
             : side === 'W'
-              ? [e[0] - 0.5, e[1], 0.5, e[3]]
-              : [e[0] + t, e[1], 0.5, e[3]];
+              ? [e[0] - p, e[1], p, e[3]]
+              : [e[0] + t, e[1], p, e[3]];
       if (units.some((o) => o !== u && boxesOverlap(probe, shopBox(o)))) {
         holes[side].push(e);
         continue;
@@ -320,10 +321,10 @@ function attemptDaily(seed: number): Omit<DailyMap, 'rerolls'> | string {
       let at = p0;
       const segs: [number, number][] = [];
       for (const [c0, c1] of cuts) {
-        if (c0 > at + 0.05) segs.push([at, c0]);
+        if (c0 > at + BLOCK.wallMin) segs.push([at, c0]);
         at = Math.max(at, c1);
       }
-      if (p0 + len > at + 0.05) segs.push([at, p0 + len]);
+      if (p0 + len > at + BLOCK.wallMin) segs.push([at, p0 + len]);
       const kind = side === 'N' || side === 'W' ? 'tall' : 'low';
       segs.forEach(([s0, s1], n) => {
         walls[`wall_${a + 1}${side}${n}`] = { kind, box: horiz ? [s0, e[1], s1 - s0, t] : [e[0], s0, t, s1 - s0] };
@@ -401,17 +402,18 @@ function attemptDaily(seed: number): Omit<DailyMap, 'rerolls'> | string {
     for (const c of shuffle(rng, PROPS.corners(u.w))) {
       if (n >= K.indoorProps) break;
       const b = toWorld(u, c);
-      if (!clearOf(b, 1) || !clearOf(b, PROPS.doorGap, doorBoxes)) continue;
+      if (!clearOf(b, PROPS.indoorClear) || !clearOf(b, PROPS.doorGap, doorBoxes)) continue;
       if (!Object.values(props).every((p) => boxGap(b, p.box) >= PROPS.indoorGap)) continue;
       if (Object.values(walls).some((w) => w.kind === 'partition' && boxGap(b, w.box) < PROPS.indoorGap)) continue;
       const model = nextRandom(rng) < PROPS.plantShare ? 'plant' : 'cooler';
       props[`prop_in_${u.area}_${n++}`] = { model, box: b, rot: rotWorld(u, 0), solid: true, area: u.area };
     }
     const yardD = BLOCK.depth - BLOCK.shopDepth;
+    const F = PROPS.flowerMargin;
     for (let f = 0; f < K.yardFlowers; f++) {
       const local: Box = [
-        0.5 + nextRandom(rng) * (u.w - 1.5),
-        BLOCK.shopDepth + 1 + nextRandom(rng) * (yardD - 2),
+        F.left + nextRandom(rng) * (u.w - F.left - F.right),
+        BLOCK.shopDepth + F.front + nextRandom(rng) * (yardD - F.front - F.back),
         PROPS.flower,
         PROPS.flower,
       ];
@@ -443,7 +445,7 @@ function attemptDaily(seed: number): Omit<DailyMap, 'rerolls'> | string {
     streetSpots: streetSpots.slice(0, 3).map(sp),
     waitingSpots: AREA_1.waitingSpots.map((p) => sp(ptWorld(a1, p))),
     carSpots: carSpots.map((c) => ({ car: sh(c.car), pickup: sh(c.pickup) })),
-    van: sh([road[0] + road[2] - 4, carSpots[0].car[1], ...C.van]),
+    van: sh([road[0] + road[2] - C.vanFromEnd, carSpots[0].car[1], ...C.van]),
     playerStart: sp(ptWorld(a1, AREA_1.playerStart)),
   };
 

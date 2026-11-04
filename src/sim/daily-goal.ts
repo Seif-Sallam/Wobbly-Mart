@@ -34,7 +34,7 @@ type Part = ObjectiveDef['kind'];
 
 /** Rounded down to a number a player reads at a glance. */
 const nice = (n: number) => {
-  const step = n < 50 ? 5 : n < 200 ? 10 : n < 1000 ? 50 : 100;
+  const step = K.goalSteps.find(([below]) => n < below)?.[1] ?? K.goalStepTop;
   return Math.max(step, Math.floor(n / step) * step);
 };
 
@@ -49,7 +49,7 @@ export function calibrateDaily(map: MapDef, seed: number): DailyGoal {
     for (const id of w.owned) if (!boughtAt.has(id)) boughtAt.set(id, i);
   }
 
-  const rng = { rng: seed ^ 0x5eed };
+  const rng = { rng: seed ^ K.goalSalt };
   const parts = 1 + [...Array(K.goalParts - 1)].filter(() => nextRandom(rng) < K.extraPartChance).length;
   const goal: ObjectiveDef[] = [];
   for (const kind of shuffle<Part>(rng, ['own', 'earn', 'sell', 'deliveries'])) {

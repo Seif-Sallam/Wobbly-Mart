@@ -1,7 +1,15 @@
 // Run, Score and Shift submits, and the queue that keeps what couldn't post yet (offline, a 429, no Device) until the
 // next app start, Wall open, accepted submit or new Device (spec §12). One entry per Board: a Map's best Run, its
-// latest Score, the day's best Shift (the Worker drops it past 00:15 UTC the next day).
-import type { ErrorCode, RankResponse, RunResponse, ShiftBody, ShiftResponse } from '../../worker/api';
+// latest Score, each day's best Shift (dropped past 00:15 UTC the next day).
+import {
+  SHIFT_LATE_MS,
+  type ErrorCode,
+  type RankResponse,
+  type RunResponse,
+  type ShiftBody,
+  type ShiftResponse,
+} from '../../worker/api';
+import { dailyDay } from '../sim/daily';
 import { fnv1a } from '../sim/rng';
 import { SIM_VERSION } from '../sim/version';
 import { api, type ApiResult } from './api';
@@ -19,7 +27,8 @@ interface Queue {
   /** Map → ticks */
   runs: Record<string, number>;
   scores: Record<string, { score: number; playTime: number }>;
-  shift?: ShiftBody;
+  /** Day → that day's best Shift */
+  shifts: Record<number, ShiftBody>;
 }
 
 function readJson<T>(key: string, fallback: T): T {
@@ -30,10 +39,13 @@ function readJson<T>(key: string, fallback: T): T {
   }
 }
 
-/** A queue from another sim version is dropped: its Boards no longer show those rows. */
+/** A queue from another sim version is dropped: its Boards no longer show those rows. So is a Shift past its day. */
 function queue(): Queue {
   const q = readJson<Queue | null>(QUEUE, null);
-  return q?.simVersion === SIM_VERSION ? q : { simVersion: SIM_VERSION, runs: {}, scores: {} };
+  if (q?.simVersion !== SIM_VERSION || !q.shifts) return { simVersion: SIM_VERSION, runs: {}, scores: {}, shifts: {} };
+  const oldest = dailyDay(Date.now() - SHIFT_LATE_MS);
+  for (const day of Object.keys(q.shifts)) if (Number(day) < oldest) delete q.shifts[Number(day)];
+  return q;
 }
 
 function change(edit: (q: Queue) => void): void {
@@ -92,7 +104,7 @@ async function postShift(code: string, body: ShiftBody): Promise<ApiResult<Shift
   }
   if (settled(r))
     change((q) => {
-      if (q.shift?.day === body.day && q.shift.ticks === body.ticks) delete q.shift;
+      if (q.shifts[body.day]?.ticks === body.ticks) delete q.shifts[body.day];
     });
   return r;
 }
@@ -110,8 +122,9 @@ export function flushPending(code: string): Promise<void> {
     for (const [map, s] of Object.entries(q.scores)) {
       if (!inFlight.has(`score/${map}/${s.score}`) && !settled(await postScore(code, map, s))) return;
     }
-    const s = q.shift;
-    if (s && !inFlight.has(`shift/${s.day}/${s.ticks}`)) await postShift(code, s);
+    for (const s of Object.values(q.shifts)) {
+      if (!inFlight.has(`shift/${s.day}/${s.ticks}`) && !settled(await postShift(code, s))) return;
+    }
   })().finally(() => (flushing = null));
   return flushing;
 }
@@ -142,7 +155,7 @@ export async function submitScore(code: string, map: string, score: number, play
 /** Queues a finished Shift (a faster one of the same day replaces it), then posts it; null without a Device. */
 export async function submitShift(code: string | null, body: ShiftBody): Promise<ApiResult<ShiftResponse> | null> {
   change((q) => {
-    if (q.shift?.day !== body.day || body.ticks < q.shift.ticks) q.shift = body;
+    if (!(body.day in q.shifts) || body.ticks < q.shifts[body.day].ticks) q.shifts[body.day] = body;
   });
   if (!code) return null;
   const r = await postShift(code, body);

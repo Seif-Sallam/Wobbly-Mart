@@ -4,7 +4,7 @@ import { formatMoney } from '../format';
 import { Btn } from './btn';
 import { Popup } from './popup';
 import { AroundYou, Climb } from './run-end';
-import { clockOf, JoinCard } from './wall';
+import { clockOf, countText, JoinCard } from './wall';
 
 /** `result`: the Board's answer, or why there is none ('join' = no Device, 'debug' = played with ?debug). */
 export interface ShiftEndView {
@@ -66,7 +66,7 @@ export function ShiftEndPopup({ v, a, online }: { v: ShiftEndView; a: ShiftEndAc
         <>
           <Climb rank={r.rank} total={Math.max(r.rank, r.total)} />
           <p class="popup-lead">
-            of {r.total.toLocaleString('en-US')} today{r.improved ? '' : ' · your best stays'}
+            of {countText(r.total)} today{r.improved ? '' : ' · your best stays'}
           </p>
           <p class="popup-lead">
             🔥 {r.streak} {r.streak === 1 ? 'Shift' : 'Shifts'} in a row

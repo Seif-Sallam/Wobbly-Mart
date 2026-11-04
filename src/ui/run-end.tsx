@@ -4,7 +4,7 @@ import type { RankResponse, Row } from '../../worker/api';
 import { FEEL } from '../feel';
 import { Btn } from './btn';
 import { Popup } from './popup';
-import { clockOf, JoinCard, rankText, WallRow } from './wall';
+import { clockOf, JoinCard, countText, WallRow } from './wall';
 
 /** `result`: the Board's answer, or why there is none yet ('join' = no Device, 'sending' = on its way). */
 export interface RunEndView {
@@ -38,7 +38,7 @@ export function Climb({ rank, total }: { rank: number; total: number }) {
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [rank, total]);
-  return <div class="run-climb">#{rankText(shown)}</div>;
+  return <div class="run-climb">#{countText(shown)}</div>;
 }
 
 const NOTE = {
@@ -91,7 +91,7 @@ export function RunEndPopup({ v, a }: { v: RunEndView; a: RunEndActions }) {
         <>
           <Climb rank={r.rank} total={Math.max(r.rank, r.total)} />
           <p class="popup-lead">
-            of {r.total.toLocaleString('en-US')} on this Map{r.improved ? '' : ' · your best stays'}
+            of {countText(r.total)} on this Map{r.improved ? '' : ' · your best stays'}
           </p>
         </>
       )}

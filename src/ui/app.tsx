@@ -23,7 +23,7 @@ import {
   type OnlineView,
   type SaveSummary,
 } from './online';
-import { WallPopup, rankText, type WallActions, type WallView } from './wall';
+import { WallPopup, countText, type WallActions, type WallView } from './wall';
 import { RunEndPopup, type RunEndActions, type RunEndView } from './run-end';
 import { Logbook, type LogbookView } from './logbook';
 import { GEAR } from './hud';
@@ -715,7 +715,7 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
           {s.daily.streak !== null && (
             <small>
               🔥 {s.daily.streak}
-              {s.daily.rank !== null && ` · #${rankText(s.daily.rank)} today`}
+              {s.daily.rank !== null && ` · #${countText(s.daily.rank)} today`}
             </small>
           )}
         </button>

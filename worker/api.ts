@@ -27,7 +27,7 @@ export interface DeviceResponse {
 
 export type BoardKind = 'speed' | 'score' | 'daily' | 'streak';
 
-/** One Wall row. `value` is ticks (speed, daily), Score (score) or the best Streak (streak). Rank 1001 = "1000+". */
+/** One Wall row. `value` is ticks (speed, daily), Score (score) or the best Streak (streak). Rank RANK_CAP + 1 = "100+". */
 export interface Row {
   rank: number;
   nickname: string;
@@ -89,6 +89,9 @@ export interface RunResponse extends RankResponse {
 export interface ShiftResponse extends RunResponse {
   streak: number;
 }
+
+/** Ranks and Board totals are counted up to here; past it they come as RANK_CAP + 1, shown "100+". */
+export const RANK_CAP = 100;
 
 /** Day D's Shift is taken until 00:15 UTC on D+1; the client drops a queued one past that. */
 export const SHIFT_LATE_MS = 15 * 60_000;

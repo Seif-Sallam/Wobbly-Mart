@@ -179,11 +179,11 @@ Bearer = Cloud Code. Types in `worker/api.ts`. **No row id, `id_device` or `toke
 | `PUT /v1/save` | `{saveCode}` → 204 | save cap |
 | `GET /v1/save` | → `{saveCode, saveAt}` | — |
 
-- `Row` = `{rank, nickname, value, score?, money?, streak?, you?}` (`streak`: the current 🔥, 0 once a day was missed); `around` = Around you, so end screens need no Board read; your own row `"you": true`; same-Nickname rows told apart by `rank`. `rank` above 1,000 is sent as `1001` and shown "1000+".
+- `Row` = `{rank, nickname, value, score?, money?, streak?, you?}` (`streak`: the current 🔥, 0 once a day was missed); `around` = Around you, so end screens need no Board read; your own row `"you": true`; same-Nickname rows told apart by `rank`. `rank` and `total` above 100 (`RANK_CAP`) are sent as `101` and shown "100+".
 - **Errors** `{error, message}` with fixed `message` strings (never SQL errors, stacks or D1 `meta`): `bad_request` 400, `unknown_device` 401, `not_found` 404 (no route; no cloud save yet), `update` 409, `name_blocked` / `implausible` 422, `slow_down` 429, `server` 500. The client maps `error` to its own text; network failure / 5xx ⇒ "📡 out of reach".
 - **Input handling**: reject on `Content-Length` over the route's cap before reading; parse JSON in try/catch ⇒ `bad_request`. Whitelist `kind` and `map` against `catalog`/`maps` before any query; parse `day` as a bounded integer; every value `.bind()`ed; one literal query per kind (never `ORDER BY ${col}`).
 - **Writes**: Speedrun and Daily keep the lowest `ticks` (`ON CONFLICT DO UPDATE … WHERE excluded.ticks < ticks`); a Replay is replaced only when its row improves. Score overwrites only upward (`WHERE excluded.score >= score AND excluded.play_time >= play_time`), so a reset save never lowers it. Every write updates `device.last_seen_at`.
-- **Board read**: top 50 + total cached 60 s per Board in a module-level `Map` (per isolate, best effort). Your rank and Around you only for a verified Device with a row; rank is a bounded count: `SELECT COUNT(*) FROM (SELECT 1 FROM … WHERE ticks < ? LIMIT 1000)`. Around you = ±2 rows by the index.
+- **Board read**: top 50 + total cached 60 s per Board in a module-level `Map` (per isolate, best effort). Your rank and Around you only for a verified Device with a row; rank is a bounded count: `SELECT COUNT(*) FROM (SELECT 1 FROM … WHERE ticks < ? LIMIT 100)`, and so is `total` (`LIMIT 101`). Around you = ±2 rows by the index; their ranks are yours moved by a count of the few rows between (past the cap, a better neighbour counts its own).
 - **Delete**: hard delete at once of the `device` row, its `board_entry` rows, Replays and save across all three DBs. No grace period.
 
 ### 7.1 Sanity checks (fail ⇒ 422 `implausible`)
@@ -196,7 +196,7 @@ Bearer = Cloud Code. Types in `worker/api.ts`. **No row id, `id_device` or `toke
 
 ### 7.2 Rate limits
 
-Rate-limit binding (per Cloudflare location, approximate, 10 s / 60 s periods — best effort):
+Rate-limit binding (per Cloudflare location, approximate, 10 s / 60 s periods — best effort). At the release gate it limited nothing on staging (120 reads and 8 Device creates in a row, all 200; Cloudflare documents counts as eventually consistent). Accepted by the owner: the hard Device cap below and D1's daily limits (online goes dark) are the real backstop.
 
 | Key | Limit |
 |---|---|
@@ -209,7 +209,22 @@ Plus a hard cap independent of the binding: the `quota` row for today allows 2,0
 
 ### 7.3 Capacity
 
-≈15 requests and 10 row writes per active player per day; a Wall read ≈ 60 rows + ≤ 1,000 for your rank. **~2,000 daily players fit Free, provisionally**, until the release gate measures `rows_read` and save CPU on staging. Past the limit, online goes dark until 00:00 UTC; the game keeps playing.
+Measured at the release gate (staging, 2,000-row Boards, D1 Insights, 2026-11-04), then re-sized for `RANK_CAP` 100 (owner: "never more than 100 players anyway"):
+
+| Read | Rows read at the gate (cap 1,000, uncapped total) | With cap 100 |
+|---|---|---|
+| `total` | 2,001 (whole Board) | ≤ 101 |
+| top 50 (join) | 152 | 152 |
+| your rank (`better`) | 1,000 | ≤ 100 |
+| Around you | 5 × `better` + ~20 | 1 × `better` + ≤ 4 small `between` + ~20 |
+| Wall tab with a Device, top cached / not | ~5,000 / ~7,200 | ~150 / ~400 |
+| Shift or Run submit | ~8,000 | ~350 |
+| Score submit | ~3,000 | ~200 |
+
+- **Reads**: a player with 3 Wall tabs, 2 Shifts and 4 Scores a day reads ~2.4K rows ⇒ 5M / day fits **~2,000 daily players**, and a Board's size no longer changes it.
+- **Writes**: D1 counts every index entry as a row written (5 per new Device, ~4 per Board upsert, ~3 per `last_seen_at`). A Shift ≈ 13 rows written, a Score ≈ 7, a cloud save ≈ 5 ⇒ ~65 a day for that player ⇒ 100K / day fits **~1,500 daily players**. Writes are the tighter limit.
+- **CPU** (Free 10 ms): `PUT /v1/save` with the largest save 4 ms; Board reads 4–7 ms, one Daily read 13 ms (served, not refused). Cap 100 drops 4 counts per read.
+- Past any limit, online goes dark until 00:00 UTC; the game keeps playing.
 
 ## 8. When the client calls
 

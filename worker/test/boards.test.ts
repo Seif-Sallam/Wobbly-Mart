@@ -135,6 +135,45 @@ test('Score Board: submits are checked, ranked, and read back with Around you', 
   ]);
   expect(streak.you).toBeUndefined();
 
+  // Past the rank cap (100): 50 more seeds at 405, 400 … 160 put 112 rows on the Board.
+  for (let i = 0; i < 50; i++) {
+    const { meta } = await env.BOARD.prepare(
+      'INSERT INTO `device` (`token_hash`, `nickname`, `created_at`, `last_seen_at`) VALUES (?, ?, 0, 0)',
+    )
+      .bind(new Uint8Array([i, 8]), `Low ${i}`)
+      .run();
+    await env.BOARD.prepare(
+      "INSERT INTO `board_entry` (`kind`, `map`, `day`, `sim_version`, `id_device`, `score`, `play_time`, `updated_at`) VALUES ('score', 'corner-shop', 0, ?, ?, ?, 100, 0)",
+    )
+      .bind(SIM_VERSION, meta.last_row_id, 405 - i * 5)
+      .run();
+  }
+  const submit = async (nickname: string, score: number) => {
+    const who = await newDevice(nickname);
+    await call('PUT', '/v1/scores/corner-shop', { code: who, body: { score, playTime: 60, simVersion: SIM_VERSION } });
+    return (await (await call('GET', '/v1/boards/score/corner-shop', { code: who })).json()) as BoardResponse;
+  };
+  // 99 rows beat 221: ranks above come from one count, those past 100 show as 101 ("100+"); so does the total.
+  board = await submit('Near Cap', 221);
+  expect([board.total, board.you?.rank, board.you?.around.map((r) => [r.rank, r.value])]).toEqual([
+    101,
+    100,
+    [
+      [98, 230],
+      [99, 225],
+      [100, 221],
+      [101, 220],
+      [101, 215],
+    ],
+  ]);
+  // Last place: every rank around it is past the cap.
+  board = await submit('Last One', 1);
+  expect(board.you?.around.map((r) => [r.rank, r.value])).toEqual([
+    [101, 165],
+    [101, 160],
+    [101, 1],
+  ]);
+
   // Daily needs a day; other Boards start empty.
   expect((await call('GET', '/v1/boards/daily/daily')).status).toBe(400);
   expect(await (await call('GET', '/v1/boards/daily/daily?day=310')).json()).toEqual({ top: [], total: 0 });

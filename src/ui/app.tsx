@@ -142,7 +142,7 @@ export interface UiActions {
   pasteSave: (code: string) => string | null;
   resetProgress: () => void;
   pickMap: (id: string) => void;
-  /** Maps panel: a fresh start on a Map that keeps its Score. */
+  /** Maps panel: a fresh start on a Map, Score included. */
   resetMap: (id: string) => void;
   dismissCard: () => void;
   /** Got it on a Lesson card. */
@@ -512,7 +512,9 @@ function Maps({ s, a }: { s: UiState; a: UiActions }) {
     return (
       <div class="panel">
         <h2>Reset {confirm.map.name}?</h2>
-        <p>Its Money, Pads, Upgrades, layout, Objectives and Stats start over. Its Score stays.</p>
+        <p>
+          Its Money, Pads, Upgrades, layout, Objectives, Stats and Score start over. Your best Score stays on the Board.
+        </p>
         <div class="row">
           <Btn class="danger" actions={a} onClick={() => (a.resetMap(confirm.map.id), setConfirm(null))}>
             Reset this Map

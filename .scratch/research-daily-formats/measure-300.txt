@@ -1,0 +1,5 @@
+row        days 300 (areas {"2":146,"3":154}) rerolls 12 fails 0  worst walk 1.0 m  worst box gap 14.0 m
+column     days 300 (areas {"2":147,"3":153}) rerolls 7 fails 0  worst walk 1.0 m  worst box gap 14.0 m
+corner     days 300 (areas {"2":145,"3":155}) rerolls 1 fails 0  worst walk 9.0 m  worst box gap 4.0 m
+split      days 300 (areas {"2":145,"3":155}) rerolls 9 fails 0  worst walk 5.0 m  worst box gap 4.0 m
+courtyard  days 300 (areas {"2":144,"3":156}) rerolls 0 fails 0  worst walk 9.1 m  worst box gap 4.0 m

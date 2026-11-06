@@ -1,0 +1,12 @@
+import { generateDailyMap } from '../../src/sim/daily-map';
+import { TUNING } from '../../src/sim/tuning';
+const K = TUNING.dailyMap as { formats: Record<string, number>; slabsAreas: number[] };
+const f = process.argv[2];
+for (const k of Object.keys(K.formats)) K.formats[k] = k === f ? 1 : 0;
+K.slabsAreas = [3, 3];
+const g = generateDailyMap(7919);
+const L = g.map.layout;
+console.log('floors', JSON.stringify(L.floors));
+for (const [id, d] of Object.entries(L.doors)) console.log(id, d.kind, JSON.stringify(d.box));
+console.log('street', JSON.stringify(L.street));
+console.log('area_1', JSON.stringify(L.areas.area_1));

@@ -22,6 +22,8 @@ export const BLOCK = {
   backDoor: { x: [12.5, 6], w: 2.5 },
   /** A side door opens where a shop meets another Area's yard over at least `minOverlap`. */
   sideDoor: { w: 2.5, minOverlap: 4, probe: 0.5 },
+  /** A side wall on a Street (a crossroads) gets a customer door this far behind the front. */
+  cornerDoor: { from: 0.5, w: 2.5 },
   /** Wall pieces shorter than this, left between two doors, are dropped. */
   wallMin: 0.05,
   /** Yard packing: a half-metre scan from just behind the shop, keeping `clear` round everything. */
@@ -57,11 +59,12 @@ export const FORMATS: Record<Format, { x: number; z: number; facing: Facing | nu
     { x: 0, z: 16, facing: 'W' },
     { x: 0, z: 30, facing: 'W' },
   ],
-  // shops along the north and down the west, yards in the inside corner
+  // a crossroads: Area 1 faces the north-south Street from the south-east; Area 2 faces the east-west Street
+  // round the corner, Area 3 beside it
   corner: [
-    { x: 0, z: 48, facing: 'W' },
-    { x: 0, z: 0, facing: 'N' },
-    { x: 14, z: 0, facing: 'N' },
+    { x: 52, z: 52, facing: 'W' },
+    { x: 52, z: 0, facing: 'S' },
+    { x: 66, z: 0, facing: 'S' },
   ],
   // Areas 1 and 2 face north onto a Street through the middle; Area 3 faces south from across it
   split: [
@@ -69,11 +72,11 @@ export const FORMATS: Record<Format, { x: number; z: number; facing: Facing | nu
     { x: 16, z: 52, facing: 'N' },
     { x: 0, z: 0, facing: 'S' },
   ],
-  // a U of west, north and east shops round a shared yard
+  // a crossroads: Areas 1 and 2 face each other across the north-south Street, Area 3 faces the east-west one
   courtyard: [
-    { x: 0, z: 48, facing: 'W' },
-    { x: 22, z: 0, facing: 'N' },
-    { x: 48, z: 48, facing: 'E' },
+    { x: 52, z: 52, facing: 'W' },
+    { x: 0, z: 52, facing: 'E' },
+    { x: 52, z: 0, facing: 'S' },
   ],
   kit: [{ x: 0, z: 0, facing: null }],
 };

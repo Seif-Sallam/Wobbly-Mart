@@ -413,6 +413,17 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
           actions={a}
         />
       )}
+      {s.touch && (
+        <Toggle
+          label="Joystick size"
+          on={s.settings.joySize !== 'small'}
+          text={{ small: 'Small', medium: 'Medium', large: 'Large' }[s.settings.joySize]}
+          set={() =>
+            a.setSetting('joySize', ({ small: 'medium', medium: 'large', large: 'small' } as const)[s.settings.joySize])
+          }
+          actions={a}
+        />
+      )}
       <Toggle
         label={s.touch ? 'Manual grab (hold right side, landscape)' : 'Manual grab (hold Space)'}
         on={s.settings.manualGrab}

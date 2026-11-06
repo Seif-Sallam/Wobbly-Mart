@@ -57,15 +57,20 @@ export class Input {
 
   /** Landscape: Fixed rests bottom-left, Free appears under the thumb; portrait always follows the thumb. Rebuilds only
    * when something changed. `inset` is the safe area (px). */
-  setJoystick(mode: Settings['joystick'], land: boolean, inset: { left: number; bottom: number }): void {
-    const key = `${mode}|${land}|${inset.left}|${inset.bottom}`;
+  setJoystick(
+    mode: Settings['joystick'],
+    size: Settings['joySize'],
+    land: boolean,
+    inset: { left: number; bottom: number },
+  ): void {
+    const key = `${mode}|${size}|${land}|${inset.left}|${inset.bottom}`;
     if (key === this.joyKey) return;
     this.joyKey = key;
     const rest =
       land && mode === 'fixed'
         ? { left: inset.left + FEEL.joyRestLeft, bottom: inset.bottom + FEEL.joyRestBottom }
         : undefined;
-    this.joystick(land ? FEEL.joyLandscape : FEEL.joyPortrait, rest);
+    this.joystick((land ? FEEL.joyLandscape : FEEL.joyPortrait) * FEEL.joySizes[size], rest);
   }
 
   /** A finger held on the game right of the stick's zone is Space, with a faint ring under it. */

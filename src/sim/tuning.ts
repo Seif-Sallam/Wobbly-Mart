@@ -196,10 +196,12 @@ export const TUNING = {
     /** Share of the Pad chain bought at the Opening (never past Area 1, never a Stocker). */
     startShare: [0.35, 0.55] as readonly [number, number],
     startMoney: 40,
+    /** Steady hands, free on a Daily Shift: base 5 + half the normal Maps' +3. */
+    safe: 7,
     /** First Pad cost per Area, then × `padGrowth` each Pad; an Area Pad costs `areaPadShare` of the previous Area's Pads. */
-    padBase: [12, 60, 300] as readonly number[],
-    padGrowth: 1.18,
-    areaPadShare: 0.6,
+    padBase: [12, 40, 100] as readonly number[],
+    padGrowth: 1.12,
+    areaPadShare: 0.35,
     exitShare: 0.5,
     staffCost: { cashier: 1.5, stocker: 2 },
     /** The Office Pad comes after this many Pads in Area 1. */
@@ -207,13 +209,15 @@ export const TUNING = {
     trees: [8, 18] as readonly [number, number],
     indoorProps: 3,
     yardFlowers: 3,
-    // goal: the bot plays `targetMinutes × botPace` with no goal; each part is sized to what it reached
-    targetMinutes: 10,
+    // goal: the bot plays with no goal until its first late Pad, within `targetMinutes × botPace`; parts are sized to what it reached
+    targetMinutes: [12, 18] as readonly [number, number],
     botPace: 1,
+    /** Parts per goal: this many, and one more at `extraPartChance`. One is always the late part. */
     goalParts: 3,
     extraPartChance: 0.45,
-    /** Buy-a-Pad only for a Pad the bot bought after this share of the target. */
-    ownAfter: 0.75,
+    /** The late part is a Pad (or a Shelf's Items) past this share of the Pad chain; Sell at `lateSellChance`. */
+    lateFrom: 0.5,
+    lateSellChance: 0.5,
     sellMin: 10,
     deliveriesMin: 2,
     earnMin: 50,

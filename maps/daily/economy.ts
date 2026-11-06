@@ -4,16 +4,14 @@ import type { ProducerType } from '../../catalog/producers';
 
 const levels = (costs: number[], values: number[]) => costs.map((cost, i) => ({ cost, value: values[i] }));
 
-/** Costs double on a Map with more than one Area. */
-export function dailyUpgrades(producers: Record<string, ProducerType>, areas: number): Record<string, UpgradeDef> {
-  const m = areas > 1 ? 2 : 1;
+export function dailyUpgrades(producers: Record<string, ProducerType>): Record<string, UpgradeDef> {
   const ups: Record<string, UpgradeDef> = {
     player_speed: {
       name: 'Walk speed',
       family: 'player',
       target: 'player',
       stat: 'speed',
-      levels: levels([15 * m, 30 * m, 55 * m], [6, 6.5, 7]),
+      levels: levels([15, 30, 55], [6, 6.5, 7]),
       requires: ['office'],
     },
     stack_cap: {
@@ -21,7 +19,7 @@ export function dailyUpgrades(producers: Record<string, ProducerType>, areas: nu
       family: 'player',
       target: 'player',
       stat: 'stack',
-      levels: levels([20 * m, 40 * m, 75 * m], [10, 12, 14]),
+      levels: levels([20, 40, 75], [10, 12, 14]),
       requires: ['office'],
     },
     cashier_speed: {
@@ -29,7 +27,7 @@ export function dailyUpgrades(producers: Record<string, ProducerType>, areas: nu
       family: 'staff',
       target: 'cashier',
       stat: 'checkoutTime',
-      levels: levels([40 * m, 75 * m], [1.6, 1.3]),
+      levels: levels([40, 75], [1.6, 1.3]),
       requires: ['cashier_1'],
     },
   };
@@ -39,7 +37,7 @@ export function dailyUpgrades(producers: Record<string, ProducerType>, areas: nu
       family: 'station',
       target: id,
       stat: 'workTime',
-      levels: levels([20 * m, 40 * m], [0.8, 0.64]),
+      levels: levels([20, 40], [0.8, 0.64]),
       requires: [id],
     };
   return ups;

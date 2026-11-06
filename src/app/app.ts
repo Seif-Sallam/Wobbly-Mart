@@ -48,7 +48,7 @@ import { Hud, type EdgeArrow, type EventBanner, type EventCard } from '../ui/hud
 import { renderUi, type Overlay, type UiActions, type UiState } from '../ui/app';
 import { Sounds } from '../audio/audio';
 import { FEEL } from '../feel';
-import { runTicks } from '../sim/stats';
+import { emptyStats, runTicks } from '../sim/stats';
 import { TUNING } from '../sim/tuning';
 import { objectiveId } from '../../catalog/objectives';
 import { logbookView, objectiveInfo, progressOfSave, type MapProgress } from './logbook';
@@ -406,6 +406,24 @@ export class App {
   private reopen(): void {
     if (this.ui.screen === 'game') this.openMap(this.currentMap());
     else this.refreshMaps();
+  }
+
+  /** Wipes a Map back to its start, Score too; keeps play time, which the Score Board needs to never go down. The next
+   *  Opening is a fresh, valid Speedrun Run. */
+  private resetMap(id: string): void {
+    const map = mapById(id);
+    if (!map || isTutorialMap(map)) return;
+    const playTime = this.save.maps[id]?.stats?.playTime ?? 0;
+    const { money, owned } = map.start;
+    const stats = { ...emptyStats(), playTime };
+    this.save.maps[id] = { money, owned: [...owned], paid: {}, levels: {}, roles: {}, stats };
+    if (this.ui.screen === 'game' && this.game?.world.map.id === id) this.openMap(map);
+    else {
+      this.writeSave();
+      writeSave(this.save);
+    }
+    this.refreshMaps();
+    this.renderUi();
   }
 
   /** `seed`: a Daily Shift's; other Openings get a fresh one. */
@@ -854,6 +872,7 @@ export class App {
       this.reopen();
       this.openOverlay(null);
     },
+    resetMap: (id) => this.resetMap(id),
     pickMap: (id) => {
       const map = mapById(id);
       if (!map) return;

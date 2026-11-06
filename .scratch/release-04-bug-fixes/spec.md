@@ -121,7 +121,7 @@ The research branches are never merged. Copy their diffs into the build PRs.
 - Each Map card on the title (or the Maps panel, `function Maps` in `src/ui/app.tsx`) gets **Reset this Map**: a `HoldButton`, then a confirm.
 - It wipes that Map's Money, Pads, Upgrades, layout and Moves, Objectives, Stats, Completion quarters and **Score** (owner, 2026-11-06). It keeps the Map's play time, because the Worker refuses a Score submit whose `playTime` is below the stored one. The Score Board keeps the best Score until the replay beats it.
 - The replay starts a fresh, **valid** Speedrun Run, so `runVoid` is cleared.
-- Same idea as the dev `resetMap` hook (`src/app/app.ts:288`), but it keeps `score`.
+- Same idea as the dev `resetMap` hook (`src/app/app.ts:288`), but it keeps `stats.playTime`.
 - Not offered on the Tutorial or the Daily Shift.
 
 ## 4. Wall and menus

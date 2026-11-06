@@ -2,6 +2,7 @@
 import { useRef } from 'preact/hooks';
 import { RANK_CAP, type BoardKind, type BoardResponse, type Row } from '../../worker/api';
 import { AVATAR_COLOURS } from '../palette';
+import { dailyDate } from '../sim/daily';
 import { Btn } from './btn';
 import { Popup } from './popup';
 
@@ -62,11 +63,15 @@ export interface WallView {
   maps: { id: string; name: string; playable: boolean }[];
   board: BoardResponse | 'offline' | null;
   hasDevice: boolean;
+  /** Today: the day shown, stepped with ◀ / ▶ from day 1 up to `today`. */
+  day: number;
+  today: number;
 }
 
 export interface WallActions {
   tab: (tab: WallTab) => void;
   map: (id: string) => void;
+  day: (day: number) => void;
   retry: () => void;
   close: () => void;
   join: () => void;
@@ -89,12 +94,18 @@ const TAB = {
   streaks: ['🔥', 'Streaks', 'Never Missed a Shift', 'Never Late'],
 } as const;
 const SUBTITLE: Record<WallTab, (map: string) => string> = {
-  today: () => "Today's Shift · fastest to finish",
+  today: () => 'Fastest to finish',
   speed: (map) => `${map} · from a fresh start to 100%`,
   stars: (map) => `${map} · most Stars earned`,
   streaks: () => 'Most Daily Shifts in a row',
 };
 const SWIPE_PX = 60;
+
+/** "Today", or the day's UTC date like "Nov 3". */
+const dayLabel = (day: number, today: number): string =>
+  day === today
+    ? 'Today'
+    : new Date(dailyDate(day)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
 /** Sim ticks at 60 Hz as m:ss.cc (m:ss when `whole`), or h:mm:ss for long Runs. */
 export function clockOf(ticks: number, whole = false): string {
@@ -244,7 +255,21 @@ export function WallPopup({ v, a }: { v: WallView; a: WallActions }) {
           }}
         >
           <div class="wall-sec">
-            <h3>{TAB[v.tab][2]}</h3>
+            {v.tab === 'today' ? (
+              <div class="wall-days">
+                <button class="round" disabled={v.day <= 1} onClick={() => (a.click(), a.day(v.day - 1))}>
+                  ◀
+                </button>
+                <h3>
+                  Shift #{v.day} · {dayLabel(v.day, v.today)}
+                </h3>
+                <button class="round" disabled={v.day >= v.today} onClick={() => (a.click(), a.day(v.day + 1))}>
+                  ▶
+                </button>
+              </div>
+            ) : (
+              <h3>{TAB[v.tab][2]}</h3>
+            )}
             <small>{SUBTITLE[v.tab](map?.name ?? '')}</small>
           </div>
           {perMap && (

@@ -701,6 +701,15 @@ html.sprinting #joy .back::after {
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 12px;
 }
+.map-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.map-slot .hold.small {
+  font-size: 14px;
+  padding: 6px 10px;
+}
 .map-card {
   flex-direction: column;
   min-height: 110px;

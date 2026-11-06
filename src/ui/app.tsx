@@ -142,6 +142,8 @@ export interface UiActions {
   pasteSave: (code: string) => string | null;
   resetProgress: () => void;
   pickMap: (id: string) => void;
+  /** Maps panel: a fresh start on a Map that keeps its Score. */
+  resetMap: (id: string) => void;
   dismissCard: () => void;
   /** Got it on a Lesson card. */
   lessonNext: () => void;
@@ -263,7 +265,8 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
   );
 }
 
-function HoldButton({ onDone, children }: { onDone: () => void; children: preact.ComponentChildren }) {
+function HoldButton(props: { onDone: () => void; children: preact.ComponentChildren; class?: string }) {
+  const { onDone, children } = props;
   const [held, setHeld] = useState(false);
   const timer = useRef<number>(0);
   const start = () => {
@@ -279,7 +282,7 @@ function HoldButton({ onDone, children }: { onDone: () => void; children: preact
   };
   return (
     <button
-      class={`btn danger hold ${held ? 'held' : ''}`}
+      class={`btn danger hold ${props.class ?? ''} ${held ? 'held' : ''}`}
       onPointerDown={start}
       onPointerUp={stop}
       onPointerLeave={stop}
@@ -504,18 +507,41 @@ function Paste({ a }: { a: UiActions }) {
 }
 
 function Maps({ s, a }: { s: UiState; a: UiActions }) {
+  const [confirm, setConfirm] = useState<UiState['maps'][number] | null>(null);
+  if (confirm)
+    return (
+      <div class="panel">
+        <h2>Reset {confirm.map.name}?</h2>
+        <p>Its Money, Pads, Upgrades, layout, Objectives and Stats start over. Its Score stays.</p>
+        <div class="row">
+          <Btn class="danger" actions={a} onClick={() => (a.resetMap(confirm.map.id), setConfirm(null))}>
+            Reset this Map
+          </Btn>
+          <Btn actions={a} onClick={() => setConfirm(null)}>
+            Cancel
+          </Btn>
+        </div>
+      </div>
+    );
   return (
     <div class="panel wide">
       <h2>Maps</h2>
       <div class="maps">
         {s.maps.map((m) => (
-          <Btn key={m.map.id} class="map-card" actions={a} onClick={() => a.pickMap(m.map.id)} disabled={!m.visited}>
-            <b>{m.map.name}</b>
-            <span class="completion small">
-              <i style={{ width: `${Math.round(m.completion * 100)}%` }} />
-            </span>
-            <small>{Math.round(m.completion * 100)}%</small>
-          </Btn>
+          <div key={m.map.id} class="map-slot">
+            <Btn class="map-card" actions={a} onClick={() => a.pickMap(m.map.id)} disabled={!m.visited}>
+              <b>{m.map.name}</b>
+              <span class="completion small">
+                <i style={{ width: `${Math.round(m.completion * 100)}%` }} />
+              </span>
+              <small>{Math.round(m.completion * 100)}%</small>
+            </Btn>
+            {m.visited && !m.tutorial && (
+              <HoldButton class="small" onDone={() => setConfirm(m)}>
+                Hold to reset
+              </HoldButton>
+            )}
+          </div>
         ))}
       </div>
       <Btn class="back" actions={a} onClick={a.close}>

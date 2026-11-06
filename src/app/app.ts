@@ -408,6 +408,22 @@ export class App {
     else this.refreshMaps();
   }
 
+  /** Wipes a Map back to its start but keeps its Score; the next Opening is a fresh, valid Speedrun Run. */
+  private resetMap(id: string): void {
+    const map = mapById(id);
+    if (!map || isTutorialMap(map)) return;
+    const score = this.save.maps[id]?.score;
+    const { money, owned } = map.start;
+    this.save.maps[id] = { money, owned: [...owned], paid: {}, levels: {}, roles: {}, ...(score && { score }) };
+    if (this.ui.screen === 'game' && this.game?.world.map.id === id) this.openMap(map);
+    else {
+      this.writeSave();
+      writeSave(this.save);
+    }
+    this.refreshMaps();
+    this.renderUi();
+  }
+
   /** `seed`: a Daily Shift's; other Openings get a fresh one. */
   private openMap(map: MapDef, seed?: number): void {
     const game = this.game;
@@ -854,6 +870,7 @@ export class App {
       this.reopen();
       this.openOverlay(null);
     },
+    resetMap: (id) => this.resetMap(id),
     pickMap: (id) => {
       const map = mapById(id);
       if (!map) return;

@@ -26,7 +26,7 @@ export const tutorialMap: MapDef = {
   lessons,
   objectives,
   challenges: false,
-  music: 'corner-shop',
+  look: 'corner-shop',
   movePrices,
   events,
 };

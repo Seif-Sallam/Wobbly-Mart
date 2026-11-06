@@ -8,11 +8,13 @@ import { TUNING } from './tuning';
 
 const K = TUNING.dailyMap;
 
-test('generated Daily Maps: every Format, shops within a short walk, free Steady hands, a second Stocker on 3 Areas', () => {
+test('generated Daily Maps: every Format, shops within a short walk, free Steady hands, a second Stocker on 3 Areas, every look', () => {
   const formats = new Set<string>();
+  const looks = new Set<string | undefined>();
   for (let s = 1; s <= 60; s++) {
     const { map, format } = generateDailyMap(s * 7919);
     formats.add(format);
+    looks.add(map.look);
     const w = builtOut(map);
     const walks = shopWalks(w).flat();
     expect(walks.every(Number.isFinite), `${map.id}: a shop can't be walked to`).toBe(true);
@@ -25,6 +27,7 @@ test('generated Daily Maps: every Format, shops within a short walk, free Steady
     );
   }
   expect([...formats].sort()).toEqual(Object.keys(K.formats).sort());
+  expect([...looks].sort()).toEqual([...K.looks].sort());
 });
 
 test('the calendar goals: 3 or 4 parts, the last one late (or the furthest Pad bought), the bot within 18 min', () => {

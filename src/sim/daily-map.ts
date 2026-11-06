@@ -524,7 +524,7 @@ function attemptDaily(seed: number): Omit<DailyMap, 'rerolls'> | string {
     objectives: [],
     challenges: false,
     shift: true,
-    music: 'corner-shop',
+    look: K.looks[randomInt(rng, 0, K.looks.length - 1)],
     movePrices: [],
     events: dailyEvents(order[1]),
   };

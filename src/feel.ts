@@ -8,6 +8,8 @@ export const FEEL = {
    * ring that already gives full walk speed. */
   joyPortrait: 110,
   joyLandscape: 115,
+  /** The Joystick size setting: a factor on the ring sizes above. */
+  joySizes: { small: 0.75, medium: 1, large: 1.25 },
   sprintForce: 1.5,
   joyFullPush: 0.6,
   /** Landscape: the stick's zone is this share of the width from the left; Fixed rests with its centre this far (px)

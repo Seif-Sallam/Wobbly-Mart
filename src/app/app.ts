@@ -1250,12 +1250,12 @@ export class App {
     root.classList.toggle('joy-off', isTouch && this.settings.joystick === 'off');
     root.classList.toggle('joy-free', layout.land && this.settings.joystick === 'free');
     root.style.setProperty('--joy-zone', String(FEEL.joyZone));
-    root.style.setProperty('--joy-size', `${FEEL.joyLandscape}px`);
+    root.style.setProperty('--joy-size', `${FEEL.joyLandscape * FEEL.joySizes[this.settings.joySize]}px`);
     root.style.setProperty('--joy-left', `${FEEL.joyRestLeft}px`);
     root.style.setProperty('--joy-bottom', `${FEEL.joyRestBottom}px`);
     root.style.setProperty('--grab-ring', `${FEEL.grabRing}px`);
     this.input.holdGrab = layout.land && this.settings.manualGrab;
-    this.input.setJoystick(this.settings.joystick, layout.land, insets());
+    this.input.setJoystick(this.settings.joystick, this.settings.joySize, layout.land, insets());
     this.redraw = true;
   }
 

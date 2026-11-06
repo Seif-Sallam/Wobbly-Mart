@@ -119,7 +119,7 @@ The research branches are never merged. Copy their diffs into the build PRs.
 ### 3.4 Reset this Map (3c)
 
 - Each Map card on the title (or the Maps panel, `function Maps` in `src/ui/app.tsx`) gets **Reset this Map**: a `HoldButton`, then a confirm.
-- It wipes that Map's Money, Pads, Upgrades, layout and Moves, Objectives, Stats and Completion quarters. It keeps its **Score**.
+- It wipes that Map's Money, Pads, Upgrades, layout and Moves, Objectives, Stats, Completion quarters and **Score** (owner, 2026-11-06). It keeps the Map's play time, because the Worker refuses a Score submit whose `playTime` is below the stored one. The Score Board keeps the best Score until the replay beats it.
 - The replay starts a fresh, **valid** Speedrun Run, so `runVoid` is cleared.
 - Same idea as the dev `resetMap` hook (`src/app/app.ts:288`), but it keeps `score`.
 - Not offered on the Tutorial or the Daily Shift.
@@ -173,6 +173,5 @@ Raise any of these on the PR if they are wrong.
 - **Late goal:** "late" means past the chain midpoint. It is not always the last Area. Days with no late Pad in 18 min (7 %) fall back to the furthest Pad and are not rerolled.
 - **Bot time:** up to 18 min (inside "15–20"). The median is 11.9.
 - **Daily economy:** cheaper later Pads and no Upgrade ×2 change how Daily Shifts play, not only the bot's time. The bot itself is unchanged, because the normal Maps share it.
-- **Map reset and Score:** after a reset, re-earned Objectives, Challenges, Events and quarters add Score again, on top of the kept Score. This lets a player farm Score by resetting. If the Score Board must not allow that, keep the Objective ids and quarters that already scored, and award nothing for them again.
 - **Joystick default:** Small on every touch device, not only in landscape fullscreen.
 - **Restart Shift confirm:** reuse the existing hold-to-confirm pattern.

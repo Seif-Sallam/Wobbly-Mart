@@ -11,6 +11,8 @@ export interface ShiftDay {
   seed: number;
   /** The Map, its goal as its `objectives`. */
   map: MapDef;
+  /** The bot's time to the goal, shown on the title's Daily card. */
+  botTicks: number;
   floorTicks: number;
 }
 
@@ -20,5 +22,5 @@ export function shiftDay(day: number): ShiftDay | null {
   if (!entry) return null;
   const seed = dailySeed(day);
   const { map } = generateDailyMap(seed);
-  return { day, seed, map: { ...map, objectives: entry.goal }, floorTicks: entry.floorTicks };
+  return { day, seed, map: { ...map, objectives: entry.goal }, botTicks: entry.botTicks, floorTicks: entry.floorTicks };
 }

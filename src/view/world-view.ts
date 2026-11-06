@@ -213,7 +213,7 @@ export class WorldView {
   }
 
   private buildLevel(w: World): Level {
-    return new Level(w.map.layout, (b: Box) => areaOf(this.w, b), w.map.start.owned, THEMES[w.map.id]);
+    return new Level(w.map.layout, (b: Box) => areaOf(this.w, b), w.map.start.owned, THEMES[w.map.look ?? w.map.id]);
   }
 
   private swapLevel(): void {
@@ -334,7 +334,7 @@ export class WorldView {
       const def = w.map.pads[st.id]?.unlocks ?? w.map.freeStations[st.id]?.unlocks;
       const name = def ? stationModel(w.map, def) : null;
       if (!name) continue;
-      const v = buildStation(name, st.box, st.rot, THEMES[this.w.map.id]?.pallet);
+      const v = buildStation(name, st.box, st.rot, THEMES[this.w.map.look ?? this.w.map.id]?.pallet);
       this.stations.set(st.id, v);
       this.root.add(v.root);
       this.batch.add(st.id, v.body, v.root.position);
@@ -381,7 +381,7 @@ export class WorldView {
     const name = stationModel(w.map, def);
     let ghost: THREE.Object3D | null = null;
     if (name) {
-      const v = buildStation(name, place.box, place.rot, THEMES[this.w.map.id]?.pallet);
+      const v = buildStation(name, place.box, place.rot, THEMES[this.w.map.look ?? this.w.map.id]?.pallet);
       ghostify(v.root);
       v.root.position.set(0, 0, 0);
       ghost = v.root;
@@ -414,7 +414,7 @@ export class WorldView {
       if (w.owned.has(id) || areaOf(w, place.box) !== pan.area) continue;
       const name = stationModel(w.map, pad.unlocks);
       if (!name) continue;
-      const v = buildStation(name, place.box, place.rot, THEMES[this.w.map.id]?.pallet);
+      const v = buildStation(name, place.box, place.rot, THEMES[this.w.map.look ?? this.w.map.id]?.pallet);
       ghostify(v.root, 0.4);
       this.ghosts.push(v.root);
       this.root.add(v.root);

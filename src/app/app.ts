@@ -178,6 +178,7 @@ export class App {
       wipe: false,
       touch: isTouch,
       ios: isIos,
+      autoFullscreen: canFullscreen(),
       maps: [],
       total: 0,
       logbook: null,
@@ -200,7 +201,6 @@ export class App {
     this.ui.zoom = this.zoom();
     watchLayout(() => this.applyLayout());
     this.hud.onGear = () => this.openOverlay('pause');
-    this.hud.onShiftReset = () => this.resetShift();
     this.hud.onTrophy = () => this.openLogbook(0);
     this.hud.onLand = () => this.sounds.sfx('ding');
     this.input.onEscape = () => this.escape();
@@ -217,11 +217,11 @@ export class App {
       if (this.ui.screen === 'title' && this.game) this.sounds.playMusicOf(this.game.world.map);
     };
     addEventListener('pointerdown', firstGesture, { once: true });
-    // a touch is a gesture only on release: the first tap anywhere goes fullscreen
-    const firstTap = (): void => {
-      if (canFullscreen()) void document.documentElement.requestFullscreen().catch(() => {});
-    };
-    addEventListener('pointerup', firstTap, { once: true });
+    // a touch is a gesture only on release: any tap while not fullscreen goes fullscreen (again after a background)
+    addEventListener('pointerup', () => {
+      if (canFullscreen() && !document.fullscreenElement)
+        void document.documentElement.requestFullscreen().catch(() => {});
+    });
     addEventListener('keydown', firstGesture, { once: true });
     addEventListener('visibilitychange', () => (document.hidden ? this.onHidden() : this.syncAudio()));
     addEventListener('pagehide', () => this.writeSave());
@@ -869,6 +869,7 @@ export class App {
       this.game?.lessonNext();
     },
     skipLessons: () => this.toTitle(),
+    restartShift: () => this.resetShift(),
     dismissCard: () => {
       this.ui.card = null;
       this.renderUi();
@@ -971,6 +972,7 @@ export class App {
       day: shift.day.day,
       goal: map.objectives.map((o) => objectiveInfo(map, o).name).join(' + '),
       time: shift.doneTicks === null ? null : clockOf(shift.doneTicks),
+      bot: clockOf(shift.day.botTicks, true),
       streak: last?.streak ?? null,
       rank: last?.day === shift.day.day ? last.rank : null,
     };
@@ -997,7 +999,7 @@ export class App {
     game.fastForward(replayIntents(log));
   }
 
-  /** ↺ on the chip or Try again: the same Shift from its Opening. */
+  /** Restart Shift in the pause menu or Try again: the same Shift from its Opening. */
   private resetShift(): void {
     this.shift?.reset();
     this.openShift();
@@ -1023,10 +1025,14 @@ export class App {
       this.openOverlay('shift-end');
       void this.sendShift();
     }
-    if (shift.doneTicks !== null) return this.hud.setShift(`✓ Done ${clockOf(shift.doneTicks)} · for fun now`);
-    const p = objectiveProgress(w, left[0]);
-    const name = objectiveInfo(w.map, left[0]).name;
-    this.hud.setShift(`📅 ${name} · ${Math.floor(p.got)}/${p.want} · ${clockOf(shift.recorder.log.ticks)}`);
+    if (shift.doneTicks !== null)
+      return this.hud.setShift([{ text: `✓ Done ${clockOf(shift.doneTicks)} · for fun now` }]);
+    const rows = w.map.objectives.map((o) => {
+      const p = objectiveProgress(w, o);
+      const { icon, name } = objectiveInfo(w.map, o);
+      return { icon, text: `${name} · ${Math.floor(Math.min(p.got, p.want))}/${p.want}`, done: p.got >= p.want };
+    });
+    this.hud.setShift(rows, clockOf(shift.recorder.log.ticks));
   }
 
   /** Posts the finished Shift on the end screen (queued when it can't post yet); a reply for a newer attempt is

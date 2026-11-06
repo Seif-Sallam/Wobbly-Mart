@@ -37,7 +37,13 @@ function calibrateDay(date: string): Result {
   try {
     const { g, print } = mapPrint(date);
     const { goal, botTicks, floorTicks } = calibrateDaily(g.map, fnv1a(date));
-    return { date, day: { map: print, goal, floorTicks }, format: g.format, rerolls: g.rerolls, botTicks };
+    return {
+      date,
+      day: { map: print, goal, botTicks: botTicks ?? 0, floorTicks },
+      format: g.format,
+      rerolls: g.rerolls,
+      botTicks,
+    };
   } catch (e) {
     return { date, error: (e as Error).message };
   }

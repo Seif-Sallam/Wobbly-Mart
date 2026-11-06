@@ -9,7 +9,7 @@ import { SIM_VERSION } from './version';
 import { createWorld, step } from './world';
 
 /** Refresh with the printed fingerprint whenever SIM_VERSION is bumped. */
-const GOLDEN = { simVersion: 2, fingerprint: 1559370526 };
+const GOLDEN = { simVersion: 3, fingerprint: 3464646828 };
 
 test('golden run: the bot plays 4 sim minutes, a Daily Map is generated, and both match SIM_VERSION', () => {
   const w = createWorld(cornerShop, null, 20261102);

@@ -598,14 +598,17 @@ html.sprinting #joy .back::after {
   }
 }
 
-/* ---------- panels */
+/* ---------- panels: every menu and popup scales with the HUD size setting (--menu-scale); sizes in %, not vh,
+   since Chrome scales viewport units by zoom */
 .modal {
   position: fixed;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: color-mix(in srgb, var(--ink) 35%, transparent);
   padding: 16px;
+  zoom: var(--menu-scale, 1);
 }
 .panel {
   background: var(--cream);
@@ -615,7 +618,7 @@ html.sprinting #joy .back::after {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 90vh;
+  max-height: 100%;
   overflow: auto;
 }
 .panel.wide {
@@ -1274,12 +1277,7 @@ html.ph .layout-panel {
   zoom: var(--screen-scale);
 }
 html.ph .modal {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-html.ph .panel {
-  max-height: 100%;
+  zoom: calc(var(--screen-scale) * var(--menu-scale, 1));
 }
 html.pl .office.side {
   width: calc(var(--office-side) * 100%);
@@ -1729,7 +1727,7 @@ html.joying #joy-rest {
 }
 .panel.popup {
   width: min(420px, 100%);
-  max-height: calc(100dvh - 32px);
+  max-height: 100%;
   padding: 0;
   gap: 0;
   overflow: hidden;

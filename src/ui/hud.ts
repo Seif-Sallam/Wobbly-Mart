@@ -122,10 +122,6 @@ export class Hud {
     this.root.style.display = on ? '' : 'none';
   }
 
-  scale(s: number): void {
-    this.ui.style.setProperty('--hud-scale', String(s));
-  }
-
   /** New Opening: jump straight to the values and drop whatever was on screen. */
   reset(money: number, score: number): void {
     this.shown = this.target = money;

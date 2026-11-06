@@ -9,10 +9,12 @@ import { AREA_1, BLOCK, FORMATS, INTERIORS, PROPS, STRIP, shelfSlots } from '../
 import type { Facing, Format, Interior } from '../../maps/daily/blocks';
 import { dailyEvents, dailyUpgrades } from '../../maps/daily/economy';
 import { nextRandom, randomBetween, randomInt, shuffle, weighted } from './rng';
-import { boxGap, boxesOverlap } from './geometry';
+import { boxGap, boxesOverlap, inBox } from './geometry';
 import { validateMap } from './validate';
 import { cutOff } from './layout';
-import { createWorld } from './world';
+import { makeField, seedCells } from './nav';
+import { rebuildNav } from './walk';
+import { createWorld, type World } from './world';
 import { TUNING } from './tuning';
 
 export interface DailyMap {
@@ -90,12 +92,36 @@ export function generateDailyMap(seed: number): DailyMap {
   throw new Error(`Daily seed ${seed}: no valid Map in ${K.rerolls} tries (last: ${last})`);
 }
 
-/** The validator, then every Station reachable with everything bought. */
+/** The validator, then every Station reachable and every shop within a short walk, with everything bought. */
 function checkDaily(map: MapDef): string | null {
   const problem = validateMap(map, ASSETS)[0];
   if (problem) return `${problem.id}: ${problem.message}`;
-  const owned = ['area_1', ...Object.keys(map.pads)];
-  return cutOff(createWorld({ ...map, start: { ...map.start, owned } }, null, 0));
+  const w = builtOut(map);
+  const cut = cutOff(w);
+  if (cut) return cut;
+  const d = shopWalks(w);
+  for (let a = 0; a < d.length; a++)
+    for (let b = a + 1; b < d.length; b++)
+      if (d[a][b] > K.shopWalk) return `shops ${a + 1} and ${b + 1} are ${d[a][b].toFixed(1)} m apart`;
+  return null;
+}
+
+/** A World on `map` with every Area and Pad owned. */
+export const builtOut = (map: MapDef): World =>
+  createWorld({ ...map, start: { ...map.start, owned: ['area_1', ...Object.keys(map.pads)] } }, null, 0);
+
+/** Shortest walks (m) between shop floors on the walker grid; walking through a third shop costs nothing. */
+export function shopWalks(w: World): number[][] {
+  rebuildNav(w);
+  const grid = w.nav.walker;
+  const cells = w.map.layout.floors.map((f) => seedCells(grid, (x, z) => inBox(x, z, f)));
+  const d = cells.map((from) => {
+    const field = makeField(grid, from);
+    return cells.map((to) => to.reduce((best, c) => Math.min(best, field[c]), Infinity));
+  });
+  for (let k = 0; k < d.length; k++)
+    for (const row of d) for (let b = 0; b < d.length; b++) row[b] = Math.min(row[b], row[k] + d[k][b]);
+  return d;
 }
 
 function attemptDaily(seed: number): Omit<DailyMap, 'rerolls'> | string {
@@ -264,6 +290,32 @@ function attemptDaily(seed: number): Omit<DailyMap, 'rerolls'> | string {
   if (!places.exit) return 'no room for the Exit Pad';
   pad('exit', { kind: 'exit' }, areaSum * K.exitShare);
 
+  // map bounds, then the Street: a strip outside every shop front, run edge to edge of the map
+  const all = units.map(unitBox);
+  const m = BLOCK.margin;
+  const minX = Math.min(...all.map((b) => b[0]), road[0]) - m;
+  const minZ = Math.min(...all.map((b) => b[1]), road[1]) - m;
+  const maxX = Math.max(...all.map((b) => b[0] + b[2]), road[0] + road[2]) + m;
+  const maxZ = Math.max(...all.map((b) => b[1] + b[3]), road[1] + road[3]) + m;
+  const S = BLOCK.street;
+  const street: Box[] = [];
+  const streetSpots: Point[] = [];
+  const areas: MapLayout['areas'] = {};
+  const streetOf = (u: Unit): Box => {
+    const [sx, sz, sw, sd] = shopBox(u);
+    return u.facing === 'N'
+      ? [minX, sz - S, maxX - minX, S]
+      : u.facing === 'S'
+        ? [minX, sz + sd, maxX - minX, S]
+        : u.facing === 'W'
+          ? [sx - S, minZ, S, maxZ - minZ]
+          : [sx + sw, minZ, S, maxZ - minZ];
+  };
+  for (const u of units) {
+    const s = streetOf(u);
+    if (!street.some((o) => o.every((v, i) => Math.abs(v - s[i]) < 1e-6))) street.push(s);
+  }
+
   // each shop's four edges: open where they meet another shop, a Back Door where they meet another Area's yard
   const t = BLOCK.wall;
   for (const [a, u] of units.entries()) {
@@ -297,6 +349,16 @@ function attemptDaily(seed: number): Omit<DailyMap, 'rerolls'> | string {
       if (units.some((o) => o !== u && boxesOverlap(probe, shopBox(o)))) {
         holes[side].push(e);
         continue;
+      }
+      if (street.some((s) => boxesOverlap(probe, s))) {
+        const C = BLOCK.cornerDoor;
+        const d = [toWorld(u, [0, C.from, t, C.w]), toWorld(u, [u.w - t, C.from, t, C.w])].find((b) =>
+          boxesOverlap(b, e),
+        );
+        if (d) {
+          doors[`door_corner_${a + 1}`] = { kind: 'customer', box: d };
+          holes[side].push(d);
+        }
       }
       for (const o of units) {
         if (o === u || !boxesOverlap(probe, yardBox(o))) continue;
@@ -332,29 +394,8 @@ function attemptDaily(seed: number): Omit<DailyMap, 'rerolls'> | string {
     }
   }
 
-  // map bounds, then the Street: a strip outside every shop front, run edge to edge of the map
-  const all = units.map(unitBox);
-  const m = BLOCK.margin;
-  const minX = Math.min(...all.map((b) => b[0]), road[0]) - m;
-  const minZ = Math.min(...all.map((b) => b[1]), road[1]) - m;
-  const maxX = Math.max(...all.map((b) => b[0] + b[2]), road[0] + road[2]) + m;
-  const maxZ = Math.max(...all.map((b) => b[1] + b[3]), road[1] + road[3]) + m;
-  const S = BLOCK.street;
-  const street: Box[] = [];
-  const streetSpots: Point[] = [];
-  const areas: MapLayout['areas'] = {};
   for (const u of units) {
-    const [sx, sz, sw, sd] = shopBox(u);
-    const s: Box =
-      u.facing === 'N'
-        ? [minX, sz - S, maxX - minX, S]
-        : u.facing === 'S'
-          ? [minX, sz + sd, maxX - minX, S]
-          : u.facing === 'W'
-            ? [sx - S, minZ, S, maxZ - minZ]
-            : [sx + sw, minZ, S, maxZ - minZ];
-    if (!street.some((o) => o.every((v, i) => Math.abs(v - s[i]) < 1e-6))) street.push(s);
-    if (units.some((o) => boxesOverlap(s, unitBox(o)))) return `Street of ${u.area} runs through a block`;
+    if (units.some((o) => boxesOverlap(streetOf(u), unitBox(o)))) return `Street of ${u.area} runs through a block`;
     areas[u.area] = [shopBox(u), yardBox(u)];
   }
   if (street.some((s) => boxesOverlap(s, road))) return 'road crosses the Street';
@@ -365,12 +406,18 @@ function attemptDaily(seed: number): Omit<DailyMap, 'rerolls'> | string {
       horiz ? [s[0] + s[2] - S / 2, s[1] + S / 2] : [s[0] + S / 2, s[1] + s[3] - S / 2],
     );
   }
-  // split: the Street between the rows is Area 1 ground, so the Player walks it from the Opening
-  if (format === 'split') {
-    const fronts = units.map(shopBox);
-    const x0 = Math.min(...fronts.map((b) => b[0]));
-    const x1 = Math.max(...fronts.map((b) => b[0] + b[2]));
-    areas.area_1.push([x0, shopBox(units[0])[1] - S, x1 - x0, S]);
+  // a Street running between shops (split, corner, courtyard) is Area 1 ground, so the Player walks it
+  const floors = units.map(shopBox);
+  const x0 = Math.min(...floors.map((b) => b[0]));
+  const z0 = Math.min(...floors.map((b) => b[1]));
+  const x1 = Math.max(...floors.map((b) => b[0] + b[2]));
+  const z1 = Math.max(...floors.map((b) => b[1] + b[3]));
+  for (const s of street) {
+    const cx0 = Math.max(x0, s[0]);
+    const cz0 = Math.max(z0, s[1]);
+    const cx1 = Math.min(x1, s[0] + s[2]);
+    const cz1 = Math.min(z1, s[1] + s[3]);
+    if (cx1 > cx0 && cz1 > cz0) areas.area_1.push([cx0, cz0, cx1 - cx0, cz1 - cz0]);
   }
 
   // Props: trees and bushes on open grass, pots and coolers in shop corners, flowers in yards

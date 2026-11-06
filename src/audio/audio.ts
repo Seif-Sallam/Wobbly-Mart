@@ -76,7 +76,7 @@ export class Sounds {
 
   /** Swaps to the Map's track; does nothing before unlock. */
   playMusicOf(map: MapDef): void {
-    const track = map.music ?? map.id;
+    const track = map.look ?? map.id;
     if (!this.sfxHowl || track === this.musicMap) return;
     this.musicMap = track;
     this.music?.unload();

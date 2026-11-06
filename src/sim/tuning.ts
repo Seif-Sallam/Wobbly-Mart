@@ -206,6 +206,8 @@ export const TUNING = {
     staffCost: { cashier: 1.5, stocker: 2 },
     /** The Office Pad comes after this many Pads in Area 1. */
     officeAfter: 4,
+    /** The Maps whose theme and music a Daily Map wears, one picked per day. */
+    looks: ['corner-shop', 'juice-bar', 'dairy-farm', 'pizza-place'] as readonly string[],
     trees: [8, 18] as readonly [number, number],
     indoorProps: 3,
     yardFlowers: 3,

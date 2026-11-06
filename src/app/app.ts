@@ -44,7 +44,7 @@ import {
   writeSettings,
 } from './storage';
 import { formatMoney } from '../format';
-import { Hud, type EdgeArrow, type EventBanner, type EventCard } from '../ui/hud';
+import { Hud, type EdgeArrow, type EventBanner, type EventCard, type ShiftRow } from '../ui/hud';
 import { renderUi, type Overlay, type UiActions, type UiState } from '../ui/app';
 import { Sounds } from '../audio/audio';
 import { FEEL } from '../feel';
@@ -195,6 +195,7 @@ export class App {
       wall: null,
       daily: null,
       shiftEnd: null,
+      shiftGoals: null,
       runEnd: null,
       restore: null,
     };
@@ -202,6 +203,7 @@ export class App {
     watchLayout(() => this.applyLayout());
     this.hud.onGear = () => this.openOverlay('pause');
     this.hud.onTrophy = () => this.openLogbook(0);
+    this.hud.onShiftGoals = () => this.openShiftGoals(false);
     this.hud.onLand = () => this.sounds.sfx('ding');
     this.input.onEscape = () => this.escape();
     this.claimTab = claimTab(() => {
@@ -345,8 +347,9 @@ export class App {
     if (canFullscreen()) void document.documentElement.requestFullscreen().catch(() => {});
     document.querySelector('.logo')?.classList.add('wobble');
     setTimeout(() => {
-      open();
+      // in the game first, so an overlay `open` raises (the Shift intro) pauses it
       this.ui.screen = 'game';
+      open();
       this.ui.wipe = false;
       this.syncAudio();
       this.hud.visible(true);
@@ -1016,13 +1019,30 @@ export class App {
     shift.recorder = new InputRecorder();
     game.onStep = (i) => shift.recorder.record(i);
     game.fastForward(replayIntents(log));
+    if (!log.ticks) this.openShiftGoals(true);
+  }
+
+  /** Every goal part, done or not: the chip's goals button, and the intro on a fresh Shift. */
+  private shiftRows(w: World): ShiftRow[] {
+    return w.map.objectives.map((o) => {
+      const p = objectiveProgress(w, o);
+      const { icon, name } = objectiveInfo(w.map, o);
+      return { icon, text: `${name} · ${Math.floor(Math.min(p.got, p.want))}/${p.want}`, done: p.got >= p.want };
+    });
+  }
+
+  private openShiftGoals(intro: boolean): void {
+    const w = this.game?.world;
+    if (!w?.map.shift) return;
+    this.ui.shiftGoals = { rows: this.shiftRows(w), intro };
+    this.openOverlay('shift-goals');
   }
 
   /** Restart Shift in the pause menu or Try again: the same Shift from its Opening. */
   private resetShift(): void {
     this.shift?.reset();
-    this.openShift();
     this.openOverlay(null);
+    this.openShift();
   }
 
   /** The chip, and the end of Shift screen the first time the goal is done. */
@@ -1045,13 +1065,10 @@ export class App {
       void this.sendShift();
     }
     if (shift.doneTicks !== null)
-      return this.hud.setShift([{ text: `✓ Done ${clockOf(shift.doneTicks)} · for fun now` }]);
-    const rows = w.map.objectives.map((o) => {
-      const p = objectiveProgress(w, o);
-      const { icon, name } = objectiveInfo(w.map, o);
-      return { icon, text: `${name} · ${Math.floor(Math.min(p.got, p.want))}/${p.want}`, done: p.got >= p.want };
-    });
-    this.hud.setShift(rows, clockOf(shift.recorder.log.ticks));
+      return this.hud.setShift({ text: `✓ Done ${clockOf(shift.doneTicks, true)} · for fun now` });
+    const rows = this.shiftRows(w);
+    const done = rows.filter((r) => r.done).length;
+    this.hud.setShift(rows.find((r) => !r.done) ?? rows[0], done, rows.length, clockOf(shift.recorder.log.ticks, true));
   }
 
   /** Posts the finished Shift on the end screen (queued when it can't post yet); a reply for a newer attempt is

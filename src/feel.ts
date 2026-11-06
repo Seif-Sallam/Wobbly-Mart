@@ -23,12 +23,13 @@ export const FEEL = {
   // camera
   cameraYawDeg: 45,
   cameraPitchDeg: 41,
-  /** Zoom: metres across the screen's short side; defaults per device, slider range, + − key step, ease (1/s). */
+  /** Zoom: metres across the screen's short side; defaults per device, range (pinch, wheel), the slider's set
+   *  zooms, + − key step, ease (1/s). */
   zoomPhone: 14,
   zoomDesktop: 18,
   zoomMin: 10,
   zoomMax: 26,
-  zoomSlider: 0.5,
+  zooms: [10, 12, 14, 16, 18, 20, 23, 26] as readonly number[],
   zoomStep: 0.08,
   zoomEase: 10,
   /** Phone landscape (a touch screen wider than tall): metres across the height, the Player's shift right of centre
@@ -44,10 +45,8 @@ export const FEEL = {
   /** Office panel: share of the width (landscape phones) and of the height (portrait bottom sheet). */
   officeSide: 0.42,
   officeSheet: 0.46,
-  /** HUD size slider: scale range and step. */
-  hudScaleMin: 1,
-  hudScaleMax: 1.6,
-  hudScaleSlider: 0.05,
+  /** HUD size: the slider steps through these scales. */
+  hudScales: [0.6, 0.8, 1, 1.2, 1.4, 1.6] as readonly number[],
   volumeSlider: 0.05,
   /** Joystick stays off this long after a pinch (s). */
   pinchQuiet: 0.15,

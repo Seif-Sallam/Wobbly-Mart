@@ -10,7 +10,13 @@ import { formatMoney } from '../format';
 import { FEEL } from '../feel';
 import { TUNING } from '../sim/tuning';
 import { Logo } from './logo';
-import { ShiftEndPopup, type ShiftEndActions, type ShiftEndView } from './shift-end';
+import {
+  ShiftEndPopup,
+  ShiftGoalsPopup,
+  type ShiftEndActions,
+  type ShiftEndView,
+  type ShiftGoalsView,
+} from './shift-end';
 import { Btn } from './btn';
 import {
   CodePopup,
@@ -49,6 +55,7 @@ export type Overlay =
   | 'restore'
   | 'wall'
   | 'shift-end'
+  | 'shift-goals'
   | 'run-end';
 
 export interface UiState {
@@ -100,6 +107,7 @@ export interface UiState {
     rank: number | null;
   } | null;
   shiftEnd: ShiftEndView | null;
+  shiftGoals: ShiftGoalsView | null;
   runEnd: RunEndView | null;
 }
 
@@ -328,6 +336,33 @@ function Toggle(props: {
 }
 
 /** A Settings slider with a mark at each end; whatever it sets updates live behind the panel. */
+/** Set values, changed only with the two buttons: the left one steps down the list, the right one up. The bar shows
+ *  the step closest to `value` (pinch zoom and older saves land between them). */
+function StepsRow(props: {
+  label: string;
+  ends: [string, string];
+  steps: readonly number[];
+  value: number;
+  set: (v: number) => void;
+  actions: UiActions;
+}) {
+  const { steps, value } = props;
+  const at = steps.reduce((best, s, i) => (Math.abs(s - value) < Math.abs(steps[best] - value) ? i : best), 0);
+  const go = (d: number) => props.set(steps[Math.min(steps.length - 1, Math.max(0, at + d))]);
+  return (
+    <div class="slider-row steps-row">
+      <span>{props.label}</span>
+      <Btn class="step" actions={props.actions} disabled={at === 0} onClick={() => go(-1)}>
+        {props.ends[0]}
+      </Btn>
+      <input type="range" min={0} max={steps.length - 1} step={1} value={at} tabIndex={-1} aria-hidden="true" />
+      <Btn class="step" actions={props.actions} disabled={at === steps.length - 1} onClick={() => go(1)}>
+        {props.ends[1]}
+      </Btn>
+    </div>
+  );
+}
+
 function SliderRow(props: {
   label: string;
   ends: [string, string];
@@ -381,23 +416,21 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
     <div class="panel settings">
       <h2>Settings</h2>
       {/* + (closer) on the left, − (farther) on the right */}
-      <SliderRow
+      <StepsRow
         label="Zoom"
         ends={['+', '−']}
-        min={FEEL.zoomMin}
-        max={FEEL.zoomMax}
-        step={FEEL.zoomSlider}
+        steps={FEEL.zooms}
         value={s.zoom}
         set={(v) => a.setSetting('zoom', v)}
+        actions={a}
       />
-      <SliderRow
+      <StepsRow
         label="HUD size"
-        ends={['A', 'A']}
-        min={FEEL.hudScaleMin}
-        max={FEEL.hudScaleMax}
-        step={FEEL.hudScaleSlider}
+        ends={['−', '+']}
+        steps={FEEL.hudScales}
         value={s.settings.hudScale}
         set={(v) => a.setSetting('hudScale', v)}
+        actions={a}
       />
       <SliderRow
         label="Music"
@@ -1008,6 +1041,7 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
           )}
           {overlay === 'wall' && s.wall && <WallPopup v={s.wall} a={a.wall} />}
           {overlay === 'shift-end' && s.shiftEnd && <ShiftEndPopup v={s.shiftEnd} a={a.shiftEnd} online={!!s.online} />}
+          {overlay === 'shift-goals' && s.shiftGoals && <ShiftGoalsPopup v={s.shiftGoals} close={a.close} a={a} />}
           {overlay === 'run-end' && s.runEnd && <RunEndPopup v={s.runEnd} a={a.runEnd} />}
           {overlay === 'logbook' && s.logbook && (
             <Logbook view={s.logbook} tab={s.logbookTab} close={a.close} click={a.click} />

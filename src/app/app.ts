@@ -879,6 +879,7 @@ export class App {
     wall: {
       tab: (tab) => this.changeWall({ tab }),
       map: (map) => this.changeWall({ map }),
+      day: (day) => this.changeWall({ day }),
       retry: () => void this.loadWall(),
       close: () => this.openOverlay(this.wallBack),
       join: () => this.actions.online.join(),
@@ -1112,6 +1113,8 @@ export class App {
       maps: maps.map((m) => ({ id: m.id, name: m.name, playable: this.save.visited.includes(m.id) })),
       board: null,
       hasDevice: !!this.device.code,
+      day: dailyDay(Date.now()),
+      today: dailyDay(Date.now()),
     };
     this.wallBack = this.ui.overlay;
     this.openOverlay('wall');
@@ -1133,9 +1136,9 @@ export class App {
     const map = kind === 'daily' ? 'daily' : kind === 'streak' ? '-' : wall.map;
     // queued submits go up first, so the read shows them
     if (this.device.code) await flushPending(this.device.code);
-    const board = await readBoard(kind, map, dailyDay(Date.now()), this.device.code);
+    const board = await readBoard(kind, map, wall.day, this.device.code);
     const now = this.ui.wall;
-    if (!now || now.tab !== wall.tab || now.map !== wall.map) return;
+    if (!now || now.tab !== wall.tab || now.map !== wall.map || now.day !== wall.day) return;
     this.ui.wall = { ...now, board: board ?? 'offline' };
     this.renderUi();
   }

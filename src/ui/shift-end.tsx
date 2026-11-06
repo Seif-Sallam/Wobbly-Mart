@@ -5,6 +5,7 @@ import { Btn } from './btn';
 import { Popup } from './popup';
 import { AroundYou, Climb } from './run-end';
 import { clockOf, countText, JoinCard } from './wall';
+import type { ShiftRow } from './hud';
 
 /** `result`: the Board's answer, or why there is none ('join' = no Device, 'debug' = played with ?debug). */
 export interface ShiftEndView {
@@ -85,6 +86,36 @@ export function ShiftEndPopup({ v, a, online }: { v: ShiftEndView; a: ShiftEndAc
         </div>
       )}
       {v.around && <AroundYou rows={v.around} />}
+    </Popup>
+  );
+}
+
+/** Every goal part of today's Shift; `intro` when it opens a fresh Shift (the clock starts on Start). */
+export interface ShiftGoalsView {
+  rows: ShiftRow[];
+  intro: boolean;
+}
+
+export function ShiftGoalsPopup({ v, close, a }: { v: ShiftGoalsView; close: () => void; a: { click: () => void } }) {
+  return (
+    <Popup
+      title={v.intro ? "📅 Today's Shift" : '📅 Shift goals'}
+      close={close}
+      foot={
+        <Btn class={v.intro ? 'buy' : ''} actions={a} onClick={close}>
+          {v.intro ? 'Start Shift' : 'Back'}
+        </Btn>
+      }
+    >
+      {v.intro && <p class="popup-lead">Finish every goal as fast as you can. The clock starts when you tap Start.</p>}
+      <ul class="shift-goal-list">
+        {v.rows.map((r) => (
+          <li key={r.text} class={r.done ? 'done' : ''}>
+            {r.icon && <img src={r.icon} alt="" />}
+            <span>{r.done ? `✓ ${r.text}` : r.text}</span>
+          </li>
+        ))}
+      </ul>
     </Popup>
   );
 }

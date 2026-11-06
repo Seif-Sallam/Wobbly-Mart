@@ -986,6 +986,16 @@ html.sprinting #joy .back::after {
   width: min(180px, 40%);
   accent-color: var(--orange);
 }
+/* set steps: only the buttons change it, the bar just shows where it is */
+.steps-row input {
+  pointer-events: none;
+}
+.steps-row .step {
+  min-width: 40px;
+  padding: 2px 10px;
+  font-size: 22px;
+  line-height: 1;
+}
 
 /* ---------- Edit Layout: bill card and buttons along the bottom */
 .layout-panel {
@@ -1297,30 +1307,14 @@ html.pl {
   --sr: env(safe-area-inset-right, 0px);
   --st: env(safe-area-inset-top, 0px);
 }
-/* HUD: one cluster top-right (Completion, Money, extra buttons, gear); cards top-left */
+/* HUD: Completion top-left, Money top-centre with the Shift chip under it, buttons top-right; cards under Completion */
 html.pl .hud-top {
-  left: auto;
+  left: max(12px, var(--sl));
   right: max(12px, var(--sr));
   top: max(8px, var(--st));
-  gap: 10px;
-}
-html.pl .completion {
-  width: 100px;
-}
-html.pl .money {
-  position: static;
-  transform: none;
-}
-html.pl .money.bump {
-  animation-name: bump-flat;
-}
-@keyframes bump-flat {
-  40% {
-    transform: scale(1.15);
-  }
 }
 html.pl .event-cards {
-  top: max(10px, var(--st));
+  top: calc(max(8px, var(--st)) + 40px);
 }
 /* banners slide in from the right, below the cluster; with the report and Lesson cards they are smaller */
 html.pl .event-banner,
@@ -2359,12 +2353,51 @@ html.pl .daily-ticket {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.shift-row.done {
-  opacity: 0.55;
+.shift-goals {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--cream);
+  font: inherit;
+  font-size: 13px;
+  pointer-events: auto;
 }
-.shift-row b {
-  margin-left: auto;
-  padding-left: 10px;
+/* the Shift clock under the gear: outlined text only, right-aligned so a changing width never moves its edge */
+.shift-clock {
+  position: absolute;
+  right: max(12px, env(safe-area-inset-right));
+  top: calc(max(10px, env(safe-area-inset-top)) + 56px);
+  font: 700 18px Fredoka;
+  color: var(--cream);
+  -webkit-text-stroke: 4px var(--ink);
+  paint-order: stroke fill;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.shift-clock.gone {
+  display: none;
+}
+.shift-goal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.shift-goal-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+}
+.shift-goal-list img {
+  width: 24px;
+  height: 24px;
+}
+.shift-goal-list .done {
+  opacity: 0.55;
 }
 /* ---------- end of Run */
 .run-time {

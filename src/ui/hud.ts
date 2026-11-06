@@ -55,7 +55,7 @@ export class Hud {
   private target = 0;
   private ring: HTMLElement;
   private shiftChip: HTMLElement;
-  private shiftRows = '';
+  private shiftKey = '';
   private shiftClock: HTMLElement;
   private badge: HTMLElement;
   /** The Map's Score on the badge: counts up to `score` minus the points still flying in. */
@@ -75,6 +75,8 @@ export class Hud {
     badge: '',
   };
   onGear: () => void = () => {};
+  /** The goals button on the Daily Shift chip. */
+  onShiftGoals: () => void = () => {};
   /** A Delivery card was tapped: its pickup Station's id. */
   onDelivery: (id: string) => void = () => {};
   onTrophy: () => void = () => {};
@@ -95,13 +97,14 @@ export class Hud {
       </div>
       <div class="chal-ring gone"><div class="ring"><i></i></div><small><img alt=""><span></span></small></div>
       <div class="shift-chip pill gone"></div>
+      <b class="shift-clock gone"></b>
       <div class="event-cards"></div>
       <div class="lesson pill gone"><small></small><p></p></div></div>`;
     this.ui = root.querySelector('.hud-ui') as HTMLElement;
     this.extra = root.querySelector('.hud-extra') as HTMLElement;
     this.ring = root.querySelector('.chal-ring') as HTMLElement;
     this.shiftChip = root.querySelector('.shift-chip') as HTMLElement;
-    this.shiftClock = document.createElement('b');
+    this.shiftClock = root.querySelector('.shift-clock') as HTMLElement;
     this.badge = root.querySelector('.badge') as HTMLElement;
     this.ui.style.setProperty('--ring-size', `${FEEL.score.ringSize}px`);
     this.cardBox = root.querySelector('.event-cards') as HTMLElement;
@@ -285,30 +288,39 @@ export class Hud {
     });
   }
 
-  /** The Daily Shift chip: a row per goal part, the clock on the first; `null` hides it. */
-  setShift(rows: ShiftRow[] | null, clock = ''): void {
+  /** The Daily Shift chip: the goal part being worked on (or the Done line) and a button showing parts done of all;
+   *  the clock sits under the gear. `null` hides both. */
+  setShift(row: ShiftRow | null, done = 0, total = 0, clock = ''): void {
     this.shiftClock.textContent = clock;
-    const key = JSON.stringify(rows);
-    if (key === this.shiftRows) return;
-    this.shiftRows = key;
-    this.shiftChip.classList.toggle('gone', rows === null);
-    this.shiftChip.replaceChildren(
-      ...(rows ?? []).map((r, i) => {
-        const row = document.createElement('div');
-        row.className = `shift-row ${r.done ? 'done' : ''}`;
-        if (r.icon) {
-          const img = document.createElement('img');
-          img.src = r.icon;
-          img.alt = '';
-          row.append(img);
-        }
-        const text = document.createElement('span');
-        text.textContent = r.done ? `✓ ${r.text}` : r.text;
-        row.append(text);
-        if (i === 0 && clock) row.append(this.shiftClock);
-        return row;
-      }),
-    );
+    this.shiftClock.classList.toggle('gone', !clock);
+    const key = JSON.stringify([row, done, total]);
+    if (key === this.shiftKey) return;
+    this.shiftKey = key;
+    this.shiftChip.classList.toggle('gone', row === null);
+    if (!row) return this.shiftChip.replaceChildren();
+    const line = document.createElement('div');
+    line.className = 'shift-row';
+    if (row.icon) {
+      const img = document.createElement('img');
+      img.src = row.icon;
+      img.alt = '';
+      line.append(img);
+    }
+    const text = document.createElement('span');
+    text.textContent = row.text;
+    line.append(text);
+    if (total) {
+      const goals = document.createElement('button');
+      goals.className = 'shift-goals';
+      goals.setAttribute('aria-label', 'Shift goals');
+      goals.textContent = `📋 ${done}/${total}`;
+      goals.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        this.onShiftGoals();
+      });
+      line.append(goals);
+    }
+    this.shiftChip.replaceChildren(line);
   }
 
   /** The ring timer under Money; `null` hides it. */

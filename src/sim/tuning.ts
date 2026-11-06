@@ -188,6 +188,8 @@ export const TUNING = {
     slabsAreas: [2, 3] as readonly [number, number],
     /** A day failing a check rerolls on a derived seed, up to this many times. */
     rerolls: 20,
+    /** Longest shortest walk (m) between two shops, every Pad bought; a day over it rerolls. */
+    shopWalk: 10,
     /** Producers per Chain, and per Area (Slabs, Kit). */
     chainProducers: 4,
     areaProducers: { slabs: 5, kit: 6 },

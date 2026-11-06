@@ -1230,13 +1230,14 @@ export class App {
 
   /** Everything that follows the settings and the window's shape: HUD size, view, Pads. */
   private applyLayout(): void {
-    this.hud.scale(this.settings.hudScale * (layout.land ? FEEL.landHudScale : 1));
     this.stage.zoomTo(this.viewZoom());
     if (this.game) {
       this.game.view.padScale = layout.land ? FEEL.landPadScale : 1;
       this.game.manualGrab = this.settings.manualGrab && (!isTouch || layout.land);
     }
     const root = document.documentElement;
+    root.style.setProperty('--hud-scale', String(this.settings.hudScale * (layout.land ? FEEL.landHudScale : 1)));
+    root.style.setProperty('--menu-scale', String(this.settings.hudScale));
     root.classList.toggle('joy-off', isTouch && this.settings.joystick === 'off');
     root.classList.toggle('joy-free', layout.land && this.settings.joystick === 'free');
     root.style.setProperty('--joy-zone', String(FEEL.joyZone));

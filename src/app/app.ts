@@ -971,7 +971,7 @@ export class App {
       day: shift.day.day,
       goal: map.objectives.map((o) => objectiveInfo(map, o).name).join(' + '),
       time: shift.doneTicks === null ? null : clockOf(shift.doneTicks),
-      bot: clockOf(shift.day.botTicks),
+      bot: clockOf(shift.day.botTicks, true),
       streak: last?.streak ?? null,
       rank: last?.day === shift.day.day ? last.rank : null,
     };

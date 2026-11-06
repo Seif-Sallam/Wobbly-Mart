@@ -96,15 +96,17 @@ const SUBTITLE: Record<WallTab, (map: string) => string> = {
 };
 const SWIPE_PX = 60;
 
-/** Sim ticks at 60 Hz as m:ss.cc, or h:mm:ss for long Runs. */
-export function clockOf(ticks: number): string {
+/** Sim ticks at 60 Hz as m:ss.cc (m:ss when `whole`), or h:mm:ss for long Runs. */
+export function clockOf(ticks: number, whole = false): string {
   const s = ticks / 60;
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   const sec = s % 60;
   return h
     ? `${h}:${String(m).padStart(2, '0')}:${String(Math.floor(sec)).padStart(2, '0')}`
-    : `${m}:${sec.toFixed(2).padStart(5, '0')}`;
+    : whole
+      ? `${m}:${String(Math.floor(sec)).padStart(2, '0')}`
+      : `${m}:${sec.toFixed(2).padStart(5, '0')}`;
 }
 
 const valueOf = (tab: WallTab, r: Row): string =>

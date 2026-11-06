@@ -147,6 +147,8 @@ export interface UiActions {
   lessonNext: () => void;
   /** Pause menu on the Tutorial Map: leave for the next Map without finishing. */
   skipLessons: () => void;
+  /** Pause menu on a Daily Shift: the same Shift from its Opening. */
+  restartShift: () => void;
   icon: (name: string) => string;
   click: () => void;
   wardrobe: WardrobeBridge;
@@ -263,7 +265,8 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
   );
 }
 
-function HoldButton({ onDone, children }: { onDone: () => void; children: preact.ComponentChildren }) {
+function HoldButton(props: { onDone: () => void; children: preact.ComponentChildren; class?: string }) {
+  const { onDone, children } = props;
   const [held, setHeld] = useState(false);
   const timer = useRef<number>(0);
   const start = () => {
@@ -279,7 +282,7 @@ function HoldButton({ onDone, children }: { onDone: () => void; children: preact
   };
   return (
     <button
-      class={`btn danger hold ${held ? 'held' : ''}`}
+      class={`btn danger hold ${props.class ?? ''} ${held ? 'held' : ''}`}
       onPointerDown={start}
       onPointerUp={stop}
       onPointerLeave={stop}
@@ -923,6 +926,11 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
                 <Btn class="big" actions={a} onClick={a.skipLessons}>
                   Skip tutorial
                 </Btn>
+              )}
+              {world?.map.shift && (
+                <HoldButton class="big" onDone={a.restartShift}>
+                  Hold to restart Shift
+                </HoldButton>
               )}
               <Btn class="big" actions={a} onClick={a.toTitle}>
                 Title

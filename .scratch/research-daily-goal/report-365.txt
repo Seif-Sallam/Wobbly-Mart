@@ -1,0 +1,15 @@
+parts { '3': 201, '4': 164 }
+late part {
+  '1A own last Area': 56,
+  '2A own last Area': 131,
+  '3A own earlier Area': 50,
+  '3A own last Area': 82,
+  '2A sell last Area': 20,
+  '2A own NOT late': 6,
+  '3A own NOT late': 20
+}
+late part chain position n365 min 0.2 median 0.6 p90 0.9 max 0.9
+bot minutes 1-Area n56 min 8.3 median 11.7 p90 11.9 max 12.0
+bot minutes 2-Area n157 min 10.4 median 11.8 p90 15.0 max 17.9
+bot minutes 3-Area n152 min 10.8 median 13.1 p90 17.4 max 18.0
+bot minutes all n365 min 8.3 median 11.9 p90 16.6 max 18.0

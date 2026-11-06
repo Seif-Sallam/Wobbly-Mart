@@ -209,9 +209,10 @@ function attemptDaily(seed: number): Omit<DailyMap, 'rerolls'> | string {
       const p = units[a - 1];
       put(p, u.area, [p.w - STRIP.areaPad.fromRight, STRIP.areaPad.z, 1, 1]);
       pad(u.area, { kind: 'area', area: u.area }, areaSum * K.areaPadShare);
-      if (a === 1) {
-        put(u, 'stocker_1', STRIP.stocker);
-        pad('stocker_1', { kind: 'stocker' }, cost() * K.staffCost.stocker);
+      if (a <= 2) {
+        const sid = `stocker_${a}`;
+        put(u, sid, STRIP.stocker);
+        pad(sid, { kind: 'stocker' }, cost() * K.staffCost.stocker);
       }
     }
     const trash = first ? 'trash' : `trash_${a + 1}`;
@@ -492,7 +493,7 @@ function attemptDaily(seed: number): Omit<DailyMap, 'rerolls'> | string {
     producers,
     pads,
     freeStations,
-    upgrades: dailyUpgrades(producers, units.length),
+    upgrades: dailyUpgrades(producers),
     start: { owned, money: K.startMoney },
     objectives: [],
     challenges: false,

@@ -1,0 +1,237 @@
+diff --git a/maps/daily/economy.ts b/maps/daily/economy.ts
+index 0a8a5cc..1f06bde 100644
+--- a/maps/daily/economy.ts
++++ b/maps/daily/economy.ts
+@@ -4,16 +4,14 @@ import type { ProducerType } from '../../catalog/producers';
+ 
+ const levels = (costs: number[], values: number[]) => costs.map((cost, i) => ({ cost, value: values[i] }));
+ 
+-/** Costs double on a Map with more than one Area. */
+-export function dailyUpgrades(producers: Record<string, ProducerType>, areas: number): Record<string, UpgradeDef> {
+-  const m = areas > 1 ? 2 : 1;
++export function dailyUpgrades(producers: Record<string, ProducerType>): Record<string, UpgradeDef> {
+   const ups: Record<string, UpgradeDef> = {
+     player_speed: {
+       name: 'Walk speed',
+       family: 'player',
+       target: 'player',
+       stat: 'speed',
+-      levels: levels([15 * m, 30 * m, 55 * m], [6, 6.5, 7]),
++      levels: levels([15, 30, 55], [6, 6.5, 7]),
+       requires: ['office'],
+     },
+     stack_cap: {
+@@ -21,7 +19,7 @@ export function dailyUpgrades(producers: Record<string, ProducerType>, areas: nu
+       family: 'player',
+       target: 'player',
+       stat: 'stack',
+-      levels: levels([20 * m, 40 * m, 75 * m], [10, 12, 14]),
++      levels: levels([20, 40, 75], [10, 12, 14]),
+       requires: ['office'],
+     },
+     cashier_speed: {
+@@ -29,7 +27,7 @@ export function dailyUpgrades(producers: Record<string, ProducerType>, areas: nu
+       family: 'staff',
+       target: 'cashier',
+       stat: 'checkoutTime',
+-      levels: levels([40 * m, 75 * m], [1.6, 1.3]),
++      levels: levels([40, 75], [1.6, 1.3]),
+       requires: ['cashier_1'],
+     },
+   };
+@@ -39,7 +37,7 @@ export function dailyUpgrades(producers: Record<string, ProducerType>, areas: nu
+       family: 'station',
+       target: id,
+       stat: 'workTime',
+-      levels: levels([20 * m, 40 * m], [0.8, 0.64]),
++      levels: levels([20, 40], [0.8, 0.64]),
+       requires: [id],
+     };
+   return ups;
+diff --git a/scripts/daily-calendar.ts b/scripts/daily-calendar.ts
+index 001d172..c9cc4bf 100644
+--- a/scripts/daily-calendar.ts
++++ b/scripts/daily-calendar.ts
+@@ -37,7 +37,7 @@ function calibrateDay(date: string): Result {
+   try {
+     const { g, print } = mapPrint(date);
+     const { goal, botTicks, floorTicks } = calibrateDaily(g.map, fnv1a(date));
+-    return { date, day: { map: print, goal, floorTicks }, format: g.format, rerolls: g.rerolls, botTicks };
++    return { date, day: { map: print, goal, botTicks: botTicks ?? 0, floorTicks }, format: g.format, rerolls: g.rerolls, botTicks };
+   } catch (e) {
+     return { date, error: (e as Error).message };
+   }
+diff --git a/src/sim/daily-goal.ts b/src/sim/daily-goal.ts
+index 6e25e77..2db4c7a 100644
+--- a/src/sim/daily-goal.ts
++++ b/src/sim/daily-goal.ts
+@@ -1,4 +1,4 @@
+-// A Daily Shift's goal, sized to ~10 minutes: the bot plays the day with no goal for `targetMinutes × botPace`,
++// A Daily Shift's goal: the bot plays the day with no goal until it buys a late Pad (within `targetMinutes × botPace`),
+ // and each goal part is what it had reached by then. A second run with the goal set gives the bot's time and the
+ // Daily floor. Runs in scripts/daily-calendar.ts (the Worker can't run the bot), never in the game.
+ import type { MapDef } from './map';
+@@ -26,11 +26,12 @@ export interface DailyDay {
+   /** Fingerprint of the generated Map: a generator change shows up as a mismatch. */
+   map: number;
+   goal: ObjectiveDef[];
++  /** The bot's time to the goal, shown on the title's Daily card. */
++  botTicks: number;
+   floorTicks: number;
+ }
+ 
+ const K = TUNING.dailyMap;
+-type Part = ObjectiveDef['kind'];
+ 
+ /** Rounded down to a number a player reads at a glance. */
+ const nice = (n: number) => {
+@@ -40,36 +41,47 @@ const nice = (n: number) => {
+ 
+ /** `seed` is the day's; the Shift's World runs on the same one. */
+ export function calibrateDaily(map: MapDef, seed: number): DailyGoal {
+-  const ticks = Math.round(K.targetMinutes * 60 * K.botPace * TUNING.tickRate);
++  const [minTicks, maxTicks] = K.targetMinutes.map((m) => Math.round(m * 60 * K.botPace * TUNING.tickRate));
++  const chain = Object.keys(map.pads).filter((id) => !map.start.owned.includes(id) && map.pads[id].unlocks.kind !== 'exit');
++  const lateIds = chain.slice(Math.floor(chain.length * K.lateFrom));
+   const w = createWorld(map, null, seed);
+   const bot = new Bot();
+   const boughtAt = new Map<string, number>();
+-  for (let i = 0; i < ticks; i++) {
++  // stop at the first late Pad bought, within the target window
++  for (let i = 0; i < maxTicks && (i < minTicks || !lateIds.some((id) => boughtAt.has(id))); i++) {
+     step(w, bot.intents(w));
+     for (const id of w.owned) if (!boughtAt.has(id)) boughtAt.set(id, i);
+   }
+ 
+   const rng = { rng: seed ^ K.goalSalt };
+-  const parts = 1 + [...Array(K.goalParts - 1)].filter(() => nextRandom(rng) < K.extraPartChance).length;
++  const parts = K.goalParts + (nextRandom(rng) < K.extraPartChance ? 1 : 0);
++  // the late part: the furthest late Pad the bot bought, or the Items of the furthest late Shelf
++  const late = lateIds.filter((id) => boughtAt.has(id));
++  const soldOf = (product: string) => w.stats.sold[product] ?? 0;
++  const lateShelf = late
++    .map((id) => map.pads[id].unlocks)
++    .flatMap((u) => (u.kind === 'shelf' && soldOf(u.product) >= K.sellMin ? [u.product] : []))
++    .at(-1);
++  const latePad = late.at(-1) ?? chain.filter((id) => boughtAt.has(id)).at(-1);
++  const lateGoal: ObjectiveDef | null =
++    lateShelf && (!latePad || nextRandom(rng) < K.lateSellChance)
++      ? { kind: 'sell', product: lateShelf, n: nice(soldOf(lateShelf)) }
++      : latePad
++        ? { kind: 'own', id: latePad }
++        : null;
++
+   const goal: ObjectiveDef[] = [];
+-  for (const kind of shuffle<Part>(rng, ['own', 'earn', 'sell', 'deliveries'])) {
+-    if (goal.length >= parts) break;
+-    if (kind === 'earn') goal.push({ kind, n: nice(w.stats.moneyEarned) });
+-    if (kind === 'deliveries' && w.stats.deliveriesFull >= K.deliveriesMin)
+-      goal.push({ kind, n: w.stats.deliveriesFull });
+-    if (kind === 'sell') {
+-      const best = Object.entries(w.stats.sold)
+-        .sort((a, b) => map.products[b[0]].price - map.products[a[0]].price)
+-        .find(([, n]) => n >= K.sellMin);
+-      if (best) goal.push({ kind, product: best[0], n: nice(best[1]) });
+-    }
+-    if (kind === 'own') {
+-      // the Pad the bot bought nearest the target, never one owned at the Opening
+-      const near = [...boughtAt].filter(([id]) => map.pads[id] && !map.start.owned.includes(id)).at(-1);
+-      if (near && near[1] > ticks * K.ownAfter) goal.push({ kind, id: near[0] });
+-    }
+-  }
+-  if (!goal.length) goal.push({ kind: 'earn', n: nice(Math.max(w.stats.moneyEarned, K.earnMin)) });
++  const sells = Object.keys(w.stats.sold)
++    .filter((p) => p !== lateShelf && soldOf(p) >= K.sellMin)
++    .sort((a, b) => map.products[b].price - map.products[a].price);
++  const pool: ObjectiveDef[] = [{ kind: 'earn', n: nice(Math.max(w.stats.moneyEarned, K.earnMin)) }];
++  if (w.stats.deliveriesFull >= K.deliveriesMin) pool.push({ kind: 'deliveries', n: w.stats.deliveriesFull });
++  for (const p of sells) pool.push({ kind: 'sell', product: p, n: nice(soldOf(p)) });
++  // one of each kind first, then more Sells
++  const firsts = shuffle(rng, pool.filter((o, i) => pool.findIndex((x) => x.kind === o.kind) === i));
++  for (const o of [...firsts, ...pool.filter((o) => !firsts.includes(o))])
++    if (goal.length < parts - (lateGoal ? 1 : 0)) goal.push(o);
++  if (lateGoal) goal.push(lateGoal);
+ 
+   const v = createWorld({ ...map, objectives: goal }, null, seed);
+   const vb = new Bot();
+diff --git a/src/sim/daily-map.ts b/src/sim/daily-map.ts
+index e49ad74..b42c897 100644
+--- a/src/sim/daily-map.ts
++++ b/src/sim/daily-map.ts
+@@ -209,9 +209,10 @@ function attemptDaily(seed: number): Omit<DailyMap, 'rerolls'> | string {
+       const p = units[a - 1];
+       put(p, u.area, [p.w - STRIP.areaPad.fromRight, STRIP.areaPad.z, 1, 1]);
+       pad(u.area, { kind: 'area', area: u.area }, areaSum * K.areaPadShare);
+-      if (a === 1) {
+-        put(u, 'stocker_1', STRIP.stocker);
+-        pad('stocker_1', { kind: 'stocker' }, cost() * K.staffCost.stocker);
++      if (a <= 2) {
++        const sid = `stocker_${a}`;
++        put(u, sid, STRIP.stocker);
++        pad(sid, { kind: 'stocker' }, cost() * K.staffCost.stocker);
+       }
+     }
+     const trash = first ? 'trash' : `trash_${a + 1}`;
+@@ -492,7 +493,7 @@ function attemptDaily(seed: number): Omit<DailyMap, 'rerolls'> | string {
+     producers,
+     pads,
+     freeStations,
+-    upgrades: dailyUpgrades(producers, units.length),
++    upgrades: dailyUpgrades(producers),
+     start: { owned, money: K.startMoney },
+     objectives: [],
+     challenges: false,
+diff --git a/src/sim/economy.ts b/src/sim/economy.ts
+index f982925..f96a73b 100644
+--- a/src/sim/economy.ts
++++ b/src/sim/economy.ts
+@@ -172,7 +172,8 @@ export function upgradeValue(w: World, target: string, stat: string, base: numbe
+ 
+ export const workMultiplier = (w: World, type: string): number => upgradeValue(w, type, 'workTime', 1);
+ export const stackCap = (w: World): number => upgradeValue(w, 'player', 'stack', TUNING.base.stack);
+-export const safeCount = (w: World): number => upgradeValue(w, 'player', 'safe', TUNING.base.safe);
++export const safeCount = (w: World): number =>
++  w.map.id.startsWith('daily-') ? TUNING.dailyMap.safe : upgradeValue(w, 'player', 'safe', TUNING.base.safe);
+ export const playerSpeed = (w: World): number => upgradeValue(w, 'player', 'speed', TUNING.base.playerSpeed);
+ export const checkoutTime = (w: World): number => upgradeValue(w, 'cashier', 'checkoutTime', TUNING.base.checkoutTime);
+ export const stockerSpeed = (w: World): number => upgradeValue(w, 'stocker', 'speed', TUNING.base.stockerSpeed);
+diff --git a/src/sim/tuning.ts b/src/sim/tuning.ts
+index 875a374..2d1c10a 100644
+--- a/src/sim/tuning.ts
++++ b/src/sim/tuning.ts
+@@ -194,10 +194,12 @@ export const TUNING = {
+     /** Share of the Pad chain bought at the Opening (never past Area 1, never a Stocker). */
+     startShare: [0.35, 0.55] as readonly [number, number],
+     startMoney: 40,
++    /** Steady hands, free on a Daily Shift: base 5 + half the normal Maps' +3. */
++    safe: 7,
+     /** First Pad cost per Area, then × `padGrowth` each Pad; an Area Pad costs `areaPadShare` of the previous Area's Pads. */
+-    padBase: [12, 60, 300] as readonly number[],
+-    padGrowth: 1.18,
+-    areaPadShare: 0.6,
++    padBase: [12, 40, 100] as readonly number[],
++    padGrowth: 1.12,
++    areaPadShare: 0.35,
+     exitShare: 0.5,
+     staffCost: { cashier: 1.5, stocker: 2 },
+     /** The Office Pad comes after this many Pads in Area 1. */
+@@ -205,13 +207,15 @@ export const TUNING = {
+     trees: [8, 18] as readonly [number, number],
+     indoorProps: 3,
+     yardFlowers: 3,
+-    // goal: the bot plays `targetMinutes × botPace` with no goal; each part is sized to what it reached
+-    targetMinutes: 10,
++    // goal: the bot plays with no goal until its first late Pad, within `targetMinutes × botPace`; parts are sized to what it reached
++    targetMinutes: [12, 18] as readonly [number, number],
+     botPace: 1,
++    /** Parts per goal: this many, and one more at `extraPartChance`. One is always the late part. */
+     goalParts: 3,
+     extraPartChance: 0.45,
+-    /** Buy-a-Pad only for a Pad the bot bought after this share of the target. */
+-    ownAfter: 0.75,
++    /** The late part is a Pad (or a Shelf's Items) past this share of the Pad chain; Sell at `lateSellChance`. */
++    lateFrom: 0.5,
++    lateSellChance: 0.5,
+     sellMin: 10,
+     deliveriesMin: 2,
+     earnMin: 50,

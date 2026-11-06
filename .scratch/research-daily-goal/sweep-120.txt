@@ -1,0 +1,10 @@
+knobs {}
+ 1-Area  lastArea -
+          lateHalf n18 miss 0 min 1.0 med 2.3 p90 4.2 max 4.7
+          allPads  n18 miss 0 min 3.4 med 6.2 p90 16.0 max 16.4
+ 2-Area  lastArea n58 miss 0 min 1.2 med 2.7 p90 7.0 max 22.5
+          lateHalf n58 miss 0 min 3.7 med 7.7 p90 11.6 max 23.6
+          allPads  n58 miss 2 min 5.9 med 10.3 p90 16.6 max 21.0
+ 3-Area  lastArea n44 miss 2 min 6.4 med 14.1 p90 19.9 max 24.5
+          lateHalf n44 miss 1 min 7.3 med 13.3 p90 17.2 max 20.1
+          allPads  n44 miss 16 min 12.3 med 19.6 p90 22.8 max 24.0

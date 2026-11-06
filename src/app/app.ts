@@ -178,6 +178,7 @@ export class App {
       wipe: false,
       touch: isTouch,
       ios: isIos,
+      autoFullscreen: canFullscreen(),
       maps: [],
       total: 0,
       logbook: null,
@@ -217,11 +218,11 @@ export class App {
       if (this.ui.screen === 'title' && this.game) this.sounds.playMusicOf(this.game.world.map);
     };
     addEventListener('pointerdown', firstGesture, { once: true });
-    // a touch is a gesture only on release: the first tap anywhere goes fullscreen
-    const firstTap = (): void => {
-      if (canFullscreen()) void document.documentElement.requestFullscreen().catch(() => {});
-    };
-    addEventListener('pointerup', firstTap, { once: true });
+    // a touch is a gesture only on release: any tap while not fullscreen goes fullscreen (again after a background)
+    addEventListener('pointerup', () => {
+      if (canFullscreen() && !document.fullscreenElement)
+        void document.documentElement.requestFullscreen().catch(() => {});
+    });
     addEventListener('keydown', firstGesture, { once: true });
     addEventListener('visibilitychange', () => (document.hidden ? this.onHidden() : this.syncAudio()));
     addEventListener('pagehide', () => this.writeSave());
@@ -970,6 +971,7 @@ export class App {
       day: shift.day.day,
       goal: map.objectives.map((o) => objectiveInfo(map, o).name).join(' + '),
       time: shift.doneTicks === null ? null : clockOf(shift.doneTicks),
+      bot: clockOf(shift.day.botTicks, true),
       streak: last?.streak ?? null,
       rank: last?.day === shift.day.day ? last.rank : null,
     };

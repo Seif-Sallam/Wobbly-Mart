@@ -61,6 +61,8 @@ export interface UiState {
   wipe: boolean;
   touch: boolean;
   ios: boolean;
+  /** The game goes fullscreen on every tap (phones): no Fullscreen button in Settings. */
+  autoFullscreen: boolean;
   /** `score`: the Map's Score, null on locked cards and the Tutorial Map. */
   maps: { map: MapDef; completion: number; visited: boolean; tutorial: boolean; score: number | null }[];
   /** Score added up over every Map. */
@@ -88,7 +90,15 @@ export interface UiState {
   wall: WallView | null;
   /** Today's Daily Shift on the title; null while it loads or when the calendar has no such day. `streak` and `rank`
    *  come from the last accepted Shift. */
-  daily: { day: number; goal: string; time: string | null; streak: number | null; rank: number | null } | null;
+  daily: {
+    day: number;
+    goal: string;
+    time: string | null;
+    /** The bot's time to the goal. */
+    bot: string;
+    streak: number | null;
+    rank: number | null;
+  } | null;
   shiftEnd: ShiftEndView | null;
   runEnd: RunEndView | null;
 }
@@ -426,9 +436,11 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
         set={(v) => a.setSetting('batterySaver', v)}
         actions={a}
       />
-      <Btn actions={a} onClick={a.fullscreen}>
-        Fullscreen
-      </Btn>
+      {!s.autoFullscreen && (
+        <Btn actions={a} onClick={a.fullscreen}>
+          Fullscreen
+        </Btn>
+      )}
       {s.online && <OnlineRows v={s.online} o={a.online} a={a} />}
       <div class="row">
         <Btn actions={a} onClick={() => a.open('controls')}>
@@ -694,9 +706,7 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
           <button class="round" aria-label="Logbook" onClick={() => (a.click(), a.openLogbook(2))}>
             🏆
           </button>
-          <button class="round" aria-label="Credits" onClick={() => (a.click(), a.open('credits'))}>
-            ★
-          </button>
+
           <button
             class="round"
             aria-label="Settings"
@@ -711,7 +721,9 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
         <button class="daily-ticket" onClick={() => (a.click(), a.playShift())}>
           <b>📅 Shift #{s.daily.day}</b>
           <span>{s.daily.goal}</span>
-          {s.daily.time && <small>✓ {s.daily.time}</small>}
+          <small>
+            {s.daily.time && `✓ ${s.daily.time} · `}Bot: {s.daily.bot}
+          </small>
           {s.daily.streak !== null && (
             <small>
               🔥 {s.daily.streak}

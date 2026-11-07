@@ -3,7 +3,6 @@
 import { isTutorialMap, mapById } from '../maps';
 import type { MapDef } from '../src/sim/map';
 import { dailyDay } from '../src/sim/daily';
-import { SIM_VERSION } from '../src/sim/version';
 import { RANK_CAP, type BoardResponse, type Row } from './api';
 import { findDevice } from './device';
 import type { Env } from './env';
@@ -36,29 +35,28 @@ const BY_TICKS: Shape = {
   top:
     'SELECT b.`id_device`, d.`nickname`, b.`ticks` AS value, b.`score`, b.`money` FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
-    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? ORDER BY b.`ticks`, b.`updated_at` LIMIT 50',
-  total:
-    'SELECT COUNT(*) AS n FROM (SELECT 1 FROM `board_entry` WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? LIMIT ?)',
+    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? ORDER BY b.`ticks`, b.`updated_at` LIMIT 50',
+  total: 'SELECT COUNT(*) AS n FROM (SELECT 1 FROM `board_entry` WHERE `kind` = ? AND `map` = ? AND `day` = ? LIMIT ?)',
   mine:
     'SELECT b.`id_device`, d.`nickname`, b.`ticks` AS value, b.`score`, b.`money` FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
-    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? AND b.`id_device` = ?',
+    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`id_device` = ?',
   better:
     'SELECT COUNT(*) AS n FROM (SELECT 1 FROM `board_entry` ' +
-    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `ticks` < ? LIMIT ?)',
+    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `ticks` < ? LIMIT ?)',
   between:
     'SELECT COUNT(*) AS n FROM `board_entry` ' +
-    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `ticks` < ? AND `ticks` >= ?',
+    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `ticks` < ? AND `ticks` >= ?',
   above:
     'SELECT b.`id_device`, d.`nickname`, b.`ticks` AS value, b.`score`, b.`money` FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
-    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? AND b.`ticks` < (SELECT `ticks` FROM `board_entry` ' +
-    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `id_device` = ?) ORDER BY b.`ticks` DESC LIMIT 2',
+    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`ticks` < (SELECT `ticks` FROM `board_entry` ' +
+    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `id_device` = ?) ORDER BY b.`ticks` DESC LIMIT 2',
   below:
     'SELECT b.`id_device`, d.`nickname`, b.`ticks` AS value, b.`score`, b.`money` FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
-    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? AND b.`ticks` >= (SELECT `ticks` FROM `board_entry` ' +
-    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `id_device` = ?) AND b.`id_device` <> ? ' +
+    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`ticks` >= (SELECT `ticks` FROM `board_entry` ' +
+    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `id_device` = ?) AND b.`id_device` <> ? ' +
     'ORDER BY b.`ticks`, b.`updated_at` LIMIT 2',
 };
 
@@ -66,29 +64,28 @@ const BY_SCORE: Shape = {
   top:
     'SELECT b.`id_device`, d.`nickname`, b.`score` AS value FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
-    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? ORDER BY b.`score` DESC, b.`updated_at` LIMIT 50',
-  total:
-    'SELECT COUNT(*) AS n FROM (SELECT 1 FROM `board_entry` WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? LIMIT ?)',
+    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? ORDER BY b.`score` DESC, b.`updated_at` LIMIT 50',
+  total: 'SELECT COUNT(*) AS n FROM (SELECT 1 FROM `board_entry` WHERE `kind` = ? AND `map` = ? AND `day` = ? LIMIT ?)',
   mine:
     'SELECT b.`id_device`, d.`nickname`, b.`score` AS value FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
-    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? AND b.`id_device` = ?',
+    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`id_device` = ?',
   better:
     'SELECT COUNT(*) AS n FROM (SELECT 1 FROM `board_entry` ' +
-    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `score` > ? LIMIT ?)',
+    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `score` > ? LIMIT ?)',
   between:
     'SELECT COUNT(*) AS n FROM `board_entry` ' +
-    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `score` > ? AND `score` <= ?',
+    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `score` > ? AND `score` <= ?',
   above:
     'SELECT b.`id_device`, d.`nickname`, b.`score` AS value FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
-    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? AND b.`score` > (SELECT `score` FROM `board_entry` ' +
-    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `id_device` = ?) ORDER BY b.`score` LIMIT 2',
+    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`score` > (SELECT `score` FROM `board_entry` ' +
+    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `id_device` = ?) ORDER BY b.`score` LIMIT 2',
   below:
     'SELECT b.`id_device`, d.`nickname`, b.`score` AS value FROM `board_entry` b ' +
     'JOIN `device` d ON d.`id_device` = b.`id_device` ' +
-    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`sim_version` = ? AND b.`score` <= (SELECT `score` FROM `board_entry` ' +
-    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `sim_version` = ? AND `id_device` = ?) AND b.`id_device` <> ? ' +
+    'WHERE b.`kind` = ? AND b.`map` = ? AND b.`day` = ? AND b.`score` <= (SELECT `score` FROM `board_entry` ' +
+    'WHERE `kind` = ? AND `map` = ? AND `day` = ? AND `id_device` = ?) AND b.`id_device` <> ? ' +
     'ORDER BY b.`score` DESC, b.`updated_at` LIMIT 2',
 };
 
@@ -113,7 +110,7 @@ const BY_STREAK: Shape = {
 
 export interface Board {
   shape: Shape;
-  /** Binds for kind, map, day, sim_version (empty for the Streak Board). */
+  /** Binds for kind, map, day (empty for the Streak Board). */
   scope: (string | number)[];
 }
 
@@ -131,10 +128,10 @@ interface DbRow {
 export function boardOf(kind: string, map: string, day: number): Board {
   if (kind === 'streak' && map === STREAK_MAP) return { shape: BY_STREAK, scope: [] };
   if (kind === 'daily' && map === DAILY_MAP && Number.isInteger(day) && day > 0 && day < MAX_DAY)
-    return { shape: BY_TICKS, scope: ['daily', DAILY_MAP, day, SIM_VERSION] };
+    return { shape: BY_TICKS, scope: ['daily', DAILY_MAP, day] };
   const def = mapById(map);
   if ((kind === 'speed' || kind === 'score') && def && !isTutorialMap(def))
-    return { shape: kind === 'speed' ? BY_TICKS : BY_SCORE, scope: [kind, map, 0, SIM_VERSION] };
+    return { shape: kind === 'speed' ? BY_TICKS : BY_SCORE, scope: [kind, map, 0] };
   throw new HttpError('bad_request');
 }
 

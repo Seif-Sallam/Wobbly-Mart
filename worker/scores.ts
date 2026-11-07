@@ -27,9 +27,9 @@ export async function submitScore(req: Request, env: Env, mapId: string): Promis
   const now = nowSeconds();
   const stored = await env.BOARD.prepare(
     'SELECT `score`, `play_time`, `updated_at` FROM `board_entry` ' +
-      "WHERE `kind` = 'score' AND `map` = ? AND `day` = 0 AND `sim_version` = ? AND `id_device` = ?",
+      "WHERE `kind` = 'score' AND `map` = ? AND `day` = 0 AND `id_device` = ?",
   )
-    .bind(mapId, SIM_VERSION, id)
+    .bind(mapId, id)
     .first<{ score: number; play_time: number; updated_at: number }>();
   const plausible =
     score <= fixedMaxScore(map) + playTime * maxScoreRate() &&
@@ -43,8 +43,8 @@ export async function submitScore(req: Request, env: Env, mapId: string): Promis
     env.BOARD.prepare(
       'INSERT INTO `board_entry` (`kind`, `map`, `day`, `sim_version`, `id_device`, `score`, `play_time`, `updated_at`) ' +
         "VALUES ('score', ?, 0, ?, ?, ?, ?, ?) " +
-        'ON CONFLICT (`kind`, `map`, `day`, `sim_version`, `id_device`) ' +
-        'DO UPDATE SET `score` = excluded.`score`, `play_time` = excluded.`play_time`, `updated_at` = excluded.`updated_at` ' +
+        'ON CONFLICT (`kind`, `map`, `day`, `id_device`) ' +
+        'DO UPDATE SET `sim_version` = excluded.`sim_version`, `score` = excluded.`score`, `play_time` = excluded.`play_time`, `updated_at` = excluded.`updated_at` ' +
         'WHERE excluded.`score` >= `board_entry`.`score` AND excluded.`play_time` >= `board_entry`.`play_time`',
     ).bind(mapId, SIM_VERSION, id, score, playTime, now),
     env.BOARD.prepare('UPDATE `device` SET `last_seen_at` = ? WHERE `id_device` = ?').bind(now, id),

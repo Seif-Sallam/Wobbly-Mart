@@ -59,16 +59,16 @@ export async function submitShift(req: Request, env: Env): Promise<Response> {
   const at = nowSeconds();
   const stored = await env.BOARD.prepare(
     'SELECT `ticks` FROM `board_entry` ' +
-      "WHERE `kind` = 'daily' AND `map` = 'daily' AND `day` = ? AND `sim_version` = ? AND `id_device` = ?",
+      "WHERE `kind` = 'daily' AND `map` = 'daily' AND `day` = ? AND `id_device` = ?",
   )
-    .bind(day, SIM_VERSION, id)
+    .bind(day, id)
     .first<{ ticks: number }>();
   await env.BOARD.batch([
     env.BOARD.prepare(
       'INSERT INTO `board_entry` (`kind`, `map`, `day`, `sim_version`, `id_device`, `ticks`, `score`, `money`, `updated_at`) ' +
         "VALUES ('daily', 'daily', ?, ?, ?, ?, ?, ?, ?) " +
-        'ON CONFLICT (`kind`, `map`, `day`, `sim_version`, `id_device`) ' +
-        'DO UPDATE SET `ticks` = excluded.`ticks`, `score` = excluded.`score`, `money` = excluded.`money`, ' +
+        'ON CONFLICT (`kind`, `map`, `day`, `id_device`) ' +
+        'DO UPDATE SET `sim_version` = excluded.`sim_version`, `ticks` = excluded.`ticks`, `score` = excluded.`score`, `money` = excluded.`money`, ' +
         '`updated_at` = excluded.`updated_at` WHERE excluded.`ticks` < `board_entry`.`ticks`',
     ).bind(day, SIM_VERSION, id, ticks, claim.score, claim.money, at),
     env.BOARD.prepare('UPDATE `device` SET `last_seen_at` = ? WHERE `id_device` = ?').bind(at, id),

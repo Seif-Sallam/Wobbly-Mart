@@ -239,6 +239,7 @@ export const TUNING = {
     /** A Shift claiming more Money per second than this is refused: a sanity bound, not anti-cheat. */
     maxMoneyRate: 10_000,
   },
-  /** Daily Shift: day 1 is this UTC date (ms). */
-  daily: { launch: Date.UTC(2026, 10, 1) },
+  /** Daily Shift: day 1 is this date (ms at its UTC midnight); days roll over at midnight UTC+2, Egypt winter time,
+   *  all year (01:00 Cairo time in summer). */
+  daily: { launch: Date.UTC(2026, 10, 1), utcOffsetMs: 2 * 3_600_000 },
 };

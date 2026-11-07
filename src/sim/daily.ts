@@ -1,4 +1,4 @@
-// The Daily Shift's day: a UTC date, its number counted from launch (day 1), and its seed.
+// The Daily Shift's day: a date at UTC+2 (TUNING.daily), its number counted from launch (day 1), and its seed.
 import type { ObjectiveDef } from '../../catalog/objectives';
 import { fnv1a } from './rng';
 import { fixedMaxScore, maxScoreRate } from './score';
@@ -7,7 +7,8 @@ import { TUNING } from './tuning';
 const DAY_MS = 86_400_000;
 
 /** The day number of a moment (ms since the epoch, passed in: the sim has no clock). */
-export const dailyDay = (utcMs: number): number => Math.floor((utcMs - TUNING.daily.launch) / DAY_MS) + 1;
+export const dailyDay = (utcMs: number): number =>
+  Math.floor((utcMs + TUNING.daily.utcOffsetMs - TUNING.daily.launch) / DAY_MS) + 1;
 
 /** `YYYY-MM-DD` of a day number. */
 export const dailyDate = (day: number): string =>

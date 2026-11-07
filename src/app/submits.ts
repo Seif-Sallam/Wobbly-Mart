@@ -1,6 +1,6 @@
 // Run, Score and Shift submits, and the queue that keeps what couldn't post yet (offline, a 429, no Device) until the
 // next app start, Wall open, accepted submit or new Device (spec §12). One entry per Board: a Map's best Run, its
-// latest Score, each day's best Shift (dropped past 00:15 UTC the next day).
+// latest Score, each day's best Shift (dropped past 00:15 UTC+2 the next day).
 import {
   SHIFT_LATE_MS,
   type ErrorCode,

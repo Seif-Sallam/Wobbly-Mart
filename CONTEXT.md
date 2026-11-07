@@ -270,7 +270,7 @@ The **Board** of fastest **Runs** on one **Map**.
 The **Board** of highest **Score** on one **Map**.
 
 **Daily Shift**:
-One goal-based game, the same for every **Player** each UTC day, on that day's generated **Map**, in its own world that never touches the save.
+One goal-based game, the same for every **Player** each day (days roll over at midnight UTC+2, Egypt winter time), on that day's generated **Map**, in its own world that never touches the save.
 _Avoid_: daily challenge (a **Challenge** is something else), daily run
 
 **Daily Board**:
@@ -281,7 +281,7 @@ The record of a **Daily Shift**'s inputs from start to end, from which it plays 
 _Avoid_: recording, demo, ghost
 
 **Streak**:
-UTC days in a row on which a **Device** finished the **Daily Shift**. The **Streak Board** ranks the longest.
+Days in a row on which a **Device** finished the **Daily Shift**. The **Streak Board** ranks the longest.
 
 **Wall of Fame**:
 The one screen that shows every **Board**; the player-facing name for Boards.

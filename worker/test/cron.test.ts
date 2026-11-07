@@ -59,7 +59,7 @@ test('the daily cron prunes Replays, deletes idle Devices everywhere and drops o
     .bind(unixDay - 8, unixDay - 7)
     .run();
 
-  const controller = createScheduledController({ scheduledTime: at * 1000, cron: '30 0 * * *' });
+  const controller = createScheduledController({ scheduledTime: at * 1000, cron: '30 22 * * *' });
   await worker.scheduled(controller, env);
 
   // Today stays whole; finished days keep their top 100 for 30 days, then the top 10.

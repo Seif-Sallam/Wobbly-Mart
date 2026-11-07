@@ -93,7 +93,7 @@ export interface ShiftResponse extends RunResponse {
 /** Ranks and Board totals are counted up to here; past it they come as RANK_CAP + 1, shown "100+". */
 export const RANK_CAP = 100;
 
-/** Day D's Shift is taken until 00:15 UTC on D+1; the client drops a queued one past that. */
+/** Day D's Shift is taken until 00:15 (UTC+2) on D+1; the client drops a queued one past that. */
 export const SHIFT_LATE_MS = 15 * 60_000;
 
 /** Gzipped save JSON, before base64: about 4x a full-progress save (the bot keeps that under a quarter of it). */

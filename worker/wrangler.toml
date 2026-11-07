@@ -10,9 +10,9 @@ send_metrics = false
 [observability]
 enabled = true
 
-# Daily cleanup (cron.ts), after the 00:15 UTC late window for yesterday's Shifts. Inherited by every env.
+# Daily cleanup (cron.ts), after the 00:15 (UTC+2) late window for yesterday's Shifts. Inherited by every env.
 [triggers]
-crons = ["30 0 * * *"]
+crons = ["30 22 * * *"]
 
 
 [vars]

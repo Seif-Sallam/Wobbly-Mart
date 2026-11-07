@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 import calendar from '../../maps/daily-calendar.json';
 import type { DailyCalendar } from './daily-goal';
 import { builtOut, generateDailyMap, shopWalks } from './daily-map';
-import { dailyDate, dailySeed } from './daily';
+import { dailyDate, dailyDay, dailySeed } from './daily';
 import { safeCount } from './economy';
 import { TUNING } from './tuning';
 
@@ -56,4 +56,12 @@ test('the calendar goals: 3 or 4 parts, the last one late (or the furthest Pad b
   }
   // the fallback (no late Pad bought in time) is rare
   expect(late).toBeGreaterThan(60 * 0.8);
+});
+
+test('days roll over at midnight UTC+2: 22:00 UTC starts the next day', () => {
+  const at = (iso: string) => dailyDay(Date.parse(iso));
+  expect(at('2026-11-01T00:00:00Z')).toBe(1);
+  expect(at('2026-11-07T21:59:59Z')).toBe(7);
+  expect(at('2026-11-07T22:00:00Z')).toBe(8);
+  expect(dailyDate(8)).toBe('2026-11-08');
 });

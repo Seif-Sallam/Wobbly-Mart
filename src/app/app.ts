@@ -44,11 +44,11 @@ import {
   writeSettings,
 } from './storage';
 import { formatMoney } from '../format';
-import { Hud, type EdgeArrow, type EventBanner, type EventCard } from '../ui/hud';
+import { Hud, type EdgeArrow, type EventBanner, type EventCard, type ShiftRow } from '../ui/hud';
 import { renderUi, type Overlay, type UiActions, type UiState } from '../ui/app';
 import { Sounds } from '../audio/audio';
 import { FEEL } from '../feel';
-import { runTicks } from '../sim/stats';
+import { emptyStats, runTicks } from '../sim/stats';
 import { TUNING } from '../sim/tuning';
 import { objectiveId } from '../../catalog/objectives';
 import { logbookView, objectiveInfo, progressOfSave, type MapProgress } from './logbook';
@@ -178,6 +178,7 @@ export class App {
       wipe: false,
       touch: isTouch,
       ios: isIos,
+      autoFullscreen: canFullscreen(),
       maps: [],
       total: 0,
       logbook: null,
@@ -194,14 +195,15 @@ export class App {
       wall: null,
       daily: null,
       shiftEnd: null,
+      shiftGoals: null,
       runEnd: null,
       restore: null,
     };
     this.ui.zoom = this.zoom();
     watchLayout(() => this.applyLayout());
     this.hud.onGear = () => this.openOverlay('pause');
-    this.hud.onShiftReset = () => this.resetShift();
     this.hud.onTrophy = () => this.openLogbook(0);
+    this.hud.onShiftGoals = () => this.openShiftGoals(false);
     this.hud.onLand = () => this.sounds.sfx('ding');
     this.input.onEscape = () => this.escape();
     this.claimTab = claimTab(() => {
@@ -217,11 +219,11 @@ export class App {
       if (this.ui.screen === 'title' && this.game) this.sounds.playMusicOf(this.game.world.map);
     };
     addEventListener('pointerdown', firstGesture, { once: true });
-    // a touch is a gesture only on release: the first tap anywhere goes fullscreen
-    const firstTap = (): void => {
-      if (canFullscreen()) void document.documentElement.requestFullscreen().catch(() => {});
-    };
-    addEventListener('pointerup', firstTap, { once: true });
+    // a touch is a gesture only on release: any tap while not fullscreen goes fullscreen (again after a background)
+    addEventListener('pointerup', () => {
+      if (canFullscreen() && !document.fullscreenElement)
+        void document.documentElement.requestFullscreen().catch(() => {});
+    });
     addEventListener('keydown', firstGesture, { once: true });
     addEventListener('visibilitychange', () => (document.hidden ? this.onHidden() : this.syncAudio()));
     addEventListener('pagehide', () => this.writeSave());
@@ -345,8 +347,9 @@ export class App {
     if (canFullscreen()) void document.documentElement.requestFullscreen().catch(() => {});
     document.querySelector('.logo')?.classList.add('wobble');
     setTimeout(() => {
-      open();
+      // in the game first, so an overlay `open` raises (the Shift intro) pauses it
       this.ui.screen = 'game';
+      open();
       this.ui.wipe = false;
       this.syncAudio();
       this.hud.visible(true);
@@ -406,6 +409,24 @@ export class App {
   private reopen(): void {
     if (this.ui.screen === 'game') this.openMap(this.currentMap());
     else this.refreshMaps();
+  }
+
+  /** Wipes a Map back to its start, Score too; keeps play time, which the Score Board needs to never go down. The next
+   *  Opening is a fresh, valid Speedrun Run. */
+  private resetMap(id: string): void {
+    const map = mapById(id);
+    if (!map || isTutorialMap(map)) return;
+    const playTime = this.save.maps[id]?.stats?.playTime ?? 0;
+    const { money, owned } = map.start;
+    const stats = { ...emptyStats(), playTime };
+    this.save.maps[id] = { money, owned: [...owned], paid: {}, levels: {}, roles: {}, stats };
+    if (this.ui.screen === 'game' && this.game?.world.map.id === id) this.openMap(map);
+    else {
+      this.writeSave();
+      writeSave(this.save);
+    }
+    this.refreshMaps();
+    this.renderUi();
   }
 
   /** `seed`: a Daily Shift's; other Openings get a fresh one. */
@@ -854,6 +875,7 @@ export class App {
       this.reopen();
       this.openOverlay(null);
     },
+    resetMap: (id) => this.resetMap(id),
     pickMap: (id) => {
       const map = mapById(id);
       if (!map) return;
@@ -869,6 +891,7 @@ export class App {
       this.game?.lessonNext();
     },
     skipLessons: () => this.toTitle(),
+    restartShift: () => this.resetShift(),
     dismissCard: () => {
       this.ui.card = null;
       this.renderUi();
@@ -879,6 +902,7 @@ export class App {
     wall: {
       tab: (tab) => this.changeWall({ tab }),
       map: (map) => this.changeWall({ map }),
+      day: (day) => this.changeWall({ day }),
       retry: () => void this.loadWall(),
       close: () => this.openOverlay(this.wallBack),
       join: () => this.actions.online.join(),
@@ -970,6 +994,7 @@ export class App {
       day: shift.day.day,
       goal: map.objectives.map((o) => objectiveInfo(map, o).name).join(' + '),
       time: shift.doneTicks === null ? null : clockOf(shift.doneTicks),
+      bot: clockOf(shift.day.botTicks, true),
       streak: last?.streak ?? null,
       rank: last?.day === shift.day.day ? last.rank : null,
     };
@@ -994,13 +1019,30 @@ export class App {
     shift.recorder = new InputRecorder();
     game.onStep = (i) => shift.recorder.record(i);
     game.fastForward(replayIntents(log));
+    if (!log.ticks) this.openShiftGoals(true);
   }
 
-  /** ↺ on the chip or Try again: the same Shift from its Opening. */
+  /** Every goal part, done or not: the chip's goals button, and the intro on a fresh Shift. */
+  private shiftRows(w: World): ShiftRow[] {
+    return w.map.objectives.map((o) => {
+      const p = objectiveProgress(w, o);
+      const { icon, name } = objectiveInfo(w.map, o);
+      return { icon, text: `${name} · ${Math.floor(Math.min(p.got, p.want))}/${p.want}`, done: p.got >= p.want };
+    });
+  }
+
+  private openShiftGoals(intro: boolean): void {
+    const w = this.game?.world;
+    if (!w?.map.shift) return;
+    this.ui.shiftGoals = { rows: this.shiftRows(w), intro };
+    this.openOverlay('shift-goals');
+  }
+
+  /** Restart Shift in the pause menu or Try again: the same Shift from its Opening. */
   private resetShift(): void {
     this.shift?.reset();
-    this.openShift();
     this.openOverlay(null);
+    this.openShift();
   }
 
   /** The chip, and the end of Shift screen the first time the goal is done. */
@@ -1022,10 +1064,11 @@ export class App {
       this.openOverlay('shift-end');
       void this.sendShift();
     }
-    if (shift.doneTicks !== null) return this.hud.setShift(`✓ Done ${clockOf(shift.doneTicks)} · for fun now`);
-    const p = objectiveProgress(w, left[0]);
-    const name = objectiveInfo(w.map, left[0]).name;
-    this.hud.setShift(`📅 ${name} · ${Math.floor(p.got)}/${p.want} · ${clockOf(shift.recorder.log.ticks)}`);
+    if (shift.doneTicks !== null)
+      return this.hud.setShift({ text: `✓ Done ${clockOf(shift.doneTicks, true)} · for fun now` });
+    const rows = this.shiftRows(w);
+    const done = rows.filter((r) => r.done).length;
+    this.hud.setShift(rows.find((r) => !r.done) ?? rows[0], done, rows.length, clockOf(shift.recorder.log.ticks, true));
   }
 
   /** Posts the finished Shift on the end screen (queued when it can't post yet); a reply for a newer attempt is
@@ -1112,6 +1155,8 @@ export class App {
       maps: maps.map((m) => ({ id: m.id, name: m.name, playable: this.save.visited.includes(m.id) })),
       board: null,
       hasDevice: !!this.device.code,
+      day: dailyDay(Date.now()),
+      today: dailyDay(Date.now()),
     };
     this.wallBack = this.ui.overlay;
     this.openOverlay('wall');
@@ -1133,9 +1178,9 @@ export class App {
     const map = kind === 'daily' ? 'daily' : kind === 'streak' ? '-' : wall.map;
     // queued submits go up first, so the read shows them
     if (this.device.code) await flushPending(this.device.code);
-    const board = await readBoard(kind, map, dailyDay(Date.now()), this.device.code);
+    const board = await readBoard(kind, map, wall.day, this.device.code);
     const now = this.ui.wall;
-    if (!now || now.tab !== wall.tab || now.map !== wall.map) return;
+    if (!now || now.tab !== wall.tab || now.map !== wall.map || now.day !== wall.day) return;
     this.ui.wall = { ...now, board: board ?? 'offline' };
     this.renderUi();
   }
@@ -1230,22 +1275,23 @@ export class App {
 
   /** Everything that follows the settings and the window's shape: HUD size, view, Pads. */
   private applyLayout(): void {
-    this.hud.scale(this.settings.hudScale * (layout.land ? FEEL.landHudScale : 1));
     this.stage.zoomTo(this.viewZoom());
     if (this.game) {
       this.game.view.padScale = layout.land ? FEEL.landPadScale : 1;
       this.game.manualGrab = this.settings.manualGrab && (!isTouch || layout.land);
     }
     const root = document.documentElement;
+    root.style.setProperty('--hud-scale', String(this.settings.hudScale * (layout.land ? FEEL.landHudScale : 1)));
+    root.style.setProperty('--menu-scale', String(this.settings.hudScale));
     root.classList.toggle('joy-off', isTouch && this.settings.joystick === 'off');
     root.classList.toggle('joy-free', layout.land && this.settings.joystick === 'free');
     root.style.setProperty('--joy-zone', String(FEEL.joyZone));
-    root.style.setProperty('--joy-size', `${FEEL.joyLandscape}px`);
+    root.style.setProperty('--joy-size', `${FEEL.joyLandscape * FEEL.joySizes[this.settings.joySize]}px`);
     root.style.setProperty('--joy-left', `${FEEL.joyRestLeft}px`);
     root.style.setProperty('--joy-bottom', `${FEEL.joyRestBottom}px`);
     root.style.setProperty('--grab-ring', `${FEEL.grabRing}px`);
     this.input.holdGrab = layout.land && this.settings.manualGrab;
-    this.input.setJoystick(this.settings.joystick, layout.land, insets());
+    this.input.setJoystick(this.settings.joystick, this.settings.joySize, layout.land, insets());
     this.redraw = true;
   }
 

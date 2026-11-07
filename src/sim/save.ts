@@ -61,6 +61,8 @@ export interface Settings {
   batterySaver: boolean;
   /** Touch: Fixed rests bottom-left (landscape; portrait acts like Free), Free appears under the thumb, Off = Tap Walk only. */
   joystick: 'fixed' | 'free' | 'off';
+  /** Touch: the stick's size; Medium is FEEL.joyPortrait / joyLandscape, the others scale it by FEEL.joySizes. */
+  joySize: 'small' | 'medium' | 'large';
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -72,6 +74,7 @@ export const DEFAULT_SETTINGS: Settings = {
   frameCap: 'screen',
   batterySaver: false,
   joystick: 'fixed',
+  joySize: 'small',
 };
 
 export const DEFAULT_CAP = 'orange';

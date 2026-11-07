@@ -10,7 +10,13 @@ import { formatMoney } from '../format';
 import { FEEL } from '../feel';
 import { TUNING } from '../sim/tuning';
 import { Logo } from './logo';
-import { ShiftEndPopup, type ShiftEndActions, type ShiftEndView } from './shift-end';
+import {
+  ShiftEndPopup,
+  ShiftGoalsPopup,
+  type ShiftEndActions,
+  type ShiftEndView,
+  type ShiftGoalsView,
+} from './shift-end';
 import { Btn } from './btn';
 import {
   CodePopup,
@@ -49,6 +55,7 @@ export type Overlay =
   | 'restore'
   | 'wall'
   | 'shift-end'
+  | 'shift-goals'
   | 'run-end';
 
 export interface UiState {
@@ -61,6 +68,8 @@ export interface UiState {
   wipe: boolean;
   touch: boolean;
   ios: boolean;
+  /** The game goes fullscreen on every tap (phones): no Fullscreen button in Settings. */
+  autoFullscreen: boolean;
   /** `score`: the Map's Score, null on locked cards and the Tutorial Map. */
   maps: { map: MapDef; completion: number; visited: boolean; tutorial: boolean; score: number | null }[];
   /** Score added up over every Map. */
@@ -88,8 +97,17 @@ export interface UiState {
   wall: WallView | null;
   /** Today's Daily Shift on the title; null while it loads or when the calendar has no such day. `streak` and `rank`
    *  come from the last accepted Shift. */
-  daily: { day: number; goal: string; time: string | null; streak: number | null; rank: number | null } | null;
+  daily: {
+    day: number;
+    goal: string;
+    time: string | null;
+    /** The bot's time to the goal. */
+    bot: string;
+    streak: number | null;
+    rank: number | null;
+  } | null;
   shiftEnd: ShiftEndView | null;
+  shiftGoals: ShiftGoalsView | null;
   runEnd: RunEndView | null;
 }
 
@@ -142,11 +160,15 @@ export interface UiActions {
   pasteSave: (code: string) => string | null;
   resetProgress: () => void;
   pickMap: (id: string) => void;
+  /** Maps panel: a fresh start on a Map, Score included. */
+  resetMap: (id: string) => void;
   dismissCard: () => void;
   /** Got it on a Lesson card. */
   lessonNext: () => void;
   /** Pause menu on the Tutorial Map: leave for the next Map without finishing. */
   skipLessons: () => void;
+  /** Pause menu on a Daily Shift: the same Shift from its Opening. */
+  restartShift: () => void;
   icon: (name: string) => string;
   click: () => void;
   wardrobe: WardrobeBridge;
@@ -263,7 +285,8 @@ function Office({ world, actions, wide }: { world: World; actions: UiActions; wi
   );
 }
 
-function HoldButton({ onDone, children }: { onDone: () => void; children: preact.ComponentChildren }) {
+function HoldButton(props: { onDone: () => void; children: preact.ComponentChildren; class?: string }) {
+  const { onDone, children } = props;
   const [held, setHeld] = useState(false);
   const timer = useRef<number>(0);
   const start = () => {
@@ -279,7 +302,7 @@ function HoldButton({ onDone, children }: { onDone: () => void; children: preact
   };
   return (
     <button
-      class={`btn danger hold ${held ? 'held' : ''}`}
+      class={`btn danger hold ${props.class ?? ''} ${held ? 'held' : ''}`}
       onPointerDown={start}
       onPointerUp={stop}
       onPointerLeave={stop}
@@ -313,6 +336,33 @@ function Toggle(props: {
 }
 
 /** A Settings slider with a mark at each end; whatever it sets updates live behind the panel. */
+/** Set values, changed only with the two buttons: the left one steps down the list, the right one up. The bar shows
+ *  the step closest to `value` (pinch zoom and older saves land between them). */
+function StepsRow(props: {
+  label: string;
+  ends: [string, string];
+  steps: readonly number[];
+  value: number;
+  set: (v: number) => void;
+  actions: UiActions;
+}) {
+  const { steps, value } = props;
+  const at = steps.reduce((best, s, i) => (Math.abs(s - value) < Math.abs(steps[best] - value) ? i : best), 0);
+  const go = (d: number) => props.set(steps[Math.min(steps.length - 1, Math.max(0, at + d))]);
+  return (
+    <div class="slider-row steps-row">
+      <span>{props.label}</span>
+      <Btn class="step" actions={props.actions} disabled={at === 0} onClick={() => go(-1)}>
+        {props.ends[0]}
+      </Btn>
+      <input type="range" min={0} max={steps.length - 1} step={1} value={at} tabIndex={-1} aria-hidden="true" />
+      <Btn class="step" actions={props.actions} disabled={at === steps.length - 1} onClick={() => go(1)}>
+        {props.ends[1]}
+      </Btn>
+    </div>
+  );
+}
+
 function SliderRow(props: {
   label: string;
   ends: [string, string];
@@ -366,23 +416,21 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
     <div class="panel settings">
       <h2>Settings</h2>
       {/* + (closer) on the left, − (farther) on the right */}
-      <SliderRow
+      <StepsRow
         label="Zoom"
         ends={['+', '−']}
-        min={FEEL.zoomMin}
-        max={FEEL.zoomMax}
-        step={FEEL.zoomSlider}
+        steps={FEEL.zooms}
         value={s.zoom}
         set={(v) => a.setSetting('zoom', v)}
+        actions={a}
       />
-      <SliderRow
+      <StepsRow
         label="HUD size"
-        ends={['A', 'A']}
-        min={FEEL.hudScaleMin}
-        max={FEEL.hudScaleMax}
-        step={FEEL.hudScaleSlider}
+        ends={['−', '+']}
+        steps={FEEL.hudScales}
         value={s.settings.hudScale}
         set={(v) => a.setSetting('hudScale', v)}
+        actions={a}
       />
       <SliderRow
         label="Music"
@@ -413,6 +461,17 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
           actions={a}
         />
       )}
+      {s.touch && (
+        <Toggle
+          label="Joystick size"
+          on={s.settings.joySize !== 'small'}
+          text={{ small: 'Small', medium: 'Medium', large: 'Large' }[s.settings.joySize]}
+          set={() =>
+            a.setSetting('joySize', ({ small: 'medium', medium: 'large', large: 'small' } as const)[s.settings.joySize])
+          }
+          actions={a}
+        />
+      )}
       <Toggle
         label={s.touch ? 'Manual grab (hold right side, landscape)' : 'Manual grab (hold Space)'}
         on={s.settings.manualGrab}
@@ -426,9 +485,11 @@ function Settings({ s, a }: { s: UiState; a: UiActions }) {
         set={(v) => a.setSetting('batterySaver', v)}
         actions={a}
       />
-      <Btn actions={a} onClick={a.fullscreen}>
-        Fullscreen
-      </Btn>
+      {!s.autoFullscreen && (
+        <Btn actions={a} onClick={a.fullscreen}>
+          Fullscreen
+        </Btn>
+      )}
       {s.online && <OnlineRows v={s.online} o={a.online} a={a} />}
       <div class="row">
         <Btn actions={a} onClick={() => a.open('controls')}>
@@ -504,18 +565,43 @@ function Paste({ a }: { a: UiActions }) {
 }
 
 function Maps({ s, a }: { s: UiState; a: UiActions }) {
+  const [confirm, setConfirm] = useState<UiState['maps'][number] | null>(null);
+  if (confirm)
+    return (
+      <div class="panel">
+        <h2>Reset {confirm.map.name}?</h2>
+        <p>
+          Its Money, Pads, Upgrades, layout, Objectives, Stats and Score start over. Your best Score stays on the Board.
+        </p>
+        <div class="row">
+          <Btn class="danger" actions={a} onClick={() => (a.resetMap(confirm.map.id), setConfirm(null))}>
+            Reset this Map
+          </Btn>
+          <Btn actions={a} onClick={() => setConfirm(null)}>
+            Cancel
+          </Btn>
+        </div>
+      </div>
+    );
   return (
     <div class="panel wide">
       <h2>Maps</h2>
       <div class="maps">
         {s.maps.map((m) => (
-          <Btn key={m.map.id} class="map-card" actions={a} onClick={() => a.pickMap(m.map.id)} disabled={!m.visited}>
-            <b>{m.map.name}</b>
-            <span class="completion small">
-              <i style={{ width: `${Math.round(m.completion * 100)}%` }} />
-            </span>
-            <small>{Math.round(m.completion * 100)}%</small>
-          </Btn>
+          <div key={m.map.id} class="map-slot">
+            <Btn class="map-card" actions={a} onClick={() => a.pickMap(m.map.id)} disabled={!m.visited}>
+              <b>{m.map.name}</b>
+              <span class="completion small">
+                <i style={{ width: `${Math.round(m.completion * 100)}%` }} />
+              </span>
+              <small>{Math.round(m.completion * 100)}%</small>
+            </Btn>
+            {m.visited && !m.tutorial && (
+              <HoldButton class="small" onDone={() => setConfirm(m)}>
+                Hold to reset
+              </HoldButton>
+            )}
+          </div>
         ))}
       </div>
       <Btn class="back" actions={a} onClick={a.close}>
@@ -694,9 +780,7 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
           <button class="round" aria-label="Logbook" onClick={() => (a.click(), a.openLogbook(2))}>
             🏆
           </button>
-          <button class="round" aria-label="Credits" onClick={() => (a.click(), a.open('credits'))}>
-            ★
-          </button>
+
           <button
             class="round"
             aria-label="Settings"
@@ -711,7 +795,9 @@ function Title({ s, a }: { s: UiState; a: UiActions }) {
         <button class="daily-ticket" onClick={() => (a.click(), a.playShift())}>
           <b>📅 Shift #{s.daily.day}</b>
           <span>{s.daily.goal}</span>
-          {s.daily.time && <small>✓ {s.daily.time}</small>}
+          <small>
+            {s.daily.time && `✓ ${s.daily.time} · `}Bot: {s.daily.bot}
+          </small>
           {s.daily.streak !== null && (
             <small>
               🔥 {s.daily.streak}
@@ -924,6 +1010,11 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
                   Skip tutorial
                 </Btn>
               )}
+              {world?.map.shift && (
+                <HoldButton class="big" onDone={a.restartShift}>
+                  Hold to restart Shift
+                </HoldButton>
+              )}
               <Btn class="big" actions={a} onClick={a.toTitle}>
                 Title
               </Btn>
@@ -950,6 +1041,7 @@ function App({ s, a, world }: { s: UiState; a: UiActions; world: World | null })
           )}
           {overlay === 'wall' && s.wall && <WallPopup v={s.wall} a={a.wall} />}
           {overlay === 'shift-end' && s.shiftEnd && <ShiftEndPopup v={s.shiftEnd} a={a.shiftEnd} online={!!s.online} />}
+          {overlay === 'shift-goals' && s.shiftGoals && <ShiftGoalsPopup v={s.shiftGoals} close={a.close} a={a} />}
           {overlay === 'run-end' && s.runEnd && <RunEndPopup v={s.runEnd} a={a.runEnd} />}
           {overlay === 'logbook' && s.logbook && (
             <Logbook view={s.logbook} tab={s.logbookTab} close={a.close} click={a.click} />

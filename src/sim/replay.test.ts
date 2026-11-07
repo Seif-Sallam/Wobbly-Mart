@@ -22,7 +22,10 @@ test('a recorded Daily Shift re-sims to the exact World and its Replay fits 64 K
   const rec = new InputRecorder();
   const done = () => goal.every((o) => objectiveProgress(w, o).got >= objectiveProgress(w, o).want);
   while (!done()) {
+    // the bot draws from the World's rng when it is stuck; a player's input never does, so keep it out of the log
+    const rng = w.rng;
     const i = bot.intents(w);
+    w.rng = rng;
     rec.record(i);
     step(w, i);
   }

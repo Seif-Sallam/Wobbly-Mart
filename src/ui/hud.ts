@@ -28,6 +28,13 @@ export interface ChallengeCard {
   low: boolean;
 }
 
+/** A Daily Shift chip row: one goal part (icon, name and got/want), or the single Done line (no icon). */
+export interface ShiftRow {
+  icon?: string;
+  text: string;
+  done?: boolean;
+}
+
 export interface EventBanner {
   line: (text: string) => void;
   close: () => void;
@@ -48,7 +55,8 @@ export class Hud {
   private target = 0;
   private ring: HTMLElement;
   private shiftChip: HTMLElement;
-  private shiftText = '';
+  private shiftKey = '';
+  private shiftClock: HTMLElement;
   private badge: HTMLElement;
   /** The Map's Score on the badge: counts up to `score` minus the points still flying in. */
   private badgeShown = 0;
@@ -67,11 +75,11 @@ export class Hud {
     badge: '',
   };
   onGear: () => void = () => {};
+  /** The goals button on the Daily Shift chip. */
+  onShiftGoals: () => void = () => {};
   /** A Delivery card was tapped: its pickup Station's id. */
   onDelivery: (id: string) => void = () => {};
   onTrophy: () => void = () => {};
-  /** ↺ on the Daily Shift chip. */
-  onShiftReset: () => void = () => {};
   /** An Objective card landed in the trophy. */
   onLand: () => void = () => {};
 
@@ -88,13 +96,15 @@ export class Hud {
         <div class="hud-right"><div class="hud-extra"><button class="trophy round" aria-label="Logbook">🏆<b class="badge">⭐ 0</b></button></div><button class="gear round" aria-label="Pause">${GEAR}</button></div>
       </div>
       <div class="chal-ring gone"><div class="ring"><i></i></div><small><img alt=""><span></span></small></div>
-      <div class="shift-chip pill gone"><span></span><button class="shift-reset" aria-label="Reset the Shift">↺ Reset</button></div>
+      <div class="shift-chip pill gone"></div>
+      <b class="shift-clock gone"></b>
       <div class="event-cards"></div>
       <div class="lesson pill gone"><small></small><p></p></div></div>`;
     this.ui = root.querySelector('.hud-ui') as HTMLElement;
     this.extra = root.querySelector('.hud-extra') as HTMLElement;
     this.ring = root.querySelector('.chal-ring') as HTMLElement;
     this.shiftChip = root.querySelector('.shift-chip') as HTMLElement;
+    this.shiftClock = root.querySelector('.shift-clock') as HTMLElement;
     this.badge = root.querySelector('.badge') as HTMLElement;
     this.ui.style.setProperty('--ring-size', `${FEEL.score.ringSize}px`);
     this.cardBox = root.querySelector('.event-cards') as HTMLElement;
@@ -109,15 +119,10 @@ export class Hud {
       });
     press('.gear', () => this.onGear());
     press('.trophy', () => this.onTrophy());
-    press('.shift-reset', () => this.onShiftReset());
   }
 
   visible(on: boolean): void {
     this.root.style.display = on ? '' : 'none';
-  }
-
-  scale(s: number): void {
-    this.ui.style.setProperty('--hud-scale', String(s));
   }
 
   /** New Opening: jump straight to the values and drop whatever was on screen. */
@@ -283,11 +288,39 @@ export class Hud {
     });
   }
 
-  /** The Daily Shift chip's line (goal · progress · time); `null` hides it. */
-  setShift(text: string | null): void {
-    if (text === this.shiftText) return;
-    this.shiftChip.classList.toggle('gone', text === null);
-    (this.shiftChip.querySelector('span') as HTMLElement).textContent = this.shiftText = text ?? '';
+  /** The Daily Shift chip: the goal part being worked on (or the Done line) and a button showing parts done of all;
+   *  the clock sits under the gear. `null` hides both. */
+  setShift(row: ShiftRow | null, done = 0, total = 0, clock = ''): void {
+    this.shiftClock.textContent = clock;
+    this.shiftClock.classList.toggle('gone', !clock);
+    const key = JSON.stringify([row, done, total]);
+    if (key === this.shiftKey) return;
+    this.shiftKey = key;
+    this.shiftChip.classList.toggle('gone', row === null);
+    if (!row) return this.shiftChip.replaceChildren();
+    const line = document.createElement('div');
+    line.className = 'shift-row';
+    if (row.icon) {
+      const img = document.createElement('img');
+      img.src = row.icon;
+      img.alt = '';
+      line.append(img);
+    }
+    const text = document.createElement('span');
+    text.textContent = row.text;
+    line.append(text);
+    if (total) {
+      const goals = document.createElement('button');
+      goals.className = 'shift-goals';
+      goals.setAttribute('aria-label', 'Shift goals');
+      goals.textContent = `📋 ${done}/${total}`;
+      goals.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        this.onShiftGoals();
+      });
+      line.append(goals);
+    }
+    this.shiftChip.replaceChildren(line);
   }
 
   /** The ring timer under Money; `null` hides it. */

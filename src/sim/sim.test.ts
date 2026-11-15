@@ -707,6 +707,7 @@ describe('Deliveries', () => {
     w.player.stack = ['wheat', ...order.flatMap((l) => Array<string>(l.want).fill(l.product))];
     standAt(car);
     const money = w.money;
+    const sold = { ...w.stats.sold };
     const done = until(10, (e) => e.type === 'deliveryDone');
     expect(w.player.stack).toEqual(['wheat']);
     const value = order.reduce((n, l) => n + l.want * w.map.products[l.product].price, 0);
@@ -717,6 +718,9 @@ describe('Deliveries', () => {
     expect(paid.tip).toBeLessThanOrEqual(Math.round(paid.amount * 0.25));
     expect(w.money).toBe(money + paid.amount + paid.tip);
     expect(car.delivery).toBeNull();
+    // the car names each Item it took, but off a Daily Shift they don't count as sold
+    expect(done?.type === 'deliveryDone' && done.products.length).toBe(items);
+    expect(w.stats.sold).toEqual(sold);
 
     // a partial order waits, honks at 15 s left, then pays plain Sale Price for what it got
     for (let i = 0; i < 60 * 300 && !cars().some((s) => s.delivery); i++) tick();
@@ -740,10 +744,15 @@ describe('Deliveries', () => {
     expect(w.paid[pad]).toBeGreaterThan(0);
     w.money = bank;
     standAt(late);
+    // on a Daily Shift, Items handed to a car count as sold, a partial order's too
+    w.map = { ...w.map, shift: true };
+    const soldBefore = w.stats.sold[line.product] ?? 0;
     expect(until(200, (e) => e.type === 'deliveryHonk' && e.station === late.id)).toBeDefined();
     const left = until(20, (e) => e.type === 'deliveryDone' && e.station === late.id);
     expect(left?.type === 'deliveryDone' && left.amount).toBe(w.map.products[line.product].price);
     expect(left?.type === 'deliveryDone' && !left.complete && left.tip === 0).toBe(true);
+    expect(w.stats.sold[line.product]).toBe(soldBefore + 1);
+    w.map = { ...w.map, shift: undefined };
     expect(maxParked).toBe(1); // no Stockers: one car at a time
 
     // a Goods Stocker fills an order by itself while the Shelves stay full

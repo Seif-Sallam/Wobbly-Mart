@@ -1,5 +1,5 @@
 {
-  "simVersion": 3,
+  "simVersion": 4,
   "days": {
     "2026-11-01": {
       "map": 3604901969,
@@ -352,8 +352,8 @@
           "id": "mill"
         }
       ],
-      "botTicks": 43068,
-      "floorTicks": 21534
+      "botTicks": 42503,
+      "floorTicks": 21251
     },
     "2026-11-17": {
       "map": 1174076589,
@@ -361,7 +361,7 @@
         {
           "kind": "sell",
           "product": "egg",
-          "n": 80
+          "n": 90
         },
         {
           "kind": "earn",
@@ -390,7 +390,7 @@
         {
           "kind": "sell",
           "product": "milk",
-          "n": 40
+          "n": 45
         },
         {
           "kind": "own",
@@ -447,7 +447,7 @@
         {
           "kind": "sell",
           "product": "strawberry",
-          "n": 120
+          "n": 130
         },
         {
           "kind": "earn",
@@ -577,7 +577,7 @@
         {
           "kind": "sell",
           "product": "butter",
-          "n": 40
+          "n": 45
         },
         {
           "kind": "earn",
@@ -602,7 +602,7 @@
         {
           "kind": "sell",
           "product": "sugar",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "earn",
@@ -707,7 +707,7 @@
         {
           "kind": "sell",
           "product": "milk",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "earn",
@@ -782,15 +782,15 @@
         {
           "kind": "sell",
           "product": "butter",
-          "n": 40
+          "n": 45
         },
         {
           "kind": "own",
           "id": "stocker_1"
         }
       ],
-      "botTicks": 41616,
-      "floorTicks": 20808
+      "botTicks": 42838,
+      "floorTicks": 21419
     },
     "2026-12-07": {
       "map": 3523667000,
@@ -843,7 +843,7 @@
         {
           "kind": "sell",
           "product": "goat_milk",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "earn",
@@ -942,7 +942,7 @@
         {
           "kind": "sell",
           "product": "goat_cheese",
-          "n": 30
+          "n": 35
         },
         {
           "kind": "earn",
@@ -987,7 +987,7 @@
         {
           "kind": "sell",
           "product": "milk",
-          "n": 90
+          "n": 100
         },
         {
           "kind": "own",
@@ -1032,7 +1032,7 @@
         {
           "kind": "sell",
           "product": "wheat",
-          "n": 45
+          "n": 60
         },
         {
           "kind": "sell",
@@ -1138,7 +1138,7 @@
         {
           "kind": "sell",
           "product": "orange_juice",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "earn",
@@ -1163,7 +1163,7 @@
         {
           "kind": "sell",
           "product": "ketchup",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "earn",
@@ -1317,7 +1317,7 @@
         {
           "kind": "sell",
           "product": "milk",
-          "n": 45
+          "n": 50
         },
         {
           "kind": "own",
@@ -1358,7 +1358,7 @@
         {
           "kind": "sell",
           "product": "pizza_sauce",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "earn",
@@ -1396,8 +1396,8 @@
         },
         {
           "kind": "sell",
-          "product": "tomato",
-          "n": 40
+          "product": "egg",
+          "n": 10
         }
       ],
       "botTicks": 42167,
@@ -1459,7 +1459,7 @@
         {
           "kind": "sell",
           "product": "flour",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "earn",
@@ -1499,7 +1499,7 @@
         {
           "kind": "sell",
           "product": "milk",
-          "n": 35
+          "n": 40
         },
         {
           "kind": "earn",
@@ -1535,8 +1535,8 @@
           "id": "stocker_1"
         }
       ],
-      "botTicks": 42541,
-      "floorTicks": 21270
+      "botTicks": 41399,
+      "floorTicks": 20699
     },
     "2027-01-09": {
       "map": 1054302050,
@@ -1568,7 +1568,7 @@
         {
           "kind": "sell",
           "product": "goat_milk",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "earn",
@@ -1577,7 +1577,7 @@
         {
           "kind": "sell",
           "product": "wheat",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "sell",
@@ -1603,7 +1603,7 @@
         {
           "kind": "sell",
           "product": "wheat",
-          "n": 110
+          "n": 120
         },
         {
           "kind": "own",
@@ -1684,7 +1684,7 @@
         {
           "kind": "sell",
           "product": "orange_juice",
-          "n": 90
+          "n": 100
         },
         {
           "kind": "earn",
@@ -1704,7 +1704,7 @@
         {
           "kind": "sell",
           "product": "flour",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "earn",
@@ -1785,8 +1785,8 @@
           "id": "goat_cheese_press"
         }
       ],
-      "botTicks": 43089,
-      "floorTicks": 21544
+      "botTicks": 41640,
+      "floorTicks": 20820
     },
     "2027-01-20": {
       "map": 3978274624,
@@ -1818,15 +1818,15 @@
         {
           "kind": "sell",
           "product": "egg",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "own",
           "id": "stocker_1"
         }
       ],
-      "botTicks": 41867,
-      "floorTicks": 20933
+      "botTicks": 43176,
+      "floorTicks": 21588
     },
     "2027-01-22": {
       "map": 3426076613,
@@ -1874,8 +1874,8 @@
           "id": "dough_mixer"
         }
       ],
-      "botTicks": 43056,
-      "floorTicks": 21528
+      "botTicks": 40613,
+      "floorTicks": 20306
     },
     "2027-01-24": {
       "map": 2355003894,
@@ -1892,7 +1892,7 @@
         {
           "kind": "sell",
           "product": "milk",
-          "n": 40
+          "n": 45
         },
         {
           "kind": "own",
@@ -1912,7 +1912,7 @@
         {
           "kind": "sell",
           "product": "cheese",
-          "n": 25
+          "n": 30
         },
         {
           "kind": "own",
@@ -2050,8 +2050,8 @@
           "id": "stocker_1"
         }
       ],
-      "botTicks": 41380,
-      "floorTicks": 20690
+      "botTicks": 40239,
+      "floorTicks": 20119
     },
     "2027-02-01": {
       "map": 2938261458,
@@ -2059,7 +2059,7 @@
         {
           "kind": "sell",
           "product": "orange_juice",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "earn",
@@ -2084,7 +2084,7 @@
         {
           "kind": "sell",
           "product": "egg",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "earn",
@@ -2093,7 +2093,7 @@
         {
           "kind": "sell",
           "product": "orange",
-          "n": 45
+          "n": 50
         },
         {
           "kind": "own",
@@ -2118,7 +2118,7 @@
         {
           "kind": "sell",
           "product": "milk",
-          "n": 40
+          "n": 45
         },
         {
           "kind": "own",
@@ -2134,7 +2134,7 @@
         {
           "kind": "sell",
           "product": "orange_juice",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "earn",
@@ -2145,8 +2145,8 @@
           "id": "stocker_2"
         }
       ],
-      "botTicks": 40517,
-      "floorTicks": 20258
+      "botTicks": 42302,
+      "floorTicks": 21151
     },
     "2027-02-05": {
       "map": 2496529788,
@@ -2203,7 +2203,7 @@
         {
           "kind": "sell",
           "product": "wheat",
-          "n": 50
+          "n": 60
         },
         {
           "kind": "own",
@@ -2243,15 +2243,15 @@
         {
           "kind": "sell",
           "product": "pizza_sauce",
-          "n": 90
+          "n": 100
         },
         {
           "kind": "own",
           "id": "sugar_shelf"
         }
       ],
-      "botTicks": 40591,
-      "floorTicks": 20295
+      "botTicks": 42972,
+      "floorTicks": 21486
     },
     "2027-02-10": {
       "map": 3473881542,
@@ -2259,7 +2259,7 @@
         {
           "kind": "sell",
           "product": "ketchup",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "earn",
@@ -2363,7 +2363,7 @@
         {
           "kind": "sell",
           "product": "flour",
-          "n": 50
+          "n": 60
         },
         {
           "kind": "sell",
@@ -2371,8 +2371,8 @@
           "n": 20
         }
       ],
-      "botTicks": 38754,
-      "floorTicks": 19377
+      "botTicks": 40091,
+      "floorTicks": 20045
     },
     "2027-02-16": {
       "map": 3083647200,
@@ -2384,7 +2384,7 @@
         {
           "kind": "sell",
           "product": "goat_milk",
-          "n": 80
+          "n": 90
         },
         {
           "kind": "sell",
@@ -2470,15 +2470,15 @@
         {
           "kind": "sell",
           "product": "flour",
-          "n": 25
+          "n": 30
         },
         {
           "kind": "own",
           "id": "stocker_1"
         }
       ],
-      "botTicks": 64496,
-      "floorTicks": 32248
+      "botTicks": 61206,
+      "floorTicks": 30603
     },
     "2027-02-21": {
       "map": 2886697054,
@@ -2510,7 +2510,7 @@
         {
           "kind": "sell",
           "product": "orange_juice",
-          "n": 80
+          "n": 90
         },
         {
           "kind": "earn",
@@ -2563,15 +2563,15 @@
         {
           "kind": "sell",
           "product": "egg",
-          "n": 35
+          "n": 40
         },
         {
           "kind": "own",
           "id": "cashier_1"
         }
       ],
-      "botTicks": 61006,
-      "floorTicks": 30503
+      "botTicks": 63096,
+      "floorTicks": 31548
     },
     "2027-02-25": {
       "map": 2322383096,
@@ -2608,7 +2608,7 @@
         {
           "kind": "sell",
           "product": "tomato",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "own",
@@ -2739,7 +2739,7 @@
         {
           "kind": "sell",
           "product": "ketchup",
-          "n": 50
+          "n": 60
         },
         {
           "kind": "sell",
@@ -2794,7 +2794,7 @@
         {
           "kind": "sell",
           "product": "wheat",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "own",
@@ -2898,7 +2898,7 @@
         {
           "kind": "sell",
           "product": "cheese",
-          "n": 30
+          "n": 35
         },
         {
           "kind": "own",
@@ -2914,7 +2914,7 @@
         {
           "kind": "sell",
           "product": "milk",
-          "n": 30
+          "n": 35
         },
         {
           "kind": "earn",
@@ -3119,7 +3119,7 @@
         {
           "kind": "sell",
           "product": "goat_milk",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "earn",
@@ -3188,7 +3188,7 @@
         {
           "kind": "sell",
           "product": "goat_milk",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "own",
@@ -3283,7 +3283,7 @@
         {
           "kind": "sell",
           "product": "milk",
-          "n": 50
+          "n": 60
         },
         {
           "kind": "own",
@@ -3364,7 +3364,7 @@
         {
           "kind": "sell",
           "product": "orange_juice",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "earn",
@@ -3375,8 +3375,8 @@
           "id": "blender"
         }
       ],
-      "botTicks": 40961,
-      "floorTicks": 20480
+      "botTicks": 42225,
+      "floorTicks": 21112
     },
     "2027-04-02": {
       "map": 3836893971,
@@ -3418,7 +3418,7 @@
         {
           "kind": "sell",
           "product": "ketchup",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "own",
@@ -3528,7 +3528,7 @@
         {
           "kind": "sell",
           "product": "sugar_cane",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "own",
@@ -3597,7 +3597,7 @@
         {
           "kind": "sell",
           "product": "ketchup",
-          "n": 90
+          "n": 110
         },
         {
           "kind": "own",
@@ -3613,7 +3613,7 @@
         {
           "kind": "sell",
           "product": "goat_milk",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "earn",
@@ -3759,8 +3759,8 @@
           "id": "stocker_1"
         }
       ],
-      "botTicks": 42322,
-      "floorTicks": 21161
+      "botTicks": 42184,
+      "floorTicks": 21092
     },
     "2027-04-19": {
       "map": 2086252724,
@@ -3768,7 +3768,7 @@
         {
           "kind": "sell",
           "product": "olives",
-          "n": 90
+          "n": 100
         },
         {
           "kind": "earn",
@@ -3777,15 +3777,15 @@
         {
           "kind": "sell",
           "product": "apple",
-          "n": 80
+          "n": 90
         },
         {
           "kind": "own",
           "id": "sauce_pot"
         }
       ],
-      "botTicks": 42637,
-      "floorTicks": 21318
+      "botTicks": 42701,
+      "floorTicks": 21350
     },
     "2027-04-20": {
       "map": 2669644571,
@@ -3801,8 +3801,8 @@
         },
         {
           "kind": "sell",
-          "product": "wheat",
-          "n": 80
+          "product": "strawberry",
+          "n": 10
         },
         {
           "kind": "own",
@@ -3822,7 +3822,7 @@
         {
           "kind": "sell",
           "product": "strawberry",
-          "n": 100
+          "n": 110
         },
         {
           "kind": "earn",
@@ -3833,8 +3833,8 @@
           "id": "butter_churn"
         }
       ],
-      "botTicks": 41058,
-      "floorTicks": 20529
+      "botTicks": 43000,
+      "floorTicks": 21500
     },
     "2027-04-22": {
       "map": 1777278327,
@@ -3891,7 +3891,7 @@
         {
           "kind": "sell",
           "product": "wheat",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "own",
@@ -4016,7 +4016,7 @@
         {
           "kind": "sell",
           "product": "apple",
-          "n": 90
+          "n": 100
         },
         {
           "kind": "own",
@@ -4066,7 +4066,7 @@
         {
           "kind": "sell",
           "product": "olives",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "own",
@@ -4086,7 +4086,7 @@
         {
           "kind": "sell",
           "product": "egg",
-          "n": 80
+          "n": 90
         },
         {
           "kind": "sell",
@@ -4204,8 +4204,8 @@
           "id": "squeezer"
         }
       ],
-      "botTicks": 40431,
-      "floorTicks": 20215
+      "botTicks": 38263,
+      "floorTicks": 19131
     },
     "2027-05-08": {
       "map": 1880520462,
@@ -4217,15 +4217,15 @@
         {
           "kind": "sell",
           "product": "orange_juice",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "own",
           "id": "cow_pen"
         }
       ],
-      "botTicks": 42045,
-      "floorTicks": 21022
+      "botTicks": 42156,
+      "floorTicks": 21078
     },
     "2027-05-09": {
       "map": 3377748086,
@@ -4278,7 +4278,7 @@
         {
           "kind": "sell",
           "product": "sugar",
-          "n": 90
+          "n": 100
         },
         {
           "kind": "earn",
@@ -4289,8 +4289,8 @@
           "id": "apple_shelf"
         }
       ],
-      "botTicks": 41620,
-      "floorTicks": 20810
+      "botTicks": 42814,
+      "floorTicks": 21407
     },
     "2027-05-12": {
       "map": 1042471272,
@@ -4323,7 +4323,7 @@
         {
           "kind": "sell",
           "product": "orange_juice",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "earn",
@@ -4446,7 +4446,7 @@
         {
           "kind": "sell",
           "product": "wheat",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "own",
@@ -4610,7 +4610,7 @@
         {
           "kind": "sell",
           "product": "olives",
-          "n": 45
+          "n": 50
         },
         {
           "kind": "own",
@@ -4635,15 +4635,15 @@
         {
           "kind": "sell",
           "product": "wheat",
-          "n": 120
+          "n": 130
         },
         {
           "kind": "own",
           "id": "sugar_mill"
         }
       ],
-      "botTicks": 43050,
-      "floorTicks": 21525
+      "botTicks": 41658,
+      "floorTicks": 20829
     },
     "2027-05-27": {
       "map": 1993215118,
@@ -4651,7 +4651,7 @@
         {
           "kind": "sell",
           "product": "strawberry",
-          "n": 90
+          "n": 100
         },
         {
           "kind": "earn",
@@ -4736,7 +4736,7 @@
         {
           "kind": "sell",
           "product": "pizza_sauce",
-          "n": 80
+          "n": 90
         },
         {
           "kind": "earn",
@@ -4769,7 +4769,7 @@
         {
           "kind": "sell",
           "product": "milk",
-          "n": 15
+          "n": 20
         },
         {
           "kind": "own",
@@ -4789,15 +4789,15 @@
         {
           "kind": "sell",
           "product": "goat_milk",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "own",
           "id": "bread_shelf"
         }
       ],
-      "botTicks": 40400,
-      "floorTicks": 20200
+      "botTicks": 43035,
+      "floorTicks": 21517
     },
     "2027-06-03": {
       "map": 858130826,
@@ -4805,7 +4805,7 @@
         {
           "kind": "sell",
           "product": "sugar",
-          "n": 100
+          "n": 110
         },
         {
           "kind": "earn",
@@ -4989,15 +4989,15 @@
         {
           "kind": "sell",
           "product": "flour",
-          "n": 45
+          "n": 50
         },
         {
           "kind": "own",
           "id": "apple_tree"
         }
       ],
-      "botTicks": 61819,
-      "floorTicks": 30909
+      "botTicks": 64018,
+      "floorTicks": 32009
     },
     "2027-06-12": {
       "map": 2424538475,
@@ -5054,7 +5054,7 @@
         {
           "kind": "sell",
           "product": "tomato",
-          "n": 50
+          "n": 60
         },
         {
           "kind": "own",
@@ -5151,7 +5151,7 @@
         {
           "kind": "sell",
           "product": "ketchup",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "earn",
@@ -5160,7 +5160,7 @@
         {
           "kind": "sell",
           "product": "tomato",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "own",
@@ -5176,7 +5176,7 @@
         {
           "kind": "sell",
           "product": "pizza_sauce",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "earn",
@@ -5227,8 +5227,8 @@
           "id": "apple_press"
         }
       ],
-      "botTicks": 41092,
-      "floorTicks": 20546
+      "botTicks": 40934,
+      "floorTicks": 20467
     },
     "2027-06-23": {
       "map": 2473274739,
@@ -5494,7 +5494,7 @@
         {
           "kind": "sell",
           "product": "ketchup",
-          "n": 25
+          "n": 30
         },
         {
           "kind": "own",
@@ -5575,7 +5575,7 @@
         {
           "kind": "sell",
           "product": "sugar",
-          "n": 80
+          "n": 90
         },
         {
           "kind": "earn",
@@ -5675,15 +5675,15 @@
         {
           "kind": "sell",
           "product": "tomato",
-          "n": 80
+          "n": 90
         },
         {
           "kind": "own",
           "id": "apple_press"
         }
       ],
-      "botTicks": 41196,
-      "floorTicks": 20598
+      "botTicks": 42176,
+      "floorTicks": 21088
     },
     "2027-07-14": {
       "map": 1970340103,
@@ -5725,7 +5725,7 @@
         {
           "kind": "sell",
           "product": "milk",
-          "n": 35
+          "n": 40
         },
         {
           "kind": "own",
@@ -5741,7 +5741,7 @@
         {
           "kind": "sell",
           "product": "apple_juice",
-          "n": 80
+          "n": 90
         },
         {
           "kind": "earn",
@@ -5801,7 +5801,7 @@
         {
           "kind": "sell",
           "product": "orange",
-          "n": 90
+          "n": 100
         },
         {
           "kind": "earn",
@@ -5812,8 +5812,8 @@
           "id": "sauce_pot"
         }
       ],
-      "botTicks": 40141,
-      "floorTicks": 20070
+      "botTicks": 40887,
+      "floorTicks": 20443
     },
     "2027-07-20": {
       "map": 2008869603,
@@ -5975,7 +5975,7 @@
         {
           "kind": "sell",
           "product": "goat_milk",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "sell",
@@ -6110,7 +6110,7 @@
         {
           "kind": "sell",
           "product": "sugar",
-          "n": 35
+          "n": 40
         },
         {
           "kind": "own",
@@ -6166,7 +6166,7 @@
         {
           "kind": "sell",
           "product": "egg",
-          "n": 100
+          "n": 110
         },
         {
           "kind": "earn",
@@ -6191,7 +6191,7 @@
         {
           "kind": "sell",
           "product": "pizza_sauce",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "earn",
@@ -6279,12 +6279,12 @@
         {
           "kind": "sell",
           "product": "flour",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "sell",
           "product": "wheat",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "sell",
@@ -6337,8 +6337,8 @@
           "id": "ice_cream_maker"
         }
       ],
-      "botTicks": 43067,
-      "floorTicks": 21533
+      "botTicks": 40519,
+      "floorTicks": 20259
     },
     "2027-08-13": {
       "map": 3457020650,
@@ -6346,7 +6346,7 @@
         {
           "kind": "sell",
           "product": "dough",
-          "n": 20
+          "n": 25
         },
         {
           "kind": "earn",
@@ -6355,7 +6355,7 @@
         {
           "kind": "sell",
           "product": "flour",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "own",
@@ -6396,7 +6396,7 @@
         {
           "kind": "sell",
           "product": "goat_milk",
-          "n": 50
+          "n": 60
         },
         {
           "kind": "earn",
@@ -6405,7 +6405,7 @@
         {
           "kind": "sell",
           "product": "wheat",
-          "n": 50
+          "n": 60
         },
         {
           "kind": "own",
@@ -6574,7 +6574,7 @@
         {
           "kind": "sell",
           "product": "milk",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "own",
@@ -6624,15 +6624,15 @@
         {
           "kind": "sell",
           "product": "tomato",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "own",
           "id": "squeezer"
         }
       ],
-      "botTicks": 42435,
-      "floorTicks": 21217
+      "botTicks": 42670,
+      "floorTicks": 21335
     },
     "2027-08-25": {
       "map": 2703862486,
@@ -6644,15 +6644,15 @@
         {
           "kind": "sell",
           "product": "orange_juice",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "own",
           "id": "stocker_1"
         }
       ],
-      "botTicks": 41088,
-      "floorTicks": 20544
+      "botTicks": 43008,
+      "floorTicks": 21504
     },
     "2027-08-26": {
       "map": 2348863483,
@@ -6729,7 +6729,7 @@
         {
           "kind": "sell",
           "product": "flour",
-          "n": 50
+          "n": 60
         },
         {
           "kind": "own",
@@ -6854,7 +6854,7 @@
         {
           "kind": "sell",
           "product": "pizza_sauce",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "own",
@@ -6899,7 +6899,7 @@
         {
           "kind": "sell",
           "product": "ketchup",
-          "n": 100
+          "n": 110
         },
         {
           "kind": "own",
@@ -6915,7 +6915,7 @@
         {
           "kind": "sell",
           "product": "goat_milk",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "earn",
@@ -6959,7 +6959,7 @@
         {
           "kind": "sell",
           "product": "strawberry",
-          "n": 90
+          "n": 100
         },
         {
           "kind": "own",
@@ -7044,7 +7044,7 @@
         {
           "kind": "sell",
           "product": "ketchup",
-          "n": 90
+          "n": 100
         },
         {
           "kind": "deliveries",
@@ -7100,8 +7100,8 @@
           "id": "ice_cream_maker"
         }
       ],
-      "botTicks": 40297,
-      "floorTicks": 20148
+      "botTicks": 40184,
+      "floorTicks": 20092
     },
     "2027-09-16": {
       "map": 2930423273,
@@ -7164,7 +7164,7 @@
         {
           "kind": "sell",
           "product": "goat_milk",
-          "n": 20
+          "n": 25
         },
         {
           "kind": "own",
@@ -7180,7 +7180,7 @@
         {
           "kind": "sell",
           "product": "milk",
-          "n": 80
+          "n": 90
         },
         {
           "kind": "earn",
@@ -7204,12 +7204,12 @@
         {
           "kind": "sell",
           "product": "milk",
-          "n": 45
+          "n": 50
         },
         {
           "kind": "sell",
           "product": "wheat",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "own",
@@ -7387,7 +7387,7 @@
         {
           "kind": "sell",
           "product": "tomato",
-          "n": 90
+          "n": 100
         },
         {
           "kind": "own",
@@ -7427,7 +7427,7 @@
         {
           "kind": "sell",
           "product": "flour",
-          "n": 15
+          "n": 20
         },
         {
           "kind": "own",
@@ -7542,7 +7542,7 @@
         {
           "kind": "sell",
           "product": "ketchup",
-          "n": 100
+          "n": 110
         },
         {
           "kind": "own",
@@ -7575,8 +7575,8 @@
           "n": 15
         }
       ],
-      "botTicks": 41497,
-      "floorTicks": 20748
+      "botTicks": 40565,
+      "floorTicks": 20282
     },
     "2027-10-07": {
       "map": 35662177,
@@ -7608,7 +7608,7 @@
         {
           "kind": "sell",
           "product": "flour",
-          "n": 60
+          "n": 70
         },
         {
           "kind": "own",
@@ -7648,7 +7648,7 @@
         {
           "kind": "sell",
           "product": "orange",
-          "n": 90
+          "n": 100
         },
         {
           "kind": "sell",
@@ -7688,7 +7688,7 @@
         {
           "kind": "sell",
           "product": "flour",
-          "n": 40
+          "n": 45
         },
         {
           "kind": "earn",
@@ -7717,7 +7717,7 @@
         {
           "kind": "sell",
           "product": "sugar_cane",
-          "n": 90
+          "n": 100
         },
         {
           "kind": "sell",
@@ -8016,7 +8016,7 @@
         {
           "kind": "sell",
           "product": "flour",
-          "n": 50
+          "n": 60
         },
         {
           "kind": "own",
@@ -8052,7 +8052,7 @@
         {
           "kind": "sell",
           "product": "goat_milk",
-          "n": 70
+          "n": 80
         },
         {
           "kind": "earn",
@@ -8076,7 +8076,7 @@
         {
           "kind": "sell",
           "product": "goat_milk",
-          "n": 80
+          "n": 90
         },
         {
           "kind": "sell",

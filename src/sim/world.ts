@@ -279,8 +279,16 @@ export type SimEvent =
   | { type: 'customerLeft'; customer: number; happy: boolean }
   | { type: 'deliveryArrived'; station: string }
   | { type: 'deliveryHonk'; station: string }
-  /** `left`: seconds the car still had. */
-  | { type: 'deliveryDone'; station: string; amount: number; tip: number; complete: boolean; left: number }
+  /** `left`: seconds the car still had; `products`: one entry per Item handed over. */
+  | {
+      type: 'deliveryDone';
+      station: string;
+      amount: number;
+      tip: number;
+      complete: boolean;
+      left: number;
+      products: string[];
+    }
   | { type: 'thiefGrab' }
   /** `amount`: the bounty, or what got away; `cash`: Cash Pile money returned or lost. */
   | { type: 'robberyDone'; caught: boolean; amount: number; cash: number }

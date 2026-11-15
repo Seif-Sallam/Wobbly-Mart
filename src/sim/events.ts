@@ -73,7 +73,8 @@ function leave(w: World, st: PickupStation, d: Delivery, complete: boolean): voi
   const amount = Math.round(complete ? value * timing(w).deliveryPay : value);
   const tip = complete ? Math.round(amount * timing(w).tipMax * Math.max(0, 1 - d.t / (d.time / 2))) : 0;
   w.money += amount + tip;
-  w.events.push({ type: 'deliveryDone', station: st.id, amount, tip, complete, left: d.time - d.t });
+  const products = d.order.flatMap((l) => Array<string>(l.got).fill(l.product));
+  w.events.push({ type: 'deliveryDone', station: st.id, amount, tip, complete, left: d.time - d.t, products });
   st.delivery = null;
 }
 

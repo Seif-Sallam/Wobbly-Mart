@@ -136,7 +136,7 @@
         {
           "kind": "sell",
           "product": "flour",
-          "n": 70
+          "n": 60
         },
         {
           "kind": "earn",
@@ -160,7 +160,7 @@
         {
           "kind": "sell",
           "product": "orange",
-          "n": 110
+          "n": 100
         },
         {
           "kind": "sell",
@@ -190,7 +190,7 @@
         {
           "kind": "sell",
           "product": "olives",
-          "n": 120
+          "n": 110
         },
         {
           "kind": "own",
@@ -206,7 +206,7 @@
         {
           "kind": "sell",
           "product": "pizza_sauce",
-          "n": 110
+          "n": 100
         },
         {
           "kind": "earn",
@@ -235,7 +235,7 @@
         {
           "kind": "sell",
           "product": "strawberry",
-          "n": 100
+          "n": 90
         },
         {
           "kind": "own",

@@ -339,9 +339,9 @@ record "Device create burst (8, in order)" "$creates"
 
 stage "The nightly cron"
 open_url "https://dash.cloudflare.com/?to=/:account/workers-and-pages"
-step "wobbly-mart-api-staging → Settings → Triggers: Cron Triggers shows 30 0 * * *."
-step "Observability (Logs): filter on the scheduled event; the latest 00:30 UTC run shows Ok, no error."
-if confirm "Cron is 30 0 * * * and the last 00:30 UTC run succeeded?"; then record "Cron" "30 0 * * *, last run ok"
+step "wobbly-mart-api-staging → Settings → Triggers: Cron Triggers shows 30 22 * * *."
+step "Observability (Logs): filter on the scheduled event; the latest 22:30 UTC run shows Ok, no error."
+if confirm "Cron is 30 22 * * * and the last 22:30 UTC run succeeded?"; then record "Cron" "30 22 * * *, last run ok"
 else ask CRON_NOTE "What did you see?"; record "Cron" "NOT ok: $CRON_NOTE"; fi
 
 stage "Delete my Device on staging"

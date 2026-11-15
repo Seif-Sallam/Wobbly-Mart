@@ -13,7 +13,7 @@ const IDLE_SECONDS = 730 * 86_400;
 const IDLE_BATCH = 2000;
 const QUOTA_DAYS = 7;
 
-/** `at`: the scheduled time in Unix seconds. Runs after 00:15 UTC, so every day before today is closed. */
+/** `at`: the scheduled time in Unix seconds. Runs at 00:30 UTC+2 (22:30 UTC), after the late window, so every day before today is closed. */
 export async function dailyCleanup(env: Env, at: number): Promise<void> {
   const today = dailyDay(at * 1000);
   await env.REPLAY.prepare(

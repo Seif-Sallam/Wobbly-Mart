@@ -19,18 +19,17 @@ export async function submitRun(req: Request, env: Env): Promise<Response> {
   await limitWrite(env, 'run', id);
 
   const stored = await env.BOARD.prepare(
-    'SELECT `ticks` FROM `board_entry` ' +
-      "WHERE `kind` = 'speed' AND `map` = ? AND `day` = 0 AND `sim_version` = ? AND `id_device` = ?",
+    'SELECT `ticks` FROM `board_entry` ' + "WHERE `kind` = 'speed' AND `map` = ? AND `day` = 0 AND `id_device` = ?",
   )
-    .bind(mapId, SIM_VERSION, id)
+    .bind(mapId, id)
     .first<{ ticks: number }>();
   const now = nowSeconds();
   await env.BOARD.batch([
     env.BOARD.prepare(
       'INSERT INTO `board_entry` (`kind`, `map`, `day`, `sim_version`, `id_device`, `ticks`, `updated_at`) ' +
         "VALUES ('speed', ?, 0, ?, ?, ?, ?) " +
-        'ON CONFLICT (`kind`, `map`, `day`, `sim_version`, `id_device`) ' +
-        'DO UPDATE SET `ticks` = excluded.`ticks`, `updated_at` = excluded.`updated_at` WHERE excluded.`ticks` < `board_entry`.`ticks`',
+        'ON CONFLICT (`kind`, `map`, `day`, `id_device`) ' +
+        'DO UPDATE SET `sim_version` = excluded.`sim_version`, `ticks` = excluded.`ticks`, `updated_at` = excluded.`updated_at` WHERE excluded.`ticks` < `board_entry`.`ticks`',
     ).bind(mapId, SIM_VERSION, id, ticks, now),
     env.BOARD.prepare('UPDATE `device` SET `last_seen_at` = ? WHERE `id_device` = ?').bind(now, id),
   ]);

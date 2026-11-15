@@ -101,7 +101,7 @@ const SUBTITLE: Record<WallTab, (map: string) => string> = {
 };
 const SWIPE_PX = 60;
 
-/** "Today", or the day's UTC date like "Nov 3". */
+/** "Today", or the day's date like "Nov 3" (dailyDate is already the UTC+2 date). */
 const dayLabel = (day: number, today: number): string =>
   day === today
     ? 'Today'

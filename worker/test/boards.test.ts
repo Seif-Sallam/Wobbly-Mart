@@ -4,6 +4,7 @@ import { expect, test } from 'vitest';
 import { fixedMaxScore, maxScoreRate } from '../../src/sim/score';
 import { SIM_VERSION } from '../../src/sim/version';
 import { cornerShop } from '../../maps/corner-shop';
+import { dairyFarm } from '../../maps/dairy-farm';
 import type { ApiError, BoardResponse, CloudCodeResponse, RankResponse, RunResponse } from '../api';
 import { dailyDay } from '../../src/sim/daily';
 import { nowSeconds } from '../time';
@@ -214,4 +215,44 @@ test('Speedrun Board: a Run past the floor ranks, and only a faster one replaces
     { rank: 2, nickname: 'Fast Hands', value: floor + 3000, you: true },
   ]);
   expect(board.you?.rank).toBe(2);
+});
+
+test('Boards ignore the sim version: older rows stay on the Wall and a newer best replaces them', async () => {
+  const seed = async (nickname: string, kind: string, map: string, day: number, value: number) => {
+    const { meta } = await env.BOARD.prepare(
+      'INSERT INTO `device` (`token_hash`, `nickname`, `created_at`, `last_seen_at`) VALUES (?, ?, 0, 0)',
+    )
+      .bind(new TextEncoder().encode(nickname), nickname)
+      .run();
+    await env.BOARD.prepare(
+      'INSERT INTO `board_entry` (`kind`, `map`, `day`, `sim_version`, `id_device`, `ticks`, `score`, `play_time`, `updated_at`) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)',
+    )
+      .bind(kind, map, day, SIM_VERSION - 1, meta.last_row_id, value, value)
+      .run();
+  };
+  const top = async (path: string) =>
+    ((await (await call('GET', path)).json()) as BoardResponse).top.map((r) => [r.nickname, r.value]);
+
+  await seed('Old Timer', 'daily', 'daily', 3, 9000);
+  await seed('Old Pal', 'daily', 'daily', 3, 8000);
+  expect(await top('/v1/boards/daily/daily?day=3')).toEqual([
+    ['Old Pal', 8000],
+    ['Old Timer', 9000],
+  ]);
+
+  // A Run on today's version beats the older-version best in place: still one row for the Device.
+  const floor = dairyFarm.speedrunFloorTicks ?? 0;
+  const hopper = await newDevice('Version Hopper');
+  await env.BOARD.prepare(
+    'INSERT INTO `board_entry` (`kind`, `map`, `day`, `sim_version`, `id_device`, `ticks`, `updated_at`) ' +
+      "SELECT 'speed', 'dairy-farm', 0, ?, `id_device`, ?, 0 FROM `device` WHERE `nickname` = 'Version Hopper'",
+  )
+    .bind(SIM_VERSION - 1, floor + 5000)
+    .run();
+  expect(await top('/v1/boards/speed/dairy-farm')).toEqual([['Version Hopper', floor + 5000]]);
+  const run = (ticks: number) =>
+    call('POST', '/v1/runs', { code: hopper, body: { map: 'dairy-farm', ticks, simVersion: SIM_VERSION } });
+  expect(((await (await run(floor + 9000)).json()) as RunResponse).improved).toBe(false);
+  expect(((await (await run(floor + 1000)).json()) as RunResponse).improved).toBe(true);
+  expect(await top('/v1/boards/speed/dairy-farm')).toEqual([['Version Hopper', floor + 1000]]);
 });

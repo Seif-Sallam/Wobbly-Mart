@@ -270,7 +270,7 @@ The **Board** of fastest **Runs** on one **Map**.
 The **Board** of highest **Score** on one **Map**.
 
 **Daily Shift**:
-One goal-based game, the same for every **Player** each UTC day, on that day's generated **Map**, in its own world that never touches the save.
+One goal-based game, the same for every **Player** each UTC day, on that day's generated **Map**, in its own world that never touches the save. Its Sell goals count **Items** handed to **Delivery** cars as well as checkouts.
 _Avoid_: daily challenge (a **Challenge** is something else), daily run
 
 **Daily Board**:

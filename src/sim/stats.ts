@@ -4,7 +4,7 @@ import { DT } from './world';
 
 export interface Stats {
   made: Record<string, number>;
-  /** Items checked out, per Product. */
+  /** Items checked out, per Product; on a Daily Shift, Items handed to Delivery cars too. */
   sold: Record<string, number>;
   trashed: number;
   /** Items that fell off a Stack as Loose Items (a broken one is a Mess instead). */
@@ -127,6 +127,7 @@ export function updateStats(w: World): void {
         if (e.complete) s.deliveriesFull++;
         else if (e.amount > 0) s.deliveriesPartly++;
         else s.deliveriesMissed++;
+        if (w.map.shift) for (const p of e.products) count(s.sold, p);
         break;
       case 'robberyDone':
         if (e.caught) {

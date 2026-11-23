@@ -235,7 +235,7 @@ export const TUNING = {
     /** The re-run with the goal set gives up after this. */
     capMinutes: 20,
     /** Daily floor: fewest plausible ticks = the bot's ticks × this. */
-    floorShare: 0.5,
+    floorShare: 0.25,
     /** A Shift claiming more Money per second than this is refused: a sanity bound, not anti-cheat. */
     maxMoneyRate: 10_000,
   },
